@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>正負の数トレーニング | 中1数学</title>
+<meta name="description" content="中学1年「正負の数」の4択計算ドリル。塾・自宅学習向け。" />
+
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1c2127" />
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="正負の数" />
+<meta name="mobile-web-app-capable" content="yes" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="page">
+
+  <header class="app-header">
+    <div class="brand">
+      <p class="eyebrow">中学1年 数学</p>
+      <h1>正負の数トレーニング</h1>
+    </div>
+    <svg class="numberline" viewBox="0 0 480 36" role="img" aria-label="数直線の装飾">
+      <line x1="10" y1="18" x2="470" y2="18" class="nl-axis" />
+      <g class="nl-ticks"></g>
+      <circle cx="240" cy="18" r="4.5" class="nl-zero" />
+      <text x="240" y="33" class="nl-zero-label" text-anchor="middle">0</text>
+    </svg>
+  </header>
+
+  <main>
+
+    <section class="stats-bar" aria-label="成績">
+      <div class="stat">
+        <span class="stat-label">出題数</span>
+        <span class="stat-value" id="statTotal">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">正解数</span>
+        <span class="stat-value" id="statCorrect">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">正答率</span>
+        <span class="stat-value" id="statRate">—</span>
+      </div>
+      <button id="resetBtn" class="ghost-btn" type="button">成績をリセット</button>
+    </section>
+
+    <section class="quiz-card" aria-live="polite">
+      <p class="category-tag" id="categoryTag">加法</p>
+      <h2 class="question" id="questionText">読み込み中…</h2>
+
+      <div class="choices" id="choices" role="group" aria-label="選択肢"></div>
+
+      <div class="feedback" id="feedback" aria-live="assertive"></div>
+
+      <button id="nextBtn" class="primary-btn" type="button" disabled>次の問題へ</button>
+    </section>
+
+    <section class="settings" id="settingsSection">
+      <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false" aria-controls="settingsPanel">
+        出題範囲を選ぶ
+      </button>
+      <div class="settings-panel" id="settingsPanel" hidden>
+        <p class="settings-hint">チェックした種類からランダムに出題します（講師の方は単元を絞って演習できます）。</p>
+        <div class="settings-grid" id="settingsGrid"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>正負の数（加法・減法・乗法・除法・絶対値・大小関係）の練習用ドリルです。</p>
+  </footer>
+
+  <div class="install-banner" id="installBanner" hidden>
+    <p id="installText">ホーム画面に追加すると、アイコンから直接起動できます。</p>
+    <div class="install-actions">
+      <button id="installBtn" class="primary-btn install-btn" type="button" hidden>ホーム画面に追加</button>
+      <button id="installDismiss" class="ghost-btn" type="button">閉じる</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>

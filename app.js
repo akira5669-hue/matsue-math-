@@ -1,0 +1,339 @@
+(function () {
+  'use strict';
+
+  /* ---------- 基本ユーティリティ ---------- */
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  function randNonZero(min, max) {
+    let n;
+    do { n = randInt(min, max); } while (n === 0);
+    return n;
+  }
+  function fmtNum(n) {
+    return n < 0 ? `(${n})` : `${n}`;
+  }
+  function fmtLead(n) {
+    // 式の先頭に出す数（負の数でも括弧なしでよい）
+    return `${n}`;
+  }
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildChoices(correct, naturalWrongs) {
+    const set = new Set([correct]);
+    const choices = [correct];
+    for (const w of naturalWrongs) {
+      if (choices.length >= 4) break;
+      if (!set.has(w)) { set.add(w); choices.push(w); }
+    }
+    let guard = 0;
+    while (choices.length < 4 && guard < 60) {
+      guard++;
+      const cand = correct + randNonZero(-5, 5);
+      if (!set.has(cand)) { set.add(cand); choices.push(cand); }
+    }
+    return shuffle(choices).map(String);
+  }
+
+  /* ---------- 出題範囲の定義 ---------- */
+
+  const CATEGORIES = [
+    { id: 'add2',   label: '加法（たし算）',           gen: genAdd2 },
+    { id: 'sub2',   label: '減法（ひき算）',           gen: genSub2 },
+    { id: 'chain3', label: '加減混合',                 gen: genChain3 },
+    { id: 'mul2',   label: '乗法（かけ算）',           gen: genMul2 },
+    { id: 'div2',   label: '除法（わり算）',           gen: genDiv2 },
+    { id: 'mixed',  label: 'かっこを含む四則',         gen: genMixedParen },
+    { id: 'abs',    label: '絶対値',                   gen: genAbs },
+    { id: 'maxof4', label: '大小関係',                 gen: genMaxOf4 },
+  ];
+
+  /* ---------- 問題生成関数（各カテゴリ） ---------- */
+
+  function genAdd2() {
+    const a = randNonZero(-9, 9);
+    const b = randNonZero(-9, 9);
+    const answer = a + b;
+    const expr = `${fmtLead(a)} + ${fmtNum(b)}`;
+    const wrongs = [-answer, a - b, a + Math.abs(b), Math.abs(a) + Math.abs(b)];
+    return { category: 'add2', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genSub2() {
+    const a = randNonZero(-9, 9);
+    const b = randNonZero(-9, 9);
+    const answer = a - b;
+    const expr = `${fmtLead(a)} − ${fmtNum(b)}`;
+    const wrongs = [-answer, a + b, a - Math.abs(b), Math.abs(a) - Math.abs(b)];
+    return { category: 'sub2', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genChain3() {
+    const t = [randNonZero(-9, 9), randNonZero(-9, 9), randNonZero(-9, 9)];
+    const answer = t[0] + t[1] + t[2];
+    let expr = fmtLead(t[0]);
+    for (let i = 1; i < t.length; i++) {
+      expr += t[i] < 0 ? ` − ${Math.abs(t[i])}` : ` + ${t[i]}`;
+    }
+    const wrongs = [-answer, t[0] + t[1] - t[2], t[0] - t[1] + t[2], answer + (t[2] >= 0 ? -2 * t[2] : 2 * Math.abs(t[2]))];
+    return { category: 'chain3', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genMul2() {
+    const a = randNonZero(-9, 9);
+    const b = randNonZero(-9, 9);
+    const answer = a * b;
+    const expr = `${fmtLead(a)} × ${fmtNum(b)}`;
+    const wrongs = [-answer, Math.abs(a) * Math.abs(b), a * Math.abs(b), Math.abs(a) * b];
+    return { category: 'mul2', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genDiv2() {
+    const b = randNonZero(-9, 9);
+    const k = randNonZero(-9, 9);
+    const a = b * k;
+    const answer = k;
+    const expr = `${fmtLead(a)} ÷ ${fmtNum(b)}`;
+    const wrongs = [-answer, Math.abs(answer), answer + 2, answer - 2];
+    return { category: 'div2', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genMixedParen() {
+    const a = randNonZero(-6, 6);
+    const b = randNonZero(-9, 9);
+    const c = randNonZero(-9, 9);
+    const useMinus = Math.random() < 0.5;
+    const inner = useMinus ? b - c : b + c;
+    const answer = a * inner;
+    const displayInner = useMinus ? `${b} − ${c}` : `${b} + ${c}`;
+    const displayExpr = `${fmtLead(a)} × (${displayInner})`;
+    const wrongs = [-answer, a * b, a + inner, Math.abs(a) * inner];
+    return { category: 'mixed', question: `${displayExpr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genAbs() {
+    const a = randNonZero(-12, 12);
+    const answer = Math.abs(a);
+    const wrongs = [-answer, a, answer + 1, answer - 1];
+    return { category: 'abs', question: `|${a}| の値は？`, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  function genMaxOf4() {
+    const nums = new Set();
+    while (nums.size < 4) nums.add(randNonZero(-12, 12));
+    const arr = Array.from(nums);
+    const askMax = Math.random() < 0.5;
+    const answer = askMax ? Math.max(...arr) : Math.min(...arr);
+    const label = askMax ? '次の4つの数のうち、最も大きい数はどれか。' : '次の4つの数のうち、最も小さい数はどれか。';
+    return { category: 'maxof4', question: label, answer, choices: shuffle(arr).map(String), isOrdering: true };
+  }
+
+  /* ---------- アプリ状態 ---------- */
+
+  const state = {
+    total: 0,
+    correct: 0,
+    current: null,
+    answered: false,
+    enabled: new Set(CATEGORIES.map(c => c.id)),
+  };
+
+  const els = {
+    questionText: document.getElementById('questionText'),
+    categoryTag: document.getElementById('categoryTag'),
+    choices: document.getElementById('choices'),
+    feedback: document.getElementById('feedback'),
+    nextBtn: document.getElementById('nextBtn'),
+    statTotal: document.getElementById('statTotal'),
+    statCorrect: document.getElementById('statCorrect'),
+    statRate: document.getElementById('statRate'),
+    resetBtn: document.getElementById('resetBtn'),
+    settingsToggle: document.getElementById('settingsToggle'),
+    settingsPanel: document.getElementById('settingsPanel'),
+    settingsGrid: document.getElementById('settingsGrid'),
+    numberlineTicks: document.querySelector('.nl-ticks'),
+  };
+
+  const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
+
+  /* ---------- 描画 ---------- */
+
+  function drawNumberline() {
+    const ticks = [];
+    for (let v = -6; v <= 6; v++) {
+      if (v === 0) continue;
+      const x = 240 + v * 35;
+      const cls = v < 0 ? 'nl-tick nl-tick-neg' : 'nl-tick nl-tick-pos';
+      ticks.push(`<line x1="${x}" y1="12" x2="${x}" y2="24" class="${cls}" />`);
+    }
+    els.numberlineTicks.innerHTML = ticks.join('');
+  }
+
+  function renderSettings() {
+    els.settingsGrid.innerHTML = CATEGORIES.map(c => `
+      <label class="settings-item">
+        <input type="checkbox" data-cat="${c.id}" ${state.enabled.has(c.id) ? 'checked' : ''} />
+        ${c.label}
+      </label>
+    `).join('');
+    els.settingsGrid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.cat;
+        if (cb.checked) state.enabled.add(id);
+        else state.enabled.delete(id);
+        if (state.enabled.size === 0) {
+          state.enabled.add(id);
+          cb.checked = true;
+        }
+      });
+    });
+  }
+
+  function updateStats() {
+    els.statTotal.textContent = state.total;
+    els.statCorrect.textContent = state.correct;
+    els.statRate.textContent = state.total === 0 ? '—' : `${Math.round((state.correct / state.total) * 100)}%`;
+  }
+
+  function pickGenerator() {
+    const pool = CATEGORIES.filter(c => state.enabled.has(c.id));
+    const c = pool[randInt(0, pool.length - 1)];
+    return c;
+  }
+
+  function nextQuestion() {
+    const cat = pickGenerator();
+    const q = cat.gen();
+    state.current = q;
+    state.answered = false;
+
+    els.categoryTag.textContent = categoryLabel[q.category];
+    els.questionText.textContent = q.question;
+    els.feedback.textContent = '';
+    els.feedback.className = 'feedback';
+    els.nextBtn.disabled = true;
+
+    els.choices.innerHTML = '';
+    q.choices.forEach(choiceStr => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.type = 'button';
+      btn.textContent = choiceStr;
+      btn.addEventListener('click', () => handleAnswer(btn, choiceStr));
+      els.choices.appendChild(btn);
+    });
+  }
+
+  function handleAnswer(btn, choiceStr) {
+    if (state.answered) return;
+    state.answered = true;
+    state.total++;
+
+    const correctStr = String(state.current.answer);
+    const isCorrect = choiceStr === correctStr;
+    if (isCorrect) state.correct++;
+
+    Array.from(els.choices.children).forEach(b => {
+      b.disabled = true;
+      if (b.textContent === correctStr) b.classList.add('is-correct');
+      else if (b === btn) b.classList.add('is-incorrect');
+    });
+
+    els.feedback.textContent = isCorrect ? '正解！' : `不正解。正解は ${correctStr} です。`;
+    els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+    els.nextBtn.disabled = false;
+    updateStats();
+  }
+
+  function resetStats() {
+    state.total = 0;
+    state.correct = 0;
+    updateStats();
+  }
+
+  /* ---------- イベント登録 ---------- */
+
+  els.nextBtn.addEventListener('click', nextQuestion);
+  els.resetBtn.addEventListener('click', resetStats);
+  els.settingsToggle.addEventListener('click', () => {
+    const isHidden = els.settingsPanel.hasAttribute('hidden');
+    if (isHidden) els.settingsPanel.removeAttribute('hidden');
+    else els.settingsPanel.setAttribute('hidden', '');
+    els.settingsToggle.setAttribute('aria-expanded', String(isHidden));
+  });
+
+  /* ---------- 初期化 ---------- */
+
+  drawNumberline();
+  renderSettings();
+  updateStats();
+  nextQuestion();
+  initInstallBanner();
+
+  /* ---------- PWAインストール案内 ---------- */
+
+  function initInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    const text = document.getElementById('installText');
+    const installBtn = document.getElementById('installBtn');
+    const dismissBtn = document.getElementById('installDismiss');
+    if (!banner) return;
+
+    const STORAGE_KEY = 'seifukazu-quiz-install-dismissed';
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { /* ignore */ }
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
+    if (dismissed || isStandalone) return;
+
+    const ua = window.navigator.userAgent;
+    const isIos = /iPhone|iPad|iPod/i.test(ua);
+    const isAndroid = /Android/i.test(ua);
+
+    let deferredPrompt = null;
+
+    function showBanner() {
+      banner.hidden = false;
+    }
+
+    function hideBanner() {
+      banner.hidden = true;
+      try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) { /* ignore */ }
+    }
+
+    if (isAndroid) {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        text.textContent = 'アプリとしてホーム画面に追加できます。';
+        installBtn.hidden = false;
+        showBanner();
+      });
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        hideBanner();
+      });
+    } else if (isIos) {
+      text.textContent = '画面下の共有ボタンから「ホーム画面に追加」を選ぶと、アイコンから起動できます。';
+      showBanner();
+    }
+
+    dismissBtn.addEventListener('click', hideBanner);
+  }
+
+})();
