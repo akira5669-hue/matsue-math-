@@ -46,14 +46,15 @@
   /* ---------- 出題範囲の定義 ---------- */
 
   const CATEGORIES = [
-    { id: 'add2',   label: '加法（たし算）',           gen: genAdd2 },
-    { id: 'sub2',   label: '減法（ひき算）',           gen: genSub2 },
-    { id: 'chain3', label: '加減混合',                 gen: genChain3 },
-    { id: 'mul2',   label: '乗法（かけ算）',           gen: genMul2 },
-    { id: 'div2',   label: '除法（わり算）',           gen: genDiv2 },
-    { id: 'mixed',  label: 'かっこを含む四則',         gen: genMixedParen },
-    { id: 'abs',    label: '絶対値',                   gen: genAbs },
-    { id: 'maxof4', label: '大小関係',                 gen: genMaxOf4 },
+    { id: 'add2',      label: '加法（たし算）',           gen: genAdd2 },
+    { id: 'sub2',      label: '減法（ひき算）',           gen: genSub2 },
+    { id: 'chain3',    label: '加減混合',                 gen: genChain3 },
+    { id: 'mul2',      label: '乗法（かけ算）',           gen: genMul2 },
+    { id: 'div2',      label: '除法（わり算）',           gen: genDiv2 },
+    { id: 'mixed',     label: 'かっこを含む四則',         gen: genMixedParen },
+    { id: 'allops',    label: '四則混合計算',             gen: genAllOps },
+    { id: 'abs',       label: '絶対値',                   gen: genAbs, defaultOff: true },
+    { id: 'maxof4',    label: '大小関係',                 gen: genMaxOf4 },
   ];
 
   /* ---------- 問題生成関数（各カテゴリ） ---------- */
@@ -119,6 +120,55 @@
     return { category: 'mixed', question: `${displayExpr} = ?`, answer, choices: buildChoices(answer, wrongs) };
   }
 
+  // 四則混合計算：加減と乗除が1つの式に混ざるパターン。
+  // 「乗除を先に計算する」ルールがそのまま正答・誤答の分かれ目になるよう設計する。
+  function genAllOps() {
+    const patterns = [3, 4];
+    const pattern = patterns[randInt(0, patterns.length - 1)];
+
+    if (pattern === 3) {
+      // a ± b×c  または  a ± b÷c
+      const a = randNonZero(-9, 9);
+      const useMul = Math.random() < 0.5;
+      let b, c, term2, opSym2;
+      if (useMul) {
+        b = randNonZero(-7, 7);
+        c = randNonZero(-7, 7);
+        term2 = b * c;
+        opSym2 = '×';
+      } else {
+        c = randNonZero(-7, 7);
+        const k = randNonZero(-7, 7);
+        b = c * k;
+        term2 = k;
+        opSym2 = '÷';
+      }
+      const useMinus = Math.random() < 0.5;
+      const answer = useMinus ? a - term2 : a + term2;
+      const expr = `${fmtLead(a)} ${useMinus ? '−' : '+'} ${fmtNum(b)} ${opSym2} ${fmtNum(c)}`;
+
+      // ありがちな誤り：左から順に計算してしまう（加減を先にやる）
+      const leftToRight = useMul
+        ? (useMinus ? (a - b) * c : (a + b) * c)
+        : (useMinus ? (a - b) / c : (a + b) / c);
+      const wrongs = [-answer, useMinus ? a + term2 : a - term2, Math.round(leftToRight)];
+      return { category: 'allops', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+    } else {
+      // a×b ± c×d  （乗法どうしの加減混合）
+      const a = randNonZero(-6, 6);
+      const b = randNonZero(-6, 6);
+      const c = randNonZero(-6, 6);
+      const d = randNonZero(-6, 6);
+      const t1 = a * b;
+      const t2 = c * d;
+      const useMinus = Math.random() < 0.5;
+      const answer = useMinus ? t1 - t2 : t1 + t2;
+      const expr = `${fmtLead(a)} × ${fmtNum(b)} ${useMinus ? '−' : '+'} ${fmtNum(c)} × ${fmtNum(d)}`;
+      const wrongs = [-answer, useMinus ? t1 + t2 : t1 - t2, a * (useMinus ? b - c * d : b + c * d)];
+      return { category: 'allops', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
+    }
+  }
+
   function genAbs() {
     const a = randNonZero(-12, 12);
     const answer = Math.abs(a);
@@ -143,7 +193,7 @@
     correct: 0,
     current: null,
     answered: false,
-    enabled: new Set(CATEGORIES.map(c => c.id)),
+    enabled: new Set(CATEGORIES.filter(c => !c.defaultOff).map(c => c.id)),
   };
 
   const els = {
