@@ -53,7 +53,8 @@
     { id: 'div2',      label: '除法（わり算）',           gen: genDiv2 },
     { id: 'mixed',     label: 'かっこを含む四則',         gen: genMixedParen },
     { id: 'allops',    label: '四則混合計算',             gen: genAllOps },
-    { id: 'abs',       label: '絶対値',                   gen: genAbs, defaultOff: true },
+    { id: 'power',     label: '累乗の計算',               gen: genPower },
+    { id: 'brace',     label: '中かっこを含む計算',       gen: genBrace },
     { id: 'maxof4',    label: '大小関係',                 gen: genMaxOf4 },
   ];
 
@@ -169,11 +170,47 @@
     }
   }
 
-  function genAbs() {
-    const a = randNonZero(-12, 12);
-    const answer = Math.abs(a);
-    const wrongs = [-answer, a, answer + 1, answer - 1];
-    return { category: 'abs', question: `|${a}| の値は？`, answer, choices: buildChoices(answer, wrongs) };
+  // 累乗の計算：(-n)^2 と -n^2 の違い（符号がどこにかかるか）が中1の最重要ポイント。
+  function genPower() {
+    const useParen = Math.random() < 0.5; // true: (-n)^2 形式 / false: -n^2 形式
+    const base = randInt(2, 9);
+    const exp = randInt(2, 3);
+
+    if (useParen) {
+      // (-n)^2 → 符号ごと累乗されるので必ず正（expが奇数なら負のまま）
+      const answer = Math.pow(-base, exp);
+      const expStr = exp === 2 ? '²' : '³';
+      const question = `(−${base})${expStr} = ?`;
+      const wrongs = [-answer, Math.pow(base, exp - 1) * base * (exp === 2 ? -1 : 1), -Math.pow(base, exp)];
+      return { category: 'power', question: `${question}`, answer, choices: buildChoices(answer, wrongs) };
+    } else {
+      // -n^2 → 累乗が先、符号は最後にかかるので常に負（expが偶数のとき特に間違えやすい）
+      const answer = -Math.pow(base, exp);
+      const expStr = exp === 2 ? '²' : '³';
+      const question = `−${base}${expStr} = ?`;
+      const wrongs = [Math.pow(base, exp), Math.pow(-base, exp), -Math.pow(base, exp - 1)];
+      return { category: 'power', question: `${question}`, answer, choices: buildChoices(answer, wrongs) };
+    }
+  }
+
+  // 中かっこを含む計算：( ) の中に ( ) がある二重構造。内側から計算する順序がポイント。
+  function genBrace() {
+    const a = randNonZero(-9, 9);
+    const b = randNonZero(-9, 9);
+    const c = randNonZero(-9, 9);
+    const innerMinus = Math.random() < 0.5;
+    const outerMinus = Math.random() < 0.5;
+
+    const inner = innerMinus ? b - c : b + c; // ( b ± c )
+    const answer = outerMinus ? a - inner : a + inner; // a ± { inner }
+
+    const innerStr = innerMinus ? `${b} − (${c})` : `${b} + (${c})`;
+    const question = `${fmtLead(a)} ${outerMinus ? '−' : '+'} {${innerStr}} = ?`;
+
+    // ありがちな誤り：中かっこを無視して符号を取り違える／内側だけ先に符号反転し忘れる
+    const wrongMisreadInner = outerMinus ? a - (b + c) : a + (b - c);
+    const wrongs = [-answer, wrongMisreadInner, outerMinus ? a + inner : a - inner];
+    return { category: 'brace', question, answer, choices: buildChoices(answer, wrongs) };
   }
 
   function genMaxOf4() {
