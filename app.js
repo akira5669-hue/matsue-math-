@@ -195,9 +195,7 @@
     const inner = innerMinus ? b - c : b + c;
     const answer = outerMinus ? a - inner : a + inner;
 
-    // カッコ内の数には符号を明示する：(+5) または (−5)
-    const cStr = c < 0 ? `(−${Math.abs(c)})` : `(+${c})`;
-    const innerStr = innerMinus ? `${b} − ${cStr}` : `${b} + ${cStr}`;
+    const innerStr = innerMinus ? `${b} − (${c})` : `${b} + (${c})`;
     const question = `${fmtLead(a)} ${outerMinus ? '−' : '+'} {${innerStr}} = ?`;
 
     const wrongMisreadInner = outerMinus ? a - (b + c) : a + (b - c);
