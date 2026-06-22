@@ -15,7 +15,6 @@
     return n < 0 ? `(${n})` : `${n}`;
   }
   function fmtLead(n) {
-    // 式の先頭に出す数（負の数でも括弧なしでよい）
     return `${n}`;
   }
   function shuffle(arr) {
@@ -58,7 +57,7 @@
     { id: 'maxof4',    label: '大小関係',                 gen: genMaxOf4 },
   ];
 
-  /* ---------- 問題生成関数（各カテゴリ） ---------- */
+  /* ---------- 問題生成関数 ---------- */
 
   function genAdd2() {
     const a = randNonZero(-9, 9);
@@ -108,10 +107,12 @@
     return { category: 'div2', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
   }
 
+  // カッコ内：演算子の直後の数（c）が正の数のみ → ++／+−／−+／−− を除外
+  // b（最初の数）は負でもOK。例：(-7 + 8) ✅、(7 + -8) ❌
   function genMixedParen() {
     const a = randNonZero(-6, 6);
     const b = randNonZero(-9, 9);
-    const c = randNonZero(-9, 9);
+    const c = randInt(1, 9);       // cは正の数のみ
     const useMinus = Math.random() < 0.5;
     const inner = useMinus ? b - c : b + c;
     const answer = a * inner;
@@ -121,14 +122,11 @@
     return { category: 'mixed', question: `${displayExpr} = ?`, answer, choices: buildChoices(answer, wrongs) };
   }
 
-  // 四則混合計算：加減と乗除が1つの式に混ざるパターン。
-  // 「乗除を先に計算する」ルールがそのまま正答・誤答の分かれ目になるよう設計する。
   function genAllOps() {
     const patterns = [3, 4];
     const pattern = patterns[randInt(0, patterns.length - 1)];
 
     if (pattern === 3) {
-      // a ± b×c  または  a ± b÷c
       const a = randNonZero(-9, 9);
       const useMul = Math.random() < 0.5;
       let b, c, term2, opSym2;
@@ -147,15 +145,12 @@
       const useMinus = Math.random() < 0.5;
       const answer = useMinus ? a - term2 : a + term2;
       const expr = `${fmtLead(a)} ${useMinus ? '−' : '+'} ${fmtNum(b)} ${opSym2} ${fmtNum(c)}`;
-
-      // ありがちな誤り：左から順に計算してしまう（加減を先にやる）
       const leftToRight = useMul
         ? (useMinus ? (a - b) * c : (a + b) * c)
         : (useMinus ? (a - b) / c : (a + b) / c);
       const wrongs = [-answer, useMinus ? a + term2 : a - term2, Math.round(leftToRight)];
       return { category: 'allops', question: `${expr} = ?`, answer, choices: buildChoices(answer, wrongs) };
     } else {
-      // a×b ± c×d  （乗法どうしの加減混合）
       const a = randNonZero(-6, 6);
       const b = randNonZero(-6, 6);
       const c = randNonZero(-6, 6);
@@ -170,30 +165,26 @@
     }
   }
 
-  // 累乗の計算：(-n)^2 と -n^2 の違い（符号がどこにかかるか）が中1の最重要ポイント。
   function genPower() {
-    const useParen = Math.random() < 0.5; // true: (-n)^2 形式 / false: -n^2 形式
+    const useParen = Math.random() < 0.5;
     const base = randInt(2, 9);
     const exp = randInt(2, 3);
 
     if (useParen) {
-      // (-n)^2 → 符号ごと累乗されるので必ず正（expが奇数なら負のまま）
       const answer = Math.pow(-base, exp);
       const expStr = exp === 2 ? '²' : '³';
       const question = `(−${base})${expStr} = ?`;
       const wrongs = [-answer, Math.pow(base, exp - 1) * base * (exp === 2 ? -1 : 1), -Math.pow(base, exp)];
-      return { category: 'power', question: `${question}`, answer, choices: buildChoices(answer, wrongs) };
+      return { category: 'power', question, answer, choices: buildChoices(answer, wrongs) };
     } else {
-      // -n^2 → 累乗が先、符号は最後にかかるので常に負（expが偶数のとき特に間違えやすい）
       const answer = -Math.pow(base, exp);
       const expStr = exp === 2 ? '²' : '³';
       const question = `−${base}${expStr} = ?`;
       const wrongs = [Math.pow(base, exp), Math.pow(-base, exp), -Math.pow(base, exp - 1)];
-      return { category: 'power', question: `${question}`, answer, choices: buildChoices(answer, wrongs) };
+      return { category: 'power', question, answer, choices: buildChoices(answer, wrongs) };
     }
   }
 
-  // 中かっこを含む計算：( ) の中に ( ) がある二重構造。内側から計算する順序がポイント。
   function genBrace() {
     const a = randNonZero(-9, 9);
     const b = randNonZero(-9, 9);
@@ -201,13 +192,12 @@
     const innerMinus = Math.random() < 0.5;
     const outerMinus = Math.random() < 0.5;
 
-    const inner = innerMinus ? b - c : b + c; // ( b ± c )
-    const answer = outerMinus ? a - inner : a + inner; // a ± { inner }
+    const inner = innerMinus ? b - c : b + c;
+    const answer = outerMinus ? a - inner : a + inner;
 
     const innerStr = innerMinus ? `${b} − (${c})` : `${b} + (${c})`;
     const question = `${fmtLead(a)} ${outerMinus ? '−' : '+'} {${innerStr}} = ?`;
 
-    // ありがちな誤り：中かっこを無視して符号を取り違える／内側だけ先に符号反転し忘れる
     const wrongMisreadInner = outerMinus ? a - (b + c) : a + (b - c);
     const wrongs = [-answer, wrongMisreadInner, outerMinus ? a + inner : a - inner];
     return { category: 'brace', question, answer, choices: buildChoices(answer, wrongs) };
@@ -377,7 +367,7 @@
 
     const STORAGE_KEY = 'seifukazu-quiz-install-dismissed';
     let dismissed = false;
-    try { dismissed = localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { /* ignore */ }
+    try { dismissed = localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { }
 
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -391,13 +381,10 @@
 
     let deferredPrompt = null;
 
-    function showBanner() {
-      banner.hidden = false;
-    }
-
+    function showBanner() { banner.hidden = false; }
     function hideBanner() {
       banner.hidden = true;
-      try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) { /* ignore */ }
+      try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) { }
     }
 
     if (isAndroid) {
