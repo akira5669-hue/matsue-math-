@@ -54,6 +54,7 @@
     { id: 'allops',    label: '四則混合計算',             gen: genAllOps },
     { id: 'power',     label: '累乗の計算',               gen: genPower },
     { id: 'brace',     label: '中かっこを含む計算',       gen: genBrace },
+    { id: 'literal',   label: '文字式の計算',             gen: genLiteral },
     { id: 'maxof4',    label: '大小関係',                 gen: genMaxOf4 },
   ];
 
@@ -195,12 +196,110 @@
     const inner = innerMinus ? b - c : b + c;
     const answer = outerMinus ? a - inner : a + inner;
 
-    const innerStr = innerMinus ? `${b} − (${c})` : `${b} + (${c})`;
+    // カッコ内の数には符号を明示する：(+5) または (−5)
+    const cStr = c < 0 ? `(−${Math.abs(c)})` : `(+${c})`;
+    const innerStr = innerMinus ? `${b} − ${cStr}` : `${b} + ${cStr}`;
     const question = `${fmtLead(a)} ${outerMinus ? '−' : '+'} {${innerStr}} = ?`;
 
     const wrongMisreadInner = outerMinus ? a - (b + c) : a + (b - c);
     const wrongs = [-answer, wrongMisreadInner, outerMinus ? a + inner : a - inner];
     return { category: 'brace', question, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  // 文字式の計算：同類項をまとめる（文字と数の項が混ざったもの）
+  function genLiteral() {
+    const letter = Math.random() < 0.5 ? 'a' : 'x';
+
+    // 文字の係数を2〜4項生成
+    const ca1 = randNonZero(-5, 5);
+    const ca2 = randNonZero(-5, 5);
+    const n1  = randNonZero(-9, 9);
+    const n2  = randNonZero(-9, 9);
+
+    const caSum = ca1 + ca2;   // 文字の係数の和
+    const nSum  = n1 + n2;     // 数の和
+
+    // 答えの文字式を生成（係数が0・1・-1の場合を考慮）
+    function fmtLiteral(coef, num) {
+      let str = '';
+      if (coef === 0 && num === 0) return '0';
+      if (coef !== 0) {
+        if (coef === 1) str += letter;
+        else if (coef === -1) str += `−${letter}`;
+        else if (coef < 0) str += `−${Math.abs(coef)}${letter}`;
+        else str += `${coef}${letter}`;
+      }
+      if (num !== 0) {
+        if (str === '') str += num < 0 ? `−${Math.abs(num)}` : `${num}`;
+        else str += num < 0 ? ` − ${Math.abs(num)}` : ` + ${num}`;
+      }
+      return str;
+    }
+
+    // 問題の式を生成
+    function termStr(coef, isFirst) {
+      if (coef === 0) return '';
+      if (isFirst) {
+        if (coef === 1) return letter;
+        if (coef === -1) return `−${letter}`;
+        if (coef < 0) return `−${Math.abs(coef)}${letter}`;
+        return `${coef}${letter}`;
+      }
+      if (coef === 1) return `+ ${letter}`;
+      if (coef === -1) return `− ${letter}`;
+      if (coef < 0) return `− ${Math.abs(coef)}${letter}`;
+      return `+ ${coef}${letter}`;
+    }
+    function numStr(num, isFirst) {
+      if (num === 0) return '';
+      if (isFirst) return num < 0 ? `−${Math.abs(num)}` : `${num}`;
+      return num < 0 ? `− ${Math.abs(num)}` : `+ ${num}`;
+    }
+
+    // 式の順番をランダムに並べ替え（文字→数→文字→数 または 文字→文字→数→数 など）
+    const terms = [
+      { type: 'lit', val: ca1 },
+      { type: 'lit', val: ca2 },
+      { type: 'num', val: n1 },
+      { type: 'num', val: n2 },
+    ];
+    // シャッフル
+    for (let i = terms.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [terms[i], terms[j]] = [terms[j], terms[i]];
+    }
+
+    let question = '';
+    terms.forEach((t, i) => {
+      const isFirst = i === 0;
+      if (t.type === 'lit') question += (question ? ' ' : '') + termStr(t.val, isFirst);
+      else question += (question ? ' ' : '') + numStr(t.val, isFirst);
+    });
+    question += ' を計算せよ。';
+
+    const answer = fmtLiteral(caSum, nSum);
+
+    // ありがちな誤答を生成
+    const wrong1 = fmtLiteral(caSum, -nSum);         // 数の符号を間違える
+    const wrong2 = fmtLiteral(-caSum, nSum);          // 文字の符号を間違える
+    const wrong3 = fmtLiteral(ca1 + ca2 + 1, nSum);  // 係数を1つ多く足す
+
+    const choiceSet = new Set([answer]);
+    const choices = [answer];
+    for (const w of [wrong1, wrong2, wrong3]) {
+      if (!choiceSet.has(w) && w !== '') { choiceSet.add(w); choices.push(w); }
+    }
+    // 足りない場合は係数を±1した選択肢を追加
+    let guard = 0;
+    while (choices.length < 4 && guard < 30) {
+      guard++;
+      const dc = randNonZero(-2, 2);
+      const dn = randNonZero(-2, 2);
+      const cand = fmtLiteral(caSum + dc, nSum + dn);
+      if (!choiceSet.has(cand) && cand !== '') { choiceSet.add(cand); choices.push(cand); }
+    }
+
+    return { category: 'literal', question, answer, choices: shuffle(choices) };
   }
 
   function genMaxOf4() {
