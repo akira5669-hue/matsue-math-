@@ -54,6 +54,9 @@
     { id: 'allops',    label: '四則混合計算',             gen: genAllOps },
     { id: 'power',     label: '累乗の計算',               gen: genPower },
     { id: 'brace',     label: '中かっこを含む計算',       gen: genBrace },
+    { id: 'literal',   label: '文字式の計算',             gen: genLiteral },
+    { id: 'notation',  label: '文字式の表し方',           gen: genNotation },
+    { id: 'subst',     label: '代入の計算',               gen: genSubst },
     { id: 'maxof4',    label: '大小関係',                 gen: genMaxOf4 },
   ];
 
@@ -195,12 +198,222 @@
     const inner = innerMinus ? b - c : b + c;
     const answer = outerMinus ? a - inner : a + inner;
 
-    const innerStr = innerMinus ? `${b} − (${c})` : `${b} + (${c})`;
+    // カッコ内の数には符号を明示する：(+5) または (−5)
+    const cStr = c < 0 ? `(−${Math.abs(c)})` : `(+${c})`;
+    const innerStr = innerMinus ? `${b} − ${cStr}` : `${b} + ${cStr}`;
     const question = `${fmtLead(a)} ${outerMinus ? '−' : '+'} {${innerStr}} = ?`;
 
     const wrongMisreadInner = outerMinus ? a - (b + c) : a + (b - c);
     const wrongs = [-answer, wrongMisreadInner, outerMinus ? a + inner : a - inner];
     return { category: 'brace', question, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  // 文字式の計算：同類項をまとめる（文字と数の項が混ざったもの）
+  function genLiteral() {
+    const letter = Math.random() < 0.5 ? 'a' : 'x';
+
+    // 文字の係数を2〜4項生成
+    const ca1 = randNonZero(-5, 5);
+    const ca2 = randNonZero(-5, 5);
+    const n1  = randNonZero(-9, 9);
+    const n2  = randNonZero(-9, 9);
+
+    const caSum = ca1 + ca2;   // 文字の係数の和
+    const nSum  = n1 + n2;     // 数の和
+
+    // 答えの文字式を生成（係数が0・1・-1の場合を考慮）
+    function fmtLiteral(coef, num) {
+      let str = '';
+      if (coef === 0 && num === 0) return '0';
+      if (coef !== 0) {
+        if (coef === 1) str += letter;
+        else if (coef === -1) str += `−${letter}`;
+        else if (coef < 0) str += `−${Math.abs(coef)}${letter}`;
+        else str += `${coef}${letter}`;
+      }
+      if (num !== 0) {
+        if (str === '') str += num < 0 ? `−${Math.abs(num)}` : `${num}`;
+        else str += num < 0 ? ` − ${Math.abs(num)}` : ` + ${num}`;
+      }
+      return str;
+    }
+
+    // 問題の式を生成
+    function termStr(coef, isFirst) {
+      if (coef === 0) return '';
+      if (isFirst) {
+        if (coef === 1) return letter;
+        if (coef === -1) return `−${letter}`;
+        if (coef < 0) return `−${Math.abs(coef)}${letter}`;
+        return `${coef}${letter}`;
+      }
+      if (coef === 1) return `+ ${letter}`;
+      if (coef === -1) return `− ${letter}`;
+      if (coef < 0) return `− ${Math.abs(coef)}${letter}`;
+      return `+ ${coef}${letter}`;
+    }
+    function numStr(num, isFirst) {
+      if (num === 0) return '';
+      if (isFirst) return num < 0 ? `−${Math.abs(num)}` : `${num}`;
+      return num < 0 ? `− ${Math.abs(num)}` : `+ ${num}`;
+    }
+
+    // 式の順番をランダムに並べ替え（文字→数→文字→数 または 文字→文字→数→数 など）
+    const terms = [
+      { type: 'lit', val: ca1 },
+      { type: 'lit', val: ca2 },
+      { type: 'num', val: n1 },
+      { type: 'num', val: n2 },
+    ];
+    // シャッフル
+    for (let i = terms.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [terms[i], terms[j]] = [terms[j], terms[i]];
+    }
+
+    let question = '';
+    terms.forEach((t, i) => {
+      const isFirst = i === 0;
+      if (t.type === 'lit') question += (question ? ' ' : '') + termStr(t.val, isFirst);
+      else question += (question ? ' ' : '') + numStr(t.val, isFirst);
+    });
+    question += ' を計算せよ。';
+
+    const answer = fmtLiteral(caSum, nSum);
+
+    // ありがちな誤答を生成
+    const wrong1 = fmtLiteral(caSum, -nSum);         // 数の符号を間違える
+    const wrong2 = fmtLiteral(-caSum, nSum);          // 文字の符号を間違える
+    const wrong3 = fmtLiteral(ca1 + ca2 + 1, nSum);  // 係数を1つ多く足す
+
+    const choiceSet = new Set([answer]);
+    const choices = [answer];
+    for (const w of [wrong1, wrong2, wrong3]) {
+      if (!choiceSet.has(w) && w !== '') { choiceSet.add(w); choices.push(w); }
+    }
+    // 足りない場合は係数を±1した選択肢を追加
+    let guard = 0;
+    while (choices.length < 4 && guard < 30) {
+      guard++;
+      const dc = randNonZero(-2, 2);
+      const dn = randNonZero(-2, 2);
+      const cand = fmtLiteral(caSum + dc, nSum + dn);
+      if (!choiceSet.has(cand) && cand !== '') { choiceSet.add(cand); choices.push(cand); }
+    }
+
+    return { category: 'literal', question, answer, choices: shuffle(choices) };
+  }
+
+  // 文字式の表し方：×や÷の省略ルールを問う
+  function genNotation() {
+    const letter = Math.random() < 0.5 ? 'a' : 'x';
+    const patterns = [
+      // 係数×文字 → 係数文字
+      () => {
+        const k = randInt(2, 9);
+        const q = `${letter} × ${k} を文字式で表すと？`;
+        const ans = `${k}${letter}`;
+        const w = [`${letter}${k}`, `${k} × ${letter}`, `${letter}+${k}`];
+        return { q, ans, w };
+      },
+      // 係数×文字² → 係数文字²
+      () => {
+        const k = randInt(2, 9);
+        const q = `${k} × ${letter} × ${letter} を文字式で表すと？`;
+        const ans = `${k}${letter}²`;
+        const w = [`${letter}² × ${k}`, `${k}${letter}`, `${k}²${letter}`];
+        return { q, ans, w };
+      },
+      // 文字÷係数 → 文字/係数
+      () => {
+        const k = randInt(2, 9);
+        const q = `${letter} ÷ ${k} を文字式で表すと？`;
+        const ans = `${letter}/${k}`;
+        const w = [`${k}/${letter}`, `${k}${letter}`, `${letter} × ${k}`];
+        return { q, ans, w };
+      },
+      // 数÷文字 → 数/文字
+      () => {
+        const k = randInt(2, 9);
+        const q = `${k} ÷ ${letter} を文字式で表すと？`;
+        const ans = `${k}/${letter}`;
+        const w = [`${letter}/${k}`, `${k}${letter}`, `${k} × ${letter}`];
+        return { q, ans, w };
+      },
+      // (文字+数)×係数 → 係数(文字+数)
+      () => {
+        const k = randInt(2, 6);
+        const n = randInt(1, 9);
+        const q = `(${letter} + ${n}) × ${k} を文字式で表すと？`;
+        const ans = `${k}(${letter} + ${n})`;
+        const w = [`(${letter} + ${n})${k}`, `${k}${letter} + ${n}`, `${k}${letter} + ${k}${n}`];
+        return { q, ans, w };
+      },
+      // 係数×文字+定数（×の省略のみ）
+      () => {
+        const a = randInt(2, 5);
+        const b = randInt(1, 9);
+        const q = `${a} × ${letter} + ${b} を文字式で表すと？`;
+        const ans = `${a}${letter} + ${b}`;
+        const w = [`${letter}${a} + ${b}`, `${a}${letter}${b}`, `${a}(${letter} + ${b})`];
+        return { q, ans, w };
+      },
+    ];
+
+    const p = patterns[randInt(0, patterns.length - 1)]();
+    const choiceSet = new Set([p.ans]);
+    const choices = [p.ans];
+    for (const w of p.w) {
+      if (!choiceSet.has(w)) { choiceSet.add(w); choices.push(w); }
+    }
+    while (choices.length < 4) {
+      const cand = `${randInt(2,9)}${letter}`;
+      if (!choiceSet.has(cand)) { choiceSet.add(cand); choices.push(cand); }
+    }
+    return { category: 'notation', question: p.q, answer: p.ans, choices: shuffle(choices) };
+  }
+
+  // 代入の計算：a または x に値を代入して式の値を求める
+  function genSubst() {
+    const letter = Math.random() < 0.5 ? 'a' : 'x';
+    const val = randNonZero(-5, 5);
+
+    const patterns = [
+      // 係数×文字+定数
+      () => {
+        const a = randNonZero(-4, 4);
+        const b = randNonZero(-9, 9);
+        const answer = a * val + b;
+        const bStr = b < 0 ? ` − ${Math.abs(b)}` : ` + ${b}`;
+        const q = `${letter} = ${val} のとき、${a === 1 ? '' : a === -1 ? '−' : a}${letter}${bStr} の値を求めよ。`;
+        return { q, answer };
+      },
+      // 係数×文字²+定数
+      () => {
+        const a = randNonZero(-3, 3);
+        const b = randNonZero(-9, 9);
+        const answer = a * val * val + b;
+        const bStr = b < 0 ? ` − ${Math.abs(b)}` : ` + ${b}`;
+        const aStr = a === 1 ? '' : a === -1 ? '−' : `${a}`;
+        const q = `${letter} = ${val} のとき、${aStr}${letter}² ${bStr.trim()} の値を求めよ。`;
+        return { q, answer };
+      },
+      // 2つの文字式の計算（同じ文字）
+      () => {
+        const a = randNonZero(-4, 4);
+        const b = randNonZero(-4, 4);
+        const answer = a * val + b * val;
+        const bStr = b < 0 ? ` − ${Math.abs(b)}${letter}` : ` + ${b}${letter}`;
+        const aStr = a === 1 ? letter : a === -1 ? `−${letter}` : `${a}${letter}`;
+        const q = `${letter} = ${val} のとき、${aStr}${bStr} の値を求めよ。`;
+        return { q, answer };
+      },
+    ];
+
+    const p = patterns[randInt(0, patterns.length - 1)]();
+    const answer = p.answer;
+    const wrongs = [-answer, answer + val, answer - val, answer * 2].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
+    return { category: 'subst', question: p.q, answer, choices: buildChoices(answer, wrongs) };
   }
 
   function genMaxOf4() {
