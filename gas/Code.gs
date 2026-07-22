@@ -100,7 +100,7 @@ function handleRegister_(ctx, body) {
   var id = String(body.id || '').trim();
   var password = String(body.password || '');
   if (!id || !password) return { ok: false, error: 'missing_fields' };
-  if (password.length < 4) return { ok: false, error: 'weak_password' };
+  if (!/^\d{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
 
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };

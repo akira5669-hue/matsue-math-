@@ -82,6 +82,31 @@ h1 {
   font-size: 18px;
   font-weight: 900;
 }
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.login-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  cursor: pointer;
+}
+.login-tab.is-active {
+  background: var(--c-ink);
+  color: #fff;
+}
 .login-hint {
   margin: 0 0 16px;
   font-size: 13px;

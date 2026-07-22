@@ -39,26 +39,40 @@
   </header>
 
   <section class="login-card" id="loginCard">
-    <h2 class="login-title">ログイン</h2>
-    <p class="login-hint" id="loginHint">先生に教えてもらったIDを入力してください。</p>
+    <div class="login-tabs" role="tablist">
+      <button type="button" class="login-tab is-active" id="tabLogin" role="tab" aria-selected="true">ログイン</button>
+      <button type="button" class="login-tab" id="tabRegister" role="tab" aria-selected="false">新規登録</button>
+    </div>
 
     <form id="loginForm" class="login-form">
+      <p class="login-hint">先生に教えてもらったIDと、設定したパスワードを入力してください。</p>
+
       <label class="login-label" for="loginId">生徒ID</label>
       <input class="login-input" id="loginId" name="id" type="text" autocomplete="username" required />
 
-      <div id="loginPasswordGroup" hidden>
-        <label class="login-label" for="loginPassword" id="loginPasswordLabel">パスワード</label>
-        <input class="login-input" id="loginPassword" name="password" type="password" autocomplete="current-password" />
-      </div>
-
-      <div id="loginPasswordConfirmGroup" hidden>
-        <label class="login-label" for="loginPasswordConfirm">パスワード（確認）</label>
-        <input class="login-input" id="loginPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" />
-      </div>
+      <label class="login-label" for="loginPassword">パスワード（数字4桁）</label>
+      <input class="login-input" id="loginPassword" name="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" required />
 
       <p class="login-error" id="loginError" hidden></p>
 
-      <button class="primary-btn" id="loginSubmit" type="submit">次へ</button>
+      <button class="primary-btn" id="loginSubmit" type="submit">ログイン</button>
+    </form>
+
+    <form id="registerForm" class="login-form" hidden>
+      <p class="login-hint">先生に教えてもらったIDと、これから使うパスワード（数字4桁）を決めて入力してください。</p>
+
+      <label class="login-label" for="registerId">生徒ID</label>
+      <input class="login-input" id="registerId" name="id" type="text" autocomplete="username" required />
+
+      <label class="login-label" for="registerPassword">新しいパスワード（数字4桁）</label>
+      <input class="login-input" id="registerPassword" name="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required />
+
+      <label class="login-label" for="registerPasswordConfirm">パスワード（確認）</label>
+      <input class="login-input" id="registerPasswordConfirm" name="passwordConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required />
+
+      <p class="login-error" id="registerError" hidden></p>
+
+      <button class="primary-btn" id="registerSubmit" type="submit">新規登録してはじめる</button>
     </form>
   </section>
 

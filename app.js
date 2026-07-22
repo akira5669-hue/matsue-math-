@@ -667,16 +667,19 @@
     numberlineTicks: document.querySelector('.nl-ticks'),
 
     loginCard: document.getElementById('loginCard'),
+    tabLogin: document.getElementById('tabLogin'),
+    tabRegister: document.getElementById('tabRegister'),
     loginForm: document.getElementById('loginForm'),
     loginId: document.getElementById('loginId'),
-    loginHint: document.getElementById('loginHint'),
-    loginPasswordGroup: document.getElementById('loginPasswordGroup'),
-    loginPasswordLabel: document.getElementById('loginPasswordLabel'),
     loginPassword: document.getElementById('loginPassword'),
-    loginPasswordConfirmGroup: document.getElementById('loginPasswordConfirmGroup'),
-    loginPasswordConfirm: document.getElementById('loginPasswordConfirm'),
     loginError: document.getElementById('loginError'),
     loginSubmit: document.getElementById('loginSubmit'),
+    registerForm: document.getElementById('registerForm'),
+    registerId: document.getElementById('registerId'),
+    registerPassword: document.getElementById('registerPassword'),
+    registerPasswordConfirm: document.getElementById('registerPasswordConfirm'),
+    registerError: document.getElementById('registerError'),
+    registerSubmit: document.getElementById('registerSubmit'),
     appMain: document.getElementById('appMain'),
     userName: document.getElementById('userName'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -803,26 +806,42 @@
 
   /* ---------- ログイン画面 ---------- */
 
-  var loginStage = 'id'; // 'id' -> 'login' | 'register'
+  function digitsOnly(input) {
+    input.addEventListener('input', function () {
+      input.value = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+    });
+  }
+  digitsOnly(els.loginPassword);
+  digitsOnly(els.registerPassword);
+  digitsOnly(els.registerPasswordConfirm);
 
-  function showLoginError(msg) {
-    els.loginError.textContent = msg;
-    els.loginError.hidden = false;
+  function showFieldError(el, msg) {
+    el.textContent = msg;
+    el.hidden = false;
   }
-  function hideLoginError() {
-    els.loginError.hidden = true;
-    els.loginError.textContent = '';
+  function hideFieldError(el) {
+    el.hidden = true;
+    el.textContent = '';
   }
-  function resetLoginForm() {
-    loginStage = 'id';
-    els.loginId.disabled = false;
-    els.loginPasswordGroup.hidden = true;
-    els.loginPasswordConfirmGroup.hidden = true;
-    els.loginPassword.value = '';
-    els.loginPasswordConfirm.value = '';
-    els.loginHint.textContent = '先生に教えてもらったIDを入力してください。';
-    els.loginSubmit.textContent = '次へ';
-    hideLoginError();
+
+  function switchTab(tab) {
+    var toLogin = tab === 'login';
+    els.tabLogin.classList.toggle('is-active', toLogin);
+    els.tabRegister.classList.toggle('is-active', !toLogin);
+    els.tabLogin.setAttribute('aria-selected', String(toLogin));
+    els.tabRegister.setAttribute('aria-selected', String(!toLogin));
+    els.loginForm.hidden = !toLogin;
+    els.registerForm.hidden = toLogin;
+    hideFieldError(els.loginError);
+    hideFieldError(els.registerError);
+  }
+
+  function resetLoginForms() {
+    els.loginForm.reset();
+    els.registerForm.reset();
+    hideFieldError(els.loginError);
+    hideFieldError(els.registerError);
+    switchTab('login');
   }
 
   function showApp(name) {
@@ -838,80 +857,57 @@
 
   function handleLoginSubmit(ev) {
     ev.preventDefault();
-    hideLoginError();
+    hideFieldError(els.loginError);
     var id = els.loginId.value.trim();
+    var password = els.loginPassword.value;
+    if (!id || !password) return;
+
+    els.loginSubmit.disabled = true;
+    apiPost('login', { id: id, password: password }).then(function (res) {
+      els.loginSubmit.disabled = false;
+      if (!res.ok) {
+        var msg = '通信に失敗しました。もう一度お試しください。';
+        if (res.error === 'not_found') msg = 'そのIDは登録されていません。先生に確認してください。';
+        else if (res.error === 'no_password') msg = 'まだパスワードが設定されていません。「新規登録」から設定してください。';
+        else if (res.error === 'wrong_password') msg = 'パスワードが違います。';
+        showFieldError(els.loginError, msg);
+        return;
+      }
+      saveSession({ id: id, name: res.name });
+      showApp(res.name);
+    }).catch(function () {
+      els.loginSubmit.disabled = false;
+      showFieldError(els.loginError, '通信に失敗しました。もう一度お試しください。');
+    });
+  }
+
+  function handleRegisterSubmit(ev) {
+    ev.preventDefault();
+    hideFieldError(els.registerError);
+    var id = els.registerId.value.trim();
+    var pw = els.registerPassword.value;
+    var pwConfirm = els.registerPasswordConfirm.value;
     if (!id) return;
+    if (!/^\d{4}$/.test(pw)) { showFieldError(els.registerError, 'パスワードは数字4桁で入力してください。'); return; }
+    if (pw !== pwConfirm) { showFieldError(els.registerError, 'パスワードが一致しません。'); return; }
 
-    if (loginStage === 'id') {
-      els.loginSubmit.disabled = true;
-      apiPost('checkId', { id: id }).then(function (res) {
-        els.loginSubmit.disabled = false;
-        if (!res.ok) { showLoginError('通信に失敗しました。もう一度お試しください。'); return; }
-        if (!res.found) { showLoginError('そのIDは登録されていません。先生に確認してください。'); return; }
-
-        els.loginId.disabled = true;
-        if (res.hasPassword) {
-          loginStage = 'login';
-          els.loginPasswordGroup.hidden = false;
-          els.loginPasswordLabel.textContent = 'パスワード';
-          els.loginHint.textContent = `${res.name} さん、パスワードを入力してください。`;
-          els.loginSubmit.textContent = 'ログイン';
-          els.loginPassword.focus();
-        } else {
-          loginStage = 'register';
-          els.loginPasswordGroup.hidden = false;
-          els.loginPasswordConfirmGroup.hidden = false;
-          els.loginPasswordLabel.textContent = '新しいパスワード（4文字以上）';
-          els.loginHint.textContent = `${res.name} さん、初めてのログインですね。パスワードを設定してください。`;
-          els.loginSubmit.textContent = '登録してはじめる';
-          els.loginPassword.focus();
-        }
-      }).catch(function () {
-        els.loginSubmit.disabled = false;
-        showLoginError('通信に失敗しました。もう一度お試しください。');
-      });
-      return;
-    }
-
-    if (loginStage === 'login') {
-      var password = els.loginPassword.value;
-      if (!password) return;
-      els.loginSubmit.disabled = true;
-      apiPost('login', { id: id, password: password }).then(function (res) {
-        els.loginSubmit.disabled = false;
-        if (!res.ok) {
-          showLoginError(res.error === 'wrong_password' ? 'パスワードが違います。' : '通信に失敗しました。もう一度お試しください。');
-          return;
-        }
-        saveSession({ id: id, name: res.name });
-        showApp(res.name);
-      }).catch(function () {
-        els.loginSubmit.disabled = false;
-        showLoginError('通信に失敗しました。もう一度お試しください。');
-      });
-      return;
-    }
-
-    if (loginStage === 'register') {
-      var pw = els.loginPassword.value;
-      var pwConfirm = els.loginPasswordConfirm.value;
-      if (pw.length < 4) { showLoginError('パスワードは4文字以上で設定してください。'); return; }
-      if (pw !== pwConfirm) { showLoginError('パスワードが一致しません。'); return; }
-      els.loginSubmit.disabled = true;
-      apiPost('register', { id: id, password: pw }).then(function (res) {
-        els.loginSubmit.disabled = false;
-        if (!res.ok) {
-          showLoginError('登録に失敗しました。もう一度お試しください。');
-          return;
-        }
-        saveSession({ id: id, name: res.name });
-        showApp(res.name);
-      }).catch(function () {
-        els.loginSubmit.disabled = false;
-        showLoginError('通信に失敗しました。もう一度お試しください。');
-      });
-      return;
-    }
+    els.registerSubmit.disabled = true;
+    apiPost('register', { id: id, password: pw }).then(function (res) {
+      els.registerSubmit.disabled = false;
+      if (!res.ok) {
+        var msg = '登録に失敗しました。もう一度お試しください。';
+        if (res.error === 'not_found') msg = 'そのIDは登録されていません。先生に確認してください。';
+        else if (res.error === 'already_registered') msg = 'そのIDはすでに登録済みです。「ログイン」から入ってください。';
+        else if (res.error === 'invalid_password') msg = 'パスワードは数字4桁で入力してください。';
+        showFieldError(els.registerError, msg);
+        return;
+      }
+      saveSession({ id: id, name: res.name });
+      showApp(res.name);
+    }).catch(function () {
+      els.registerSubmit.disabled = false;
+      showFieldError(els.registerError, '通信に失敗しました。もう一度お試しください。');
+    });
   }
 
   function handleLogout() {
@@ -919,8 +915,7 @@
     els.appMain.hidden = true;
     els.historyPanel.hidden = true;
     els.loginCard.hidden = false;
-    els.loginId.value = '';
-    resetLoginForm();
+    resetLoginForms();
     els.loginId.focus();
   }
 
@@ -971,6 +966,9 @@
   /* ---------- 初期化 ---------- */
 
   els.loginForm.addEventListener('submit', handleLoginSubmit);
+  els.registerForm.addEventListener('submit', handleRegisterSubmit);
+  els.tabLogin.addEventListener('click', () => switchTab('login'));
+  els.tabRegister.addEventListener('click', () => switchTab('register'));
   els.logoutBtn.addEventListener('click', handleLogout);
   els.historyToggle.addEventListener('click', toggleHistory);
 
@@ -978,7 +976,7 @@
   if (existingSession) {
     showApp(existingSession.name);
   } else {
-    resetLoginForm();
+    resetLoginForms();
   }
 
   /* ---------- PWAインストール案内 ---------- */
