@@ -69,6 +69,61 @@
     return shuffle(choices).map(String);
   }
 
+  // 文字列（分数など）の選択肢を組み立てる版
+  function buildChoicesFromSet(answerStr, wrongCandidates) {
+    const set = new Set([answerStr]);
+    const choices = [answerStr];
+    for (const w of wrongCandidates) {
+      if (choices.length >= 4) break;
+      if (w && !set.has(w)) { set.add(w); choices.push(w); }
+    }
+    let guard = 0;
+    while (choices.length < 4 && guard < 30) {
+      guard++;
+      const m = answerStr.match(/^(-?\d+)\/(\d+)$/);
+      let cand;
+      if (m) {
+        const dn = parseInt(m[2], 10);
+        const nn = parseInt(m[1], 10) + randNonZero(-2, 2);
+        cand = dn === 0 ? null : `${nn}/${dn}`;
+      } else {
+        const val = parseInt(answerStr, 10) + randNonZero(-3, 3);
+        cand = `${val}`;
+      }
+      if (cand && !set.has(cand)) { set.add(cand); choices.push(cand); }
+    }
+    return shuffle(choices);
+  }
+
+  /* ---------- 分数ユーティリティ ---------- */
+
+  function gcd(a, b) {
+    a = Math.abs(a); b = Math.abs(b);
+    while (b) { const t = b; b = a % b; a = t; }
+    return a || 1;
+  }
+  function lcm(a, b) {
+    return Math.abs(a * b) / gcd(a, b);
+  }
+  function reduceFrac(n, d) {
+    if (d < 0) { n = -n; d = -d; }
+    const g = gcd(n, d);
+    return [n / g, d / g];
+  }
+  function fracToStr(n, d) {
+    const [rn, rd] = reduceFrac(n, d);
+    return rd === 1 ? `${rn}` : `${rn}/${rd}`;
+  }
+  // 分母>=2、0より大きい既約な真分数を作る
+  function randFrac(maxDen) {
+    let d, n;
+    do {
+      d = randInt(2, maxDen);
+      n = randInt(1, d - 1);
+    } while (gcd(n, d) !== 1);
+    return [n, d];
+  }
+
   /* ---------- 出題範囲の定義 ---------- */
 
   const CATEGORIES = [
@@ -85,6 +140,12 @@
     { id: 'notation',  label: '文字式の表し方',           gen: genNotation },
     { id: 'subst',     label: '代入の計算',               gen: genSubst },
     { id: 'maxof4',    label: '大小関係',                 gen: genMaxOf4 },
+
+    { id: 'round4',      label: '四捨五入（小4）',                     gen: genRound4,      defaultOff: true },
+    { id: 'fourOps4',    label: '四則計算（小4）',                     gen: genFourOps4,    defaultOff: true },
+    { id: 'fracAddSub5', label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5, defaultOff: true },
+    { id: 'decDiv5',     label: '小数のわり算（小5）',                 gen: genDecDiv5,     defaultOff: true },
+    { id: 'fracMulDiv6', label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6, defaultOff: true },
   ];
 
   /* ---------- 問題生成関数 ---------- */
@@ -451,6 +512,133 @@
     const answer = askMax ? Math.max(...arr) : Math.min(...arr);
     const label = askMax ? '次の4つの数のうち、最も大きい数はどれか。' : '次の4つの数のうち、最も小さい数はどれか。';
     return { category: 'maxof4', question: label, answer, choices: shuffle(arr).map(String), isOrdering: true };
+  }
+
+  // 四捨五入（小4）：十の位／百の位／千の位で概数にする
+  function genRound4() {
+    const placeOptions = [
+      { name: '十', pow: 1 },
+      { name: '百', pow: 2 },
+      { name: '千', pow: 3 },
+    ];
+    const p = placeOptions[randInt(0, placeOptions.length - 1)];
+    const digits = p.pow + randInt(1, 2);
+    const min = Math.pow(10, digits - 1);
+    const max = Math.pow(10, digits) - 1;
+    const num = randInt(min, max);
+    const unit = Math.pow(10, p.pow);
+    const answer = Math.round(num / unit) * unit;
+    const question = `${num} を${p.name}の位で四捨五入すると？`;
+    const wrongs = [
+      Math.floor(num / unit) * unit,
+      Math.ceil(num / unit) * unit,
+      answer + unit,
+      answer - unit,
+    ];
+    return { category: 'round4', question, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
+  function genFourOps4() {
+    const pattern = randInt(0, 3);
+    let question, answer, wrongs;
+
+    if (pattern === 0) {
+      const b = randInt(2, 9), c = randInt(2, 9), a = randInt(1, 50);
+      answer = a + b * c;
+      question = `${a} + ${b} × ${c} = ?`;
+      wrongs = [(a + b) * c, a + b + c, a * b + c];
+    } else if (pattern === 1) {
+      const b = randInt(2, 9), c = randInt(2, 9);
+      const bc = b * c;
+      const a = bc + randInt(1, 30);
+      answer = a - bc;
+      question = `${a} − ${b} × ${c} = ?`;
+      wrongs = [(a - b) * c, a - b - c, a - (b + c)];
+    } else if (pattern === 2) {
+      const c = randInt(2, 9), q = randInt(2, 9), b = c * q;
+      const a = randInt(1, 50);
+      answer = a + q;
+      question = `${a} + ${b} ÷ ${c} = ?`;
+      wrongs = [(a + b) / c, a + b - c, a * q];
+    } else {
+      const a = randInt(2, 20), b = randInt(2, 20), c = randInt(2, 9);
+      const useMinus = a > b && Math.random() < 0.5;
+      const inner = useMinus ? a - b : a + b;
+      answer = inner * c;
+      question = `(${a} ${useMinus ? '−' : '+'} ${b}) × ${c} = ?`;
+      const wrongMisreadNoParen = useMinus ? a - b * c : a + b * c;
+      wrongs = [wrongMisreadNoParen, inner + c, a * c + (useMinus ? -b : b)];
+    }
+
+    wrongs = wrongs.map(Math.round);
+    return { category: 'fourOps4', question, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  // 分数のたし算・ひき算（通分・約分あり、小5）
+  function genFracAddSub5() {
+    let [n1, d1] = randFrac(9);
+    let [n2, d2] = randFrac(9);
+    while (d2 === d1) { [n2, d2] = randFrac(9); }
+
+    const isAdd = Math.random() < 0.5;
+    const L = lcm(d1, d2);
+    let N1 = n1 * (L / d1);
+    let N2 = n2 * (L / d2);
+
+    if (!isAdd && N1 < N2) {
+      [n1, d1, n2, d2] = [n2, d2, n1, d1];
+      N1 = n1 * (L / d1);
+      N2 = n2 * (L / d2);
+    }
+
+    const numAns = isAdd ? N1 + N2 : N1 - N2;
+    const denAns = L;
+    const answer = fracToStr(numAns, denAns);
+    const opSym = isAdd ? '+' : '−';
+    const question = `${n1}/${d1} ${opSym} ${n2}/${d2} = ?`;
+
+    const [, rd] = reduceFrac(numAns, denAns);
+    const wrongUnreduced = denAns === rd ? null : `${numAns}/${denAns}`;
+    const wrongAddDenom = `${n1 + n2}/${d1 + d2}`;
+    const wrongNumOnly = `${n1 + n2}/${L}`;
+    const candidates = [wrongUnreduced, wrongAddDenom, wrongNumOnly].filter(Boolean);
+
+    return { category: 'fracAddSub5', question, answer, choices: buildChoicesFromSet(answer, candidates) };
+  }
+
+  // 小数のわり算（小5、商は整数になる）
+  function genDecDiv5() {
+    let divisorTenths;
+    do { divisorTenths = randInt(2, 98); } while (divisorTenths % 10 === 0);
+    const divisor = (divisorTenths / 10).toFixed(1);
+    const quotient = randInt(2, 12);
+    const dividend = ((divisorTenths * quotient) / 10).toFixed(1);
+    const answer = quotient;
+    const question = `${dividend} ÷ ${divisor} = ?`;
+    const wrongs = [quotient + 1, quotient - 1, quotient * 10, Math.max(1, quotient - 2)];
+    return { category: 'decDiv5', question, answer, choices: buildChoices(answer, wrongs) };
+  }
+
+  // 分数のかけ算・わり算（小6）
+  function genFracMulDiv6() {
+    const [n1, d1] = randFrac(9);
+    const [n2, d2] = randFrac(9);
+    const isMul = Math.random() < 0.5;
+
+    const numAns = isMul ? n1 * n2 : n1 * d2;
+    const denAns = isMul ? d1 * d2 : d1 * n2;
+    const answer = fracToStr(numAns, denAns);
+    const opSym = isMul ? '×' : '÷';
+    const question = `${n1}/${d1} ${opSym} ${n2}/${d2} = ?`;
+
+    const [, rd] = reduceFrac(numAns, denAns);
+    const wrongUnreduced = denAns === rd ? null : `${numAns}/${denAns}`;
+    const wrongFlippedOp = isMul ? `${n1 * d2}/${d1 * n2}` : `${n1 * n2}/${d1 * d2}`;
+    const wrongAddInstead = `${n1 * d2 + n2 * d1}/${d1 * d2}`;
+    const candidates = [wrongUnreduced, wrongFlippedOp, wrongAddInstead].filter(Boolean);
+
+    return { category: 'fracMulDiv6', question, answer, choices: buildChoicesFromSet(answer, candidates) };
   }
 
   /* ---------- アプリ状態 ---------- */
