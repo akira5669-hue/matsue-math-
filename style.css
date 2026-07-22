@@ -69,6 +69,97 @@ h1 {
 .nl-tick-neg { stroke: var(--c-negative); opacity: 0.55; }
 .nl-tick-pos { stroke: var(--c-positive); opacity: 0.55; }
 
+/* Login */
+.login-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 18px;
+}
+.login-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 900;
+}
+.login-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--c-ink-soft);
+}
+.login-form { display: flex; flex-direction: column; gap: 6px; }
+.login-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  margin-top: 8px;
+}
+.login-input {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  padding: 11px 12px;
+  border: 1.5px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+}
+.login-input:focus { outline: none; border-color: var(--c-ink-soft); }
+.login-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-incorrect);
+}
+.login-form .primary-btn { margin-top: 16px; }
+
+/* User bar */
+.user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.user-greeting { margin: 0; font-size: 14px; font-weight: 700; }
+.user-bar-actions { display: flex; gap: 8px; }
+
+/* History panel */
+.history-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.history-title { margin: 0 0 8px; font-size: 15px; font-weight: 900; }
+.history-summary { margin: 0 0 14px; font-size: 13px; color: var(--c-ink-soft); }
+.history-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.history-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--c-line);
+}
+.history-cat-row .rate { font-family: var(--font-mono); font-weight: 700; }
+.history-recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--c-ink-soft);
+  padding: 4px 0;
+}
+.history-recent-item .mark.ok { color: var(--c-correct); font-weight: 700; }
+.history-recent-item .mark.ng { color: var(--c-incorrect); font-weight: 700; }
+
 /* Stats bar */
 .stats-bar {
   display: flex;

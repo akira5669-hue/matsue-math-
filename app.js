@@ -1,6 +1,33 @@
 (function () {
   'use strict';
 
+  /* ---------- ログインAPI ---------- */
+
+  var API_URL = 'https://script.google.com/macros/s/AKfycbwqg5Dt1ZjD7FxTlQeVCEKcHf2jg6QHwr0cWPCTC0VAtDjiOVL1spjm1EjmTe5gh3rf9w/exec';
+  var SESSION_KEY = 'matsue-math-session';
+
+  function apiPost(action, payload) {
+    var body = Object.assign({ action: action }, payload || {});
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    }).then(function (res) { return res.json(); });
+  }
+
+  function loadSession() {
+    try {
+      var raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function saveSession(session) {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) { }
+  }
+  function clearSession() {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) { }
+  }
+
   /* ---------- 基本ユーティリティ ---------- */
 
   function randInt(min, max) {
@@ -450,6 +477,26 @@
     settingsPanel: document.getElementById('settingsPanel'),
     settingsGrid: document.getElementById('settingsGrid'),
     numberlineTicks: document.querySelector('.nl-ticks'),
+
+    loginCard: document.getElementById('loginCard'),
+    loginForm: document.getElementById('loginForm'),
+    loginId: document.getElementById('loginId'),
+    loginHint: document.getElementById('loginHint'),
+    loginPasswordGroup: document.getElementById('loginPasswordGroup'),
+    loginPasswordLabel: document.getElementById('loginPasswordLabel'),
+    loginPassword: document.getElementById('loginPassword'),
+    loginPasswordConfirmGroup: document.getElementById('loginPasswordConfirmGroup'),
+    loginPasswordConfirm: document.getElementById('loginPasswordConfirm'),
+    loginError: document.getElementById('loginError'),
+    loginSubmit: document.getElementById('loginSubmit'),
+    appMain: document.getElementById('appMain'),
+    userName: document.getElementById('userName'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    historyToggle: document.getElementById('historyToggle'),
+    historyPanel: document.getElementById('historyPanel'),
+    historySummary: document.getElementById('historySummary'),
+    historyCats: document.getElementById('historyCats'),
+    historyRecent: document.getElementById('historyRecent'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -542,6 +589,11 @@
 
     els.nextBtn.disabled = false;
     updateStats();
+
+    var session = loadSession();
+    if (session) {
+      apiPost('log', { id: session.id, category: state.current.category, correct: isCorrect }).catch(function () { });
+    }
   }
 
   function resetStats() {
@@ -561,13 +613,185 @@
     els.settingsToggle.setAttribute('aria-expanded', String(isHidden));
   });
 
+  /* ---------- ログイン画面 ---------- */
+
+  var loginStage = 'id'; // 'id' -> 'login' | 'register'
+
+  function showLoginError(msg) {
+    els.loginError.textContent = msg;
+    els.loginError.hidden = false;
+  }
+  function hideLoginError() {
+    els.loginError.hidden = true;
+    els.loginError.textContent = '';
+  }
+  function resetLoginForm() {
+    loginStage = 'id';
+    els.loginId.disabled = false;
+    els.loginPasswordGroup.hidden = true;
+    els.loginPasswordConfirmGroup.hidden = true;
+    els.loginPassword.value = '';
+    els.loginPasswordConfirm.value = '';
+    els.loginHint.textContent = '先生に教えてもらったIDを入力してください。';
+    els.loginSubmit.textContent = '次へ';
+    hideLoginError();
+  }
+
+  function showApp(name) {
+    els.loginCard.hidden = true;
+    els.appMain.hidden = false;
+    els.userName.textContent = name;
+    drawNumberline();
+    renderSettings();
+    updateStats();
+    nextQuestion();
+    initInstallBanner();
+  }
+
+  function handleLoginSubmit(ev) {
+    ev.preventDefault();
+    hideLoginError();
+    var id = els.loginId.value.trim();
+    if (!id) return;
+
+    if (loginStage === 'id') {
+      els.loginSubmit.disabled = true;
+      apiPost('checkId', { id: id }).then(function (res) {
+        els.loginSubmit.disabled = false;
+        if (!res.ok) { showLoginError('通信に失敗しました。もう一度お試しください。'); return; }
+        if (!res.found) { showLoginError('そのIDは登録されていません。先生に確認してください。'); return; }
+
+        els.loginId.disabled = true;
+        if (res.hasPassword) {
+          loginStage = 'login';
+          els.loginPasswordGroup.hidden = false;
+          els.loginPasswordLabel.textContent = 'パスワード';
+          els.loginHint.textContent = `${res.name} さん、パスワードを入力してください。`;
+          els.loginSubmit.textContent = 'ログイン';
+          els.loginPassword.focus();
+        } else {
+          loginStage = 'register';
+          els.loginPasswordGroup.hidden = false;
+          els.loginPasswordConfirmGroup.hidden = false;
+          els.loginPasswordLabel.textContent = '新しいパスワード（4文字以上）';
+          els.loginHint.textContent = `${res.name} さん、初めてのログインですね。パスワードを設定してください。`;
+          els.loginSubmit.textContent = '登録してはじめる';
+          els.loginPassword.focus();
+        }
+      }).catch(function () {
+        els.loginSubmit.disabled = false;
+        showLoginError('通信に失敗しました。もう一度お試しください。');
+      });
+      return;
+    }
+
+    if (loginStage === 'login') {
+      var password = els.loginPassword.value;
+      if (!password) return;
+      els.loginSubmit.disabled = true;
+      apiPost('login', { id: id, password: password }).then(function (res) {
+        els.loginSubmit.disabled = false;
+        if (!res.ok) {
+          showLoginError(res.error === 'wrong_password' ? 'パスワードが違います。' : '通信に失敗しました。もう一度お試しください。');
+          return;
+        }
+        saveSession({ id: id, name: res.name });
+        showApp(res.name);
+      }).catch(function () {
+        els.loginSubmit.disabled = false;
+        showLoginError('通信に失敗しました。もう一度お試しください。');
+      });
+      return;
+    }
+
+    if (loginStage === 'register') {
+      var pw = els.loginPassword.value;
+      var pwConfirm = els.loginPasswordConfirm.value;
+      if (pw.length < 4) { showLoginError('パスワードは4文字以上で設定してください。'); return; }
+      if (pw !== pwConfirm) { showLoginError('パスワードが一致しません。'); return; }
+      els.loginSubmit.disabled = true;
+      apiPost('register', { id: id, password: pw }).then(function (res) {
+        els.loginSubmit.disabled = false;
+        if (!res.ok) {
+          showLoginError('登録に失敗しました。もう一度お試しください。');
+          return;
+        }
+        saveSession({ id: id, name: res.name });
+        showApp(res.name);
+      }).catch(function () {
+        els.loginSubmit.disabled = false;
+        showLoginError('通信に失敗しました。もう一度お試しください。');
+      });
+      return;
+    }
+  }
+
+  function handleLogout() {
+    clearSession();
+    els.appMain.hidden = true;
+    els.historyPanel.hidden = true;
+    els.loginCard.hidden = false;
+    els.loginId.value = '';
+    resetLoginForm();
+    els.loginId.focus();
+  }
+
+  /* ---------- 学習記録 ---------- */
+
+  function renderHistory(data) {
+    els.historySummary.textContent = data.total === 0
+      ? 'まだ記録がありません。問題を解いてみましょう。'
+      : `のべ ${data.total} 問中 ${data.correct} 問正解（正答率 ${Math.round((data.correct / data.total) * 100)}%）`;
+
+    els.historyCats.innerHTML = data.byCategory
+      .sort(function (a, b) { return b.total - a.total; })
+      .map(function (c) {
+        var rate = Math.round((c.correct / c.total) * 100);
+        var label = categoryLabel[c.category] || c.category;
+        return `<div class="history-cat-row"><span>${label}</span><span class="rate">${c.correct}/${c.total}（${rate}%）</span></div>`;
+      }).join('');
+
+    els.historyRecent.innerHTML = data.recent.map(function (r) {
+      var d = new Date(r.timestamp);
+      var dateStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      var label = categoryLabel[r.category] || r.category;
+      var markCls = r.correct ? 'ok' : 'ng';
+      var markTxt = r.correct ? '○' : '✕';
+      return `<div class="history-recent-item"><span>${dateStr}　${label}</span><span class="mark ${markCls}">${markTxt}</span></div>`;
+    }).join('');
+  }
+
+  function toggleHistory() {
+    var isHidden = els.historyPanel.hasAttribute('hidden');
+    if (!isHidden) { els.historyPanel.setAttribute('hidden', ''); return; }
+
+    els.historyPanel.removeAttribute('hidden');
+    els.historySummary.textContent = '読み込み中…';
+    els.historyCats.innerHTML = '';
+    els.historyRecent.innerHTML = '';
+
+    var session = loadSession();
+    if (!session) return;
+    apiPost('history', { id: session.id }).then(function (res) {
+      if (!res.ok) { els.historySummary.textContent = '読み込みに失敗しました。'; return; }
+      renderHistory(res);
+    }).catch(function () {
+      els.historySummary.textContent = '読み込みに失敗しました。';
+    });
+  }
+
   /* ---------- 初期化 ---------- */
 
-  drawNumberline();
-  renderSettings();
-  updateStats();
-  nextQuestion();
-  initInstallBanner();
+  els.loginForm.addEventListener('submit', handleLoginSubmit);
+  els.logoutBtn.addEventListener('click', handleLogout);
+  els.historyToggle.addEventListener('click', toggleHistory);
+
+  var existingSession = loadSession();
+  if (existingSession) {
+    showApp(existingSession.name);
+  } else {
+    resetLoginForm();
+  }
 
   /* ---------- PWAインストール案内 ---------- */
 
