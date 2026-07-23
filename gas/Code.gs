@@ -125,7 +125,10 @@ function handleRegister_(ctx, body) {
     var id = nextStudentId_(ctx.students);
     var salt = Utilities.getUuid();
     var hash = sha256Hex_(password + salt);
-    ctx.students.appendRow([id, name, hash, salt, new Date()]);
+    var rowIndex = ctx.students.getLastRow() + 1;
+    // 先頭0埋けのIDが数値化されて消えないよう、書き込み前にA列を文字列書式にする
+    ctx.students.getRange(rowIndex, 1).setNumberFormat('@').setValue(id);
+    ctx.students.getRange(rowIndex, 2, 1, 4).setValues([[name, hash, salt, new Date()]]);
     return { ok: true, id: id, name: name };
   } finally {
     lock.releaseLock();
