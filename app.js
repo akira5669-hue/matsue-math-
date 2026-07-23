@@ -2269,6 +2269,7 @@
     loginSubmit: document.getElementById('loginSubmit'),
     registerForm: document.getElementById('registerForm'),
     registerName: document.getElementById('registerName'),
+    registerGrade: document.getElementById('registerGrade'),
     registerPassword: document.getElementById('registerPassword'),
     registerPasswordConfirm: document.getElementById('registerPasswordConfirm'),
     registerError: document.getElementById('registerError'),
@@ -2284,6 +2285,10 @@
     historyCalendar: document.getElementById('historyCalendar'),
     historyCats: document.getElementById('historyCats'),
     historyRecent: document.getElementById('historyRecent'),
+    rankingToggle: document.getElementById('rankingToggle'),
+    rankingPanel: document.getElementById('rankingPanel'),
+    rankingSummary: document.getElementById('rankingSummary'),
+    rankingList: document.getElementById('rankingList'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -2434,6 +2439,9 @@
       state.streak = 0;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       saveGameState(state);
+      if (session && session.id) {
+        apiPost('syncPoints', { id: session.id, points: state.points }).catch(function () { });
+      }
       const nextEnemy = ENEMIES[state.enemyIdx];
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const prevEnemy = ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
@@ -2549,6 +2557,8 @@
     els.userName.textContent = name;
     els.historyToggle.hidden = !!isGuest;
     els.historyPanel.hidden = true;
+    els.rankingToggle.hidden = !!isGuest;
+    els.rankingPanel.hidden = true;
     drawNumberline();
     renderSettings();
     updateStats();
@@ -2587,14 +2597,16 @@
     ev.preventDefault();
     hideFieldError(els.registerError);
     var name = els.registerName.value.trim();
+    var grade = els.registerGrade.value;
     var pw = els.registerPassword.value;
     var pwConfirm = els.registerPasswordConfirm.value;
     if (!name) { showFieldError(els.registerError, 'お名前を入力してください。'); return; }
+    if (!grade) { showFieldError(els.registerError, '在籍学年を選択してください。'); return; }
     if (!/^\d{4}$/.test(pw)) { showFieldError(els.registerError, 'パスワードは数字4桁で入力してください。'); return; }
     if (pw !== pwConfirm) { showFieldError(els.registerError, 'パスワードが一致しません。'); return; }
 
     els.registerSubmit.disabled = true;
-    apiPost('register', { name: name, password: pw }).then(function (res) {
+    apiPost('register', { name: name, grade: grade, password: pw }).then(function (res) {
       els.registerSubmit.disabled = false;
       if (!res.ok) {
         var msg = '登録に失敗しました。もう一度お試しください。';
@@ -2621,6 +2633,7 @@
     clearSession();
     els.appMain.hidden = true;
     els.historyPanel.hidden = true;
+    els.rankingPanel.hidden = true;
     els.loginCard.hidden = false;
     resetLoginForms();
     els.loginId.focus();
@@ -2639,10 +2652,8 @@
     const startWeekday = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
 
-    let html = `<div class="cal-header">${year}年${month + 1}月</div><div class="cal-grid">`;
-    weekdayLabels.forEach(function (w) { html += `<div class="cal-weekday">${w}</div>`; });
+    let html = `<div class="cal-header"><span class="cal-header-bar"></span>カレンダー</div><div class="cal-grid">`;
     for (let i = 0; i < startWeekday; i++) html += `<div class="cal-cell cal-empty"></div>`;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -2650,7 +2661,7 @@
       let cls = 'cal-cell';
       if (info) cls += ' cal-active';
       if (dateStr === todayStr) cls += ' cal-today';
-      html += `<div class="${cls}"><span class="cal-day">${d}</span>${info ? `<span class="cal-count">${info.total}問</span>` : ''}</div>`;
+      html += `<div class="${cls}"><span class="cal-day">${d}</span>${info ? `<span class="cal-badge">📐${info.total}</span>` : ''}</div>`;
     }
     html += '</div>';
     return html;
@@ -2685,6 +2696,7 @@
   function toggleHistory() {
     var isHidden = els.historyPanel.hasAttribute('hidden');
     if (!isHidden) { els.historyPanel.setAttribute('hidden', ''); return; }
+    els.rankingPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -2703,6 +2715,41 @@
     });
   }
 
+  /* ---------- ランキング ---------- */
+
+  function renderRanking(res) {
+    if (res.ranking.length === 0) {
+      els.rankingSummary.textContent = 'まだランキングデータがありません。';
+      els.rankingList.innerHTML = '';
+      return;
+    }
+    els.rankingSummary.textContent = `ポイント上位 ${res.ranking.length} 名`;
+    els.rankingList.innerHTML = res.ranking.map(function (r) {
+      var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
+      var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">${r.points}pt</span></div>`;
+    }).join('');
+  }
+
+  function toggleRanking() {
+    var isHidden = els.rankingPanel.hasAttribute('hidden');
+    if (!isHidden) { els.rankingPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+
+    els.rankingPanel.removeAttribute('hidden');
+    els.rankingSummary.textContent = '読み込み中…';
+    els.rankingList.innerHTML = '';
+
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('ranking', { id: session.id }).then(function (res) {
+      if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+      renderRanking(res);
+    }).catch(function () {
+      els.rankingSummary.textContent = '読み込みに失敗しました。';
+    });
+  }
+
   /* ---------- 初期化 ---------- */
 
   els.loginForm.addEventListener('submit', handleLoginSubmit);
@@ -2712,6 +2759,7 @@
   els.guestStartBtn.addEventListener('click', handleGuestStart);
   els.logoutBtn.addEventListener('click', handleLogout);
   els.historyToggle.addEventListener('click', toggleHistory);
+  els.rankingToggle.addEventListener('click', toggleRanking);
 
   var existingSession = loadSession();
   if (existingSession) {

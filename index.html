@@ -65,6 +65,17 @@
       <label class="login-label" for="registerName">お名前（漢字）</label>
       <input class="login-input" id="registerName" name="name" type="text" autocomplete="name" required />
 
+      <label class="login-label" for="registerGrade">在籍学年</label>
+      <select class="login-input" id="registerGrade" name="grade" required>
+        <option value="" disabled selected>選択してください</option>
+        <option value="小4">小学4年</option>
+        <option value="小5">小学5年</option>
+        <option value="小6">小学6年</option>
+        <option value="中1">中学1年</option>
+        <option value="中2">中学2年</option>
+        <option value="中3">中学3年</option>
+      </select>
+
       <label class="login-label" for="registerPassword">新しいパスワード（数字4桁）</label>
       <input class="login-input" id="registerPassword" name="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required />
 
@@ -84,9 +95,16 @@
     <section class="user-bar">
       <p class="user-greeting">こんにちは、<span id="userName"></span> さん</p>
       <div class="user-bar-actions">
+        <button id="rankingToggle" class="ghost-btn" type="button">ランキング</button>
         <button id="historyToggle" class="ghost-btn" type="button">学習記録</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
       </div>
+    </section>
+
+    <section class="ranking-panel" id="rankingPanel" hidden>
+      <h3 class="history-title">ポイントランキング（上位50位）</h3>
+      <p class="history-summary" id="rankingSummary">読み込み中…</p>
+      <div class="ranking-list" id="rankingList"></div>
     </section>
 
     <section class="history-panel" id="historyPanel" hidden>

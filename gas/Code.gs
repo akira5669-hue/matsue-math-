@@ -1,12 +1,14 @@
 /**
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
- * Students シート: id | name | passwordHash | salt | createdAt
+ * Students シート: id | name | passwordHash | salt | createdAt | grade | points
  * Records  シート: timestamp | id | name | category | correct
  *
- * 新規登録は名前（漢字）とパスワード（数字4桁）のみを受け取り、
+ * 新規登録は名前（漢字）・在籍学年・パスワード（数字4桁）を受け取り、
  * IDは登録順の連番（5桁・0埋め、例: 00001）を自動発行する。
  * 生徒本人・保護者のどちらも同じID・パスワードでログインできる。
+ * points はクライアント側のポイントをsyncPointsで都度書き込む
+ * （ランキング表示用。ニックネームはidから決定的に生成し、実名は出さない）。
  */
 
 var STUDENTS_SHEET = 'Students';
@@ -26,8 +28,8 @@ function getOrInitSheets_() {
     }
   }
   if (students.getLastRow() === 0) {
-    students.appendRow(['id', 'name', 'passwordHash', 'salt', 'createdAt']);
-    students.appendRow(['sample01', '見本 太郎', '', '', '']);
+    students.appendRow(['id', 'name', 'passwordHash', 'salt', 'createdAt', 'grade', 'points']);
+    students.appendRow(['sample01', '見本 太郎', '', '', '', '', 0]);
   }
 
   var records = ss.getSheetByName(RECORDS_SHEET);
@@ -53,7 +55,10 @@ function findStudentRow_(sheet, id) {
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]).trim() === String(id).trim()) {
-      return { rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3] };
+      return {
+        rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
+        grade: data[i][5] || '', points: Number(data[i][6]) || 0
+      };
     }
   }
   return null;
@@ -88,6 +93,10 @@ function doPost(e) {
     return jsonOut_(handleLog_(ctx, body));
   } else if (action === 'history') {
     return jsonOut_(handleHistory_(ctx, body));
+  } else if (action === 'syncPoints') {
+    return jsonOut_(handleSyncPoints_(ctx, body));
+  } else if (action === 'ranking') {
+    return jsonOut_(handleRanking_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -115,6 +124,7 @@ function nextStudentId_(sheet) {
 
 function handleRegister_(ctx, body) {
   var name = String(body.name || '').trim();
+  var grade = String(body.grade || '').trim();
   var password = String(body.password || '');
   if (!name || !password) return { ok: false, error: 'missing_fields' };
   if (!/^\d{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
@@ -128,7 +138,7 @@ function handleRegister_(ctx, body) {
     var rowIndex = ctx.students.getLastRow() + 1;
     // 先頭0埋けのIDが数値化されて消えないよう、書き込み前にA列を文字列書式にする
     ctx.students.getRange(rowIndex, 1).setNumberFormat('@').setValue(id);
-    ctx.students.getRange(rowIndex, 2, 1, 4).setValues([[name, hash, salt, new Date()]]);
+    ctx.students.getRange(rowIndex, 2, 1, 6).setValues([[name, hash, salt, new Date(), grade, 0]]);
     return { ok: true, id: id, name: name };
   } finally {
     lock.releaseLock();
@@ -220,4 +230,52 @@ function handleHistory_(ctx, body) {
     streak: streak,
     recent: recent
   };
+}
+
+function handleSyncPoints_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var points = Number(body.points);
+  if (!id || !isFinite(points)) return { ok: false, error: 'missing_fields' };
+
+  var row = findStudentRow_(ctx.students, id);
+  if (!row) return { ok: false, error: 'not_found' };
+
+  ctx.students.getRange(row.rowIndex, 7).setValue(Math.max(0, Math.floor(points)));
+  return { ok: true };
+}
+
+// ランキングには実名を出さず、idから決定的に生成した名前を表示する
+var NICK_PREFIX_ = ['天使', '黒龍', '紅蓮', '氷炎', '聖なる', '漆黒', '閃光', '深淵', '疾風', '不滅', '黄金', '蒼き', '爆炎', '幻影', '雷鳴', '白銀', '真紅', '暗黒', '光輝', '無限'];
+var NICK_SUFFIX_ = ['の翼', 'の刃', 'の心臓', 'の意志', 'の記憶', 'の使者', 'の守護者', 'の覇者', 'の騎士', 'の魂', 'の瞳', 'の牙', 'の王', 'の戦士', 'の炎', 'の氷', 'の雷', 'の影', 'の光', 'の剣'];
+
+function hashStr_(s) {
+  var h = 0;
+  for (var i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+function nicknameForId_(id) {
+  var h = hashStr_(String(id));
+  var prefix = NICK_PREFIX_[h % NICK_PREFIX_.length];
+  var suffix = NICK_SUFFIX_[Math.floor(h / NICK_PREFIX_.length) % NICK_SUFFIX_.length];
+  return prefix + suffix;
+}
+
+function handleRanking_(ctx, body) {
+  var myId = String(body.id || '').trim();
+  var data = ctx.students.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var id = String(data[i][0]).trim();
+    if (!id) continue;
+    var points = Number(data[i][6]) || 0;
+    rows.push({ id: id, points: points });
+  }
+  rows.sort(function (a, b) { return b.points - a.points; });
+  var top = rows.slice(0, 50).map(function (r, idx) {
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, isYou: r.id === myId };
+  });
+  return { ok: true, ranking: top };
 }
