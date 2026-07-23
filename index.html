@@ -26,6 +26,7 @@
 <div class="page">
 
   <header class="app-header">
+    <p class="school-name">松江塾</p>
     <div class="brand">
       <p class="eyebrow">中学1年 数学</p>
       <h1>正負の数トレーニング</h1>
@@ -95,7 +96,6 @@
       <div class="history-recent" id="historyRecent"></div>
     </section>
 
-
     <section class="stats-bar" aria-label="成績">
       <div class="stat">
         <span class="stat-label">出題数</span>
@@ -109,8 +109,30 @@
         <span class="stat-label">正答率</span>
         <span class="stat-value" id="statRate">—</span>
       </div>
-      <button id="resetBtn" class="ghost-btn" type="button">成績をリセット</button>
+      <div class="stat">
+        <span class="stat-label">ポイント</span>
+        <span class="stat-value" id="statPoints">0</span>
+      </div>
+      <button id="resetBtn" class="ghost-btn" type="button">リセット</button>
     </section>
+
+    <div class="enemy-area">
+      <div class="enemy-left">
+        <span class="enemy-emoji" id="enemyEmoji">🟩</span>
+        <div>
+          <div class="enemy-name" id="enemyName">スライム</div>
+          <div class="hp-row">
+            <div class="hp-bar-outer"><div class="hp-bar-inner" id="hpBarInner"></div></div>
+            <span class="hp-text" id="hpText">10/10</span>
+          </div>
+        </div>
+      </div>
+      <div class="enemy-right">
+        <div class="lv-row">Lv.<span id="statLevel">1</span></div>
+        <div class="exp-bar-outer"><div class="exp-bar-inner" id="expBarInner"></div></div>
+        <div class="exp-label">EXP</div>
+      </div>
+    </div>
 
     <section class="quiz-card" aria-live="polite">
       <p class="category-tag" id="categoryTag">加法</p>
@@ -129,6 +151,10 @@
       </button>
       <div class="settings-panel" id="settingsPanel" hidden>
         <p class="settings-hint">チェックした種類からランダムに出題します（講師の方は単元を絞って演習できます）。</p>
+        <div class="settings-actions">
+          <button type="button" class="settings-bulk-btn" id="selectAllBtn">全て選択</button>
+          <button type="button" class="settings-bulk-btn" id="deselectAllBtn">全て解除</button>
+        </div>
         <div class="settings-grid" id="settingsGrid"></div>
       </div>
     </section>
