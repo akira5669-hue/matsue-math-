@@ -2276,6 +2276,14 @@
     registerError: document.getElementById('registerError'),
     registerSubmit: document.getElementById('registerSubmit'),
     guestStartBtn: document.getElementById('guestStartBtn'),
+    guardianLinkBtn: document.getElementById('guardianLinkBtn'),
+    guardianCard: document.getElementById('guardianCard'),
+    guardianForm: document.getElementById('guardianForm'),
+    guardianName: document.getElementById('guardianName'),
+    guardianError: document.getElementById('guardianError'),
+    guardianSubmit: document.getElementById('guardianSubmit'),
+    guardianBackBtn: document.getElementById('guardianBackBtn'),
+    addChildBtn: document.getElementById('addChildBtn'),
     appMain: document.getElementById('appMain'),
     userName: document.getElementById('userName'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -2522,6 +2530,10 @@
   digitsOnly(els.loginPassword);
   digitsOnly(els.registerPassword);
   digitsOnly(els.registerPasswordConfirm);
+  for (let ci = 0; ci < 4; ci++) {
+    const pwEl = document.getElementById('childPassword' + ci);
+    if (pwEl) digitsOnly(pwEl);
+  }
 
   function showFieldError(el, msg) {
     el.textContent = msg;
@@ -2629,6 +2641,81 @@
   function handleGuestStart() {
     saveSession({ id: null, name: 'ゲスト', guest: true });
     showApp('ゲスト', true);
+  }
+
+  /* ---------- 保護者登録 ---------- */
+
+  var visibleChildCount = 1;
+
+  function showGuardianCard() {
+    els.loginCard.hidden = true;
+    els.guardianCard.hidden = false;
+  }
+  function hideGuardianCard() {
+    els.guardianCard.hidden = true;
+    els.loginCard.hidden = false;
+    resetGuardianForm();
+  }
+  function resetGuardianForm() {
+    els.guardianForm.reset();
+    hideFieldError(els.guardianError);
+    document.querySelectorAll('.guardian-child').forEach(function (el, idx) {
+      el.hidden = idx !== 0;
+    });
+    visibleChildCount = 1;
+    els.addChildBtn.hidden = false;
+    els.addChildBtn.textContent = '＋ お子様を追加（最大4人まで）';
+  }
+
+  function handleAddChild() {
+    if (visibleChildCount >= 4) return;
+    var block = document.querySelector('.guardian-child[data-child-index="' + visibleChildCount + '"]');
+    if (block) block.hidden = false;
+    visibleChildCount++;
+    if (visibleChildCount >= 4) els.addChildBtn.hidden = true;
+  }
+
+  function handleGuardianSubmit(ev) {
+    ev.preventDefault();
+    hideFieldError(els.guardianError);
+    var guardianName = els.guardianName.value.trim();
+    if (!guardianName) { showFieldError(els.guardianError, '保護者名を入力してください。'); return; }
+
+    var children = [];
+    for (var i = 0; i < visibleChildCount; i++) {
+      var name = document.getElementById('childName' + i).value.trim();
+      var id = document.getElementById('childId' + i).value.trim();
+      var password = document.getElementById('childPassword' + i).value;
+      if (!name || !id || !password) {
+        showFieldError(els.guardianError, `お子様${i + 1}人目のお名前・ID・パスワードをすべて入力してください。`);
+        return;
+      }
+      if (!/^\d{4}$/.test(password)) {
+        showFieldError(els.guardianError, `お子様${i + 1}人目のパスワードは数字4桁で入力してください。`);
+        return;
+      }
+      children.push({ name: name, id: id, password: password });
+    }
+
+    els.guardianSubmit.disabled = true;
+    apiPost('registerGuardian', { guardianName: guardianName, children: children }).then(function (res) {
+      els.guardianSubmit.disabled = false;
+      if (!res.ok) {
+        var msg = '登録に失敗しました。もう一度お試しください。';
+        if (res.error === 'child_mismatch') {
+          msg = `お子様${res.index + 1}人目のIDまたはパスワードが違います。ご確認ください。`;
+        } else if (res.error === 'missing_fields') {
+          msg = '入力に不足があります。ご確認ください。';
+        }
+        showFieldError(els.guardianError, msg);
+        return;
+      }
+      window.alert('保護者としての登録が完了しました。\n\nログインは今まで通り、お子様のIDとパスワードで行ってください。');
+      hideGuardianCard();
+    }).catch(function () {
+      els.guardianSubmit.disabled = false;
+      showFieldError(els.guardianError, '通信に失敗しました。もう一度お試しください。');
+    });
   }
 
   function handleLogout() {
@@ -2759,6 +2846,10 @@
   els.tabLogin.addEventListener('click', () => switchTab('login'));
   els.tabRegister.addEventListener('click', () => switchTab('register'));
   els.guestStartBtn.addEventListener('click', handleGuestStart);
+  els.guardianLinkBtn.addEventListener('click', showGuardianCard);
+  els.guardianBackBtn.addEventListener('click', hideGuardianCard);
+  els.addChildBtn.addEventListener('click', handleAddChild);
+  els.guardianForm.addEventListener('submit', handleGuardianSubmit);
   els.logoutBtn.addEventListener('click', handleLogout);
   els.historyToggle.addEventListener('click', toggleHistory);
   els.rankingToggle.addEventListener('click', toggleRanking);

@@ -91,6 +91,63 @@
     </form>
 
     <button type="button" class="guest-link" id="guestStartBtn">ID無しで今すぐ始める</button>
+    <button type="button" class="guest-link" id="guardianLinkBtn">保護者の方はこちら</button>
+  </section>
+
+  <section class="login-card" id="guardianCard" hidden>
+    <p class="login-hint">保護者の方の登録です。お子様がすでに新規登録してIDを発行済みである必要があります（先に生徒本人のご登録をお願いします）。ログインは今まで通り、お子様のIDとパスワードで行います。ここでは保護者としての控えを登録します。</p>
+
+    <form id="guardianForm" class="login-form">
+      <label class="login-label" for="guardianName">保護者名</label>
+      <input class="login-input" id="guardianName" name="guardianName" type="text" autocomplete="name" required />
+
+      <div id="guardianChildren">
+        <div class="guardian-child" data-child-index="0">
+          <p class="guardian-child-title">お子様 1人目</p>
+          <label class="login-label" for="childName0">お子様のお名前</label>
+          <input class="login-input" id="childName0" type="text" required />
+          <label class="login-label" for="childId0">お子様のID</label>
+          <input class="login-input" id="childId0" type="text" inputmode="numeric" />
+          <label class="login-label" for="childPassword0">お子様のパスワード（数字4桁）</label>
+          <input class="login-input" id="childPassword0" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+        </div>
+        <div class="guardian-child" data-child-index="1" hidden>
+          <p class="guardian-child-title">お子様 2人目</p>
+          <label class="login-label" for="childName1">お子様のお名前</label>
+          <input class="login-input" id="childName1" type="text" />
+          <label class="login-label" for="childId1">お子様のID</label>
+          <input class="login-input" id="childId1" type="text" inputmode="numeric" />
+          <label class="login-label" for="childPassword1">お子様のパスワード（数字4桁）</label>
+          <input class="login-input" id="childPassword1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+        </div>
+        <div class="guardian-child" data-child-index="2" hidden>
+          <p class="guardian-child-title">お子様 3人目</p>
+          <label class="login-label" for="childName2">お子様のお名前</label>
+          <input class="login-input" id="childName2" type="text" />
+          <label class="login-label" for="childId2">お子様のID</label>
+          <input class="login-input" id="childId2" type="text" inputmode="numeric" />
+          <label class="login-label" for="childPassword2">お子様のパスワード（数字4桁）</label>
+          <input class="login-input" id="childPassword2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+        </div>
+        <div class="guardian-child" data-child-index="3" hidden>
+          <p class="guardian-child-title">お子様 4人目</p>
+          <label class="login-label" for="childName3">お子様のお名前</label>
+          <input class="login-input" id="childName3" type="text" />
+          <label class="login-label" for="childId3">お子様のID</label>
+          <input class="login-input" id="childId3" type="text" inputmode="numeric" />
+          <label class="login-label" for="childPassword3">お子様のパスワード（数字4桁）</label>
+          <input class="login-input" id="childPassword3" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+        </div>
+      </div>
+
+      <button type="button" class="settings-bulk-btn" id="addChildBtn">＋ お子様を追加（最大4人まで）</button>
+
+      <p class="login-error" id="guardianError" hidden></p>
+
+      <button class="primary-btn" id="guardianSubmit" type="submit">保護者として登録する</button>
+    </form>
+
+    <button type="button" class="guest-link" id="guardianBackBtn">戻る</button>
   </section>
 
   <main id="appMain" hidden>

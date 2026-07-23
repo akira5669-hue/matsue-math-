@@ -541,6 +541,19 @@ h1 {
   color: var(--c-incorrect);
 }
 .login-form .primary-btn { margin-top: 16px; }
+.guardian-child {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-line);
+}
+.guardian-child:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.guardian-child-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--c-ink);
+}
+#addChildBtn { margin-top: 14px; }
 .guest-link {
   display: block;
   width: 100%;

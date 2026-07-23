@@ -3,16 +3,23 @@
  *
  * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian
  * Records  シート: timestamp | id | name | category | correct
+ * Guardians シート: timestamp | guardianName | childId1 | childName1 | childId2 | childName2 | childId3 | childName3 | childId4 | childName4
  *
  * 新規登録は名前（漢字）・在籍学年・パスワード（数字4桁）を受け取り、
  * IDは登録順の連番（5桁・0埋め、例: 00001）を自動発行する。
  * 生徒本人・保護者のどちらも同じID・パスワードでログインできる。
  * points はクライアント側のポイントをsyncPointsで都度書き込む
  * （ランキング表示用。ニックネームはidから決定的に生成し、実名は出さない）。
+ *
+ * 保護者は別画面で「保護者登録」を行うが、これは記録用のみで、
+ * ログイン用のID・パスワードは発行しない。保護者はログインの際も
+ * 常にお子様（最大4人まで）のID・パスワードを使う。登録時に
+ * 各お子様のID・パスワードが実在し一致することを検証する。
  */
 
 var STUDENTS_SHEET = 'Students';
 var RECORDS_SHEET = 'Records';
+var GUARDIANS_SHEET = 'Guardians';
 
 function getOrInitSheets_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -40,7 +47,15 @@ function getOrInitSheets_() {
     records.appendRow(['timestamp', 'id', 'name', 'category', 'correct']);
   }
 
-  return { ss: ss, students: students, records: records };
+  var guardians = ss.getSheetByName(GUARDIANS_SHEET);
+  if (!guardians) {
+    guardians = ss.insertSheet(GUARDIANS_SHEET);
+  }
+  if (guardians.getLastRow() === 0) {
+    guardians.appendRow(['timestamp', 'guardianName', 'childId1', 'childName1', 'childId2', 'childName2', 'childId3', 'childName3', 'childId4', 'childName4']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians };
 }
 
 function sha256Hex_(text) {
@@ -97,6 +112,8 @@ function doPost(e) {
     return jsonOut_(handleSyncPoints_(ctx, body));
   } else if (action === 'ranking') {
     return jsonOut_(handleRanking_(ctx, body));
+  } else if (action === 'registerGuardian') {
+    return jsonOut_(handleRegisterGuardian_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -279,4 +296,37 @@ function handleRanking_(ctx, body) {
     return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
+}
+
+function handleRegisterGuardian_(ctx, body) {
+  var guardianName = String(body.guardianName || '').trim();
+  var children = Array.isArray(body.children) ? body.children : [];
+  if (!guardianName || children.length === 0 || children.length > 4) {
+    return { ok: false, error: 'missing_fields' };
+  }
+
+  for (var i = 0; i < children.length; i++) {
+    var c = children[i];
+    var childId = String((c && c.id) || '').trim();
+    var childPassword = String((c && c.password) || '');
+    if (!childId || !childPassword) return { ok: false, error: 'missing_fields', index: i };
+
+    var row = findStudentRow_(ctx.students, childId);
+    if (!row || !row.passwordHash) return { ok: false, error: 'child_mismatch', index: i };
+    var hash = sha256Hex_(childPassword + row.salt);
+    if (hash !== row.passwordHash) return { ok: false, error: 'child_mismatch', index: i };
+  }
+
+  var rowValues = [new Date(), guardianName];
+  for (var j = 0; j < 4; j++) {
+    if (j < children.length) {
+      rowValues.push(String(children[j].id).trim());
+      rowValues.push(String(children[j].name || '').trim());
+    } else {
+      rowValues.push('', '');
+    }
+  }
+  ctx.guardians.appendRow(rowValues);
+
+  return { ok: true };
 }
