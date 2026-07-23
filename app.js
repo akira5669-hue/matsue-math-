@@ -826,19 +826,29 @@
       answer + unit,
       answer - unit,
     ];
-    return { category: 'round4', question, answer, choices: buildChoices(answer, wrongs) };
+    const checkUnit = unit / 10;
+    const checkDigit = Math.floor(num / checkUnit) % 10;
+    const steps = [
+      `${p.name}の位までの概数にするので、その1つ下の位を見る`,
+      `1つ下の位の数字は ${checkDigit}`,
+      checkDigit >= 5 ? `5以上 → 切り上げる` : `4以下 → 切り捨てる`,
+      `= ${answer}`,
+    ];
+    return { category: 'round4', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
   function genFourOps4() {
     const pattern = randInt(0, 3);
-    let question, answer, wrongs;
+    let question, answer, wrongs, steps;
 
     if (pattern === 0) {
       const b = randInt(2, 9), c = randInt(2, 9), a = randInt(1, 50);
-      answer = a + b * c;
+      const bc = b * c;
+      answer = a + bc;
       question = `${a} + ${b} × ${c} = ?`;
       wrongs = [(a + b) * c, a + b + c, a * b + c];
+      steps = [`× を先に計算: ${b} × ${c} = ${bc}`, `= ${a} + ${bc} = ${answer}`];
     } else if (pattern === 1) {
       const b = randInt(2, 9), c = randInt(2, 9);
       const bc = b * c;
@@ -846,12 +856,14 @@
       answer = a - bc;
       question = `${a} − ${b} × ${c} = ?`;
       wrongs = [(a - b) * c, a - b - c, a - (b + c)];
+      steps = [`× を先に計算: ${b} × ${c} = ${bc}`, `= ${a} − ${bc} = ${answer}`];
     } else if (pattern === 2) {
       const c = randInt(2, 9), q = randInt(2, 9), b = c * q;
       const a = randInt(1, 50);
       answer = a + q;
       question = `${a} + ${b} ÷ ${c} = ?`;
       wrongs = [(a + b) / c, a + b - c, a * q];
+      steps = [`÷ を先に計算: ${b} ÷ ${c} = ${q}`, `= ${a} + ${q} = ${answer}`];
     } else {
       const a = randInt(2, 20), b = randInt(2, 20), c = randInt(2, 9);
       const useMinus = a > b && Math.random() < 0.5;
@@ -860,10 +872,11 @@
       question = `(${a} ${useMinus ? '−' : '+'} ${b}) × ${c} = ?`;
       const wrongMisreadNoParen = useMinus ? a - b * c : a + b * c;
       wrongs = [wrongMisreadNoParen, inner + c, a * c + (useMinus ? -b : b)];
+      steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${inner}`, `= ${inner} × ${c} = ${answer}`];
     }
 
     wrongs = wrongs.map(Math.round);
-    return { category: 'fourOps4', question, answer, choices: buildChoices(answer, wrongs) };
+    return { category: 'fourOps4', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 分数のたし算・ひき算（通分・約分あり、小5）
@@ -895,7 +908,13 @@
     const wrongNumOnly = `${n1 + n2}/${L}`;
     const candidates = [wrongUnreduced, wrongAddDenom, wrongNumOnly].filter(Boolean);
 
-    return { category: 'fracAddSub5', question, answer, choices: buildChoicesFromSet(answer, candidates) };
+    const steps = [
+      `通分する: 分母を最小公倍数 ${L} にそろえる`,
+      `${n1}/${d1} = ${N1}/${L}、${n2}/${d2} = ${N2}/${L}`,
+      `${N1}/${L} ${opSym} ${N2}/${L} = ${numAns}/${denAns}`,
+      `= ${answer}`,
+    ];
+    return { category: 'fracAddSub5', question, answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   // 小数のわり算（小5、商は整数になる）
@@ -908,7 +927,13 @@
     const answer = quotient;
     const question = `${dividend} ÷ ${divisor} = ?`;
     const wrongs = [quotient + 1, quotient - 1, quotient * 10, Math.max(1, quotient - 2)];
-    return { category: 'decDiv5', question, answer, choices: buildChoices(answer, wrongs) };
+    const dividendX10 = divisorTenths * quotient;
+    const steps = [
+      `わる数・わられる数の小数点を右に1つずつ移して整数にする`,
+      `${dividend} ÷ ${divisor} = ${dividendX10} ÷ ${divisorTenths}`,
+      `= ${answer}`,
+    ];
+    return { category: 'decDiv5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 分数のかけ算・わり算（小6）
@@ -929,7 +954,18 @@
     const wrongAddInstead = `${n1 * d2 + n2 * d1}/${d1 * d2}`;
     const candidates = [wrongUnreduced, wrongFlippedOp, wrongAddInstead].filter(Boolean);
 
-    return { category: 'fracMulDiv6', question, answer, choices: buildChoicesFromSet(answer, candidates) };
+    const steps = isMul
+      ? [
+          `分子どうし・分母どうしをかける`,
+          `${n1}/${d1} × ${n2}/${d2} = ${numAns}/${denAns}`,
+          `= ${answer}`,
+        ]
+      : [
+          `÷ は、わる数の分数をひっくり返してかけ算にする`,
+          `${n1}/${d1} × ${d2}/${n2} = ${numAns}/${denAns}`,
+          `= ${answer}`,
+        ];
+    return { category: 'fracMulDiv6', question, answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   /* ---------- 問題生成関数 ---------- */
