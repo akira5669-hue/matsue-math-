@@ -46,7 +46,7 @@
     </div>
 
     <form id="loginForm" class="login-form">
-      <p class="login-hint">先生に教えてもらったIDと、設定したパスワードを入力してください。</p>
+      <p class="login-hint">発行されたIDと、設定したパスワードを入力してください。生徒本人・保護者どちらでもログインできます。</p>
 
       <label class="login-label" for="loginId">生徒ID</label>
       <input class="login-input" id="loginId" name="id" type="text" autocomplete="username" required />
@@ -60,10 +60,10 @@
     </form>
 
     <form id="registerForm" class="login-form" hidden>
-      <p class="login-hint">先生に教えてもらったIDと、これから使うパスワード（数字4桁）を決めて入力してください。</p>
+      <p class="login-hint">生徒本人・保護者の方どちらでも登録できます。お名前（漢字）と、これから使うパスワード（数字4桁）を決めて入力してください。IDは登録後に自動で発行されます。</p>
 
-      <label class="login-label" for="registerId">生徒ID</label>
-      <input class="login-input" id="registerId" name="id" type="text" autocomplete="username" required />
+      <label class="login-label" for="registerName">お名前（漢字）</label>
+      <input class="login-input" id="registerName" name="name" type="text" autocomplete="name" required />
 
       <label class="login-label" for="registerPassword">新しいパスワード（数字4桁）</label>
       <input class="login-input" id="registerPassword" name="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required />

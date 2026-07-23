@@ -3,6 +3,10 @@
  *
  * Students シート: id | name | passwordHash | salt | createdAt
  * Records  シート: timestamp | id | name | category | correct
+ *
+ * 新規登録は名前（漢字）とパスワード（数字4桁）のみを受け取り、
+ * IDは登録順の連番（5桁・0埋め、例: 00001）を自動発行する。
+ * 生徒本人・保護者のどちらも同じID・パスワードでログインできる。
  */
 
 var STUDENTS_SHEET = 'Students';
@@ -96,21 +100,36 @@ function handleCheckId_(ctx, body) {
   return { ok: true, found: true, hasPassword: !!row.passwordHash, name: row.name };
 }
 
+function nextStudentId_(sheet) {
+  var data = sheet.getDataRange().getValues();
+  var max = 0;
+  for (var i = 1; i < data.length; i++) {
+    var idStr = String(data[i][0]).trim();
+    if (/^\d{5}$/.test(idStr)) {
+      var n = parseInt(idStr, 10);
+      if (n > max) max = n;
+    }
+  }
+  return ('00000' + (max + 1)).slice(-5);
+}
+
 function handleRegister_(ctx, body) {
-  var id = String(body.id || '').trim();
+  var name = String(body.name || '').trim();
   var password = String(body.password || '');
-  if (!id || !password) return { ok: false, error: 'missing_fields' };
+  if (!name || !password) return { ok: false, error: 'missing_fields' };
   if (!/^\d{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
 
-  var row = findStudentRow_(ctx.students, id);
-  if (!row) return { ok: false, error: 'not_found' };
-  if (row.passwordHash) return { ok: false, error: 'already_registered' };
-
-  var salt = Utilities.getUuid();
-  var hash = sha256Hex_(password + salt);
-  ctx.students.getRange(row.rowIndex, 3, 1, 3).setValues([[hash, salt, new Date()]]);
-
-  return { ok: true, name: row.name };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var id = nextStudentId_(ctx.students);
+    var salt = Utilities.getUuid();
+    var hash = sha256Hex_(password + salt);
+    ctx.students.appendRow([id, name, hash, salt, new Date()]);
+    return { ok: true, id: id, name: name };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function handleLogin_(ctx, body) {

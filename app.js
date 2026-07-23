@@ -2257,7 +2257,7 @@
     loginError: document.getElementById('loginError'),
     loginSubmit: document.getElementById('loginSubmit'),
     registerForm: document.getElementById('registerForm'),
-    registerId: document.getElementById('registerId'),
+    registerName: document.getElementById('registerName'),
     registerPassword: document.getElementById('registerPassword'),
     registerPasswordConfirm: document.getElementById('registerPasswordConfirm'),
     registerError: document.getElementById('registerError'),
@@ -2566,25 +2566,25 @@
   function handleRegisterSubmit(ev) {
     ev.preventDefault();
     hideFieldError(els.registerError);
-    var id = els.registerId.value.trim();
+    var name = els.registerName.value.trim();
     var pw = els.registerPassword.value;
     var pwConfirm = els.registerPasswordConfirm.value;
-    if (!id) return;
+    if (!name) { showFieldError(els.registerError, 'お名前を入力してください。'); return; }
     if (!/^\d{4}$/.test(pw)) { showFieldError(els.registerError, 'パスワードは数字4桁で入力してください。'); return; }
     if (pw !== pwConfirm) { showFieldError(els.registerError, 'パスワードが一致しません。'); return; }
 
     els.registerSubmit.disabled = true;
-    apiPost('register', { id: id, password: pw }).then(function (res) {
+    apiPost('register', { name: name, password: pw }).then(function (res) {
       els.registerSubmit.disabled = false;
       if (!res.ok) {
         var msg = '登録に失敗しました。もう一度お試しください。';
-        if (res.error === 'not_found') msg = 'そのIDは登録されていません。先生に確認してください。';
-        else if (res.error === 'already_registered') msg = 'そのIDはすでに登録済みです。「ログイン」から入ってください。';
+        if (res.error === 'missing_fields') msg = 'お名前とパスワードを入力してください。';
         else if (res.error === 'invalid_password') msg = 'パスワードは数字4桁で入力してください。';
         showFieldError(els.registerError, msg);
         return;
       }
-      saveSession({ id: id, name: res.name });
+      saveSession({ id: res.id, name: res.name });
+      window.alert('登録が完了しました！\n\nあなたのID: ' + res.id + '\n\n次回からは、このIDとパスワードでログインします。忘れずに控えておいてください。');
       showApp(res.name, false);
     }).catch(function () {
       els.registerSubmit.disabled = false;
