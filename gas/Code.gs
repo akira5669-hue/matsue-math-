@@ -163,6 +163,10 @@ function handleLog_(ctx, body) {
   return { ok: true };
 }
 
+function dateKeyTokyo_(d) {
+  return Utilities.formatDate(new Date(d), 'Asia/Tokyo', 'yyyy-MM-dd');
+}
+
 function handleHistory_(ctx, body) {
   var id = String(body.id || '').trim();
   if (!id) return { ok: false, error: 'missing_id' };
@@ -172,6 +176,7 @@ function handleHistory_(ctx, body) {
 
   var data = ctx.records.getDataRange().getValues();
   var byCategory = {};
+  var byDate = {};
   var total = 0, correct = 0;
   var recent = [];
 
@@ -184,11 +189,26 @@ function handleHistory_(ctx, body) {
     if (!byCategory[cat]) byCategory[cat] = { category: cat, total: 0, correct: 0 };
     byCategory[cat].total++;
     if (isCorrect) byCategory[cat].correct++;
+
+    var dKey = dateKeyTokyo_(data[i][0]);
+    if (!byDate[dKey]) byDate[dKey] = { date: dKey, total: 0, correct: 0 };
+    byDate[dKey].total++;
+    if (isCorrect) byDate[dKey].correct++;
+
     recent.push({ timestamp: data[i][0], category: cat, correct: isCorrect });
   }
 
   recent.sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
   recent = recent.slice(0, 30);
+
+  var todayKey = dateKeyTokyo_(new Date());
+  var streak = 0;
+  var cursor = new Date();
+  if (!byDate[todayKey]) cursor.setDate(cursor.getDate() - 1);
+  while (byDate[dateKeyTokyo_(cursor)]) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
 
   return {
     ok: true,
@@ -196,6 +216,8 @@ function handleHistory_(ctx, body) {
     total: total,
     correct: correct,
     byCategory: Object.keys(byCategory).map(function (k) { return byCategory[k]; }),
+    byDate: Object.keys(byDate).map(function (k) { return byDate[k]; }),
+    streak: streak,
     recent: recent
   };
 }

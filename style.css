@@ -604,6 +604,62 @@ h1 {
 .history-recent-item .mark.ok { color: var(--c-correct); font-weight: 700; }
 .history-recent-item .mark.ng { color: var(--c-incorrect); font-weight: 700; }
 
+/* History streak & calendar */
+.history-streak {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-positive);
+}
+.history-calendar { margin-bottom: 16px; }
+.cal-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  margin-bottom: 6px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-weekday {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  text-align: center;
+  padding-bottom: 2px;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-radius: 8px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+}
+.cal-cell.cal-empty { background: transparent; border: none; }
+.cal-cell.cal-active {
+  background: var(--c-correct-soft);
+  border-color: var(--c-correct);
+}
+.cal-cell.cal-today { box-shadow: 0 0 0 1.5px var(--c-ink); }
+.cal-day {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-ink);
+}
+.cal-active .cal-day { color: var(--c-correct); }
+.cal-count {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--c-correct);
+}
+
 /* Install banner */
 .install-banner {
   position: fixed;

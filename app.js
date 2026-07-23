@@ -28,6 +28,33 @@
     try { localStorage.removeItem(SESSION_KEY); } catch (e) { }
   }
 
+  /* ---------- ゲーム状態（ポイント・レベル・EXP）の永続化 ---------- */
+
+  var GAME_KEY = 'matsue-math-game';
+  var POINTS_DAILY_CAP = 100;
+  var EXP_PER_LEVEL = 10;
+  var MAX_LEVEL = 9999;
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function loadGameState() {
+    try {
+      var raw = localStorage.getItem(GAME_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function saveGameState(s) {
+    try {
+      localStorage.setItem(GAME_KEY, JSON.stringify({
+        points: s.points, level: s.level, exp: s.exp,
+        pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
+      }));
+    } catch (e) { }
+  }
+
   /* ---------- 基本ユーティリティ ---------- */
 
   function randInt(min, max) {
@@ -167,43 +194,33 @@
   }
 
   function genExpand2() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 1);
     let q, answer, steps, wrongs;
     if (pat === 0) {
       const a = randNonZero(-7, 7), b = randNonZero(-7, 7);
-      const xC = a + b, con = a * b;
+      const xC = a + b;
       const aS = a<0?`− ${Math.abs(a)}`:`+ ${a}`;
       const bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
-      const askX = Math.random() < 0.5;
-      answer = askX ? xC : con;
-      const part = askX ? 'x の係数' : '定数項';
-      q = `(x ${aS})(x ${bS}) を展開したとき、${part}は？`;
+      answer = xC;
+      q = `(x ${aS})(x ${bS}) を展開したとき、x の係数は？`;
       steps = [
         `(x + a)(x + b) = x² + (a+b)x + ab`,
         `a = ${a}、b = ${b}`,
-        askX ? `x の係数 = ${a} + ${fmtNum(b)} = ${xC}` : `定数項 = ${a} × ${fmtNum(b)} = ${con}`
+        `x の係数 = ${a} + ${fmtNum(b)} = ${xC}`
       ];
-      wrongs = askX ? [con, xC+1, xC-1] : [xC, con+a, con-b];
-    } else if (pat === 1) {
+      wrongs = [a*b, xC+1, xC-1];
+    } else {
       const a = randNonZero(-7, 7);
-      const xC = 2*a, con = a*a;
+      const xC = 2*a;
       const aS = a<0?`− ${Math.abs(a)}`:`+ ${a}`;
-      const askX = Math.random() < 0.5;
-      answer = askX ? xC : con;
-      const part = askX ? 'x の係数' : '定数項';
-      q = `(x ${aS})² を展開したとき、${part}は？`;
+      answer = xC;
+      q = `(x ${aS})² を展開したとき、x の係数は？`;
       steps = [
         `(x + a)² = x² + 2ax + a²`,
         `a = ${a}`,
-        askX ? `x の係数 = 2×${a} = ${xC}` : `定数項 = ${a}² = ${con}`
+        `x の係数 = 2×${a} = ${xC}`
       ];
-      wrongs = askX ? [a, con, xC+2] : [xC, con+1, 2*con];
-    } else {
-      const a = randInt(2, 9);
-      answer = -(a*a);
-      q = `(x + ${a})(x − ${a}) を展開したとき、定数項は？`;
-      steps = [`(x + a)(x − a) = x² − a²`, `a = ${a}`, `定数項 = −${a}² = ${answer}`];
-      wrongs = [a*a, -a, answer+1];
+      wrongs = [a, a*a, xC+2];
     }
     return { category:'expand2', question:q, answer, choices:buildChoices(answer,wrongs), steps };
   }
@@ -2203,6 +2220,7 @@
 
   /* ---------- アプリ状態 ---------- */
 
+  const savedGame = loadGameState();
   const state = {
     total: 0,
     correct: 0,
@@ -2211,10 +2229,12 @@
     current: null,
     answered: false,
     enabled: new Set(CATEGORIES.filter(c => !c.defaultOff).map(c => c.id)),
-    points: 0,
-    level: 1,
-    exp: 0,
-    enemyIdx: 0,
+    points: (savedGame && savedGame.points) || 0,
+    level: (savedGame && savedGame.level) || 1,
+    exp: (savedGame && savedGame.exp) || 0,
+    pointsToday: (savedGame && savedGame.pointsToday) || 0,
+    pointsDate: (savedGame && savedGame.pointsDate) || null,
+    enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
   };
 
   const els = {
@@ -2260,6 +2280,8 @@
     historyToggle: document.getElementById('historyToggle'),
     historyPanel: document.getElementById('historyPanel'),
     historySummary: document.getElementById('historySummary'),
+    historyStreak: document.getElementById('historyStreak'),
+    historyCalendar: document.getElementById('historyCalendar'),
     historyCats: document.getElementById('historyCats'),
     historyRecent: document.getElementById('historyRecent'),
   };
@@ -2361,7 +2383,7 @@
     els.hpText.textContent = `${hp}/10`;
     els.statPoints.textContent = state.points;
     els.statLevel.textContent = state.level;
-    els.expBarInner.style.width = `${state.exp}%`;
+    els.expBarInner.style.width = `${(state.exp / EXP_PER_LEVEL) * 100}%`;
   }
 
   function handleAnswer(btn, choiceStr) {
@@ -2397,17 +2419,27 @@
 
     let winHtml = '';
     if (isCorrect && state.streak >= 10) {
-      state.points += 10;
+      const today = todayKey();
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
+      const pointsToAdd = Math.max(0, Math.min(10, POINTS_DAILY_CAP - state.pointsToday));
+      state.points += pointsToAdd;
+      state.pointsToday += pointsToAdd;
       state.exp += 10;
-      const leveledUp = state.exp >= 100;
-      if (leveledUp) { state.level++; state.exp -= 100; }
+      let leveledUp = false;
+      while (state.exp >= EXP_PER_LEVEL && state.level < MAX_LEVEL) {
+        state.level++;
+        state.exp -= EXP_PER_LEVEL;
+        leveledUp = true;
+      }
       state.streak = 0;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+      saveGameState(state);
       const nextEnemy = ENEMIES[state.enemyIdx];
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const prevEnemy = ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
-      winHtml = `<div class="win-banner">${lvlMsg}${eIcon(prevEnemy)} 倒した！ +10pt +10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}</div>`;
+      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}pt ` : '(本日のポイント上限に到達) ';
+      winHtml = `<div class="win-banner">${lvlMsg}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}</div>`;
     }
 
     const streakHtml = state.streak >= 3
@@ -2596,10 +2628,41 @@
 
   /* ---------- 学習記録 ---------- */
 
+  function buildCalendarHtml(byDateList) {
+    const byDateMap = {};
+    (byDateList || []).forEach(function (d) { byDateMap[d.date] = d; });
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+
+    let html = `<div class="cal-header">${year}年${month + 1}月</div><div class="cal-grid">`;
+    weekdayLabels.forEach(function (w) { html += `<div class="cal-weekday">${w}</div>`; });
+    for (let i = 0; i < startWeekday; i++) html += `<div class="cal-cell cal-empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const info = byDateMap[dateStr];
+      let cls = 'cal-cell';
+      if (info) cls += ' cal-active';
+      if (dateStr === todayStr) cls += ' cal-today';
+      html += `<div class="${cls}"><span class="cal-day">${d}</span>${info ? `<span class="cal-count">${info.total}問</span>` : ''}</div>`;
+    }
+    html += '</div>';
+    return html;
+  }
+
   function renderHistory(data) {
     els.historySummary.textContent = data.total === 0
       ? 'まだ記録がありません。問題を解いてみましょう。'
       : `のべ ${data.total} 問中 ${data.correct} 問正解（正答率 ${Math.round((data.correct / data.total) * 100)}%）`;
+
+    els.historyStreak.textContent = data.streak > 0 ? `🔥 ${data.streak}日連続で学習中！` : '';
+    els.historyCalendar.innerHTML = buildCalendarHtml(data.byDate);
 
     els.historyCats.innerHTML = data.byCategory
       .sort(function (a, b) { return b.total - a.total; })
@@ -2625,6 +2688,8 @@
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
+    els.historyStreak.textContent = '';
+    els.historyCalendar.innerHTML = '';
     els.historyCats.innerHTML = '';
     els.historyRecent.innerHTML = '';
 
