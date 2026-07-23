@@ -808,9 +808,9 @@
   // 四捨五入（小4）：十の位／百の位／千の位で概数にする
   function genRound4() {
     const placeOptions = [
-      { name: '十', pow: 1 },
-      { name: '百', pow: 2 },
-      { name: '千', pow: 3 },
+      { name: '十', pow: 1, checkName: '一' },
+      { name: '百', pow: 2, checkName: '十' },
+      { name: '千', pow: 3, checkName: '百' },
     ];
     const p = placeOptions[randInt(0, placeOptions.length - 1)];
     const digits = p.pow + randInt(1, 2);
@@ -819,7 +819,7 @@
     const num = randInt(min, max);
     const unit = Math.pow(10, p.pow);
     const answer = Math.round(num / unit) * unit;
-    const question = `${num} を${p.name}の位で四捨五入すると？`;
+    const question = `${num} を${p.name}の位までの概数にすると？`;
     const wrongs = [
       Math.floor(num / unit) * unit,
       Math.ceil(num / unit) * unit,
@@ -829,8 +829,8 @@
     const checkUnit = unit / 10;
     const checkDigit = Math.floor(num / checkUnit) % 10;
     const steps = [
-      `${p.name}の位までの概数にするので、その1つ下の位を見る`,
-      `1つ下の位の数字は ${checkDigit}`,
+      `${p.name}の位までの概数にするので、${p.checkName}の位を四捨五入する`,
+      `${p.checkName}の位の数字は ${checkDigit}`,
       checkDigit >= 5 ? `5以上 → 切り上げる` : `4以下 → 切り捨てる`,
       `= ${answer}`,
     ];
