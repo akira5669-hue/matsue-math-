@@ -519,6 +519,7 @@ h1 {
 }
 .login-form { display: flex; flex-direction: column; gap: 6px; }
 .login-label {
+  display: block;
   font-size: 13px;
   font-weight: 700;
   color: var(--c-ink-soft);
@@ -542,6 +543,9 @@ h1 {
 }
 .login-form .primary-btn { margin-top: 16px; }
 .guardian-child {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--c-line);
