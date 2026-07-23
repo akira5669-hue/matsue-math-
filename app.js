@@ -116,7 +116,7 @@
   }
 
   function stepToHtml(s) {
-    const parts = s.split(/([\w]+\/[\w]+)/);
+    const parts = String(s).split(/([\w]+\/[\w]+)/);
     return parts.map((part, i) => {
       if (i % 2 === 1) {
         const slash = part.indexOf('/');
@@ -914,7 +914,7 @@
       `${N1}/${L} ${opSym} ${N2}/${L} = ${numAns}/${denAns}`,
       `= ${answer}`,
     ];
-    return { category: 'fracAddSub5', question, answer, choices: buildChoicesFromSet(answer, candidates), steps };
+    return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   // 小数のわり算（小5、商は整数になる）
@@ -965,7 +965,7 @@
           `${n1}/${d1} × ${d2}/${n2} = ${numAns}/${denAns}`,
           `= ${answer}`,
         ];
-    return { category: 'fracMulDiv6', question, answer, choices: buildChoicesFromSet(answer, candidates), steps };
+    return { category: 'fracMulDiv6', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   /* ---------- 問題生成関数 ---------- */
@@ -2076,7 +2076,7 @@
   /* ---------- 円周角（中3） ---------- */
 
   function genCircleAngle() {
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 4);
     let question, questionHtml, answer, choices, steps;
     const circSvg = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><circle cx="50" cy="10" r="2.5" fill="#1c2127"/><circle cx="18" cy="72" r="2.5" fill="#1c2127"/><circle cx="82" cy="72" r="2.5" fill="#1c2127"/><line x1="18" y1="72" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><line x1="82" y1="72" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><line x1="18" y1="72" x2="82" y2="72" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/></svg>`;
     if (pat === 0) {
@@ -2129,15 +2129,6 @@
       choices = buildChoices(c4.ins, c4.wrongs);
       steps = [`OA = OB（半径）より △OAB は二等辺三角形`, `∠OBA = ${c4.a}°`, `∠AOB = 180 − ${c4.a} × 2 = ${c4.cen}°`, `∠ACB = ${c4.cen} ÷ 2 = ${c4.ins}°`];
       questionHtml = svg4 + `<span style="display:block">${question}</span>`;
-    } else {
-      // pat === 5: 接弦定理
-      const c5 = [30, 35, 40, 45, 50][randInt(0, 4)];
-      const svg5 = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="5" y1="90" x2="95" y2="90" stroke="#888" stroke-width="1.5"/><circle cx="50" cy="90" r="2.5" fill="#1c2127"/><circle cx="15" cy="30" r="2.5" fill="#1c2127"/><circle cx="85" cy="30" r="2.5" fill="#1c2127"/><line x1="50" y1="90" x2="15" y2="30" stroke="#1c2127" stroke-width="1.5"/><line x1="85" y1="30" x2="50" y2="90" stroke="#1c2127" stroke-width="1.2"/><line x1="85" y1="30" x2="15" y2="30" stroke="#1c2127" stroke-width="1.2"/><text x="50" y="86" font-size="10" fill="#1c2127" text-anchor="middle">A</text><text x="10" y="27" font-size="10" fill="#1c2127">B</text><text x="87" y="27" font-size="10" fill="#1c2127">C</text></svg>`;
-      question = `A における接線と弦 AB のなす角が ${c5}°。C が弧 AB 上にあるとき、∠ACB = x は？`;
-      answer = c5;
-      choices = shuffle([c5, 2*c5, 180-c5, c5+20]);
-      steps = [`接弦定理: 接線と弦のなす角 = 同じ弧に対する円周角`, `∠ACB = ${c5}°`];
-      questionHtml = svg5 + `<span style="display:block">${question}</span>`;
     }
     if (!questionHtml) questionHtml = circSvg + `<span style="display:block">${question}</span>`;
     return { category: 'circleAngle', question, questionHtml, answer, choices, steps };
@@ -2343,7 +2334,8 @@
     els.nextBtn.disabled = true;
 
     els.choices.innerHTML = '';
-    q.choices.forEach(choiceStr => {
+    q.choices.forEach(choiceRaw => {
+      const choiceStr = String(choiceRaw);
       const btn = document.createElement('button');
       btn.className = 'choice-btn';
       btn.type = 'button';
@@ -2440,10 +2432,6 @@
     state.correct = 0;
     state.streak = 0;
     state.catStats = {};
-    state.points = 0;
-    state.level = 1;
-    state.exp = 0;
-    state.enemyIdx = 0;
     updateStats();
     updateGameHud();
   }
