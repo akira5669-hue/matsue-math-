@@ -1,7 +1,7 @@
 /**
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
- * Students シート: id | name | passwordHash | salt | createdAt | grade | points
+ * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian
  * Records  シート: timestamp | id | name | category | correct
  *
  * 新規登録は名前（漢字）・在籍学年・パスワード（数字4桁）を受け取り、
@@ -28,8 +28,8 @@ function getOrInitSheets_() {
     }
   }
   if (students.getLastRow() === 0) {
-    students.appendRow(['id', 'name', 'passwordHash', 'salt', 'createdAt', 'grade', 'points']);
-    students.appendRow(['sample01', '見本 太郎', '', '', '', '', 0]);
+    students.appendRow(['id', 'name', 'passwordHash', 'salt', 'createdAt', 'grade', 'points', 'guardian']);
+    students.appendRow(['sample01', '見本 太郎', '', '', '', '', 0, '']);
   }
 
   var records = ss.getSheetByName(RECORDS_SHEET);
@@ -57,7 +57,7 @@ function findStudentRow_(sheet, id) {
     if (String(data[i][0]).trim() === String(id).trim()) {
       return {
         rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
-        grade: data[i][5] || '', points: Number(data[i][6]) || 0
+        grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || ''
       };
     }
   }
@@ -125,6 +125,7 @@ function nextStudentId_(sheet) {
 function handleRegister_(ctx, body) {
   var name = String(body.name || '').trim();
   var grade = String(body.grade || '').trim();
+  var guardian = String(body.guardian || '').trim();
   var password = String(body.password || '');
   if (!name || !password) return { ok: false, error: 'missing_fields' };
   if (!/^\d{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
@@ -138,7 +139,7 @@ function handleRegister_(ctx, body) {
     var rowIndex = ctx.students.getLastRow() + 1;
     // 先頭0埋けのIDが数値化されて消えないよう、書き込み前にA列を文字列書式にする
     ctx.students.getRange(rowIndex, 1).setNumberFormat('@').setValue(id);
-    ctx.students.getRange(rowIndex, 2, 1, 6).setValues([[name, hash, salt, new Date(), grade, 0]]);
+    ctx.students.getRange(rowIndex, 2, 1, 7).setValues([[name, hash, salt, new Date(), grade, 0, guardian]]);
     return { ok: true, id: id, name: name };
   } finally {
     lock.releaseLock();

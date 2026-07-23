@@ -2270,6 +2270,7 @@
     registerForm: document.getElementById('registerForm'),
     registerName: document.getElementById('registerName'),
     registerGrade: document.getElementById('registerGrade'),
+    registerGuardian: document.getElementById('registerGuardian'),
     registerPassword: document.getElementById('registerPassword'),
     registerPasswordConfirm: document.getElementById('registerPasswordConfirm'),
     registerError: document.getElementById('registerError'),
@@ -2598,6 +2599,7 @@
     hideFieldError(els.registerError);
     var name = els.registerName.value.trim();
     var grade = els.registerGrade.value;
+    var guardian = els.registerGuardian.value.trim();
     var pw = els.registerPassword.value;
     var pwConfirm = els.registerPasswordConfirm.value;
     if (!name) { showFieldError(els.registerError, 'お名前を入力してください。'); return; }
@@ -2606,7 +2608,7 @@
     if (pw !== pwConfirm) { showFieldError(els.registerError, 'パスワードが一致しません。'); return; }
 
     els.registerSubmit.disabled = true;
-    apiPost('register', { name: name, grade: grade, password: pw }).then(function (res) {
+    apiPost('register', { name: name, grade: grade, guardian: guardian, password: pw }).then(function (res) {
       els.registerSubmit.disabled = false;
       if (!res.ok) {
         var msg = '登録に失敗しました。もう一度お試しください。';
