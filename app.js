@@ -680,6 +680,7 @@
     registerPasswordConfirm: document.getElementById('registerPasswordConfirm'),
     registerError: document.getElementById('registerError'),
     registerSubmit: document.getElementById('registerSubmit'),
+    guestStartBtn: document.getElementById('guestStartBtn'),
     appMain: document.getElementById('appMain'),
     userName: document.getElementById('userName'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -782,7 +783,7 @@
     updateStats();
 
     var session = loadSession();
-    if (session) {
+    if (session && session.id) {
       apiPost('log', { id: session.id, category: state.current.category, correct: isCorrect }).catch(function () { });
     }
   }
@@ -844,10 +845,12 @@
     switchTab('login');
   }
 
-  function showApp(name) {
+  function showApp(name, isGuest) {
     els.loginCard.hidden = true;
     els.appMain.hidden = false;
     els.userName.textContent = name;
+    els.historyToggle.hidden = !!isGuest;
+    els.historyPanel.hidden = true;
     drawNumberline();
     renderSettings();
     updateStats();
@@ -910,6 +913,11 @@
     });
   }
 
+  function handleGuestStart() {
+    saveSession({ id: null, name: 'ゲスト', guest: true });
+    showApp('ゲスト', true);
+  }
+
   function handleLogout() {
     clearSession();
     els.appMain.hidden = true;
@@ -954,7 +962,7 @@
     els.historyRecent.innerHTML = '';
 
     var session = loadSession();
-    if (!session) return;
+    if (!session || !session.id) return;
     apiPost('history', { id: session.id }).then(function (res) {
       if (!res.ok) { els.historySummary.textContent = '読み込みに失敗しました。'; return; }
       renderHistory(res);
@@ -971,10 +979,11 @@
   els.tabRegister.addEventListener('click', () => switchTab('register'));
   els.logoutBtn.addEventListener('click', handleLogout);
   els.historyToggle.addEventListener('click', toggleHistory);
+  els.guestStartBtn.addEventListener('click', handleGuestStart);
 
   var existingSession = loadSession();
   if (existingSession) {
-    showApp(existingSession.name);
+    showApp(existingSession.name, !!existingSession.guest);
   } else {
     resetLoginForms();
   }

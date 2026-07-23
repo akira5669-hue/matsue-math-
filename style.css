@@ -136,6 +136,20 @@ h1 {
   color: var(--c-incorrect);
 }
 .login-form .primary-btn { margin-top: 16px; }
+.guest-link {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.guest-link:hover { color: var(--c-ink); }
 
 /* User bar */
 .user-bar {
