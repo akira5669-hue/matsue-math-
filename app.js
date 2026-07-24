@@ -2322,6 +2322,8 @@
       answer = b;
       choices = buildChoices(b, [a, 360-a, b+10]);
       steps = [`円に内接する四角形の対角の和 = 180°`, `∠C = 180 − ${a} = ${b}°`];
+      const quadSvg = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><circle cx="50" cy="10" r="2.5" fill="#1c2127"/><circle cx="90" cy="50" r="2.5" fill="#1c2127"/><circle cx="50" cy="90" r="2.5" fill="#1c2127"/><circle cx="10" cy="50" r="2.5" fill="#1c2127"/><line x1="50" y1="10" x2="90" y2="50" stroke="#1c2127" stroke-width="1.2"/><line x1="90" y1="50" x2="50" y2="90" stroke="#1c2127" stroke-width="1.2"/><line x1="50" y1="90" x2="10" y2="50" stroke="#1c2127" stroke-width="1.2"/><line x1="10" y1="50" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><text x="50" y="7" font-size="10" fill="#1c2127" text-anchor="middle">A</text><text x="93" y="47" font-size="10" fill="#888" text-anchor="start">B</text><text x="50" y="99" font-size="10" fill="#1c2127" text-anchor="middle">C</text><text x="7" y="47" font-size="10" fill="#888" text-anchor="end">D</text></svg>`;
+      questionHtml = quadSvg + `<span style="display:block">${question}</span>`;
     } else if (pat === 4) {
       // OA=OB=半径 → 二等辺三角形 → 中心角 → 円周角
       const cases4 = [
