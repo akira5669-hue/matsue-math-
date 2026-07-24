@@ -264,51 +264,81 @@
     return { category:'simul', question:q, answer, choices:buildChoices(answer,wrongs), steps };
   }
 
+  function quadPolyStr(x2C, xC, con) {
+    let s = x2C === 1 ? 'x²' : x2C === -1 ? '−x²' : `${x2C}x²`;
+    if (xC !== 0) {
+      const sign = xC < 0 ? '−' : '+';
+      const abs = Math.abs(xC);
+      s += ` ${sign} ${abs === 1 ? 'x' : abs + 'x'}`;
+    }
+    if (con !== 0) {
+      const sign = con < 0 ? '−' : '+';
+      s += ` ${sign} ${Math.abs(con)}`;
+    }
+    return s;
+  }
+
   function genExpand3() {
     const pat = randInt(0, 2);
-    let q, answer, steps, wrongs;
+    let q, answer, steps, candidates;
     if (pat === 0) {
-      // (ax+b)(cx+d) = x2Cx² + □x + con  穴埋め
+      // (ax+b)(cx+d) を展開
       const a = randInt(2, 3), b = randNonZero(-5, 5);
       const c = randInt(1, 3), d = randNonZero(-5, 5);
       const x2C = a*c, xC = a*d+b*c, con = b*d;
       const aD = a===1?'':a, bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
       const cD = c===1?'':c, dS = d<0?`− ${Math.abs(d)}`:`+ ${d}`;
-      const conS = con<0?`− ${Math.abs(con)}`:`+ ${con}`;
-      q = `(${aD}x ${bS})(${cD}x ${dS}) = ${x2C}x² + □x ${conS}。□ は？`;
+      q = `(${aD}x ${bS})(${cD}x ${dS}) を展開すると？`;
+      answer = quadPolyStr(x2C, xC, con);
       steps = [
         `(ax+b)(cx+d) = acx² + (ad+bc)x + bd`,
         `ad+bc = ${a}×${fmtNum(d)} + ${fmtNum(b)}×${c} = ${a*d}+${b*c} = ${xC}`,
+        `= ${answer}`,
       ];
-      answer = xC;
-      wrongs = [a*d, b*c, -xC].filter(v => v !== xC);
+      candidates = [
+        quadPolyStr(x2C, a*d, con),
+        quadPolyStr(x2C, b*c, con),
+        quadPolyStr(x2C, xC, -con),
+        quadPolyStr(x2C, xC+1, con),
+      ];
     } else if (pat === 1) {
-      // (ax+b)² = a²x² + □x + b²  穴埋め
+      // (ax+b)² を展開
       const a = randInt(2, 4), b = randNonZero(-6, 6);
       const x2C = a*a, xC = 2*a*b, con = b*b;
       const aD = a===1?'':a, bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
-      q = `(${aD}x ${bS})² = ${x2C}x² + □x + ${con}。□ は？`;
+      q = `(${aD}x ${bS})² を展開すると？`;
+      answer = quadPolyStr(x2C, xC, con);
       steps = [
         `(ax+b)² = a²x² + 2abx + b²`,
         `2ab = 2×${a}×${fmtNum(b)} = ${xC}`,
+        `= ${answer}`,
       ];
-      answer = xC;
-      wrongs = [a*b, -xC, xC+2*a].filter(v => v !== xC);
+      candidates = [
+        quadPolyStr(x2C, 0, con),
+        quadPolyStr(x2C, -xC, con),
+        quadPolyStr(x2C, a*b, con),
+        quadPolyStr(x2C, xC+2*a, con),
+      ];
     } else {
-      // (ax+b)(ax−b) = a²x² + □  穴埋め
+      // (ax+b)(ax−b) を展開
       const a = randInt(2, 4), b = randInt(1, 7);
       const x2C = a*a, con = -(b*b);
       const aD = a===1?'':a;
-      q = `(${aD}x + ${b})(${aD}x − ${b}) = ${x2C}x² + □。□ は？`;
+      q = `(${aD}x + ${b})(${aD}x − ${b}) を展開すると？`;
+      answer = quadPolyStr(x2C, 0, con);
       steps = [
         `(ax+b)(ax−b) = a²x² − b²`,
         `a = ${a}、b = ${b}`,
-        `= ${x2C}x² − ${b*b} → □ = ${con}`,
+        `= ${answer}`,
       ];
-      answer = con;
-      wrongs = [b*b, -x2C, con+1];
+      candidates = [
+        quadPolyStr(x2C, 0, -con),
+        quadPolyStr(x2C, 2*a*b, con),
+        quadPolyStr(x2C, 0, con+1),
+        quadPolyStr(x2C, 0, con-1),
+      ];
     }
-    return { category:'expand3', question:q, answer, choices:buildChoices(answer,wrongs), steps };
+    return { category:'expand3', question:q, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   function genFactor() {
@@ -1005,6 +1035,17 @@
     for (const w of wrongCandidates) {
       if (choices.length >= 4) break;
       if (w && !set.has(w)) { set.add(w); choices.push(w); }
+    }
+    // Fallback in case the supplied candidates weren't distinct enough (e.g. collided
+    // with the answer or each other): perturb the leading number of the answer string.
+    let guard = 0;
+    while (choices.length < 4 && guard < 30) {
+      guard++;
+      const m = answerStr.match(/^(-?\d+)([\s\S]*)$/);
+      const lead = m ? parseInt(m[1], 10) : 1;
+      const rest = m ? m[2] : answerStr;
+      const cand = `${lead + randNonZero(-3, 3)}${rest}`;
+      if (cand && !set.has(cand)) { set.add(cand); choices.push(cand); }
     }
     return shuffle(choices);
   }
@@ -2285,7 +2326,7 @@
   /* ---------- 円周角（中3） ---------- */
 
   function genCircleAngle() {
-    const pat = randInt(0, 4);
+    const pat = randInt(0, 3);
     let question, questionHtml, answer, choices, steps;
     const circSvg = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><circle cx="50" cy="10" r="2.5" fill="#1c2127"/><circle cx="18" cy="72" r="2.5" fill="#1c2127"/><circle cx="82" cy="72" r="2.5" fill="#1c2127"/><line x1="18" y1="72" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><line x1="82" y1="72" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><line x1="18" y1="72" x2="82" y2="72" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/></svg>`;
     if (pat === 0) {
@@ -2316,15 +2357,6 @@
       choices = buildChoices(x, [90, base, 180-base]);
       steps = [`∠ACB = 90°（半円の弧に対する円周角）`, `∠ABC = 180 − 90 − ${base} = ${x}°`];
     } else if (pat === 3) {
-      const a = randInt(6, 12)*10;
-      const b = 180 - a;
-      question = `円に内接する四角形で ∠A = ${a}°。対角 ∠C = x は？`;
-      answer = b;
-      choices = buildChoices(b, [a, 360-a, b+10]);
-      steps = [`円に内接する四角形の対角の和 = 180°`, `∠C = 180 − ${a} = ${b}°`];
-      const quadSvg = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><circle cx="50" cy="10" r="2.5" fill="#1c2127"/><circle cx="90" cy="50" r="2.5" fill="#1c2127"/><circle cx="50" cy="90" r="2.5" fill="#1c2127"/><circle cx="10" cy="50" r="2.5" fill="#1c2127"/><line x1="50" y1="10" x2="90" y2="50" stroke="#1c2127" stroke-width="1.2"/><line x1="90" y1="50" x2="50" y2="90" stroke="#1c2127" stroke-width="1.2"/><line x1="50" y1="90" x2="10" y2="50" stroke="#1c2127" stroke-width="1.2"/><line x1="10" y1="50" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><text x="50" y="7" font-size="10" fill="#1c2127" text-anchor="middle">A</text><text x="93" y="47" font-size="10" fill="#888" text-anchor="start">B</text><text x="50" y="99" font-size="10" fill="#1c2127" text-anchor="middle">C</text><text x="7" y="47" font-size="10" fill="#888" text-anchor="end">D</text></svg>`;
-      questionHtml = quadSvg + `<span style="display:block">${question}</span>`;
-    } else if (pat === 4) {
       // OA=OB=半径 → 二等辺三角形 → 中心角 → 円周角
       const cases4 = [
         {a:20,cen:140,ins:70,wrongs:[20,80,90]},
