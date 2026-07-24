@@ -1,7 +1,10 @@
 /**
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
- * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian
+ * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin
+ *
+ * 5日以上ログインが無かった場合、次回ログイン時にMPは0にリセットされる
+ * （経験値・レベルはリセットされない）。
  * Records  シート: timestamp | id | name | category | correct
  * Guardians シート: timestamp | guardianName | childId1 | childName1 | childId2 | childName2 | childId3 | childName3 | childId4 | childName4
  *
@@ -39,6 +42,7 @@ var GIFT_CATALOG = [
 
 // 交換受付期間: 5/1〜5/5、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
+  return true; // TEMP: 動作確認のため一時的に常時オープンにしている。確認後に元に戻す。
   var md = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'MM-dd');
   if (md >= '05-01' && md <= '05-03') return true;
   if (md === '12-30' || md === '12-31') return true;
@@ -57,6 +61,12 @@ function notifyAdminOfGiftRequest_(studentId, studentName, item) {
   }
 }
 
+// Apps Scriptエディタから直接実行して、メール送信の権限を許可するための関数。
+// 「実行」ボタンで選んで実行し、表示される権限確認画面で許可してください。
+function authorizeMailSendingTest() {
+  MailApp.sendEmail(ADMIN_EMAIL, '【権限確認用】正負の数トレーニング', 'このメールが届けば、MP交換申請の通知メールも正常に送れるようになります。');
+}
+
 function getOrInitSheets_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -71,8 +81,8 @@ function getOrInitSheets_() {
     }
   }
   if (students.getLastRow() === 0) {
-    students.appendRow(['id', 'name', 'passwordHash', 'salt', 'createdAt', 'grade', 'points', 'guardian']);
-    students.appendRow(['sample01', '見本 太郎', '', '', '', '', 0, '']);
+    students.appendRow(['id', 'name', 'passwordHash', 'salt', 'createdAt', 'grade', 'points', 'guardian', 'level', 'exp', 'lastLogin']);
+    students.appendRow(['sample01', '見本 太郎', '', '', '', '', 0, '', 1, 0, '']);
   }
 
   var records = ss.getSheetByName(RECORDS_SHEET);
@@ -116,7 +126,8 @@ function findStudentRow_(sheet, id) {
     if (String(data[i][0]).trim() === String(id).trim()) {
       return {
         rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
-        grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || ''
+        grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
+        level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null
       };
     }
   }
@@ -164,6 +175,13 @@ function doPost(e) {
     return jsonOut_({ ok: true, catalog: GIFT_CATALOG, isOpen: isInExchangeWindow_(), windowText: EXCHANGE_WINDOW_TEXT });
   } else if (action === 'redeemGift') {
     return jsonOut_(handleRedeemGift_(ctx, body));
+  } else if (action === 'testMailTemp') {
+    try {
+      MailApp.sendEmail(ADMIN_EMAIL, 'テストメール', 'これはテストメールです。');
+      return jsonOut_({ ok: true, quota: MailApp.getRemainingDailyQuota() });
+    } catch (e) {
+      return jsonOut_({ ok: false, error: String(e) });
+    }
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -195,7 +213,7 @@ function handleRegister_(ctx, body) {
   var guardian = String(body.guardian || '').trim();
   var password = String(body.password || '');
   if (!name || !password) return { ok: false, error: 'missing_fields' };
-  if (!/^\d{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
+  if (!/^[A-Za-z0-9]{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
 
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -206,26 +224,59 @@ function handleRegister_(ctx, body) {
     var rowIndex = ctx.students.getLastRow() + 1;
     // 先頭0埋けのIDが数値化されて消えないよう、書き込み前にA列を文字列書式にする
     ctx.students.getRange(rowIndex, 1).setNumberFormat('@').setValue(id);
-    ctx.students.getRange(rowIndex, 2, 1, 7).setValues([[name, hash, salt, new Date(), grade, 0, guardian]]);
+    var now = new Date();
+    ctx.students.getRange(rowIndex, 2, 1, 10).setValues([[name, hash, salt, now, grade, 0, guardian, 1, 0, now]]);
     return { ok: true, id: id, name: name };
   } finally {
     lock.releaseLock();
   }
 }
 
+var LOGIN_MAX_ATTEMPTS = 5;
+var LOGIN_LOCK_SECONDS = 15 * 60;
+
 function handleLogin_(ctx, body) {
   var id = String(body.id || '').trim();
   var password = String(body.password || '');
   if (!id || !password) return { ok: false, error: 'missing_fields' };
+
+  var cache = CacheService.getScriptCache();
+  var attemptKey = 'loginfail_' + id;
+  var attempts = Number(cache.get(attemptKey)) || 0;
+  if (attempts >= LOGIN_MAX_ATTEMPTS) {
+    return { ok: false, error: 'locked', retryAfterMinutes: Math.ceil(LOGIN_LOCK_SECONDS / 60) };
+  }
 
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
   if (!row.passwordHash) return { ok: false, error: 'no_password' };
 
   var hash = sha256Hex_(password + row.salt);
-  if (hash !== row.passwordHash) return { ok: false, error: 'wrong_password' };
+  if (hash !== row.passwordHash) {
+    attempts++;
+    cache.put(attemptKey, String(attempts), LOGIN_LOCK_SECONDS);
+    if (attempts >= LOGIN_MAX_ATTEMPTS) {
+      return { ok: false, error: 'locked', retryAfterMinutes: Math.ceil(LOGIN_LOCK_SECONDS / 60) };
+    }
+    return { ok: false, error: 'wrong_password', attemptsRemaining: LOGIN_MAX_ATTEMPTS - attempts };
+  }
 
-  return { ok: true, name: row.name, points: row.points };
+  cache.remove(attemptKey);
+
+  var now = new Date();
+  var points = row.points;
+  var pointsReset = false;
+  if (row.lastLogin) {
+    var daysSince = Math.floor((now.getTime() - new Date(row.lastLogin).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysSince >= 5 && points > 0) {
+      points = 0;
+      pointsReset = true;
+      ctx.students.getRange(row.rowIndex, 7).setValue(0);
+    }
+  }
+  ctx.students.getRange(row.rowIndex, 11).setValue(now);
+
+  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp };
 }
 
 function handleGetPoints_(ctx, body) {
@@ -233,7 +284,7 @@ function handleGetPoints_(ctx, body) {
   if (!id) return { ok: false, error: 'missing_id' };
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
-  return { ok: true, points: row.points };
+  return { ok: true, points: row.points, level: row.level, exp: row.exp };
 }
 
 function handleLog_(ctx, body) {
@@ -317,6 +368,13 @@ function handleSyncPoints_(ctx, body) {
   if (!row) return { ok: false, error: 'not_found' };
 
   ctx.students.getRange(row.rowIndex, 7).setValue(Math.max(0, Math.floor(points)));
+
+  if (body.level !== undefined && body.exp !== undefined) {
+    var level = Math.max(1, Math.floor(Number(body.level)) || 1);
+    var exp = Math.max(0, Math.floor(Number(body.exp)) || 0);
+    ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[level, exp]]);
+  }
+
   return { ok: true };
 }
 
@@ -346,12 +404,16 @@ function handleRanking_(ctx, body) {
   for (var i = 1; i < data.length; i++) {
     var id = String(data[i][0]).trim();
     if (!id) continue;
-    var points = Number(data[i][6]) || 0;
-    rows.push({ id: id, points: points });
+    var level = Number(data[i][8]) || 1;
+    var exp = Number(data[i][9]) || 0;
+    rows.push({ id: id, level: level, exp: exp });
   }
-  rows.sort(function (a, b) { return b.points - a.points; });
+  rows.sort(function (a, b) {
+    if (b.level !== a.level) return b.level - a.level;
+    return b.exp - a.exp;
+  });
   var top = rows.slice(0, 50).map(function (r, idx) {
-    return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, isYou: r.id === myId };
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
@@ -363,17 +425,28 @@ function handleRegisterGuardian_(ctx, body) {
     return { ok: false, error: 'missing_fields' };
   }
 
+  var cache = CacheService.getScriptCache();
   for (var i = 0; i < children.length; i++) {
     var c = children[i];
     var childId = String((c && c.id) || '').trim();
     var childPassword = String((c && c.password) || '');
     if (!childId || !childPassword) return { ok: false, error: 'missing_fields', index: i };
 
+    var attemptKey = 'loginfail_' + childId;
+    if ((Number(cache.get(attemptKey)) || 0) >= LOGIN_MAX_ATTEMPTS) {
+      return { ok: false, error: 'child_locked', index: i, retryAfterMinutes: Math.ceil(LOGIN_LOCK_SECONDS / 60) };
+    }
+
     var row = findStudentRow_(ctx.students, childId);
     if (!row || !row.passwordHash) return { ok: false, error: 'child_mismatch', index: i };
     var hash = sha256Hex_(childPassword + row.salt);
-    if (hash !== row.passwordHash) return { ok: false, error: 'child_mismatch', index: i };
+    if (hash !== row.passwordHash) {
+      var attempts = (Number(cache.get(attemptKey)) || 0) + 1;
+      cache.put(attemptKey, String(attempts), LOGIN_LOCK_SECONDS);
+      return { ok: false, error: 'child_mismatch', index: i };
+    }
   }
+  children.forEach(function (c) { cache.remove('loginfail_' + String(c.id).trim()); });
 
   var rowValues = [new Date(), guardianName];
   for (var j = 0; j < 4; j++) {

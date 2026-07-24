@@ -2247,6 +2247,7 @@
     statCorrect: document.getElementById('statCorrect'),
     statRate: document.getElementById('statRate'),
     statPoints: document.getElementById('statPoints'),
+    statExpSub: document.getElementById('statExpSub'),
     statLevel: document.getElementById('statLevel'),
     expBarInner: document.getElementById('expBarInner'),
     enemyEmoji: document.getElementById('enemyEmoji'),
@@ -2400,6 +2401,7 @@
     els.hpBarInner.style.background = hp <= 3 ? '#ef4444' : hp <= 6 ? '#f59e0b' : '#22c55e';
     els.hpText.textContent = `${hp}/10`;
     els.statPoints.textContent = state.points;
+    els.statExpSub.textContent = `EXP ${state.exp} (Lv.${state.level})`;
     els.statLevel.textContent = state.level;
     els.expBarInner.style.width = `${(state.exp / EXP_PER_LEVEL) * 100}%`;
   }
@@ -2453,7 +2455,7 @@
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', { id: session.id, points: state.points }).catch(function () { });
+        apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
       }
       const nextEnemy = ENEMIES[state.enemyIdx];
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
@@ -2526,17 +2528,17 @@
 
   /* ---------- ログイン画面 ---------- */
 
-  function digitsOnly(input) {
+  function alphanumericOnly(input) {
     input.addEventListener('input', function () {
-      input.value = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+      input.value = input.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 4);
     });
   }
-  digitsOnly(els.loginPassword);
-  digitsOnly(els.registerPassword);
-  digitsOnly(els.registerPasswordConfirm);
+  alphanumericOnly(els.loginPassword);
+  alphanumericOnly(els.registerPassword);
+  alphanumericOnly(els.registerPasswordConfirm);
   for (let ci = 0; ci < 4; ci++) {
     const pwEl = document.getElementById('childPassword' + ci);
-    if (pwEl) digitsOnly(pwEl);
+    if (pwEl) alphanumericOnly(pwEl);
   }
 
   function showFieldError(el, msg) {
@@ -2600,30 +2602,53 @@
         var msg = '通信に失敗しました。もう一度お試しください。';
         if (res.error === 'not_found') msg = 'そのIDは登録されていません。先生に確認してください。';
         else if (res.error === 'no_password') msg = 'まだパスワードが設定されていません。「新規登録」から設定してください。';
-        else if (res.error === 'wrong_password') msg = 'パスワードが違います。';
+        else if (res.error === 'wrong_password') {
+          msg = 'パスワードが違います。';
+          if (res.attemptsRemaining !== undefined) msg += `（あと${res.attemptsRemaining}回間違えるとロックされます）`;
+        } else if (res.error === 'locked') {
+          msg = `パスワードを何度も間違えたため、${res.retryAfterMinutes}分ほどログインできません。しばらくしてから再度お試しください。`;
+        }
         showFieldError(els.loginError, msg);
         return;
       }
       saveSession({ id: id, name: res.name });
-      reconcilePoints(id, res.points);
+      reconcilePoints(id, res.points, res.level, res.exp);
       showApp(res.name, false);
+      if (res.pointsReset) {
+        window.alert('5日以上ログインが無かったため、MPが0にリセットされました。レベル・EXPはそのまま残っています。');
+      }
     }).catch(function () {
       els.loginSubmit.disabled = false;
       showFieldError(els.loginError, '通信に失敗しました。もう一度お試しください。');
     });
   }
 
-  // ログイン・再開時に、端末側とサーバー側のMPのうち大きい方に揃える
-  // （サーバー側での付与や別端末での進捗を取りこぼさない一方、
-  // 同期し損ねた分の進捗も失わないようにする）。
-  function reconcilePoints(id, serverPoints) {
+  // レベル・EXPは (level, exp) のペアで「進み具合」を比較する
+  function isProgressGreater(level1, exp1, level2, exp2) {
+    if (level1 !== level2) return level1 > level2;
+    return exp1 > exp2;
+  }
+
+  // ログイン・再開時に、端末側とサーバー側のMP・レベル・EXPのうち
+  // 進んでいる方に揃える（サーバー側での付与や別端末での進捗を
+  // 取りこぼさない一方、同期し損ねた分の進捗も失わないようにする）。
+  function reconcilePoints(id, serverPoints, serverLevel, serverExp) {
     var sp = Number(serverPoints) || 0;
-    if (sp > state.points) {
-      state.points = sp;
+    var sl = Number(serverLevel) || 1;
+    var se = Number(serverExp) || 0;
+    var changed = false;
+
+    if (sp > state.points) { state.points = sp; changed = true; }
+    if (isProgressGreater(sl, se, state.level, state.exp)) {
+      state.level = sl; state.exp = se; changed = true;
+    }
+
+    if (changed) {
       saveGameState(state);
       updateGameHud();
-    } else if (sp < state.points) {
-      apiPost('syncPoints', { id: id, points: state.points }).catch(function () { });
+    }
+    if (sp < state.points || isProgressGreater(state.level, state.exp, sl, se)) {
+      apiPost('syncPoints', { id: id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
     }
   }
 
@@ -2637,7 +2662,7 @@
     var pwConfirm = els.registerPasswordConfirm.value;
     if (!name) { showFieldError(els.registerError, 'お名前を入力してください。'); return; }
     if (!grade) { showFieldError(els.registerError, '在籍学年を選択してください。'); return; }
-    if (!/^\d{4}$/.test(pw)) { showFieldError(els.registerError, 'パスワードは数字4桁で入力してください。'); return; }
+    if (!/^[A-Za-z0-9]{4}$/.test(pw)) { showFieldError(els.registerError, 'パスワードは英数字4桁で入力してください。'); return; }
     if (pw !== pwConfirm) { showFieldError(els.registerError, 'パスワードが一致しません。'); return; }
 
     els.registerSubmit.disabled = true;
@@ -2646,7 +2671,7 @@
       if (!res.ok) {
         var msg = '登録に失敗しました。もう一度お試しください。';
         if (res.error === 'missing_fields') msg = 'お名前とパスワードを入力してください。';
-        else if (res.error === 'invalid_password') msg = 'パスワードは数字4桁で入力してください。';
+        else if (res.error === 'invalid_password') msg = 'パスワードは英数字4桁で入力してください。';
         showFieldError(els.registerError, msg);
         return;
       }
@@ -2711,8 +2736,8 @@
         showFieldError(els.guardianError, `お子様${i + 1}人目のお名前・ID・パスワードをすべて入力してください。`);
         return;
       }
-      if (!/^\d{4}$/.test(password)) {
-        showFieldError(els.guardianError, `お子様${i + 1}人目のパスワードは数字4桁で入力してください。`);
+      if (!/^[A-Za-z0-9]{4}$/.test(password)) {
+        showFieldError(els.guardianError, `お子様${i + 1}人目のパスワードは英数字4桁で入力してください。`);
         return;
       }
       children.push({ name: name, id: id, password: password });
@@ -2725,6 +2750,8 @@
         var msg = '登録に失敗しました。もう一度お試しください。';
         if (res.error === 'child_mismatch') {
           msg = `お子様${res.index + 1}人目のIDまたはパスワードが違います。ご確認ください。`;
+        } else if (res.error === 'child_locked') {
+          msg = `お子様${res.index + 1}人目のパスワードを何度も間違えたため、${res.retryAfterMinutes}分ほど確認できません。しばらくしてから再度お試しください。`;
         } else if (res.error === 'missing_fields') {
           msg = '入力に不足があります。ご確認ください。';
         }
@@ -2835,11 +2862,11 @@
       els.rankingList.innerHTML = '';
       return;
     }
-    els.rankingSummary.textContent = `MP上位 ${res.ranking.length} 名`;
+    els.rankingSummary.textContent = `経験値上位 ${res.ranking.length} 名`;
     els.rankingList.innerHTML = res.ranking.map(function (r) {
       var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
       var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
-      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">${r.points}MP</span></div>`;
+      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">Lv.${r.level}（EXP ${r.exp}）</span></div>`;
     }).join('');
   }
 
@@ -2959,7 +2986,7 @@
     showApp(existingSession.name, !!existingSession.guest);
     if (existingSession.id) {
       apiPost('getPoints', { id: existingSession.id }).then(function (res) {
-        if (res.ok) reconcilePoints(existingSession.id, res.points);
+        if (res.ok) reconcilePoints(existingSession.id, res.points, res.level, res.exp);
       }).catch(function () { });
     }
   } else {

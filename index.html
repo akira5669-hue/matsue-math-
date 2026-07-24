@@ -51,8 +51,8 @@
       <label class="login-label" for="loginId">生徒ID</label>
       <input class="login-input" id="loginId" name="id" type="text" autocomplete="username" required />
 
-      <label class="login-label" for="loginPassword">パスワード（数字4桁）</label>
-      <input class="login-input" id="loginPassword" name="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" required />
+      <label class="login-label" for="loginPassword">パスワード（英数字4桁）</label>
+      <input class="login-input" id="loginPassword" name="password" type="password" maxlength="4" autocomplete="current-password" required />
 
       <p class="login-error" id="loginError" hidden></p>
 
@@ -60,7 +60,7 @@
     </form>
 
     <form id="registerForm" class="login-form" hidden>
-      <p class="login-hint">生徒本人・保護者の方どちらでも登録できます。お名前（漢字）と、これから使うパスワード（数字4桁）を決めて入力してください。IDは登録後に自動で発行されます。</p>
+      <p class="login-hint">生徒本人・保護者の方どちらでも登録できます。お名前（漢字）と、これから使うパスワード（英数字4桁）を決めて入力してください。IDは登録後に自動で発行されます。</p>
 
       <label class="login-label" for="registerName">お子様のお名前（漢字）</label>
       <input class="login-input" id="registerName" name="name" type="text" autocomplete="name" placeholder="例：松江 太郎" required />
@@ -79,11 +79,11 @@
       <label class="login-label" for="registerGuardian">保護者名（任意）</label>
       <input class="login-input" id="registerGuardian" name="guardian" type="text" autocomplete="off" />
 
-      <label class="login-label" for="registerPassword">新しいパスワード（数字4桁）</label>
-      <input class="login-input" id="registerPassword" name="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required />
+      <label class="login-label" for="registerPassword">新しいパスワード（英数字4桁）</label>
+      <input class="login-input" id="registerPassword" name="password" type="password" maxlength="4" autocomplete="new-password" required />
 
       <label class="login-label" for="registerPasswordConfirm">パスワード（確認）</label>
-      <input class="login-input" id="registerPasswordConfirm" name="passwordConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required />
+      <input class="login-input" id="registerPasswordConfirm" name="passwordConfirm" type="password" maxlength="4" autocomplete="new-password" required />
 
       <p class="login-error" id="registerError" hidden></p>
 
@@ -108,8 +108,8 @@
           <input class="login-input" id="childName0" type="text" required />
           <label class="login-label" for="childId0">お子様のID</label>
           <input class="login-input" id="childId0" type="text" inputmode="numeric" />
-          <label class="login-label" for="childPassword0">お子様のパスワード（数字4桁）</label>
-          <input class="login-input" id="childPassword0" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+          <label class="login-label" for="childPassword0">お子様のパスワード（英数字4桁）</label>
+          <input class="login-input" id="childPassword0" type="password" maxlength="4" />
         </div>
         <div class="guardian-child" data-child-index="1" hidden>
           <p class="guardian-child-title">お子様 2人目</p>
@@ -117,8 +117,8 @@
           <input class="login-input" id="childName1" type="text" />
           <label class="login-label" for="childId1">お子様のID</label>
           <input class="login-input" id="childId1" type="text" inputmode="numeric" />
-          <label class="login-label" for="childPassword1">お子様のパスワード（数字4桁）</label>
-          <input class="login-input" id="childPassword1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+          <label class="login-label" for="childPassword1">お子様のパスワード（英数字4桁）</label>
+          <input class="login-input" id="childPassword1" type="password" maxlength="4" />
         </div>
         <div class="guardian-child" data-child-index="2" hidden>
           <p class="guardian-child-title">お子様 3人目</p>
@@ -126,8 +126,8 @@
           <input class="login-input" id="childName2" type="text" />
           <label class="login-label" for="childId2">お子様のID</label>
           <input class="login-input" id="childId2" type="text" inputmode="numeric" />
-          <label class="login-label" for="childPassword2">お子様のパスワード（数字4桁）</label>
-          <input class="login-input" id="childPassword2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+          <label class="login-label" for="childPassword2">お子様のパスワード（英数字4桁）</label>
+          <input class="login-input" id="childPassword2" type="password" maxlength="4" />
         </div>
         <div class="guardian-child" data-child-index="3" hidden>
           <p class="guardian-child-title">お子様 4人目</p>
@@ -135,8 +135,8 @@
           <input class="login-input" id="childName3" type="text" />
           <label class="login-label" for="childId3">お子様のID</label>
           <input class="login-input" id="childId3" type="text" inputmode="numeric" />
-          <label class="login-label" for="childPassword3">お子様のパスワード（数字4桁）</label>
-          <input class="login-input" id="childPassword3" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
+          <label class="login-label" for="childPassword3">お子様のパスワード（英数字4桁）</label>
+          <input class="login-input" id="childPassword3" type="password" maxlength="4" />
         </div>
       </div>
 
@@ -170,7 +170,7 @@
     </section>
 
     <section class="ranking-panel" id="rankingPanel" hidden>
-      <h3 class="history-title">MPランキング（上位50位）</h3>
+      <h3 class="history-title">経験値ランキング（上位50位）</h3>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
       <div class="ranking-list" id="rankingList"></div>
     </section>
@@ -200,6 +200,7 @@
       <div class="stat">
         <span class="stat-label">MP</span>
         <span class="stat-value" id="statPoints">0</span>
+        <span class="stat-sub" id="statExpSub">EXP 0</span>
       </div>
       <button id="resetBtn" class="ghost-btn" type="button">リセット</button>
     </section>
