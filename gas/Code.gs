@@ -7,6 +7,13 @@
  * （経験値・レベルはリセットされない）。
  * Records  シート: timestamp | id | name | category | correct
  * Guardians シート: timestamp | guardianName | childId1 | childName1 | childId2 | childName2 | childId3 | childName3 | childId4 | childName4
+ * GiftRequests シート: timestamp | id | name | item | yen | mp | status | code
+ * GiftCodes シート: itemId | code | status | usedBy | usedAt
+ *   在庫プール方式：先生が事前にコードをGiftCodesシートへ追加（status列は
+ *   空欄でOK、未使用として扱う）。交換申請時に未使用コードを1件自動で
+ *   割り当て、即座に本人へ表示する（購入自体は引き続き先生が手動で行う）。
+ *   在庫が無い場合は交換不成立（MPは減らない）。在庫僅少・在庫切れは
+ *   管理者へ自動メール通知される。
  *
  * 新規登録は名前（漢字）・在籍学年・パスワード（数字4桁）を受け取り、
  * IDは登録順の連番（5桁・0埋め、例: 00001）を自動発行する。
@@ -31,7 +38,7 @@ var EXCHANGE_WINDOW_TEXT = '5月1日〜3日、12月30日〜31日、1月1日';
 // ここを唯一の正として毎回サーバー側で検証する。
 var GIFT_CATALOG = [
   { itemId: 'amazon300', label: 'Amazonギフト券 300円分', yen: 300, mp: 3000 },
-  { itemId: 'amazon500', label: 'Amazonギフト券 500円分', yen: 500, mp: 5000 },
+  { itemId: 'amazon700', label: 'Amazonギフト券 700円分', yen: 700, mp: 7000 },
   { itemId: 'amazon1000', label: 'Amazonギフト券 1000円分', yen: 1000, mp: 10000 },
   { itemId: 'amazon2000', label: 'Amazonギフト券 2000円分', yen: 2000, mp: 20000 },
   { itemId: 'amazon5000', label: 'Amazonギフト券 5000円分', yen: 5000, mp: 50000 },
@@ -39,6 +46,9 @@ var GIFT_CATALOG = [
   { itemId: 'book500', label: '図書カード 500円分', yen: 500, mp: 5000 },
   { itemId: 'book1000', label: '図書カード 1000円分', yen: 1000, mp: 10000 },
 ];
+
+var GIFTCODES_SHEET = 'GiftCodes';
+var LOW_STOCK_THRESHOLD = 2;
 
 // 交換受付期間: 5/1〜5/5、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
@@ -50,14 +60,37 @@ function isInExchangeWindow_() {
   return false;
 }
 
-function notifyAdminOfGiftRequest_(studentId, studentName, item) {
+function notifyAdminOfGiftDelivery_(studentId, studentName, item, remainingStock) {
   try {
-    var subject = '【正負の数トレーニング】MPギフト交換申請: ' + studentName + '（' + studentId + '）';
-    var body = studentName + '（ID: ' + studentId + '）さんが「' + item.label + '」（' + item.mp + 'MP）に交換申請しました。\n\n'
-      + 'スプレッドシートの「' + GIFTS_SHEET + '」シートから内容を確認し、ギフトコードの手配をお願いします。';
+    var subject = '【正負の数トレーニング】MP交換で自動発行: ' + studentName + '（' + studentId + '）';
+    var body = studentName + '（ID: ' + studentId + '）さんに「' + item.label + '」（' + item.mp + 'MP）のコードを自動発行しました。\n\n'
+      + 'その商品の残り在庫: ' + remainingStock + '枚\n\n'
+      + '詳細はスプレッドシートの「' + GIFTS_SHEET + '」「' + GIFTCODES_SHEET + '」シートをご確認ください。';
     MailApp.sendEmail(ADMIN_EMAIL, subject, body);
   } catch (e) {
-    // メール送信に失敗しても交換申請自体は成立させる
+    // メール送信に失敗しても交換自体は成立させる
+  }
+}
+
+function notifyAdminOfLowStock_(item, remainingStock) {
+  try {
+    var subject = '【正負の数トレーニング】在庫僅少: ' + item.label;
+    var body = '「' + item.label + '」の在庫コードが残り' + remainingStock + '枚になりました。\n\n'
+      + '「' + GIFTCODES_SHEET + '」シートに新しいコードを追加してください（itemId列に「' + item.itemId + '」、code列にコード、status列は空欄またはunusedのままでOKです）。';
+    MailApp.sendEmail(ADMIN_EMAIL, subject, body);
+  } catch (e) {
+    // メール送信に失敗しても処理は続行する
+  }
+}
+
+function notifyAdminOfOutOfStock_(studentId, studentName, item) {
+  try {
+    var subject = '【正負の数トレーニング】在庫切れで交換失敗: ' + item.label;
+    var body = studentName + '（ID: ' + studentId + '）さんが「' + item.label + '」に交換しようとしましたが、在庫コードが無かったため交換できませんでした（MPは減っていません）。\n\n'
+      + '「' + GIFTCODES_SHEET + '」シートにコードを追加してください。';
+    MailApp.sendEmail(ADMIN_EMAIL, subject, body);
+  } catch (e) {
+    // メール送信に失敗しても処理は続行する
   }
 }
 
@@ -106,10 +139,18 @@ function getOrInitSheets_() {
     gifts = ss.insertSheet(GIFTS_SHEET);
   }
   if (gifts.getLastRow() === 0) {
-    gifts.appendRow(['timestamp', 'id', 'name', 'item', 'yen', 'mp', 'status']);
+    gifts.appendRow(['timestamp', 'id', 'name', 'item', 'yen', 'mp', 'status', 'code']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts };
+  var giftCodes = ss.getSheetByName(GIFTCODES_SHEET);
+  if (!giftCodes) {
+    giftCodes = ss.insertSheet(GIFTCODES_SHEET);
+  }
+  if (giftCodes.getLastRow() === 0) {
+    giftCodes.appendRow(['itemId', 'code', 'status', 'usedBy', 'usedAt']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes };
 }
 
 function sha256Hex_(text) {
@@ -462,6 +503,35 @@ function handleRegisterGuardian_(ctx, body) {
   return { ok: true };
 }
 
+// 在庫プールから未使用コードを1件取得して使用済みにする（呼び出し側でロック済みが前提）。
+// 見つからなければnullを返す。
+function claimGiftCode_(ctx, itemId, studentId) {
+  var data = ctx.giftCodes.getDataRange().getValues();
+  var claimedRow = -1;
+  var code = null;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() !== itemId) continue;
+    var status = String(data[i][2] || '').trim().toLowerCase();
+    if (status === 'used') continue;
+    claimedRow = i + 1;
+    code = data[i][1];
+    break;
+  }
+  if (claimedRow === -1) return null;
+
+  ctx.giftCodes.getRange(claimedRow, 3, 1, 3).setValues([['used', studentId, new Date()]]);
+
+  var remaining = 0;
+  for (var j = 1; j < data.length; j++) {
+    if (String(data[j][0]).trim() !== itemId) continue;
+    if (j + 1 === claimedRow) continue; // 今取得した分は除く
+    var st = String(data[j][2] || '').trim().toLowerCase();
+    if (st !== 'used') remaining++;
+  }
+
+  return { code: code, remainingStock: remaining };
+}
+
 function handleRedeemGift_(ctx, body) {
   var id = String(body.id || '').trim();
   var itemId = String(body.itemId || '').trim();
@@ -481,12 +551,21 @@ function handleRedeemGift_(ctx, body) {
     if (!row) return { ok: false, error: 'not_found' };
     if (row.points < item.mp) return { ok: false, error: 'insufficient_points' };
 
+    var claimed = claimGiftCode_(ctx, itemId, id);
+    if (!claimed) {
+      notifyAdminOfOutOfStock_(id, row.name, item);
+      return { ok: false, error: 'out_of_stock' };
+    }
+
     var remaining = row.points - item.mp;
     ctx.students.getRange(row.rowIndex, 7).setValue(remaining);
-    ctx.gifts.appendRow([new Date(), id, row.name, item.label, item.yen, item.mp, '申請中']);
-    notifyAdminOfGiftRequest_(id, row.name, item);
+    ctx.gifts.appendRow([new Date(), id, row.name, item.label, item.yen, item.mp, '発行済み', claimed.code]);
+    notifyAdminOfGiftDelivery_(id, row.name, item, claimed.remainingStock);
+    if (claimed.remainingStock <= LOW_STOCK_THRESHOLD) {
+      notifyAdminOfLowStock_(item, claimed.remainingStock);
+    }
 
-    return { ok: true, remainingPoints: remaining };
+    return { ok: true, remainingPoints: remaining, code: claimed.code, itemLabel: item.label };
   } finally {
     lock.releaseLock();
   }

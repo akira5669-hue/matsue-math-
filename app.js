@@ -2303,6 +2303,7 @@
     giftPanel: document.getElementById('giftPanel'),
     giftSummary: document.getElementById('giftSummary'),
     giftList: document.getElementById('giftList'),
+    giftCodeResult: document.getElementById('giftCodeResult'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -2927,6 +2928,7 @@
         var msg = '交換に失敗しました。もう一度お試しください。';
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
         else if (res.error === 'out_of_period') msg = `交換受付期間外です。受付期間: ${res.windowText || giftWindowTextCache}`;
+        else if (res.error === 'out_of_stock') msg = '現在この商品の在庫がありません。先生に確認するか、しばらくしてからもう一度お試しください。';
         window.alert(msg);
         btn.disabled = false;
         return;
@@ -2934,7 +2936,9 @@
       state.points = res.remainingPoints;
       saveGameState(state);
       updateGameHud();
-      window.alert('交換を申請しました。先生からの案内をお待ちください。');
+      els.giftCodeResult.hidden = false;
+      els.giftCodeResult.innerHTML = `<p class="gift-code-title">🎉 交換完了！</p><p class="gift-code-item">${res.itemLabel}</p><p class="gift-code-value">${res.code}</p><p class="gift-code-note">このコードは忘れないよう控えておいてください。</p>`;
+      els.giftCodeResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       renderGiftList(giftCatalogCache, giftIsOpenCache, giftWindowTextCache);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
@@ -2951,6 +2955,8 @@
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
     els.giftList.innerHTML = '';
+    els.giftCodeResult.hidden = true;
+    els.giftCodeResult.innerHTML = '';
 
     var session = loadSession();
     if (!session || !session.id) return;
