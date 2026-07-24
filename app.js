@@ -2402,9 +2402,9 @@
     els.hpBarInner.style.background = hp <= 3 ? '#ef4444' : hp <= 6 ? '#f59e0b' : '#22c55e';
     els.hpText.textContent = `${hp}/10`;
     els.statPoints.textContent = state.points;
-    els.statExpSub.textContent = `EXP ${state.exp} (Lv.${state.level})`;
+    els.statExpSub.textContent = `経験値 ${state.exp}（Lv.${state.level}）`;
     els.statLevel.textContent = state.level;
-    els.expBarInner.style.width = `${(state.exp / EXP_PER_LEVEL) * 100}%`;
+    els.expBarInner.style.width = `${((state.exp % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
   }
 
   function handleAnswer(btn, choiceStr) {
@@ -2446,12 +2446,9 @@
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
       state.exp += 10;
-      let leveledUp = false;
-      while (state.exp >= EXP_PER_LEVEL && state.level < MAX_LEVEL) {
-        state.level++;
-        state.exp -= EXP_PER_LEVEL;
-        leveledUp = true;
-      }
+      const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
+      const leveledUp = newLevel > state.level;
+      state.level = newLevel;
       state.streak = 0;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       saveGameState(state);
@@ -2867,7 +2864,7 @@
     els.rankingList.innerHTML = res.ranking.map(function (r) {
       var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
       var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
-      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">Lv.${r.level}（EXP ${r.exp}）</span></div>`;
+      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">Lv.${r.level}（経験値 ${r.exp}）</span></div>`;
     }).join('');
   }
 
