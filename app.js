@@ -768,6 +768,10 @@
     { id: 'fracAddSub5', label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5, defaultOff: true },
     { id: 'decDiv5',     label: '小数のわり算（小5）',                 gen: genDecDiv5,     defaultOff: true },
     { id: 'fracMulDiv6', label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6, defaultOff: true },
+    { id: 'ratio6',       label: '比（小6）',                           gen: genRatio6,       defaultOff: true },
+    { id: 'scale6',       label: '拡大図と縮図（小6）',                 gen: genScale6,       defaultOff: true },
+    { id: 'dataValues6',  label: 'データの調べ方（小6）',               gen: genDataValues6,  defaultOff: true },
+    { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',      gen: genArrangeCombine6, defaultOff: true },
   ];
 
   /* ---------- 小学校範囲の分数ユーティリティ ---------- */
@@ -983,6 +987,184 @@
           `= ${answer}`,
         ];
     return { category: 'fracMulDiv6', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+  }
+
+  function buildChoicesFromList(answerStr, wrongCandidates) {
+    const set = new Set([answerStr]);
+    const choices = [answerStr];
+    for (const w of wrongCandidates) {
+      if (choices.length >= 4) break;
+      if (w && !set.has(w)) { set.add(w); choices.push(w); }
+    }
+    return shuffle(choices);
+  }
+
+  // 比（小6）：比を簡単にする・等しい比・比例配分
+  function genRatio6() {
+    const pat = randInt(0, 2);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      const g = randInt(2, 6);
+      let b1, b2;
+      do { b1 = randInt(1, 9); b2 = randInt(1, 9); } while (gcdFrac(b1, b2) !== 1 || b1 === b2);
+      const a = g * b1, b = g * b2;
+      question = `${a} : ${b} を最も簡単な整数の比にすると？`;
+      answer = `${b1}:${b2}`;
+      const candidates = [`${a}:${b}`, `${b2}:${b1}`, `${b1 + 1}:${b2}`, `${b1}:${b2 + 1}`];
+      choices = buildChoicesFromList(answer, candidates);
+      steps = [`最大公約数 ${g} で両方を割る`, `${a} ÷ ${g} : ${b} ÷ ${g} = ${answer}`];
+    } else if (pat === 1) {
+      const a = randInt(2, 9);
+      let b; do { b = randInt(2, 9); } while (gcdFrac(a, b) !== 1);
+      const k = randInt(2, 6);
+      const c = a * k;
+      const x = b * k;
+      question = `${a} : ${b} = ${c} : x のとき、x の値は？`;
+      answer = x;
+      const wrongs = [a * k, x + k, Math.max(1, x - k), c];
+      choices = buildChoices(answer, wrongs);
+      steps = [`${a}:${b} を ${k} 倍する`, `x = ${b} × ${k} = ${x}`];
+    } else {
+      let p, q;
+      do { p = randInt(1, 9); q = randInt(1, 9); } while (gcdFrac(p, q) !== 1 || p === q);
+      if (p > q) { [p, q] = [q, p]; }
+      const k = randInt(2, 9);
+      const total = k * (p + q);
+      const bigger = k * q;
+      const smaller = k * p;
+      question = `${total} を ${p} : ${q} に分けるとき、大きい方の数は？`;
+      answer = bigger;
+      const wrongs = [smaller, total - bigger + 1, bigger + k, Math.max(1, bigger - k)];
+      choices = buildChoices(answer, wrongs);
+      steps = [`${p} + ${q} = ${p + q} 等分にする`, `1あたり ${total} ÷ ${p + q} = ${k}`, `大きい方 = ${k} × ${q} = ${bigger}`];
+    }
+    return { category: 'ratio6', question, answer, choices, steps };
+  }
+
+  // 拡大図と縮図（小6）：拡大・縮小・縮尺の利用
+  function genScale6() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const L = randInt(2, 12);
+      const n = randInt(2, 3);
+      answer = L * n;
+      question = `${L} cm の辺を ${n} 倍に拡大すると、何 cm になる？`;
+      wrongs = [L + n, L * n + 1, Math.max(1, L * n - n), L];
+      steps = [`拡大図の辺の長さ = もとの長さ × 拡大率`, `${L} × ${n} = ${answer}`];
+    } else if (pat === 1) {
+      const n = randInt(2, 3);
+      const base = randInt(2, 10);
+      const L = base * n;
+      answer = base;
+      question = `${L} cm の辺を 1/${n} に縮小すると、何 cm になる？`;
+      wrongs = [L - base, base + n, Math.max(1, base - n), L];
+      steps = [`縮図の辺の長さ = もとの長さ × 縮小率`, `${L} × 1/${n} = ${L} ÷ ${n} = ${answer}`];
+    } else {
+      const scales = [
+        { den: 10000, metersPerCm: 100 },
+        { den: 20000, metersPerCm: 200 },
+        { den: 25000, metersPerCm: 250 },
+        { den: 50000, metersPerCm: 500 },
+        { den: 100000, metersPerCm: 1000 },
+      ];
+      const sc = scales[randInt(0, scales.length - 1)];
+      const mapCm = randInt(2, 9);
+      const actualMeters = mapCm * sc.metersPerCm;
+      let unit = 'm', displayVal = actualMeters;
+      if (actualMeters >= 1000 && actualMeters % 1000 === 0) {
+        unit = 'km';
+        displayVal = actualMeters / 1000;
+      }
+      answer = displayVal;
+      question = `縮尺 1:${sc.den} の地図で ${mapCm} cm の道のりは、実際には何 ${unit}？`;
+      wrongs = [displayVal * 2, Math.max(1, Math.round(displayVal / 2)), displayVal + mapCm, Math.max(1, displayVal - 1)];
+      steps = [`実際の道のり = 地図上の長さ × 縮尺の分母`, `${mapCm} × ${sc.den} = ${mapCm * sc.den} cm = ${actualMeters} m`].concat(unit === 'km' ? [`= ${displayVal} km`] : []);
+    }
+    const choices = buildChoices(answer, wrongs);
+    return { category: 'scale6', question, answer, choices, steps };
+  }
+
+  // データの調べ方（小6）：平均値・中央値・最頻値・範囲
+  function genDataValues6() {
+    const statTypes = ['mean', 'median', 'mode', 'range'];
+    const statType = statTypes[randInt(0, statTypes.length - 1)];
+    let arr, answer, steps;
+
+    if (statType === 'mode') {
+      const repeated = randInt(1, 20);
+      const others = [];
+      while (others.length < 3) {
+        const v = randInt(1, 20);
+        if (v !== repeated && !others.includes(v)) others.push(v);
+      }
+      arr = shuffle([repeated, repeated, ...others]);
+      answer = repeated;
+      steps = [`最も多く現れる値を探す`, `${repeated} が2回で最多 → 最頻値は ${answer}`];
+    } else if (statType === 'mean') {
+      const base = [];
+      while (base.length < 4) { base.push(randInt(1, 20)); }
+      const sum4 = base.reduce((s, v) => s + v, 0);
+      const rem = sum4 % 5;
+      const needMod = (5 - rem) % 5;
+      let last = needMod === 0 ? 5 : needMod;
+      last += 5 * randInt(0, 2);
+      arr = shuffle([...base, last]);
+      const sum = sum4 + last;
+      answer = sum / 5;
+      steps = [`合計 = ${arr.join(' + ')} = ${sum}`, `平均 = ${sum} ÷ 5 = ${answer}`];
+    } else {
+      const vals = [];
+      while (vals.length < 5) {
+        const v = randInt(1, 20);
+        if (!vals.includes(v)) vals.push(v);
+      }
+      arr = shuffle(vals.slice());
+      const sorted = vals.slice().sort((x, y) => x - y);
+      if (statType === 'median') {
+        answer = sorted[2];
+        steps = [`小さい順に並べる: ${sorted.join(', ')}`, `真ん中の値 → 中央値は ${answer}`];
+      } else {
+        answer = sorted[4] - sorted[0];
+        steps = [`範囲 = 最大値 − 最小値`, `= ${sorted[4]} − ${sorted[0]} = ${answer}`];
+      }
+    }
+
+    const label = { mean: '平均値', median: '中央値', mode: '最頻値', range: '範囲' }[statType];
+    const question = `次の5つの数値の${label}を求めよ： ${arr.join('、')}`;
+    const wrongs = [answer + 1, answer - 1, answer + 2, Math.max(0, answer - 2)];
+    const choices = buildChoices(answer, wrongs);
+    return { category: 'dataValues6', question, answer, choices, steps };
+  }
+
+  // 並べ方と組み合わせ方（小6）
+  function genArrangeCombine6() {
+    const pat = randInt(0, 1);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const n = randInt(3, 5);
+      let answerVal = 1;
+      const parts = [];
+      for (let i = n; i >= 1; i--) { answerVal *= i; parts.push(i); }
+      question = `1〜${n}の数字が1つずつ書かれた${n}枚のカードを1列に並べる並べ方は何通り？`;
+      answer = answerVal;
+      wrongs = [n * n, Math.max(1, Math.round(answerVal / n)), answerVal + n, Math.max(1, answerVal - n)];
+      steps = [`${parts.join(' × ')} = ${answerVal}通り`];
+    } else {
+      const n = randInt(4, 6);
+      const r = (n >= 5 && Math.random() < 0.5) ? 3 : 2;
+      let numerator = 1, denom = 1;
+      for (let i = 0; i < r; i++) { numerator *= (n - i); denom *= (i + 1); }
+      const answerVal = numerator / denom;
+      question = `${n}人の中から ${r}人を選ぶ組み合わせは何通り？`;
+      answer = answerVal;
+      wrongs = [numerator, answerVal + 1, Math.max(1, answerVal - 1), n * r];
+      steps = r === 2
+        ? [`${n} × ${n - 1} ÷ 2 = ${answerVal}通り`]
+        : [`${n} × ${n - 1} × ${n - 2} ÷ (3 × 2 × 1) = ${answerVal}通り`];
+    }
+    const choices = buildChoices(answer, wrongs);
+    return { category: 'arrangeCombine6', question, answer, choices, steps };
   }
 
   /* ---------- 問題生成関数 ---------- */
