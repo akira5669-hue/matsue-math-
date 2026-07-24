@@ -358,6 +358,11 @@
     return { category:'factor', question, answer, choices, steps };
   }
 
+  function sqrtStr(coef, radicand) {
+    if (coef === 0) return '0';
+    return coef === 1 ? `√${radicand}` : `${coef}√${radicand}`;
+  }
+
   function genSqrt() {
     const pat = randInt(0, 5);
     let q, answer, steps, wrongs;
@@ -382,9 +387,11 @@
       const a = nonPerf[randInt(0, nonPerf.length-1)];
       const n = randInt(1, 7), m = randInt(1, 7);
       const result = n + m;
-      q = `${n}√${a} + ${m}√${a} = □√${a}。□ は？`;
-      steps = [`√${a} を文字のように扱う`, `(${n} + ${m})√${a} = ${result}√${a}`, `□ = ${result}`];
-      answer = result; wrongs = [n-m, n*m, result+1];
+      const otherA = a === 2 ? 3 : 2;
+      q = `${n}√${a} + ${m}√${a} = ?`;
+      const answerStr = sqrtStr(result, a);
+      steps = [`√${a} を文字のように扱う`, `(${n} + ${m})√${a} = ${answerStr}`];
+      return { category:'sqrt', question:q, answer: answerStr, choices: buildChoicesFromList(answerStr, [sqrtStr(n*m, a), sqrtStr(result+1, a), sqrtStr(Math.max(1,result-1), a), sqrtStr(result, otherA)]), steps };
     } else if (pat === 2) {
       // (√a)²
       const a = randInt(2, 12);
@@ -411,9 +418,11 @@
       const a = nonPerf[randInt(0, nonPerf.length-1)];
       const m = randInt(1, 5), n = randInt(m+1, m+6);
       const result = n - m;
-      q = `${n}√${a} − ${m}√${a} = □√${a}。□ は？`;
-      steps = [`√${a} を文字のように扱う`, `(${n} − ${m})√${a} = ${result}√${a}`, `□ = ${result}`];
-      answer = result; wrongs = [n+m, Math.max(n*m, result+2), result-1].filter(v => v !== result);
+      const otherA = a === 2 ? 3 : 2;
+      q = `${n}√${a} − ${m}√${a} = ?`;
+      const answerStr = sqrtStr(result, a);
+      steps = [`√${a} を文字のように扱う`, `(${n} − ${m})√${a} = ${answerStr}`];
+      return { category:'sqrt', question:q, answer: answerStr, choices: buildChoicesFromList(answerStr, [sqrtStr(n+m, a), sqrtStr(result+1, a), sqrtStr(Math.max(1,result-1), a), sqrtStr(result, otherA)]), steps };
     }
     return { category:'sqrt', question:q, answer, choices:buildChoices(answer,wrongs), steps };
   }
@@ -691,16 +700,17 @@
       const cases = [
         [2,6,2,3],[3,6,3,2],[2,10,2,5],[5,10,5,2],
         [3,15,3,5],[5,15,5,3],[2,14,2,7],[7,14,7,2],
-        [2,12,2,6],[3,21,3,7],
+        [3,21,3,7],
       ];
       const [fa, fb, k, n] = cases[randInt(0, cases.length-1)];
-      q = `√${fa} × √${fb} = □√${n}。□ は？`;
+      q = `√${fa} × √${fb} = ?`;
+      const answerStr1 = sqrtStr(k, n);
       steps = [
         `√${fa} × √${fb} = √${fa*fb}`,
         `${fa*fb} = ${k*k} × ${n} と分解`,
-        `= ${k}√${n} → □ = ${k}`,
+        `= ${answerStr1}`,
       ];
-      answer = k; wrongs = [fa*fb, n, k+1];
+      return { category:'sqrtmd', question:q, answer: answerStr1, choices: buildChoicesFromList(answerStr1, [`√${fa*fb}`, sqrtStr(k+1, n), sqrtStr(Math.max(1,k-1), n), sqrtStr(k, fa)]), steps };
     } else if (pat === 2) {
       const result = randInt(2, 6);
       const b = nonPerf[randInt(0, nonPerf.length-1)], a = result*result*b;
@@ -713,13 +723,13 @@
     } else {
       const b = nonPerf[randInt(0, nonPerf.length-1)];
       const k = randInt(1, 5), a = k*b;
-      q = `${a}/√${b} を有理化すると □√${b}。□ は？`;
+      q = `${a}/√${b} を有理化すると？`;
+      const answerStr2 = sqrtStr(k, b);
       steps = [
         `分母に √${b} をかける: ${a}/√${b} × √${b}/√${b}`,
-        `= ${a}√${b} / ${b} = ${k}√${b}`,
-        `□ = ${k}`,
+        `= ${a}√${b} / ${b} = ${answerStr2}`,
       ];
-      answer = k; wrongs = [a, b, k+1];
+      return { category:'sqrtmd', question:q, answer: answerStr2, choices: buildChoicesFromList(answerStr2, [`${a}√${b}`, sqrtStr(k+1, b), sqrtStr(Math.max(1,k-1), b), sqrtStr(k, b===2?3:2)]), steps };
     }
     return { category:'sqrtmd', question:q, answer, choices:buildChoices(answer, wrongs), steps };
   }
