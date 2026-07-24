@@ -2349,6 +2349,8 @@
       answer = a;
       choices = buildChoices(a, [2*a, a/2, a+15]);
       steps = [`同じ弧に対する円周角は等しい`, `円周角 B = ${a}°`];
+      const svgSameArc = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><circle cx="18" cy="72" r="2.5" fill="#1c2127"/><circle cx="82" cy="72" r="2.5" fill="#1c2127"/><circle cx="50" cy="10" r="2.5" fill="#1c2127"/><circle cx="85" cy="35" r="2.5" fill="#1c2127"/><line x1="18" y1="72" x2="82" y2="72" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/><line x1="18" y1="72" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><line x1="82" y1="72" x2="50" y2="10" stroke="#1c2127" stroke-width="1.2"/><line x1="18" y1="72" x2="85" y2="35" stroke="#1c2127" stroke-width="1.2"/><line x1="82" y1="72" x2="85" y2="35" stroke="#1c2127" stroke-width="1.2"/><text x="50" y="7" font-size="10" fill="#1c2127" text-anchor="middle">A</text><text x="90" y="33" font-size="10" fill="#1c2127" text-anchor="start">B</text></svg>`;
+      questionHtml = svgSameArc + `<span style="display:block">${question}</span>`;
     } else if (pat === 2) {
       const base = randInt(2, 6)*10;
       const x = 90 - base;
@@ -2356,6 +2358,8 @@
       answer = x;
       choices = buildChoices(x, [90, base, 180-base]);
       steps = [`∠ACB = 90°（半円の弧に対する円周角）`, `∠ABC = 180 − 90 − ${base} = ${x}°`];
+      const svgDiameter = `<svg width="100" height="100" viewBox="0 0 100 100" style="display:block;margin:0 auto 8px"><circle cx="50" cy="50" r="40" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="#888" stroke-width="1.2" stroke-dasharray="3,2"/><circle cx="10" cy="50" r="2.5" fill="#1c2127"/><circle cx="90" cy="50" r="2.5" fill="#1c2127"/><circle cx="72" cy="18" r="2.5" fill="#1c2127"/><line x1="10" y1="50" x2="72" y2="18" stroke="#1c2127" stroke-width="1.2"/><line x1="90" y1="50" x2="72" y2="18" stroke="#1c2127" stroke-width="1.2"/><text x="4" y="47" font-size="10" fill="#1c2127" text-anchor="end">A</text><text x="95" y="47" font-size="10" fill="#1c2127" text-anchor="start">B</text><text x="72" y="12" font-size="10" fill="#1c2127" text-anchor="middle">C</text></svg>`;
+      questionHtml = svgDiameter + `<span style="display:block">${question}</span>`;
     } else if (pat === 3) {
       // OA=OB=半径 → 二等辺三角形 → 中心角 → 円周角
       const cases4 = [
