@@ -154,6 +154,8 @@ function doPost(e) {
     return jsonOut_(handleHistory_(ctx, body));
   } else if (action === 'syncPoints') {
     return jsonOut_(handleSyncPoints_(ctx, body));
+  } else if (action === 'getPoints') {
+    return jsonOut_(handleGetPoints_(ctx, body));
   } else if (action === 'ranking') {
     return jsonOut_(handleRanking_(ctx, body));
   } else if (action === 'registerGuardian') {
@@ -223,7 +225,15 @@ function handleLogin_(ctx, body) {
   var hash = sha256Hex_(password + row.salt);
   if (hash !== row.passwordHash) return { ok: false, error: 'wrong_password' };
 
-  return { ok: true, name: row.name };
+  return { ok: true, name: row.name, points: row.points };
+}
+
+function handleGetPoints_(ctx, body) {
+  var id = String(body.id || '').trim();
+  if (!id) return { ok: false, error: 'missing_id' };
+  var row = findStudentRow_(ctx.students, id);
+  if (!row) return { ok: false, error: 'not_found' };
+  return { ok: true, points: row.points };
 }
 
 function handleLog_(ctx, body) {

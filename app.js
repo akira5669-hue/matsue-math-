@@ -2605,11 +2605,26 @@
         return;
       }
       saveSession({ id: id, name: res.name });
+      reconcilePoints(id, res.points);
       showApp(res.name, false);
     }).catch(function () {
       els.loginSubmit.disabled = false;
       showFieldError(els.loginError, '通信に失敗しました。もう一度お試しください。');
     });
+  }
+
+  // ログイン・再開時に、端末側とサーバー側のMPのうち大きい方に揃える
+  // （サーバー側での付与や別端末での進捗を取りこぼさない一方、
+  // 同期し損ねた分の進捗も失わないようにする）。
+  function reconcilePoints(id, serverPoints) {
+    var sp = Number(serverPoints) || 0;
+    if (sp > state.points) {
+      state.points = sp;
+      saveGameState(state);
+      updateGameHud();
+    } else if (sp < state.points) {
+      apiPost('syncPoints', { id: id, points: state.points }).catch(function () { });
+    }
   }
 
   function handleRegisterSubmit(ev) {
@@ -2942,6 +2957,11 @@
   var existingSession = loadSession();
   if (existingSession) {
     showApp(existingSession.name, !!existingSession.guest);
+    if (existingSession.id) {
+      apiPost('getPoints', { id: existingSession.id }).then(function (res) {
+        if (res.ok) reconcilePoints(existingSession.id, res.points);
+      }).catch(function () { });
+    }
   } else {
     resetLoginForms();
   }
