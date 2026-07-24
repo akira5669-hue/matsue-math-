@@ -2298,6 +2298,10 @@
     rankingPanel: document.getElementById('rankingPanel'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
+    giftToggle: document.getElementById('giftToggle'),
+    giftPanel: document.getElementById('giftPanel'),
+    giftSummary: document.getElementById('giftSummary'),
+    giftList: document.getElementById('giftList'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -2455,7 +2459,7 @@
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const prevEnemy = ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
-      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}pt ` : '(本日のポイント上限に到達) ';
+      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP ` : '(本日のMP上限に到達) ';
       winHtml = `<div class="win-banner">${lvlMsg}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}</div>`;
     }
 
@@ -2572,6 +2576,8 @@
     els.historyPanel.hidden = true;
     els.rankingToggle.hidden = !!isGuest;
     els.rankingPanel.hidden = true;
+    els.giftToggle.hidden = !!isGuest;
+    els.giftPanel.hidden = true;
     drawNumberline();
     renderSettings();
     updateStats();
@@ -2723,6 +2729,7 @@
     els.appMain.hidden = true;
     els.historyPanel.hidden = true;
     els.rankingPanel.hidden = true;
+    els.giftPanel.hidden = true;
     els.loginCard.hidden = false;
     resetLoginForms();
     els.loginId.focus();
@@ -2786,6 +2793,7 @@
     var isHidden = els.historyPanel.hasAttribute('hidden');
     if (!isHidden) { els.historyPanel.setAttribute('hidden', ''); return; }
     els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -2812,11 +2820,11 @@
       els.rankingList.innerHTML = '';
       return;
     }
-    els.rankingSummary.textContent = `ポイント上位 ${res.ranking.length} 名`;
+    els.rankingSummary.textContent = `MP上位 ${res.ranking.length} 名`;
     els.rankingList.innerHTML = res.ranking.map(function (r) {
       var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
       var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
-      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">${r.points}pt</span></div>`;
+      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">${r.points}MP</span></div>`;
     }).join('');
   }
 
@@ -2824,6 +2832,7 @@
     var isHidden = els.rankingPanel.hasAttribute('hidden');
     if (!isHidden) { els.rankingPanel.setAttribute('hidden', ''); return; }
     els.historyPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     els.rankingSummary.textContent = '読み込み中…';
@@ -2836,6 +2845,72 @@
       renderRanking(res);
     }).catch(function () {
       els.rankingSummary.textContent = '読み込みに失敗しました。';
+    });
+  }
+
+  /* ---------- MPギフト交換 ---------- */
+
+  var giftCatalogCache = [];
+
+  function renderGiftList(catalog) {
+    els.giftSummary.textContent = `現在のMP: ${state.points}`;
+    els.giftList.innerHTML = catalog.map(function (item) {
+      var canAfford = state.points >= item.mp;
+      var actionHtml = canAfford
+        ? `<button type="button" class="gift-redeem-btn" data-item="${item.itemId}">交換する</button>`
+        : `<span class="gift-insufficient">MP不足</span>`;
+      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${item.label}</span><span class="gift-cost">${item.mp}MP</span></div>${actionHtml}</div>`;
+    }).join('');
+    els.giftList.querySelectorAll('.gift-redeem-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleRedeemGiftClick(btn.dataset.item, btn); });
+    });
+  }
+
+  function handleRedeemGiftClick(itemId, btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var item = giftCatalogCache.find(function (c) { return c.itemId === itemId; });
+    if (!item) return;
+    if (!window.confirm(`${item.label}（${item.mp}MP）と交換します。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('redeemGift', { id: session.id, itemId: itemId }).then(function (res) {
+      if (!res.ok) {
+        var msg = '交換に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      saveGameState(state);
+      updateGameHud();
+      window.alert('交換を申請しました。先生からの案内をお待ちください。');
+      renderGiftList(giftCatalogCache);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function toggleGift() {
+    var isHidden = els.giftPanel.hasAttribute('hidden');
+    if (!isHidden) { els.giftPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+
+    els.giftPanel.removeAttribute('hidden');
+    els.giftSummary.textContent = '読み込み中…';
+    els.giftList.innerHTML = '';
+
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('giftCatalog', {}).then(function (res) {
+      if (!res.ok) { els.giftSummary.textContent = '読み込みに失敗しました。'; return; }
+      giftCatalogCache = res.catalog;
+      renderGiftList(giftCatalogCache);
+    }).catch(function () {
+      els.giftSummary.textContent = '読み込みに失敗しました。';
     });
   }
 
@@ -2853,6 +2928,7 @@
   els.logoutBtn.addEventListener('click', handleLogout);
   els.historyToggle.addEventListener('click', toggleHistory);
   els.rankingToggle.addEventListener('click', toggleRanking);
+  els.giftToggle.addEventListener('click', toggleGift);
 
   var existingSession = loadSession();
   if (existingSession) {

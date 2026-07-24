@@ -20,6 +20,20 @@
 var STUDENTS_SHEET = 'Students';
 var RECORDS_SHEET = 'Records';
 var GUARDIANS_SHEET = 'Guardians';
+var GIFTS_SHEET = 'GiftRequests';
+
+// MP(旧ポイント)交換カタログ。10MP = 1円。costはクライアントの申告を信用せず、
+// ここを唯一の正として毎回サーバー側で検証する。
+var GIFT_CATALOG = [
+  { itemId: 'amazon300', label: 'Amazonギフト券 300円分', yen: 300, mp: 3000 },
+  { itemId: 'amazon500', label: 'Amazonギフト券 500円分', yen: 500, mp: 5000 },
+  { itemId: 'amazon1000', label: 'Amazonギフト券 1000円分', yen: 1000, mp: 10000 },
+  { itemId: 'amazon2000', label: 'Amazonギフト券 2000円分', yen: 2000, mp: 20000 },
+  { itemId: 'amazon5000', label: 'Amazonギフト券 5000円分', yen: 5000, mp: 50000 },
+  { itemId: 'amazon10000', label: 'Amazonギフト券 10000円分', yen: 10000, mp: 100000 },
+  { itemId: 'book500', label: '図書カード 500円分', yen: 500, mp: 5000 },
+  { itemId: 'book1000', label: '図書カード 1000円分', yen: 1000, mp: 10000 },
+];
 
 function getOrInitSheets_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -55,7 +69,15 @@ function getOrInitSheets_() {
     guardians.appendRow(['timestamp', 'guardianName', 'childId1', 'childName1', 'childId2', 'childName2', 'childId3', 'childName3', 'childId4', 'childName4']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians };
+  var gifts = ss.getSheetByName(GIFTS_SHEET);
+  if (!gifts) {
+    gifts = ss.insertSheet(GIFTS_SHEET);
+  }
+  if (gifts.getLastRow() === 0) {
+    gifts.appendRow(['timestamp', 'id', 'name', 'item', 'yen', 'mp', 'status']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts };
 }
 
 function sha256Hex_(text) {
@@ -114,6 +136,10 @@ function doPost(e) {
     return jsonOut_(handleRanking_(ctx, body));
   } else if (action === 'registerGuardian') {
     return jsonOut_(handleRegisterGuardian_(ctx, body));
+  } else if (action === 'giftCatalog') {
+    return jsonOut_({ ok: true, catalog: GIFT_CATALOG });
+  } else if (action === 'redeemGift') {
+    return jsonOut_(handleRedeemGift_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -329,4 +355,32 @@ function handleRegisterGuardian_(ctx, body) {
   ctx.guardians.appendRow(rowValues);
 
   return { ok: true };
+}
+
+function handleRedeemGift_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var itemId = String(body.itemId || '').trim();
+  if (!id || !itemId) return { ok: false, error: 'missing_fields' };
+
+  var item = null;
+  for (var i = 0; i < GIFT_CATALOG.length; i++) {
+    if (GIFT_CATALOG[i].itemId === itemId) { item = GIFT_CATALOG[i]; break; }
+  }
+  if (!item) return { ok: false, error: 'unknown_item' };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var row = findStudentRow_(ctx.students, id);
+    if (!row) return { ok: false, error: 'not_found' };
+    if (row.points < item.mp) return { ok: false, error: 'insufficient_points' };
+
+    var remaining = row.points - item.mp;
+    ctx.students.getRange(row.rowIndex, 7).setValue(remaining);
+    ctx.gifts.appendRow([new Date(), id, row.name, item.label, item.yen, item.mp, '申請中']);
+
+    return { ok: true, remainingPoints: remaining };
+  } finally {
+    lock.releaseLock();
+  }
 }
