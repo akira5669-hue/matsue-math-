@@ -21,6 +21,8 @@ var STUDENTS_SHEET = 'Students';
 var RECORDS_SHEET = 'Records';
 var GUARDIANS_SHEET = 'Guardians';
 var GIFTS_SHEET = 'GiftRequests';
+var ADMIN_EMAIL = 'akira5669@gmail.com';
+var EXCHANGE_WINDOW_TEXT = '5月1日〜3日、12月30日〜31日、1月1日';
 
 // MP(旧ポイント)交換カタログ。10MP = 1円。costはクライアントの申告を信用せず、
 // ここを唯一の正として毎回サーバー側で検証する。
@@ -34,6 +36,26 @@ var GIFT_CATALOG = [
   { itemId: 'book500', label: '図書カード 500円分', yen: 500, mp: 5000 },
   { itemId: 'book1000', label: '図書カード 1000円分', yen: 1000, mp: 10000 },
 ];
+
+// 交換受付期間: 5/1〜5/5、12/30〜12/31、1/1（日本時間）
+function isInExchangeWindow_() {
+  var md = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'MM-dd');
+  if (md >= '05-01' && md <= '05-03') return true;
+  if (md === '12-30' || md === '12-31') return true;
+  if (md === '01-01') return true;
+  return false;
+}
+
+function notifyAdminOfGiftRequest_(studentId, studentName, item) {
+  try {
+    var subject = '【正負の数トレーニング】MPギフト交換申請: ' + studentName + '（' + studentId + '）';
+    var body = studentName + '（ID: ' + studentId + '）さんが「' + item.label + '」（' + item.mp + 'MP）に交換申請しました。\n\n'
+      + 'スプレッドシートの「' + GIFTS_SHEET + '」シートから内容を確認し、ギフトコードの手配をお願いします。';
+    MailApp.sendEmail(ADMIN_EMAIL, subject, body);
+  } catch (e) {
+    // メール送信に失敗しても交換申請自体は成立させる
+  }
+}
 
 function getOrInitSheets_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -137,7 +159,7 @@ function doPost(e) {
   } else if (action === 'registerGuardian') {
     return jsonOut_(handleRegisterGuardian_(ctx, body));
   } else if (action === 'giftCatalog') {
-    return jsonOut_({ ok: true, catalog: GIFT_CATALOG });
+    return jsonOut_({ ok: true, catalog: GIFT_CATALOG, isOpen: isInExchangeWindow_(), windowText: EXCHANGE_WINDOW_TEXT });
   } else if (action === 'redeemGift') {
     return jsonOut_(handleRedeemGift_(ctx, body));
   }
@@ -361,6 +383,7 @@ function handleRedeemGift_(ctx, body) {
   var id = String(body.id || '').trim();
   var itemId = String(body.itemId || '').trim();
   if (!id || !itemId) return { ok: false, error: 'missing_fields' };
+  if (!isInExchangeWindow_()) return { ok: false, error: 'out_of_period', windowText: EXCHANGE_WINDOW_TEXT };
 
   var item = null;
   for (var i = 0; i < GIFT_CATALOG.length; i++) {
@@ -378,6 +401,7 @@ function handleRedeemGift_(ctx, body) {
     var remaining = row.points - item.mp;
     ctx.students.getRange(row.rowIndex, 7).setValue(remaining);
     ctx.gifts.appendRow([new Date(), id, row.name, item.label, item.yen, item.mp, '申請中']);
+    notifyAdminOfGiftRequest_(id, row.name, item);
 
     return { ok: true, remainingPoints: remaining };
   } finally {

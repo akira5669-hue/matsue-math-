@@ -2851,14 +2851,20 @@
   /* ---------- MPギフト交換 ---------- */
 
   var giftCatalogCache = [];
+  var giftIsOpenCache = false;
+  var giftWindowTextCache = '';
 
-  function renderGiftList(catalog) {
-    els.giftSummary.textContent = `現在のMP: ${state.points}`;
+  function renderGiftList(catalog, isOpen, windowText) {
+    els.giftSummary.textContent = isOpen
+      ? `現在のMP: ${state.points}（交換受付期間中）`
+      : `現在のMP: ${state.points}（交換受付期間外です。受付期間: ${windowText}）`;
     els.giftList.innerHTML = catalog.map(function (item) {
       var canAfford = state.points >= item.mp;
-      var actionHtml = canAfford
-        ? `<button type="button" class="gift-redeem-btn" data-item="${item.itemId}">交換する</button>`
-        : `<span class="gift-insufficient">MP不足</span>`;
+      var actionHtml = !isOpen
+        ? `<span class="gift-insufficient">受付期間外</span>`
+        : canAfford
+          ? `<button type="button" class="gift-redeem-btn" data-item="${item.itemId}">交換する</button>`
+          : `<span class="gift-insufficient">MP不足</span>`;
       return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${item.label}</span><span class="gift-cost">${item.mp}MP</span></div>${actionHtml}</div>`;
     }).join('');
     els.giftList.querySelectorAll('.gift-redeem-btn').forEach(function (btn) {
@@ -2878,6 +2884,7 @@
       if (!res.ok) {
         var msg = '交換に失敗しました。もう一度お試しください。';
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'out_of_period') msg = `交換受付期間外です。受付期間: ${res.windowText || giftWindowTextCache}`;
         window.alert(msg);
         btn.disabled = false;
         return;
@@ -2886,7 +2893,7 @@
       saveGameState(state);
       updateGameHud();
       window.alert('交換を申請しました。先生からの案内をお待ちください。');
-      renderGiftList(giftCatalogCache);
+      renderGiftList(giftCatalogCache, giftIsOpenCache, giftWindowTextCache);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -2908,7 +2915,9 @@
     apiPost('giftCatalog', {}).then(function (res) {
       if (!res.ok) { els.giftSummary.textContent = '読み込みに失敗しました。'; return; }
       giftCatalogCache = res.catalog;
-      renderGiftList(giftCatalogCache);
+      giftIsOpenCache = !!res.isOpen;
+      giftWindowTextCache = res.windowText || '';
+      renderGiftList(giftCatalogCache, giftIsOpenCache, giftWindowTextCache);
     }).catch(function () {
       els.giftSummary.textContent = '読み込みに失敗しました。';
     });
