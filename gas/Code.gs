@@ -216,13 +216,6 @@ function doPost(e) {
     return jsonOut_({ ok: true, catalog: GIFT_CATALOG, isOpen: isInExchangeWindow_(), windowText: EXCHANGE_WINDOW_TEXT });
   } else if (action === 'redeemGift') {
     return jsonOut_(handleRedeemGift_(ctx, body));
-  } else if (action === 'testMailTemp') {
-    try {
-      MailApp.sendEmail(ADMIN_EMAIL, 'テストメール', 'これはテストメールです。');
-      return jsonOut_({ ok: true, quota: MailApp.getRemainingDailyQuota() });
-    } catch (e) {
-      return jsonOut_({ ok: false, error: String(e) });
-    }
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
