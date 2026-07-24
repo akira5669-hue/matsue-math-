@@ -43,8 +43,6 @@ var GIFT_CATALOG = [
   { itemId: 'amazon2000', label: 'Amazonギフト券 2000円分', yen: 2000, mp: 20000 },
   { itemId: 'amazon5000', label: 'Amazonギフト券 5000円分', yen: 5000, mp: 50000 },
   { itemId: 'amazon10000', label: 'Amazonギフト券 10000円分', yen: 10000, mp: 100000 },
-  { itemId: 'book500', label: '図書カード 500円分', yen: 500, mp: 5000 },
-  { itemId: 'book1000', label: '図書カード 1000円分', yen: 1000, mp: 10000 },
 ];
 
 var GIFTCODES_SHEET = 'GiftCodes';
