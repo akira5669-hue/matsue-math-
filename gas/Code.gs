@@ -48,7 +48,7 @@ var GIFT_CATALOG = [
 ];
 
 var GIFTCODES_SHEET = 'GiftCodes';
-var LOW_STOCK_THRESHOLD = 2;
+var LOW_STOCK_THRESHOLDS = [10, 5];
 
 // 交換受付期間: 5/1〜5/5、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
@@ -561,7 +561,7 @@ function handleRedeemGift_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 7).setValue(remaining);
     ctx.gifts.appendRow([new Date(), id, row.name, item.label, item.yen, item.mp, '発行済み', claimed.code]);
     notifyAdminOfGiftDelivery_(id, row.name, item, claimed.remainingStock);
-    if (claimed.remainingStock <= LOW_STOCK_THRESHOLD) {
+    if (LOW_STOCK_THRESHOLDS.indexOf(claimed.remainingStock) !== -1) {
       notifyAdminOfLowStock_(item, claimed.remainingStock);
     }
 
