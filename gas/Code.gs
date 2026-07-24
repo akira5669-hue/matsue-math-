@@ -213,6 +213,8 @@ function doPost(e) {
     return jsonOut_({ ok: true, catalog: GIFT_CATALOG, isOpen: isInExchangeWindow_(), windowText: EXCHANGE_WINDOW_TEXT });
   } else if (action === 'redeemGift') {
     return jsonOut_(handleRedeemGift_(ctx, body));
+  } else if (action === 'resetPassword') {
+    return jsonOut_(handleResetPassword_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -308,6 +310,35 @@ function handleLogin_(ctx, body) {
   ctx.students.getRange(row.rowIndex, 11).setValue(now);
 
   return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp };
+}
+
+// パスワード再設定：先生がStudentsシートのpasswordHash・salt列を空にした
+// IDに対してのみ、新しいパスワードを設定できる（第三者が他人のIDだけで
+// 勝手に変更することはできない）。
+function handleResetPassword_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var password = String(body.password || '');
+  if (!id || !password) return { ok: false, error: 'missing_fields' };
+  if (!/^[A-Za-z0-9]{4}$/.test(password)) return { ok: false, error: 'invalid_password' };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var row = findStudentRow_(ctx.students, id);
+    if (!row) return { ok: false, error: 'not_found' };
+    if (row.passwordHash) return { ok: false, error: 'password_already_set' };
+
+    var salt = Utilities.getUuid();
+    var hash = sha256Hex_(password + salt);
+    ctx.students.getRange(row.rowIndex, 3, 1, 2).setValues([[hash, salt]]);
+
+    var cache = CacheService.getScriptCache();
+    cache.remove('loginfail_' + id);
+
+    return { ok: true, name: row.name };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function handleGetPoints_(ctx, body) {

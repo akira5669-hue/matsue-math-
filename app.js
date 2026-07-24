@@ -2277,6 +2277,16 @@
     registerError: document.getElementById('registerError'),
     registerSubmit: document.getElementById('registerSubmit'),
     guestStartBtn: document.getElementById('guestStartBtn'),
+    resetLinkBtn: document.getElementById('resetLinkBtn'),
+    resetCard: document.getElementById('resetCard'),
+    resetForm: document.getElementById('resetForm'),
+    resetId: document.getElementById('resetId'),
+    resetPassword: document.getElementById('resetPassword'),
+    resetPasswordConfirm: document.getElementById('resetPasswordConfirm'),
+    resetError: document.getElementById('resetError'),
+    resetSuccess: document.getElementById('resetSuccess'),
+    resetSubmit: document.getElementById('resetSubmit'),
+    resetBackBtn: document.getElementById('resetBackBtn'),
     guardianLinkBtn: document.getElementById('guardianLinkBtn'),
     guardianCard: document.getElementById('guardianCard'),
     guardianForm: document.getElementById('guardianForm'),
@@ -2534,6 +2544,8 @@
   alphanumericOnly(els.loginPassword);
   alphanumericOnly(els.registerPassword);
   alphanumericOnly(els.registerPasswordConfirm);
+  alphanumericOnly(els.resetPassword);
+  alphanumericOnly(els.resetPasswordConfirm);
   for (let ci = 0; ci < 4; ci++) {
     const pwEl = document.getElementById('childPassword' + ci);
     if (pwEl) alphanumericOnly(pwEl);
@@ -2685,6 +2697,56 @@
   function handleGuestStart() {
     saveSession({ id: null, name: 'ゲスト', guest: true });
     showApp('ゲスト', true);
+  }
+
+  /* ---------- パスワード再設定 ---------- */
+
+  function showResetCard() {
+    els.loginCard.hidden = true;
+    els.resetCard.hidden = false;
+  }
+  function hideResetCard() {
+    els.resetCard.hidden = true;
+    els.loginCard.hidden = false;
+    resetResetForm();
+  }
+  function resetResetForm() {
+    els.resetForm.reset();
+    hideFieldError(els.resetError);
+    els.resetSuccess.hidden = true;
+    els.resetSubmit.disabled = false;
+  }
+
+  function handleResetSubmit(ev) {
+    ev.preventDefault();
+    hideFieldError(els.resetError);
+    els.resetSuccess.hidden = true;
+    var id = els.resetId.value.trim();
+    var pw = els.resetPassword.value;
+    var pwConfirm = els.resetPasswordConfirm.value;
+    if (!id) { showFieldError(els.resetError, '生徒IDを入力してください。'); return; }
+    if (!/^[A-Za-z0-9]{4}$/.test(pw)) { showFieldError(els.resetError, 'パスワードは英数字4桁で入力してください。'); return; }
+    if (pw !== pwConfirm) { showFieldError(els.resetError, 'パスワードが一致しません。'); return; }
+
+    els.resetSubmit.disabled = true;
+    apiPost('resetPassword', { id: id, password: pw }).then(function (res) {
+      els.resetSubmit.disabled = false;
+      if (!res.ok) {
+        var msg = '再設定に失敗しました。もう一度お試しください。';
+        if (res.error === 'not_found') msg = 'そのIDは見つかりませんでした。ご確認ください。';
+        else if (res.error === 'password_already_set') msg = 'まだ先生による確認が済んでいません。教室の先生に「パスワードを忘れた」とお伝えください。';
+        else if (res.error === 'invalid_password') msg = 'パスワードは英数字4桁で入力してください。';
+        else if (res.error === 'missing_fields') msg = '入力に不足があります。ご確認ください。';
+        showFieldError(els.resetError, msg);
+        return;
+      }
+      els.resetForm.reset();
+      els.resetSuccess.textContent = '新しいパスワードを設定しました。このパスワードでログインしてください。';
+      els.resetSuccess.hidden = false;
+    }).catch(function () {
+      els.resetSubmit.disabled = false;
+      showFieldError(els.resetError, '通信に失敗しました。もう一度お試しください。');
+    });
   }
 
   /* ---------- 保護者登録 ---------- */
@@ -2975,6 +3037,9 @@
   els.tabLogin.addEventListener('click', () => switchTab('login'));
   els.tabRegister.addEventListener('click', () => switchTab('register'));
   els.guestStartBtn.addEventListener('click', handleGuestStart);
+  els.resetLinkBtn.addEventListener('click', showResetCard);
+  els.resetBackBtn.addEventListener('click', hideResetCard);
+  els.resetForm.addEventListener('submit', handleResetSubmit);
   els.guardianLinkBtn.addEventListener('click', showGuardianCard);
   els.guardianBackBtn.addEventListener('click', hideGuardianCard);
   els.addChildBtn.addEventListener('click', handleAddChild);

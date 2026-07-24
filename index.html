@@ -92,6 +92,29 @@
 
     <button type="button" class="guest-link" id="guestStartBtn">ID無しで今すぐ始める</button>
     <button type="button" class="guest-link" id="guardianLinkBtn">保護者の方はこちら</button>
+    <button type="button" class="guest-link" id="resetLinkBtn">パスワードを忘れた方はこちら</button>
+  </section>
+
+  <section class="login-card" id="resetCard" hidden>
+    <p class="login-hint">パスワードの再設定には、先生による確認が必要です。まず教室の先生に「パスワードを忘れた」とお伝えください。先生が再設定の準備をすると、ここから新しいパスワードを設定できるようになります。</p>
+
+    <form id="resetForm" class="login-form">
+      <label class="login-label" for="resetId">生徒ID</label>
+      <input class="login-input" id="resetId" name="id" type="text" autocomplete="username" required />
+
+      <label class="login-label" for="resetPassword">新しいパスワード（英数字4桁）</label>
+      <input class="login-input" id="resetPassword" name="password" type="password" maxlength="4" autocomplete="new-password" required />
+
+      <label class="login-label" for="resetPasswordConfirm">パスワード（確認）</label>
+      <input class="login-input" id="resetPasswordConfirm" name="passwordConfirm" type="password" maxlength="4" autocomplete="new-password" required />
+
+      <p class="login-error" id="resetError" hidden></p>
+      <p class="login-hint" id="resetSuccess" hidden></p>
+
+      <button class="primary-btn" id="resetSubmit" type="submit">新しいパスワードを設定する</button>
+    </form>
+
+    <button type="button" class="guest-link" id="resetBackBtn">戻る</button>
   </section>
 
   <section class="login-card" id="guardianCard" hidden>
