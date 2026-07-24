@@ -48,9 +48,8 @@ var GIFT_CATALOG = [
 var GIFTCODES_SHEET = 'GiftCodes';
 var LOW_STOCK_THRESHOLDS = [10, 5];
 
-// 交換受付期間: 5/1〜5/5、12/30〜12/31、1/1（日本時間）
+// 交換受付期間: 5/1〜5/3、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
-  return true; // TEMP: 動作確認のため一時的に常時オープンにしている。確認後に元に戻す。
   var md = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'MM-dd');
   if (md >= '05-01' && md <= '05-03') return true;
   if (md === '12-30' || md === '12-31') return true;
