@@ -580,6 +580,13 @@
 
   /* ---------- 一次関数 ---------- */
 
+  function linearEqStr(a, b) {
+    const aD = a === 1 ? '' : a === -1 ? '−' : `${a}`;
+    if (b === 0) return `y = ${aD}x`;
+    const bS = b < 0 ? `− ${Math.abs(b)}` : `+ ${b}`;
+    return `y = ${aD}x ${bS}`;
+  }
+
   function genLinear() {
     const a = randNonZero(-5, 5);
     const aD = a===1?'':a===-1?'−':`${a}`;
@@ -606,11 +613,25 @@
       const x1 = randInt(-5, 4), y1 = randInt(-8, 7);
       const dx = randNonZero(-4, 4), x2 = x1+dx;
       const dy = a*dx, y2 = y1+dy;
+      const b = y1 - a*x1;
       const yStep = y1<0?`${y2} − (${y1})`:`${y2} − ${y1}`;
       const xStep = x1<0?`${x2} − (${x1})`:`${x2} − ${x1}`;
-      question = `2点 (${x1}, ${y1})、(${x2}, ${y2}) を通る一次関数の傾きは？`;
-      steps = [`傾き = Δy ÷ Δx`, `= (${yStep}) ÷ (${xStep}) = ${dy} ÷ ${dx} = ${a}`];
-      answer = a; wrongs = [-a, dy, a+1];
+      const answerStr = linearEqStr(a, b);
+      question = `2点 (${x1}, ${y1})、(${x2}, ${y2}) を通る一次関数の式は？`;
+      steps = [
+        `傾き = Δy ÷ Δx`,
+        `= (${yStep}) ÷ (${xStep}) = ${dy} ÷ ${dx} = ${a}`,
+        `y = ${aD}x + b に (${x1}, ${y1}) を代入して b を求める`,
+        `b = ${y1} − ${fmtNum(a*x1)} = ${b}`,
+        `${answerStr}`,
+      ];
+      const candidates = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates), steps };
     } else if (pat === 4) {
       // グラフから：傾きと1点が与えられ y 切片を求める
       const b = randNonZero(-8, 8), x1 = randNonZero(-5, 5), y1 = a*x1+b;
@@ -623,18 +644,25 @@
       ];
       answer = b; wrongs = [-b, a, b+1];
     } else {
-      // グラフから：2点が与えられ y 切片を求める
+      // グラフから：2点が与えられ一次関数の式を求める
       const b = randNonZero(-6, 6);
       const x1 = randInt(-4, -1), y1 = a*x1+b;
       const x2 = randInt(1, 4),   y2 = a*x2+b;
-      const bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
-      question = `2点 (${x1}, ${y1})、(${x2}, ${y2}) を通る一次関数の y 切片は？`;
+      const answerStr = linearEqStr(a, b);
+      question = `2点 (${x1}, ${y1})、(${x2}, ${y2}) を通る一次関数の式は？`;
       steps = [
         `傾き = (${y2} − ${fmtNum(y1)}) ÷ (${x2} − ${fmtNum(x1)}) = ${a}`,
         `y = ${aD}x + b に (${x2}, ${y2}) を代入`,
         `${y2} = ${a*x2} + b → b = ${b}`,
+        `${answerStr}`,
       ];
-      answer = b; wrongs = [-b, a, b+1];
+      const candidates = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates), steps };
     }
     return { category:'linear', question, answer, choices:buildChoices(answer, wrongs), steps };
   }
@@ -1073,14 +1101,20 @@
       if (w && !set.has(w)) { set.add(w); choices.push(w); }
     }
     // Fallback in case the supplied candidates weren't distinct enough (e.g. collided
-    // with the answer or each other): perturb the leading number of the answer string.
+    // with the answer or each other): perturb a number found within the answer string
+    // (anywhere, not just a leading position) so formats like "y = 2x + 3" or "√6"
+    // both get a sensible, still-valid-looking distractor instead of a garbled prefix.
     let guard = 0;
     while (choices.length < 4 && guard < 30) {
       guard++;
-      const m = answerStr.match(/^(-?\d+)([\s\S]*)$/);
-      const lead = m ? parseInt(m[1], 10) : 1;
-      const rest = m ? m[2] : answerStr;
-      const cand = `${lead + randNonZero(-3, 3)}${rest}`;
+      const m = answerStr.match(/-?\d+/);
+      let cand;
+      if (m) {
+        const newNum = parseInt(m[0], 10) + randNonZero(-3, 3);
+        cand = answerStr.slice(0, m.index) + newNum + answerStr.slice(m.index + m[0].length);
+      } else {
+        cand = `${answerStr}${randInt(2, 9)}`;
+      }
       if (cand && !set.has(cand)) { set.add(cand); choices.push(cand); }
     }
     return shuffle(choices);
