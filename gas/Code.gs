@@ -207,6 +207,8 @@ function doPost(e) {
     return jsonOut_(handleGetPoints_(ctx, body));
   } else if (action === 'ranking') {
     return jsonOut_(handleRanking_(ctx, body));
+  } else if (action === 'rankingToday') {
+    return jsonOut_(handleRankingToday_(ctx, body));
   } else if (action === 'registerGuardian') {
     return jsonOut_(handleRegisterGuardian_(ctx, body));
   } else if (action === 'giftCatalog') {
@@ -476,6 +478,33 @@ function handleRanking_(ctx, body) {
   });
   var top = rows.slice(0, 50).map(function (r, idx) {
     return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, isYou: r.id === myId };
+  });
+  return { ok: true, ranking: top };
+}
+
+// 本日（日本時間）の正解数ランキング。Recordsシートから当日分だけ集計する。
+function handleRankingToday_(ctx, body) {
+  var myId = String(body.id || '').trim();
+  var todayKey = dateKeyTokyo_(new Date());
+  var data = ctx.records.getDataRange().getValues();
+  var counts = {};
+  for (var i = 1; i < data.length; i++) {
+    if (dateKeyTokyo_(data[i][0]) !== todayKey) continue;
+    var id = String(data[i][1]).trim();
+    if (!id) continue;
+    if (!counts[id]) counts[id] = { correct: 0, total: 0 };
+    counts[id].total++;
+    if (!!data[i][4]) counts[id].correct++;
+  }
+  var rows = Object.keys(counts).map(function (id) {
+    return { id: id, correct: counts[id].correct, total: counts[id].total };
+  });
+  rows.sort(function (a, b) {
+    if (b.correct !== a.correct) return b.correct - a.correct;
+    return b.total - a.total;
+  });
+  var top = rows.slice(0, 50).map(function (r, idx) {
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), correct: r.correct, total: r.total, isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }

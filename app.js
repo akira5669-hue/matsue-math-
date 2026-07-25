@@ -2902,6 +2902,8 @@
     historyRecent: document.getElementById('historyRecent'),
     rankingToggle: document.getElementById('rankingToggle'),
     rankingPanel: document.getElementById('rankingPanel'),
+    rankingTabExp: document.getElementById('rankingTabExp'),
+    rankingTabToday: document.getElementById('rankingTabToday'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
     giftToggle: document.getElementById('giftToggle'),
@@ -3511,18 +3513,49 @@
 
   /* ---------- ランキング ---------- */
 
-  function renderRanking(res) {
+  var rankingMode = 'exp';
+
+  function renderRanking(res, mode) {
     if (res.ranking.length === 0) {
-      els.rankingSummary.textContent = 'まだランキングデータがありません。';
+      els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : 'まだランキングデータがありません。';
       els.rankingList.innerHTML = '';
       return;
     }
-    els.rankingSummary.textContent = `経験値上位 ${res.ranking.length} 名`;
+    els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
     els.rankingList.innerHTML = res.ranking.map(function (r) {
       var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
       var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
-      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">Lv.${r.level}（経験値 ${r.exp}）</span></div>`;
+      var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : `Lv.${r.level}（経験値 ${r.exp}）`;
+      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
     }).join('');
+  }
+
+  function setRankingTabActive(mode) {
+    els.rankingTabExp.classList.toggle('is-active', mode === 'exp');
+    els.rankingTabExp.setAttribute('aria-selected', String(mode === 'exp'));
+    els.rankingTabToday.classList.toggle('is-active', mode === 'today');
+    els.rankingTabToday.setAttribute('aria-selected', String(mode === 'today'));
+  }
+
+  function loadRanking(mode) {
+    els.rankingSummary.textContent = '読み込み中…';
+    els.rankingList.innerHTML = '';
+
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var action = mode === 'today' ? 'rankingToday' : 'ranking';
+    apiPost(action, { id: session.id }).then(function (res) {
+      if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+      renderRanking(res, mode);
+    }).catch(function () {
+      els.rankingSummary.textContent = '読み込みに失敗しました。';
+    });
+  }
+
+  function selectRankingMode(mode) {
+    rankingMode = mode;
+    setRankingTabActive(mode);
+    loadRanking(mode);
   }
 
   function toggleRanking() {
@@ -3532,17 +3565,7 @@
     els.giftPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
-    els.rankingSummary.textContent = '読み込み中…';
-    els.rankingList.innerHTML = '';
-
-    var session = loadSession();
-    if (!session || !session.id) return;
-    apiPost('ranking', { id: session.id }).then(function (res) {
-      if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
-      renderRanking(res);
-    }).catch(function () {
-      els.rankingSummary.textContent = '読み込みに失敗しました。';
-    });
+    selectRankingMode('exp');
   }
 
   /* ---------- MPギフト交換 ---------- */
@@ -3642,6 +3665,8 @@
   els.logoutBtn.addEventListener('click', handleLogout);
   els.historyToggle.addEventListener('click', toggleHistory);
   els.rankingToggle.addEventListener('click', toggleRanking);
+  els.rankingTabExp.addEventListener('click', function () { selectRankingMode('exp'); });
+  els.rankingTabToday.addEventListener('click', function () { selectRankingMode('today'); });
   els.giftToggle.addEventListener('click', toggleGift);
 
   var existingSession = loadSession();

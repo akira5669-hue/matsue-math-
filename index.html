@@ -194,7 +194,11 @@
     </section>
 
     <section class="ranking-panel" id="rankingPanel" hidden>
-      <h3 class="history-title">経験値ランキング（上位50位）</h3>
+      <h3 class="history-title">ランキング（上位50位）</h3>
+      <div class="login-tabs" role="tablist">
+        <button type="button" class="login-tab is-active" id="rankingTabExp" role="tab" aria-selected="true">経験値ランキング</button>
+        <button type="button" class="login-tab" id="rankingTabToday" role="tab" aria-selected="false">本日のランキング</button>
+      </div>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
       <div class="ranking-list" id="rankingList"></div>
     </section>
