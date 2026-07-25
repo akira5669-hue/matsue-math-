@@ -781,7 +781,7 @@
     { id: 'subst',      label: '代入の計算',               gen: genSubst },
     { id: 'maxof4',     label: '大小関係',                 gen: genMaxOf4 },
     { id: 'equation',   label: '一次方程式',               gen: genEquation },
-    { id: 'proportion', label: '比例・反比例',             gen: genProportion },
+    { id: 'proportion', label: '比例・反比例（中1）',       gen: genProportion },
     { id: 'expand2',    label: '式の展開・基本（中3）',    gen: genExpand2 },
     { id: 'simul',      label: '連立方程式',               gen: genSimul },
     { id: 'linear',     label: '一次関数',                 gen: genLinear },
