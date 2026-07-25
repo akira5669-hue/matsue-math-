@@ -590,7 +590,7 @@
   function genLinear() {
     const a = randNonZero(-5, 5);
     const aD = a===1?'':a===-1?'−':`${a}`;
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 7);
     let question, answer, steps, wrongs;
     if (pat === 0) {
       const b = randNonZero(-8, 8), x = randNonZero(-6, 6), y = a*x+b;
@@ -633,16 +633,59 @@
       ];
       return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates), steps };
     } else if (pat === 4) {
-      // グラフから：傾きと1点が与えられ y 切片を求める
+      // 傾きと1点が与えられ、一次関数の式を求める
       const b = randNonZero(-8, 8), x1 = randNonZero(-5, 5), y1 = a*x1+b;
-      const bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
-      question = `傾き ${a} で点 (${x1}, ${y1}) を通る一次関数の y 切片は？`;
+      const answerStr = linearEqStr(a, b);
+      question = `傾き ${a} で点 (${x1}, ${y1}) を通る一次関数の式は？`;
       steps = [
         `y = ${aD}x + b に代入: ${y1} = ${a===1?x1:a===-1?`-${x1}`:`${a}×${x1}`} + b`,
         `${y1} = ${a*x1} + b`,
         `b = ${y1} − ${fmtNum(a*x1)} = ${b}`,
+        `${answerStr}`,
       ];
-      answer = b; wrongs = [-b, a, b+1];
+      const candidates4 = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates4), steps };
+    } else if (pat === 5) {
+      // 変化の割合（=傾き）と1点が与えられ、一次関数の式を求める
+      const b = randNonZero(-8, 8), x1 = randNonZero(-5, 5), y1 = a*x1+b;
+      const answerStr = linearEqStr(a, b);
+      question = `変化の割合が ${a} で、点 (${x1}, ${y1}) を通る一次関数の式は？`;
+      steps = [
+        `一次関数では 変化の割合 = 傾き なので a = ${a}`,
+        `y = ${aD}x + b に代入: ${y1} = ${a===1?x1:a===-1?`-${x1}`:`${a}×${x1}`} + b`,
+        `b = ${y1} − ${fmtNum(a*x1)} = ${b}`,
+        `${answerStr}`,
+      ];
+      const candidates5 = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates5), steps };
+    } else if (pat === 6) {
+      // y切片と1点が与えられ、一次関数の式を求める（傾きを求める）
+      const b = randNonZero(-8, 8), x1 = randNonZero(-5, 5), y1 = a*x1+b;
+      const answerStr = linearEqStr(a, b);
+      question = `y切片が ${b} で、点 (${x1}, ${y1}) を通る一次関数の式は？`;
+      steps = [
+        `y = ax + ${b} に (${x1}, ${y1}) を代入`,
+        `${y1} = a × ${fmtNum(x1)} + ${b}`,
+        `a = (${y1} − ${b}) ÷ ${x1} = ${a}`,
+        `${answerStr}`,
+      ];
+      const candidates6 = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates6), steps };
     } else {
       // グラフから：2点が与えられ一次関数の式を求める
       const b = randNonZero(-6, 6);
