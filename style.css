@@ -759,6 +759,33 @@ h1 {
   color: var(--c-positive);
 }
 .history-calendar { margin-bottom: 16px; }
+.history-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: 12px;
+  text-align: center;
+}
+.badge-item .badge-icon { font-size: 24px; }
+.badge-item .badge-name { font-size: 10px; font-weight: 700; line-height: 1.3; }
+.badge-item.badge-earned {
+  background: #fff8e1;
+  border: 1.5px solid #f5b400;
+}
+.badge-item.badge-locked {
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  opacity: 0.45;
+  filter: grayscale(1);
+}
 .cal-header {
   display: flex;
   align-items: center;

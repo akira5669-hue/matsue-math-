@@ -3177,6 +3177,7 @@
     historyCalendar: document.getElementById('historyCalendar'),
     historyCats: document.getElementById('historyCats'),
     historyRecent: document.getElementById('historyRecent'),
+    historyBadges: document.getElementById('historyBadges'),
     rankingToggle: document.getElementById('rankingToggle'),
     rankingPanel: document.getElementById('rankingPanel'),
     rankingTabExp: document.getElementById('rankingTabExp'),
@@ -3761,7 +3762,37 @@
     return html;
   }
 
+  const BADGES = [
+    { id: 'allCategories', icon: '🏆', name: '全カテゴリ制覇', desc: '全ての単元で1問以上正解した' },
+    { id: 'streak7',       icon: '🔥', name: '7日連続ログイン', desc: '7日連続で学習した' },
+    { id: 'level100',      icon: '🥉', name: 'レベル100',      desc: 'レベル100に到達した' },
+    { id: 'level200',      icon: '🥈', name: 'レベル200',      desc: 'レベル200に到達した' },
+    { id: 'level300',      icon: '🥇', name: 'レベル300',      desc: 'レベル300に到達した' },
+    { id: 'level500',      icon: '💎', name: 'レベル500',      desc: 'レベル500に到達した' },
+    { id: 'level1000',     icon: '👑', name: 'レベル1000',     desc: 'レベル1000に到達した' },
+  ];
+
+  function computeEarnedBadges(data) {
+    const earned = new Set();
+    const allCatIds = CATEGORIES.map(c => c.id);
+    const clearedCats = new Set((data.byCategory || []).filter(c => c.correct > 0).map(c => c.category));
+    if (allCatIds.length > 0 && allCatIds.every(id => clearedCats.has(id))) earned.add('allCategories');
+    if ((data.streak || 0) >= 7) earned.add('streak7');
+    [100, 200, 300, 500, 1000].forEach(n => { if (state.level >= n) earned.add('level' + n); });
+    return earned;
+  }
+
+  function renderBadges(data) {
+    const earned = computeEarnedBadges(data);
+    els.historyBadges.innerHTML = BADGES.map(b => {
+      const isEarned = earned.has(b.id);
+      const cls = 'badge-item' + (isEarned ? ' badge-earned' : ' badge-locked');
+      return `<div class="${cls}" title="${b.desc}"><span class="badge-icon">${b.icon}</span><span class="badge-name">${b.name}</span></div>`;
+    }).join('');
+  }
+
   function renderHistory(data) {
+    renderBadges(data);
     els.historySummary.textContent = data.total === 0
       ? 'まだ記録がありません。問題を解いてみましょう。'
       : `のべ ${data.total} 問中 ${data.correct} 問正解（正答率 ${Math.round((data.correct / data.total) * 100)}%）`;
@@ -3797,6 +3828,7 @@
     els.historySummary.textContent = '読み込み中…';
     els.historyStreak.textContent = '';
     els.historyCalendar.innerHTML = '';
+    els.historyBadges.innerHTML = '';
     els.historyCats.innerHTML = '';
     els.historyRecent.innerHTML = '';
 
