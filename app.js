@@ -225,14 +225,19 @@
     return { category:'expand2', question:q, answer, choices:buildChoices(answer,wrongs), steps };
   }
 
+  function stackLines(...lines) {
+    return lines.map(l => `<span style="display:block">${l}</span>`).join('');
+  }
+
   function genSimul() {
     const x = randNonZero(-5, 5), y = randNonZero(-5, 5);
     const askX = Math.random() < 0.5;
     const pat = randInt(0, 2);
-    let q, answer, steps;
+    let q, eq1, eq2, answer, steps;
     if (pat === 0) {
       const c1 = x+y, c2 = x-y;
-      q = `x + y = ${c1}、x − y = ${c2} のとき ${askX?'x':'y'} = ?`;
+      eq1 = `x + y = ${c1}`; eq2 = `x − y = ${c2}`;
+      q = `${eq1}、${eq2} のとき ${askX?'x':'y'} = ?`;
       steps = askX
         ? [`①＋②: 2x = ${c1+c2}`, `x = ${(c1+c2)/2}`]
         : [`①−②: 2y = ${c1-c2}`, `y = ${(c1-c2)/2}`];
@@ -240,7 +245,8 @@
     } else if (pat === 1) {
       const a = randInt(2, 4);
       const c1 = a*x+y, c2 = x+y, diff = c1-c2;
-      q = `${a}x + y = ${c1}、x + y = ${c2} のとき ${askX?'x':'y'} = ?`;
+      eq1 = `${a}x + y = ${c1}`; eq2 = `x + y = ${c2}`;
+      q = `${eq1}、${eq2} のとき ${askX?'x':'y'} = ?`;
       if (askX) {
         steps = [`①−②: (${a}−1)x = ${diff}`, `${fmtCx(a-1)} = ${diff}`, `x = ${diff}÷${a-1} = ${x}`];
         answer = x;
@@ -251,7 +257,8 @@
     } else {
       const a = randInt(2, 4);
       const c1 = x+a*y, c2 = x+y, diff = c1-c2;
-      q = `x + ${a}y = ${c1}、x + y = ${c2} のとき ${askX?'x':'y'} = ?`;
+      eq1 = `x + ${a}y = ${c1}`; eq2 = `x + y = ${c2}`;
+      q = `${eq1}、${eq2} のとき ${askX?'x':'y'} = ?`;
       if (!askX) {
         steps = [`①−②: (${a}−1)y = ${diff}`, `${a-1}y = ${diff}`, `y = ${diff}÷${a-1} = ${y}`];
         answer = y;
@@ -261,7 +268,8 @@
       }
     }
     const wrongs = [-answer, answer+1, answer-1].filter((v,i,arr)=>arr.indexOf(v)===i&&v!==answer);
-    return { category:'simul', question:q, answer, choices:buildChoices(answer,wrongs), steps };
+    const questionHtml = stackLines(eq1, eq2, `のとき ${askX?'x':'y'} = ?`);
+    return { category:'simul', question:q, questionHtml, answer, choices:buildChoices(answer,wrongs), steps };
   }
 
   function quadPolyStr(x2C, xC, con) {
@@ -1393,7 +1401,7 @@
       const ns = [5, 6, 7, 8, 9, 10, 12];
       const n = ns[randInt(0, ns.length - 1)];
       const sum = 180 * (n - 2);
-      question = `${n} 角形の内角の和は？`;
+      question = `${kanjiDigit(n)}角形の内角の和は？`;
       answer = sum;
       wrongs = [180 * n, sum + 180, Math.max(180, sum - 180)];
       steps = [`多角形の内角の和 = 180° × (n−2)`, `= 180 × (${n}−2) = ${sum}°`];
@@ -2066,6 +2074,15 @@
 
   /* ---------- 角度の計算 ---------- */
 
+  function kanjiDigit(n) {
+    const digits = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    if (n <= 9) return digits[n];
+    if (n === 10) return '十';
+    if (n < 20) return '十' + digits[n - 10];
+    if (n % 10 === 0) return digits[Math.floor(n / 10)] + '十';
+    return digits[Math.floor(n / 10)] + '十' + digits[n % 10];
+  }
+
   function mkPolySvg(n, showExt) {
     const cx = 57, cy = 50, r = 40;
     const pts = [];
@@ -2105,13 +2122,13 @@
     } else if (pat === 2) {
       const n = randInt(4, 8);
       const s = (n - 2) * 180;
-      question = `${n}角形の内角の和は？`;
+      question = `${kanjiDigit(n)}角形の内角の和は？`;
       steps = [`(n − 2) × 180° = (${n} − 2) × 180 = ${s}°`];
       answer = s; wrongs = [s - 180, s + 180, n * 180];
       questionHtml = mkPolySvg(n, false) + `<span style="display:block">${question}</span>`;
     } else if (pat === 3) {
       const n = randInt(4, 9);
-      question = `${n}角形の外角の和は？`;
+      question = `${kanjiDigit(n)}角形の外角の和は？`;
       steps = [`多角形の外角の和はつねに 360°`];
       answer = 360; wrongs = [180, 540, 720];
       questionHtml = mkPolySvg(n, true) + `<span style="display:block">${question}</span>`;
@@ -2119,7 +2136,7 @@
       const ns = [4, 5, 6, 8, 9, 10, 12];
       const n = ns[randInt(0, ns.length - 1)];
       const s = (n - 2) * 180, interior = s / n;
-      question = `正${n}角形の1つの内角は？`;
+      question = `正${kanjiDigit(n)}角形の1つの内角は？`;
       steps = [`内角の和 = (${n}−2)×180 = ${s}°`, `1つの内角 = ${s} ÷ ${n} = ${interior}°`];
       answer = interior; wrongs = [s, 360 / n, interior + 10];
       questionHtml = mkPolySvg(n, false) + `<span style="display:block">${question}</span>`;
@@ -2128,14 +2145,14 @@
       const n = ns2[randInt(0, ns2.length - 1)];
       const s = (n - 2) * 180;
       question = `内角の和が ${s}° の多角形は何角形？`;
-      steps = [`(n − 2) × 180 = ${s}`, `n − 2 = ${s / 180}`, `n = ${n}（${n}角形）`];
+      steps = [`(n − 2) × 180 = ${s}`, `n − 2 = ${s / 180}`, `n = ${n}（${kanjiDigit(n)}角形）`];
       answer = n; wrongs = [n - 1, n + 1, n + 2];
     } else if (pat === 6) {
       const validExt = [20, 24, 30, 36, 40, 45, 60, 72];
       const ext = validExt[randInt(0, validExt.length - 1)];
       const n = 360 / ext;
       question = `1つの外角が ${ext}° の正多角形は何角形？`;
-      steps = [`外角の和 = 360°`, `辺の数 = 360 ÷ ${ext} = ${n}（${n}角形）`];
+      steps = [`外角の和 = 360°`, `辺の数 = 360 ÷ ${ext} = ${n}（${kanjiDigit(n)}角形）`];
       answer = n; wrongs = [n - 1, n + 1, n + 2];
       questionHtml = mkPolySvg(n, true) + `<span style="display:block">${question}</span>`;
     } else {
@@ -2190,7 +2207,7 @@
       const idx = randInt(0, 2);
       const cond = CONDS[idx];
       const missing = cond.c[2];
-      question = `△ABCと△DEFで${cond.c[0]}、${cond.c[1]}が分かっている。合同条件${cond.num}を使うのにあと1つは？`;
+      question = `△ABCと△DEFで${cond.c[0]}、${cond.c[1]}が分かっている。「${cond.name}」を使うのにあと1つは？`;
       answer = missing;
       const pool = ['AB=DE', 'BC=EF', 'CA=FD', '∠A=∠D', '∠B=∠E', '∠C=∠F'];
       const wrongs = pool.filter(c => c !== missing && c !== cond.c[0] && c !== cond.c[1]).slice(0, 3);
@@ -2210,21 +2227,21 @@
     } else {
       const scenarios = [
         {
-          q: '△ABD ≡ △CBD の証明。AB=CB、AD=CDが仮定から分かる。③に入るのは？',
+          q: '△ABD ≡ △CBD の証明。AB=CB、AD=CDが仮定から分かる。図から分かるのは何か？',
           a: 'BD は共通',
           w: ['∠ABD=∠CBD', 'AB=CD', 'BD=AC'],
           s: ['①AB=CB（仮定）', '②AD=CD（仮定）', '③BD は共通', '①②③より3組の辺がそれぞれ等しいから △ABD≡△CBD'],
           svg: '<svg width="118" height="108" viewBox="0 0 118 108" style="display:block;margin:0 auto 8px"><path d="M55,16 L100,55 L55,94 L10,55 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="55" y1="16" x2="55" y2="94" stroke="#1c2127" stroke-width="1.5" stroke-dasharray="5,3"/><text x="49" y="14" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="103" y="59" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="49" y="105" font-size="11" font-weight="bold" fill="#1c2127">D</text><text x="1" y="59" font-size="11" font-weight="bold" fill="#1c2127">C</text></svg>',
         },
         {
-          q: '△ABC ≡ △DCB の証明。AB=DC、∠ABC=∠DCBが仮定から分かる。③に入るのは？',
+          q: '△ABC ≡ △DCB の証明。AB=DC、∠ABC=∠DCBが仮定から分かる。図から分かるのは何か？',
           a: 'BC は共通',
           w: ['AC=DB', '∠BAC=∠CDB', 'AB=BC'],
           s: ['①AB=DC（仮定）', '②∠ABC=∠DCB（仮定）', '③BC は共通', '①②③より2組の辺とその間の角がそれぞれ等しいから △ABC≡△DCB'],
           svg: '<svg width="118" height="90" viewBox="0 0 118 90" style="display:block;margin:0 auto 8px"><rect x="8" y="12" width="96" height="64" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="8" y1="76" x2="104" y2="12" stroke="#1c2127" stroke-width="1.5"/><text x="1" y="12" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="1" y="86" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="106" y="86" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="106" y="12" font-size="11" font-weight="bold" fill="#1c2127">D</text></svg>',
         },
         {
-          q: '△ABM ≡ △DCM の証明。AM=DM、BM=CMが仮定から分かる。③に入るのは？',
+          q: '△ABM ≡ △DCM の証明。AM=DM、BM=CMが仮定から分かる。図から分かるのは何か？',
           a: '∠AMB=∠DMC（対頂角）',
           w: ['∠ABM=∠DCM', 'AM=CM', 'AB=DC'],
           s: ['①AM=DM（仮定）', '②BM=CM（仮定）', '③∠AMB=∠DMC（対頂角）', '①②③より2組の辺とその間の角がそれぞれ等しいから △ABM≡△DCM'],
