@@ -832,6 +832,7 @@
     { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
+    { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
     { id: 'polygonAngle5',   label: '図形の角（小5）',                     gen: genPolygonAngle5,   defaultOff: true },
     { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',       gen: genFracDecConvert5, defaultOff: true },
@@ -1364,6 +1365,84 @@
     return { category: 'percent5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  function trimTrailingZeros(str) {
+    if (!str.includes('.')) return str;
+    return str.replace(/0+$/, '').replace(/\.$/, '');
+  }
+
+  function wariBuRinStr(wari, bu, rin) {
+    let s = '';
+    if (wari > 0) s += `${wari}割`;
+    if (bu > 0) s += `${bu}分`;
+    if (rin > 0) s += `${rin}厘`;
+    return s || '0割';
+  }
+
+  // 割合の表し方：小数・百分率・歩合（何割何分何厘）（小5）
+  function genPercentConvert5() {
+    const pat = randInt(0, 3);
+    let question, answer, candidates;
+    if (pat === 0) {
+      // 小数 -> 百分率
+      const permille = randInt(1, 1999);
+      const decimalStr = trimTrailingZeros((permille / 1000).toFixed(3));
+      const pctStr = trimTrailingZeros((permille / 10).toFixed(1));
+      question = `${decimalStr} を百分率で表すと？`;
+      answer = `${pctStr}%`;
+      candidates = [
+        `${decimalStr}%`,
+        `${trimTrailingZeros((permille / 10 + 10).toFixed(1))}%`,
+        `${trimTrailingZeros((Math.max(0, permille / 10 - 10)).toFixed(1))}%`,
+        `${trimTrailingZeros((permille / 100).toFixed(2))}%`,
+      ];
+    } else if (pat === 1) {
+      // 百分率 -> 小数
+      const permille = randInt(1, 1999);
+      const decimalStr = trimTrailingZeros((permille / 1000).toFixed(3));
+      const pctStr = trimTrailingZeros((permille / 10).toFixed(1));
+      question = `${pctStr}% を小数で表すと？`;
+      answer = decimalStr;
+      candidates = [
+        `${pctStr}`,
+        trimTrailingZeros((permille / 1000 + 0.1).toFixed(3)),
+        trimTrailingZeros((Math.max(0, permille / 1000 - 0.1)).toFixed(3)),
+        trimTrailingZeros((permille / 100).toFixed(3)),
+      ];
+    } else if (pat === 2) {
+      // 小数 -> 歩合（何割何分何厘）
+      const permille = randInt(1, 999);
+      const decimalStr = trimTrailingZeros((permille / 1000).toFixed(3));
+      const wari = Math.floor(permille / 100), bu = Math.floor((permille % 100) / 10), rin = permille % 10;
+      const wariStr = wariBuRinStr(wari, bu, rin);
+      question = `${decimalStr} を「割・分・厘」で表すと？`;
+      answer = wariStr;
+      candidates = [
+        wariBuRinStr(wari, rin, bu),
+        wariBuRinStr(wari + 1, bu, rin),
+        wariBuRinStr(wari, bu, 0),
+        wariBuRinStr(Math.max(0, wari - 1), bu, rin),
+      ];
+    } else {
+      // 歩合（何割何分何厘） -> 小数
+      const permille = randInt(1, 999);
+      const decimalStr = trimTrailingZeros((permille / 1000).toFixed(3));
+      const wari = Math.floor(permille / 100), bu = Math.floor((permille % 100) / 10), rin = permille % 10;
+      const wariStr = wariBuRinStr(wari, bu, rin);
+      question = `${wariStr} を小数で表すと？`;
+      answer = decimalStr;
+      candidates = [
+        trimTrailingZeros((permille / 100).toFixed(3)),
+        trimTrailingZeros((permille / 1000 + 0.01).toFixed(3)),
+        trimTrailingZeros((Math.max(0, permille / 1000 - 0.01)).toFixed(3)),
+        trimTrailingZeros((permille / 10000).toFixed(4)),
+      ];
+    }
+    const steps = pat <= 1
+      ? [`小数 ⇔ 百分率は100倍・100で割るの関係`, `= ${answer}`]
+      : [`割=0.1、分=0.01、厘=0.001`, `= ${answer}`];
+    return { category: 'percentConvert5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
   // 倍数と約数（小5）
   function genMultiples5() {
     const pat = randInt(0, 2);
@@ -1668,7 +1747,7 @@
 
   // 単位の変換（小4）
   function genUnit4() {
-    const pat = randInt(0, 7);
+    const pat = randInt(0, 14);
     let question, answer, candidates, wrongs;
     if (pat === 0) {
       const mm = randInt(2, 99);
@@ -1716,11 +1795,46 @@
       answer = m2 * 10000;
       wrongs = [m2 * 100, answer + 10000, Math.max(1, answer - 10000)];
       return { category: 'unit4', question: `${m2} m² は 何 cm² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1m² = 10000cm² なので ×10000`, `${m2} × 10000 = ${answer} cm²`] };
-    } else {
+    } else if (pat === 7) {
       const km2 = randInt(1, 9);
       answer = km2 * 1000000;
       wrongs = [km2 * 1000, answer + 1000000, Math.max(1, answer - 1000000)];
       return { category: 'unit4', question: `${km2} km² は 何 m² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1km² = 1000000m² なので ×1000000`, `${km2} × 1000000 = ${answer} m²`] };
+    } else if (pat === 8) {
+      const km2 = randInt(1, 9);
+      answer = km2 * 100;
+      wrongs = [km2 * 10, answer + 100, Math.max(1, answer - 100)];
+      return { category: 'unit4', question: `${km2} km² は 何 ha ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1km² = 100ha なので ×100`, `${km2} × 100 = ${answer} ha`] };
+    } else if (pat === 9) {
+      const ha = randInt(1, 9) * 100;
+      answer = ha / 100;
+      wrongs = [ha / 10, answer + 1, Math.max(1, answer - 1)];
+      return { category: 'unit4', question: `${ha} ha は 何 km² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`100ha = 1km² なので ÷100`, `${ha} ÷ 100 = ${answer} km²`] };
+    } else if (pat === 10) {
+      const ha = randInt(1, 9);
+      answer = ha * 100;
+      wrongs = [ha * 10, answer + 100, Math.max(1, answer - 100)];
+      return { category: 'unit4', question: `${ha} ha は 何 a ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1ha = 100a なので ×100`, `${ha} × 100 = ${answer} a`] };
+    } else if (pat === 11) {
+      const a = randInt(1, 9) * 100;
+      answer = a / 100;
+      wrongs = [a / 10, answer + 1, Math.max(1, answer - 1)];
+      return { category: 'unit4', question: `${a} a は 何 ha ？`, answer, choices: buildChoices(answer, wrongs), steps: [`100a = 1ha なので ÷100`, `${a} ÷ 100 = ${answer} ha`] };
+    } else if (pat === 12) {
+      const ha = randInt(1, 9);
+      answer = ha * 10000;
+      wrongs = [ha * 1000, answer + 10000, Math.max(1, answer - 10000)];
+      return { category: 'unit4', question: `${ha} ha は 何 m² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1ha = 10000m² なので ×10000`, `${ha} × 10000 = ${answer} m²`] };
+    } else if (pat === 13) {
+      const a = randInt(1, 9);
+      answer = a * 100;
+      wrongs = [a * 10, answer + 100, Math.max(1, answer - 100)];
+      return { category: 'unit4', question: `${a} a は 何 m² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1a = 100m² なので ×100`, `${a} × 100 = ${answer} m²`] };
+    } else {
+      const m2 = randInt(1, 9) * 100;
+      answer = m2 / 100;
+      wrongs = [m2 / 10, answer + 1, Math.max(1, answer - 1)];
+      return { category: 'unit4', question: `${m2} m² は 何 a ？`, answer, choices: buildChoices(answer, wrongs), steps: [`100m² = 1a なので ÷100`, `${m2} ÷ 100 = ${answer} a`] };
     }
   }
 
