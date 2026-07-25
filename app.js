@@ -775,63 +775,76 @@
   /* ---------- 出題範囲の定義 ---------- */
 
   const CATEGORIES = [
-    { id: 'add2',       label: '加法（たし算）',           gen: genAdd2 },
-    { id: 'sub2',       label: '減法（ひき算）',           gen: genSub2 },
-    { id: 'chain3',     label: '加減混合',                 gen: genChain3 },
-    { id: 'mul2',       label: '乗法（かけ算）',           gen: genMul2 },
-    { id: 'div2',       label: '除法（わり算）',           gen: genDiv2 },
-    { id: 'mixed',      label: 'かっこを含む四則',         gen: genMixedParen },
-    { id: 'allops',     label: '四則混合計算',             gen: genAllOps },
-    { id: 'power',      label: '累乗の計算',               gen: genPower },
-    { id: 'brace',      label: '中かっこを含む計算',       gen: genBrace },
-    { id: 'literal',    label: '文字式の計算',             gen: genLiteral },
-    { id: 'notation',   label: '文字式の表し方',           gen: genNotation },
-    { id: 'subst',      label: '代入の計算',               gen: genSubst },
-    { id: 'maxof4',     label: '大小関係',                 gen: genMaxOf4 },
-    { id: 'equation',   label: '一次方程式',               gen: genEquation },
-    { id: 'proportion', label: '比例・反比例（中1）',       gen: genProportion },
-    { id: 'expand2',    label: '式の展開・基本（中3）',    gen: genExpand2 },
-    { id: 'simul',      label: '連立方程式',               gen: genSimul },
-    { id: 'linear',     label: '一次関数',                 gen: genLinear },
-    { id: 'angle',      label: '角度の計算（中2）',        gen: genAngle },
-    { id: 'congruence', label: '三角形の合同（中2）',      gen: genCongruence },
-    { id: 'expand3',    label: '式の展開・発展（中3）',    gen: genExpand3 },
-    { id: 'factor',     label: '因数分解',                 gen: genFactor },
-    { id: 'sqrt',       label: '平方根の計算',             gen: genSqrt },
-    { id: 'sqrtmd',     label: '√のかけ算・割り算',       gen: genSqrtMulDiv },
-    { id: 'quadratic',  label: '二次方程式',               gen: genQuadratic },
-    { id: 'quadfunc',   label: '二次関数',                 gen: genQuadFunc },
-    { id: 'similarity',   label: '三角形の相似（中3）',      gen: genSimilarity },
-    { id: 'planeFigure', label: '平面図形（中1）',           gen: genPlaneFigure },
-    { id: 'solidFigure', label: '空間図形（中1）',           gen: genSolidFigure },
-    { id: 'probability', label: '確率（中2）',               gen: genProbability },
-    { id: 'circleAngle', label: '円周角（中3）',             gen: genCircleAngle },
-    { id: 'pythagoras',    label: '三平方の定理（中3）',       gen: genPythagoras },
-    { id: 'linearMul',   label: '1次式×÷数（中1）',          gen: genLinearMul },
-    { id: 'polyMul',     label: '多項式×÷数（中1）',          gen: genPolyMul },
-    { id: 'linearAddSub',label: '1次式の加減（中1）',         gen: genLinearAddSub },
+    // ---------- 中1 ----------
+    { id: 'add2',       label: '加法（たし算）（中1）',           gen: genAdd2 },
+    { id: 'sub2',       label: '減法（ひき算）（中1）',           gen: genSub2 },
+    { id: 'chain3',     label: '加減混合（中1）',                 gen: genChain3 },
+    { id: 'mul2',       label: '乗法（かけ算）（中1）',           gen: genMul2 },
+    { id: 'div2',       label: '除法（わり算）（中1）',           gen: genDiv2 },
+    { id: 'mixed',      label: 'かっこを含む四則（中1）',         gen: genMixedParen },
+    { id: 'allops',     label: '四則混合計算（中1）',             gen: genAllOps },
+    { id: 'power',      label: '累乗の計算（中1）',               gen: genPower },
+    { id: 'brace',      label: '中かっこを含む計算（中1）',       gen: genBrace },
+    { id: 'literal',    label: '文字式の計算（中1）',             gen: genLiteral },
+    { id: 'notation',   label: '文字式の表し方（中1）',           gen: genNotation },
+    { id: 'subst',      label: '代入の計算（中1）',               gen: genSubst },
+    { id: 'maxof4',     label: '大小関係（中1）',                 gen: genMaxOf4 },
+    { id: 'equation',   label: '一次方程式（中1）',               gen: genEquation },
+    { id: 'proportion', label: '比例・反比例（中1）',             gen: genProportion },
+    { id: 'linearMul',   label: '1次式×÷数（中1）',              gen: genLinearMul },
+    { id: 'polyMul',     label: '多項式×÷数（中1）',              gen: genPolyMul },
+    { id: 'linearAddSub',label: '1次式の加減（中1）',             gen: genLinearAddSub },
+    { id: 'planeFigure', label: '平面図形（中1）',                gen: genPlaneFigure },
+    { id: 'solidFigure', label: '空間図形（中1）',                gen: genSolidFigure },
 
-    { id: 'round4',      label: '四捨五入（小4）',                     gen: genRound4,      defaultOff: true },
-    { id: 'fourOps4',    label: '四則計算（小4）',                     gen: genFourOps4,    defaultOff: true },
-    { id: 'fracAddSub5', label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5, defaultOff: true },
-    { id: 'decDiv5',     label: '小数のわり算（小5）',                 gen: genDecDiv5,     defaultOff: true },
-    { id: 'fracMulDiv6', label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6, defaultOff: true },
-    { id: 'ratio6',       label: '比（小6）',                           gen: genRatio6,       defaultOff: true },
-    { id: 'scale6',       label: '拡大図と縮図（小6）',                 gen: genScale6,       defaultOff: true },
-    { id: 'dataValues6',  label: 'データの調べ方（小6）',               gen: genDataValues6,  defaultOff: true },
-    { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',      gen: genArrangeCombine6, defaultOff: true },
+    // ---------- 中2 ----------
+    { id: 'simul',      label: '連立方程式（中2）',               gen: genSimul },
+    { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
+    { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
+    { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
+    { id: 'probability', label: '確率（中2）',                     gen: genProbability },
+
+    // ---------- 中3 ----------
+    { id: 'expand2',    label: '式の展開・基本（中3）',           gen: genExpand2 },
+    { id: 'expand3',    label: '式の展開・発展（中3）',           gen: genExpand3 },
+    { id: 'factor',     label: '因数分解（中3）',                 gen: genFactor },
+    { id: 'sqrt',       label: '平方根の計算（中3）',             gen: genSqrt },
+    { id: 'sqrtmd',     label: '√のかけ算・割り算（中3）',       gen: genSqrtMulDiv },
+    { id: 'quadratic',  label: '二次方程式（中3）',               gen: genQuadratic },
+    { id: 'quadfunc',   label: '二次関数（中3）',                 gen: genQuadFunc },
+    { id: 'similarity',   label: '三角形の相似（中3）',            gen: genSimilarity },
+    { id: 'circleAngle', label: '円周角（中3）',                   gen: genCircleAngle },
+    { id: 'pythagoras',    label: '三平方の定理（中3）',           gen: genPythagoras },
+
+    // ---------- 小4 ----------
+    { id: 'round4',         label: '四捨五入（小4）',                     gen: genRound4,         defaultOff: true },
+    { id: 'fourOps4',       label: '四則計算（小4）',                     gen: genFourOps4,       defaultOff: true },
     { id: 'decMul4',        label: '小数のかけ算（小4）',                 gen: genDecMul4,        defaultOff: true },
+    { id: 'frac4',          label: '分数のたし算・ひき算（小4）',         gen: genFrac4,          defaultOff: true },
+    { id: 'unit4',          label: '単位の変換（小4）',                   gen: genUnit4,          defaultOff: true },
+    { id: 'mul3x2_4',       label: '3桁×2桁のかけ算（小4）',              gen: genMul3x2_4,       defaultOff: true },
     { id: 'divRemainder4',  label: 'あまりのあるわり算（小4）',           gen: genDivRemainder4,  defaultOff: true },
     { id: 'rectArea4',      label: '長方形・正方形の面積（小4）',        gen: genRectArea4,      defaultOff: true },
-    { id: 'speedRate5',     label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,     defaultOff: true },
-    { id: 'percent5',       label: '割合・百分率（小5）',                 gen: genPercent5,       defaultOff: true },
-    { id: 'multiples5',     label: '倍数と約数（小5）',                   gen: genMultiples5,     defaultOff: true },
-    { id: 'polygonAngle5',  label: '図形の角（小5）',                     gen: genPolygonAngle5,  defaultOff: true },
-    { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',      gen: genFracDecConvert5, defaultOff: true },
-    { id: 'average5',       label: '平均（小5）',                         gen: genAverage5,       defaultOff: true },
-    { id: 'circumference5', label: '円周（小5）',                         gen: genCircumference5, defaultOff: true },
-    { id: 'circleArea6',    label: '円の面積（小6）',                     gen: genCircleArea6,    defaultOff: true },
-    { id: 'prismVolume6',   label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,   defaultOff: true },
+
+    // ---------- 小5 ----------
+    { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
+    { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
+    { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
+    { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
+    { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
+    { id: 'polygonAngle5',   label: '図形の角（小5）',                     gen: genPolygonAngle5,   defaultOff: true },
+    { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',       gen: genFracDecConvert5, defaultOff: true },
+    { id: 'average5',        label: '平均（小5）',                         gen: genAverage5,        defaultOff: true },
+    { id: 'circumference5',  label: '円周（小5）',                         gen: genCircumference5,  defaultOff: true },
+
+    // ---------- 小6 ----------
+    { id: 'fracMulDiv6',     label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6,     defaultOff: true },
+    { id: 'ratio6',          label: '比（小6）',                           gen: genRatio6,          defaultOff: true },
+    { id: 'scale6',          label: '拡大図と縮図（小6）',                 gen: genScale6,          defaultOff: true },
+    { id: 'dataValues6',     label: 'データの調べ方（小6）',               gen: genDataValues6,     defaultOff: true },
+    { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',        gen: genArrangeCombine6, defaultOff: true },
+    { id: 'circleArea6',     label: '円の面積（小6）',                     gen: genCircleArea6,     defaultOff: true },
+    { id: 'prismVolume6',    label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,    defaultOff: true },
   ];
 
   /* ---------- 小学校範囲の分数ユーティリティ ---------- */
@@ -1572,6 +1585,132 @@
       const steps = [`底面積 = ${r} × ${r} × 3.14 = ${baseAreaStr} cm²`, `体積 = ${baseAreaStr} × ${h} = ${v} cm³`];
       return { category: 'prismVolume6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
     }
+  }
+
+  function mixedFracStr(num, den) {
+    const [rn, rd] = reduceFrac(num, den);
+    if (rd === 1) return `${rn}`;
+    const whole = Math.floor(rn / rd);
+    const rem = rn % rd;
+    if (whole === 0) return `${rn}/${rd}`;
+    return `${whole} ${rem}/${rd}`;
+  }
+
+  // 分数のたし算・ひき算（同分母、小4）
+  function genFrac4() {
+    const pat = randInt(0, 3);
+    const d = randInt(3, 9);
+    let question, answer, candidates;
+    if (pat === 0) {
+      const a = randInt(1, d - 1), b = randInt(1, d - 1);
+      question = `${a}/${d} + ${b}/${d} = ?`;
+      answer = mixedFracStr(a + b, d);
+      candidates = [`${a + b}/${d}`, mixedFracStr(a + b + 1, d), mixedFracStr(Math.max(1, a + b - 1), d), mixedFracStr(a + b, d + 1)];
+    } else if (pat === 1) {
+      let a = randInt(1, d - 1), b = randInt(1, d - 1);
+      if (a === b) { a = Math.min(d - 1, a + 1); }
+      if (a < b) { [a, b] = [b, a]; }
+      question = `${a}/${d} − ${b}/${d} = ?`;
+      answer = mixedFracStr(a - b, d);
+      candidates = [`${a - b}/${d}`, mixedFracStr(a - b + 1, d), mixedFracStr(Math.max(1, a - b - 1), d), mixedFracStr(a + b, d)];
+    } else if (pat === 2) {
+      const w1 = randInt(1, 4), f1 = randInt(1, d - 1);
+      const w2 = randInt(1, 4), f2 = randInt(1, d - 1);
+      const totalNum = (w1 * d + f1) + (w2 * d + f2);
+      question = `${w1} ${f1}/${d} + ${w2} ${f2}/${d} = ?`;
+      answer = mixedFracStr(totalNum, d);
+      candidates = [
+        `${w1 + w2} ${f1 + f2}/${d}`,
+        mixedFracStr(totalNum + 1, d),
+        mixedFracStr(Math.max(1, totalNum - 1), d),
+        mixedFracStr(totalNum + d, d),
+      ];
+    } else {
+      const w2 = randInt(1, 3), f2 = randInt(1, d - 1);
+      const w1 = randInt(w2 + 1, w2 + 4), f1 = randInt(1, d - 1);
+      const num1 = w1 * d + f1, num2 = w2 * d + f2;
+      const diff = num1 - num2;
+      question = `${w1} ${f1}/${d} − ${w2} ${f2}/${d} = ?`;
+      answer = mixedFracStr(diff, d);
+      candidates = [
+        `${Math.max(0, w1 - w2)} ${Math.abs(f1 - f2)}/${d}`,
+        mixedFracStr(diff + 1, d),
+        mixedFracStr(Math.max(1, diff - 1), d),
+        mixedFracStr(diff + d, d),
+      ];
+    }
+    const steps = [`分母${d}のまま、分子どうしで計算する`, `= ${answer}`];
+    return { category: 'frac4', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
+  // 単位の変換（小4）
+  function genUnit4() {
+    const pat = randInt(0, 7);
+    let question, answer, candidates, wrongs;
+    if (pat === 0) {
+      const mm = randInt(2, 99);
+      const cmStr = (mm / 10).toFixed(1);
+      question = `${mm} mm は 何 cm ？`;
+      answer = cmStr;
+      candidates = [`${mm}`, ((mm + 10) / 10).toFixed(1), (Math.max(1, mm - 10) / 10).toFixed(1), (mm / 100).toFixed(2)];
+      return { category: 'unit4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`1cm = 10mm なので ÷10`, `${mm} ÷ 10 = ${cmStr} cm`] };
+    } else if (pat === 1) {
+      const cm = randInt(1, 99);
+      answer = cm * 10;
+      wrongs = [cm, answer + 10, Math.max(1, answer - 10)];
+      return { category: 'unit4', question: `${cm} cm は 何 mm ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1cm = 10mm なので ×10`, `${cm} × 10 = ${answer} mm`] };
+    } else if (pat === 2) {
+      const g = randInt(1, 49) * 100;
+      const kgStr = (g / 1000).toFixed(1);
+      question = `${g} g は 何 kg ？`;
+      answer = kgStr;
+      candidates = [`${g}`, ((g + 1000) / 1000).toFixed(1), (Math.max(100, g - 1000) / 1000).toFixed(1), (g / 100).toFixed(1)];
+      return { category: 'unit4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`1000g = 1kg なので ÷1000`, `${g} ÷ 1000 = ${kgStr} kg`] };
+    } else if (pat === 3) {
+      const kgTenths = randInt(1, 99);
+      const kgStr = (kgTenths / 10).toFixed(1);
+      answer = kgTenths * 100;
+      wrongs = [kgTenths, answer + 100, Math.max(1, answer - 100)];
+      return { category: 'unit4', question: `${kgStr} kg は 何 g ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1kg = 1000g なので ×1000`, `${kgStr} × 1000 = ${answer} g`] };
+    } else if (pat === 4) {
+      const kmPart = randInt(1, 9), mPart = randInt(1, 9) * 100;
+      const totalM = kmPart * 1000 + mPart;
+      const kmStr = (totalM / 1000).toFixed(1);
+      question = `${kmPart}km${mPart}m は 何 km ？`;
+      answer = kmStr;
+      candidates = [`${kmPart}.${mPart}`, ((totalM + 1000) / 1000).toFixed(1), (Math.max(100, totalM - 1000) / 1000).toFixed(1), `${kmPart}`];
+      return { category: 'unit4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`1000m = 1km なので m 部分を km に直す`, `${totalM} m = ${kmStr} km`] };
+    } else if (pat === 5) {
+      const mPart = randInt(1, 9), cmPart = randInt(1, 9) * 10;
+      const totalCm = mPart * 100 + cmPart;
+      const mStr = (totalCm / 100).toFixed(1);
+      question = `${mPart}m${cmPart}cm は 何 m ？`;
+      answer = mStr;
+      candidates = [`${mPart}.${cmPart}`, ((totalCm + 100) / 100).toFixed(1), (Math.max(10, totalCm - 100) / 100).toFixed(1), `${mPart}`];
+      return { category: 'unit4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`100cm = 1m なので cm 部分を m に直す`, `${totalCm} cm = ${mStr} m`] };
+    } else if (pat === 6) {
+      const m2 = randInt(1, 9);
+      answer = m2 * 10000;
+      wrongs = [m2 * 100, answer + 10000, Math.max(1, answer - 10000)];
+      return { category: 'unit4', question: `${m2} m² は 何 cm² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1m² = 10000cm² なので ×10000`, `${m2} × 10000 = ${answer} cm²`] };
+    } else {
+      const km2 = randInt(1, 9);
+      answer = km2 * 1000000;
+      wrongs = [km2 * 1000, answer + 1000000, Math.max(1, answer - 1000000)];
+      return { category: 'unit4', question: `${km2} km² は 何 m² ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1km² = 1000000m² なので ×1000000`, `${km2} × 1000000 = ${answer} m²`] };
+    }
+  }
+
+  // 3桁×2桁のかけ算（小4）
+  function genMul3x2_4() {
+    const a = randInt(100, 999);
+    const b = randInt(10, 99);
+    const answer = a * b;
+    const question = `${a} × ${b} = ?`;
+    const bTens = Math.floor(b / 10) * 10, bOnes = b % 10;
+    const wrongs = [answer + b, Math.max(1, answer - b), a * (b + 1), a * bTens + a * bOnes + 10];
+    const steps = [`${a} × ${b} = ${a} × ${bTens} + ${a} × ${bOnes}`, `= ${a * bTens} + ${a * bOnes}`, `= ${answer}`];
+    return { category: 'mul3x2_4', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   /* ---------- 問題生成関数 ---------- */
