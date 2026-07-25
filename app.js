@@ -1153,7 +1153,7 @@
       steps = [`実際の道のり = 地図上の長さ × 縮尺の分母`, `${mapCm} × ${sc.den} = ${mapCm * sc.den} cm = ${actualMeters} m`].concat(unit === 'km' ? [`= ${displayVal} km`] : []);
     }
     const choices = buildChoices(answer, wrongs);
-    return { category: 'scale6', question, answer, choices, steps };
+    return { category: 'scale6', question, questionHtml: stepToHtml(question), answer, choices, steps };
   }
 
   // データの調べ方（小6）：平均値・中央値・最頻値・範囲
