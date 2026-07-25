@@ -1440,7 +1440,7 @@
       ];
       steps = [`${decStr} = ${n}/${d}`];
     }
-    return { category: 'fracDecConvert5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    return { category: 'fracDecConvert5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   // 平均（小5）
