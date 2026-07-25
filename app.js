@@ -820,6 +820,10 @@
     { id: 'multiples5',     label: '倍数と約数（小5）',                   gen: genMultiples5,     defaultOff: true },
     { id: 'polygonAngle5',  label: '図形の角（小5）',                     gen: genPolygonAngle5,  defaultOff: true },
     { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',      gen: genFracDecConvert5, defaultOff: true },
+    { id: 'average5',       label: '平均（小5）',                         gen: genAverage5,       defaultOff: true },
+    { id: 'circumference5', label: '円周（小5）',                         gen: genCircumference5, defaultOff: true },
+    { id: 'circleArea6',    label: '円の面積（小6）',                     gen: genCircleArea6,    defaultOff: true },
+    { id: 'prismVolume6',   label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,   defaultOff: true },
   ];
 
   /* ---------- 小学校範囲の分数ユーティリティ ---------- */
@@ -1429,6 +1433,137 @@
       steps = [`${decStr} = ${n}/${d}`];
     }
     return { category: 'fracDecConvert5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
+  // 平均（小5）
+  function genAverage5() {
+    const count = randInt(3, 5);
+    const vals = [];
+    let sum = 0;
+    for (let i = 0; i < count - 1; i++) { const v = randInt(1, 30); vals.push(v); sum += v; }
+    const rem = sum % count;
+    let last = (count - rem) % count;
+    if (last === 0) last = count;
+    last += count * randInt(0, 2);
+    vals.push(last);
+    sum += last;
+    const answer = sum / count;
+    const question = `次の${count}つの数値の平均を求めよ： ${vals.join('、')}`;
+    const wrongs = [answer + 1, answer - 1, sum, Math.max(0, answer - 2)];
+    const steps = [`合計 = ${vals.join(' + ')} = ${sum}`, `平均 = ${sum} ÷ ${count} = ${answer}`];
+    return { category: 'average5', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 円周（小5、円周率は3.14）
+  function genCircumference5() {
+    const pat = randInt(0, 2);
+    let question, answer, candidates, steps;
+    if (pat === 0) {
+      const r = randInt(2, 20);
+      const d = r * 2;
+      const cX100 = d * 314;
+      const c = (cX100 / 100).toFixed(2);
+      question = `半径 ${r} cm の円の円周は？（円周率は3.14）`;
+      answer = c;
+      candidates = [
+        ((r * 314) / 100).toFixed(2),
+        (((d + 1) * 314) / 100).toFixed(2),
+        (d * 3).toFixed(2),
+        ((cX100 + 100) / 100).toFixed(2),
+      ];
+      steps = [`円周 = 直径 × 3.14`, `直径 = ${r} × 2 = ${d}`, `円周 = ${d} × 3.14 = ${c} cm`];
+      return { category: 'circumference5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 1) {
+      const d = randInt(2, 30);
+      const cX100 = d * 314;
+      const c = (cX100 / 100).toFixed(2);
+      question = `直径 ${d} cm の円の円周は？（円周率は3.14）`;
+      answer = c;
+      candidates = [
+        (((d / 2) * 314) / 100).toFixed(2),
+        (((d + 1) * 314) / 100).toFixed(2),
+        (d * 3).toFixed(2),
+        ((cX100 - 100) / 100).toFixed(2),
+      ];
+      steps = [`円周 = 直径 × 3.14`, `= ${d} × 3.14 = ${c} cm`];
+      return { category: 'circumference5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else {
+      const d = randInt(2, 20);
+      const cX100 = d * 314;
+      const c = (cX100 / 100).toFixed(2);
+      question = `円周が ${c} cm のとき、直径は何 cm？`;
+      answer = d;
+      const wrongs = [d + 1, Math.max(1, d - 1), d * 2];
+      steps = [`直径 = 円周 ÷ 3.14`, `= ${c} ÷ 3.14 = ${d} cm`];
+      return { category: 'circumference5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // 円の面積（小6、円周率は3.14）
+  function genCircleArea6() {
+    const givenDiameter = Math.random() < 0.5;
+    const r = randInt(2, 15);
+    const areaX100 = r * r * 314;
+    const a = (areaX100 / 100).toFixed(2);
+    let question;
+    if (givenDiameter) {
+      question = `直径 ${r * 2} cm の円の面積は？（円周率は3.14）`;
+    } else {
+      question = `半径 ${r} cm の円の面積は？（円周率は3.14）`;
+    }
+    const answer = a;
+    const candidates = [
+      ((r * 2 * 314) / 100).toFixed(2),
+      (r * r * 3).toFixed(2),
+      (((r + 1) * (r + 1) * 314) / 100).toFixed(2),
+      ((areaX100 + 100) / 100).toFixed(2),
+    ];
+    const steps = givenDiameter
+      ? [`半径 = 直径 ÷ 2 = ${r * 2} ÷ 2 = ${r}`, `面積 = ${r} × ${r} × 3.14 = ${a} cm²`]
+      : [`面積 = 半径 × 半径 × 3.14`, `= ${r} × ${r} × 3.14 = ${a} cm²`];
+    return { category: 'circleArea6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
+  // 角柱と円柱の体積（小6、円周率は3.14）
+  function genPrismVolume6() {
+    const pat = randInt(0, 2);
+    if (pat === 0) {
+      const baseArea = randInt(5, 40);
+      const h = randInt(3, 12);
+      const v = baseArea * h;
+      const question = `底面積 ${baseArea} cm²、高さ ${h} cm の角柱の体積は？`;
+      const answer = v;
+      const wrongs = [baseArea + h, Math.max(1, v - h), v + baseArea];
+      const steps = [`角柱の体積 = 底面積 × 高さ`, `= ${baseArea} × ${h} = ${v} cm³`];
+      return { category: 'prismVolume6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const b = randInt(2, 10) * 2, hTri = randInt(2, 10);
+      const baseArea = b * hTri / 2;
+      const hPrism = randInt(3, 12);
+      const v = baseArea * hPrism;
+      const question = `底面が底辺 ${b} cm・高さ ${hTri} cm の三角形で、柱の高さが ${hPrism} cm の三角柱の体積は？`;
+      const answer = v;
+      const wrongs = [b * hTri * hPrism, Math.max(1, v - hPrism), v + baseArea];
+      const steps = [`底面積 = ${b} × ${hTri} ÷ 2 = ${baseArea} cm²`, `体積 = ${baseArea} × ${hPrism} = ${v} cm³`];
+      return { category: 'prismVolume6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const r = randInt(2, 10);
+      const h = randInt(3, 12);
+      const baseAreaX100 = r * r * 314;
+      const baseAreaStr = (baseAreaX100 / 100).toFixed(2);
+      const vX100 = baseAreaX100 * h;
+      const v = (vX100 / 100).toFixed(2);
+      const question = `底面の半径 ${r} cm、高さ ${h} cm の円柱の体積は？（円周率は3.14）`;
+      const answer = v;
+      const candidates = [
+        (((r * 2 * 314) * h) / 100).toFixed(2),
+        ((r * r * 3) * h).toFixed(2),
+        ((vX100 + 100) / 100).toFixed(2),
+        ((r * r * 314 * (h + 1)) / 100).toFixed(2),
+      ];
+      const steps = [`底面積 = ${r} × ${r} × 3.14 = ${baseAreaStr} cm²`, `体積 = ${baseAreaStr} × ${h} = ${v} cm³`];
+      return { category: 'prismVolume6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    }
   }
 
   /* ---------- 問題生成関数 ---------- */
