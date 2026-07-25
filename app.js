@@ -819,6 +819,7 @@
     // ---------- 小4 ----------
     { id: 'round4',         label: '四捨五入（小4）',                     gen: genRound4,         defaultOff: true },
     { id: 'fourOps4',       label: '四則計算（小4）',                     gen: genFourOps4,       defaultOff: true },
+    { id: 'decAddSub4',     label: '小数のたし算・ひき算（小4）',         gen: genDecAddSub4,     defaultOff: true },
     { id: 'decMul4',        label: '小数のかけ算（小4）',                 gen: genDecMul4,        defaultOff: true },
     { id: 'frac4',          label: '分数のたし算・ひき算（小4）',         gen: genFrac4,          defaultOff: true },
     { id: 'unit4',          label: '単位の変換（小4）',                   gen: genUnit4,          defaultOff: true },
@@ -1594,6 +1595,28 @@
     const rem = rn % rd;
     if (whole === 0) return `${rn}/${rd}`;
     return `${whole} ${rem}/${rd}`;
+  }
+
+  // 小数のたし算・ひき算（小4）
+  function genDecAddSub4() {
+    const isAdd = Math.random() < 0.5;
+    let aTenths, bTenths;
+    do { aTenths = randInt(11, 999); } while (aTenths % 10 === 0);
+    do { bTenths = randInt(11, 999); } while (bTenths % 10 === 0);
+    if (!isAdd && aTenths < bTenths) { [aTenths, bTenths] = [bTenths, aTenths]; }
+    const a = (aTenths / 10).toFixed(1);
+    const b = (bTenths / 10).toFixed(1);
+    const resultTenths = isAdd ? aTenths + bTenths : aTenths - bTenths;
+    const answer = (resultTenths / 10).toFixed(1);
+    const question = `${a} ${isAdd ? '+' : '−'} ${b} = ?`;
+    const candidates = [
+      (Math.max(0, resultTenths - 10) / 10).toFixed(1),
+      ((resultTenths + 10) / 10).toFixed(1),
+      `${Math.round(resultTenths / 10)}`,
+      (Math.abs(aTenths - bTenths) / 10).toFixed(1),
+    ];
+    const steps = [`小数点をそろえて計算する`, `${a} ${isAdd ? '+' : '−'} ${b} = ${answer}`];
+    return { category: 'decAddSub4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   // 分数のたし算・ひき算（同分母、小4）
