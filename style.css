@@ -222,6 +222,26 @@ h1 {
   100% { transform: scale(1); }
 }
 
+/* Rare enemy */
+.enemy-emoji.is-rare { border-radius: 50%; animation: rare-glow 1.5s ease-in-out infinite; }
+.enemy-char-img.is-rare { border-color: #f59e0b; box-shadow: 0 0 0 2px #fde68a; }
+.enemy-name.is-rare-name { color: #b45309; }
+@keyframes rare-glow {
+  0%, 100% { filter: drop-shadow(0 0 2px #fbbf24); }
+  50%      { filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 4px #f59e0b); }
+}
+.rare-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
 /* Quiz card */
 .quiz-card {
   background: var(--c-surface);

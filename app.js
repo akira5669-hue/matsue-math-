@@ -51,6 +51,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
+        isRareEnemy: s.isRareEnemy,
       }));
     } catch (e) { }
   }
@@ -3089,6 +3090,11 @@
     { name: 'ハナマルオ',      emoji: '⭕' },
   ];
 
+  const RARE_ENEMY = { name: 'ゾンビAKR', img: 'images/zombie_akr.png' };
+  const RARE_CHANCE = 0.08;
+  const RARE_BONUS_MP = 10;
+  function rollRare() { return Math.random() < RARE_CHANCE; }
+
   /* ---------- アプリ状態 ---------- */
 
   const savedGame = loadGameState();
@@ -3107,6 +3113,7 @@
     pointsToday: (savedGame && savedGame.pointsToday) || 0,
     pointsDate: (savedGame && savedGame.pointsDate) || null,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
+    isRareEnemy: (savedGame && typeof savedGame.isRareEnemy === 'boolean') ? savedGame.isRareEnemy : rollRare(),
   };
 
   const els = {
@@ -3287,13 +3294,15 @@
 
   function updateGameHud() {
     const hp = Math.max(0, 10 - state.streak);
-    const enemy = ENEMIES[state.enemyIdx];
+    const enemy = state.isRareEnemy ? RARE_ENEMY : ENEMIES[state.enemyIdx];
     if (enemy.img) {
-      els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img">`;
+      els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${state.isRareEnemy ? ' is-rare' : ''}">`;
     } else {
       els.enemyEmoji.textContent = enemy.emoji;
     }
-    els.enemyName.textContent = enemy.name;
+    els.enemyEmoji.classList.toggle('is-rare', !!state.isRareEnemy);
+    els.enemyName.textContent = (state.isRareEnemy ? '✨ ' : '') + enemy.name + (state.isRareEnemy ? ' ✨' : '');
+    els.enemyName.classList.toggle('is-rare-name', !!state.isRareEnemy);
     const hpPct = hp * 10;
     els.hpBarInner.style.width = `${hpPct}%`;
     els.hpBarInner.style.background = hp <= 3 ? '#ef4444' : hp <= 6 ? '#f59e0b' : '#22c55e';
@@ -3346,7 +3355,8 @@
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
-      const basePoints = bonusEligible ? 20 : 10;
+      const wasRareDefeated = state.isRareEnemy;
+      const basePoints = (bonusEligible ? 20 : 10) + (wasRareDefeated ? RARE_BONUS_MP : 0);
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
@@ -3357,17 +3367,20 @@
       state.streak = 0;
       state.streakAboveGrade = true;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+      state.isRareEnemy = rollRare();
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
       }
-      const nextEnemy = ENEMIES[state.enemyIdx];
+      const nextEnemy = state.isRareEnemy ? RARE_ENEMY : ENEMIES[state.enemyIdx];
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
-      const prevEnemy = ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
+      const prevEnemy = wasRareDefeated ? RARE_ENEMY : ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
       const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
+      const rareTag = wasRareDefeated ? '<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>' : '';
+      const rareNextTag = state.isRareEnemy ? '<span class="rare-badge">✨レア出現！✨</span>' : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}</div>`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>`;
     }
 
     const streakHtml = state.streak >= 3
