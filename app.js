@@ -812,6 +812,14 @@
     { id: 'scale6',       label: '拡大図と縮図（小6）',                 gen: genScale6,       defaultOff: true },
     { id: 'dataValues6',  label: 'データの調べ方（小6）',               gen: genDataValues6,  defaultOff: true },
     { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',      gen: genArrangeCombine6, defaultOff: true },
+    { id: 'decMul4',        label: '小数のかけ算（小4）',                 gen: genDecMul4,        defaultOff: true },
+    { id: 'divRemainder4',  label: 'あまりのあるわり算（小4）',           gen: genDivRemainder4,  defaultOff: true },
+    { id: 'rectArea4',      label: '長方形・正方形の面積（小4）',        gen: genRectArea4,      defaultOff: true },
+    { id: 'speedRate5',     label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,     defaultOff: true },
+    { id: 'percent5',       label: '割合・百分率（小5）',                 gen: genPercent5,       defaultOff: true },
+    { id: 'multiples5',     label: '倍数と約数（小5）',                   gen: genMultiples5,     defaultOff: true },
+    { id: 'polygonAngle5',  label: '図形の角（小5）',                     gen: genPolygonAngle5,  defaultOff: true },
+    { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',      gen: genFracDecConvert5, defaultOff: true },
   ];
 
   /* ---------- 小学校範囲の分数ユーティリティ ---------- */
@@ -1216,6 +1224,211 @@
     }
     const choices = buildChoices(answer, wrongs);
     return { category: 'arrangeCombine6', question, answer, choices, steps };
+  }
+
+  // 小数のかけ算（小4）：小数×整数
+  function genDecMul4() {
+    let dTenths;
+    do { dTenths = randInt(11, 99); } while (dTenths % 10 === 0);
+    const n = randInt(2, 9);
+    const productTenths = dTenths * n;
+    const d = (dTenths / 10).toFixed(1);
+    const answer = (productTenths / 10).toFixed(1);
+    const question = `${d} × ${n} = ?`;
+    const candidates = [
+      ((productTenths + 10) / 10).toFixed(1),
+      (Math.max(1, productTenths - 10) / 10).toFixed(1),
+      (dTenths * (n + 1) / 10).toFixed(1),
+      `${Math.round(dTenths / 10 * n)}`,
+    ];
+    const steps = [`${dTenths} × ${n} = ${productTenths}（0.1のまとまりが${productTenths}個）`, `= ${answer}`];
+    return { category: 'decMul4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
+  // わり算の筆算・あまりのあるわり算（小4）
+  function genDivRemainder4() {
+    const divisor = randInt(2, 9);
+    const quotient = randInt(3, 30);
+    const remainder = randInt(1, divisor - 1);
+    const dividend = divisor * quotient + remainder;
+    const askQuotient = Math.random() < 0.5;
+    let question, answer, wrongs, steps;
+    if (askQuotient) {
+      question = `${dividend} ÷ ${divisor} の商は？（あまりも出る）`;
+      answer = quotient;
+      wrongs = [quotient + 1, Math.max(1, quotient - 1), dividend];
+    } else {
+      question = `${dividend} ÷ ${divisor} のあまりは？`;
+      answer = remainder;
+      wrongs = [divisor, remainder + 1, Math.max(0, remainder - 1)];
+    }
+    steps = [`${divisor} × ${quotient} = ${divisor * quotient}`, `${dividend} − ${divisor * quotient} = ${remainder}`, `商 ${quotient}、あまり ${remainder}`];
+    return { category: 'divRemainder4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 長方形・正方形の面積（小4）
+  function genRectArea4() {
+    const isSquare = Math.random() < 0.4;
+    let question, answer, wrongs, steps;
+    if (isSquare) {
+      const s = randInt(2, 15);
+      answer = s * s;
+      question = `1辺が ${s} cm の正方形の面積は？`;
+      wrongs = [s * 4, s + s, Math.max(1, answer - s)];
+      steps = [`正方形の面積 = 1辺 × 1辺 = ${s} × ${s} = ${answer} cm²`];
+    } else {
+      const w = randInt(2, 15), h = randInt(2, 15);
+      answer = w * h;
+      question = `縦 ${h} cm、横 ${w} cm の長方形の面積は？`;
+      wrongs = [2 * (w + h), w + h, Math.max(1, answer - h)];
+      steps = [`長方形の面積 = 縦 × 横 = ${h} × ${w} = ${answer} cm²`];
+    }
+    return { category: 'rectArea4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 単位量あたりの大きさ・速さ（小5）
+  function genSpeedRate5() {
+    const pat = randInt(0, 2);
+    const v = randInt(2, 9) * 10;
+    const t = randInt(2, 8);
+    const d = v * t;
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      question = `${d} km の道のりを ${t} 時間で進んだ。速さは時速何 km？`;
+      answer = v;
+      wrongs = [d, t, Math.max(1, v - 10), v + 10];
+      steps = [`速さ = 道のり ÷ 時間 = ${d} ÷ ${t} = ${v} km/時`];
+    } else if (pat === 1) {
+      question = `時速 ${v} km で ${t} 時間進むと、道のりは何 km？`;
+      answer = d;
+      wrongs = [v + t, Math.max(1, d - v), d + v];
+      steps = [`道のり = 速さ × 時間 = ${v} × ${t} = ${d} km`];
+    } else {
+      question = `時速 ${v} km で ${d} km 進むには何時間かかる？`;
+      answer = t;
+      wrongs = [t + 1, Math.max(1, t - 1), v];
+      steps = [`時間 = 道のり ÷ 速さ = ${d} ÷ ${v} = ${t} 時間`];
+    }
+    return { category: 'speedRate5', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 割合・百分率（小5）
+  function genPercent5() {
+    const pat = randInt(0, 2);
+    const pct = randInt(1, 19) * 5;
+    const base = randInt(2, 40) * 20;
+    const part = base * pct / 100;
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      question = `${base} の ${pct}% は？`;
+      answer = part;
+      wrongs = [base - part, part + pct, Math.max(1, part - 10)];
+      steps = [`${pct}% = ${pct}/100`, `${base} × ${pct}/100 = ${part}`];
+    } else if (pat === 1) {
+      question = `${part} は ${base} の何 % ？`;
+      answer = pct;
+      wrongs = [pct + 5, Math.max(5, pct - 5), part];
+      steps = [`割合 = ${part} ÷ ${base} = ${(part / base).toFixed(2)}`, `= ${pct} %`];
+    } else {
+      question = `ある数の ${pct}% が ${part} のとき、もとの数は？`;
+      answer = base;
+      wrongs = [part, base + pct, Math.max(1, base - 20)];
+      steps = [`もとの数 = ${part} ÷ (${pct}/100) = ${part} ÷ ${pct / 100} = ${base}`];
+    }
+    return { category: 'percent5', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 倍数と約数（小5）
+  function genMultiples5() {
+    const pat = randInt(0, 2);
+    const a = randInt(2, 12), b = randInt(2, 12);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const l = lcmFrac(a, b);
+      question = `${a} と ${b} の最小公倍数は？`;
+      answer = l;
+      wrongs = [a * b, Math.max(a, b), l + Math.min(a, b)].filter(v => v !== l);
+      steps = [`${a} の倍数、${b} の倍数を並べて共通のものを探す`, `最小公倍数 = ${l}`];
+    } else if (pat === 1) {
+      const g = gcdFrac(a, b);
+      question = `${a} と ${b} の最大公約数は？`;
+      answer = g;
+      wrongs = [Math.min(a, b), a * b, g + 1].filter(v => v !== g);
+      steps = [`${a}、${b} をともに割り切れる数を探す`, `最大公約数 = ${g}`];
+    } else {
+      const g = gcdFrac(a, b);
+      let cnt = 0;
+      for (let i = 1; i <= g; i++) { if (g % i === 0) cnt++; }
+      question = `${a} と ${b} の公約数は何個ある？`;
+      answer = cnt;
+      wrongs = [cnt + 1, Math.max(1, cnt - 1), g];
+      steps = [`最大公約数 = ${g}`, `${g} の約数の個数を数える → ${cnt} 個`];
+    }
+    return { category: 'multiples5', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 図形の角：内角の和（小5）
+  function genPolygonAngle5() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const aa = randInt(20, 80), bb = randInt(20, 80);
+      const x = 180 - aa - bb;
+      question = `三角形の3つの角のうち2つが ${aa}° と ${bb}°。残りの角 x は？`;
+      answer = x;
+      wrongs = [aa, bb, 180 - aa];
+      steps = [`三角形の内角の和は180°`, `x = 180 − ${aa} − ${bb} = ${x}`];
+    } else if (pat === 1) {
+      const aa = randInt(30, 100), bb = randInt(30, 100), cc = randInt(30, 100);
+      const x = 360 - aa - bb - cc;
+      question = `四角形の4つの角のうち3つが ${aa}°、${bb}°、${cc}°。残りの角 x は？`;
+      answer = x;
+      wrongs = [aa, 360 - aa - bb, x + 10];
+      steps = [`四角形の内角の和は360°`, `x = 360 − ${aa} − ${bb} − ${cc} = ${x}`];
+    } else {
+      const ns = [5, 6, 7, 8, 9, 10, 12];
+      const n = ns[randInt(0, ns.length - 1)];
+      const sum = 180 * (n - 2);
+      question = `${n} 角形の内角の和は？`;
+      answer = sum;
+      wrongs = [180 * n, sum + 180, Math.max(180, sum - 180)];
+      steps = [`多角形の内角の和 = 180° × (n−2)`, `= 180 × (${n}−2) = ${sum}°`];
+    }
+    return { category: 'polygonAngle5', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 分数と小数、整数の関係（小5）
+  function genFracDecConvert5() {
+    const denomInfo = [{ d: 2, p: 1 }, { d: 4, p: 2 }, { d: 5, p: 1 }, { d: 8, p: 3 }, { d: 10, p: 1 }, { d: 20, p: 2 }, { d: 25, p: 2 }, { d: 50, p: 2 }];
+    const info = denomInfo[randInt(0, denomInfo.length - 1)];
+    const d = info.d, p = info.p;
+    let n;
+    do { n = randInt(1, d - 1); } while (gcdFrac(n, d) !== 1);
+    const decStr = (n / d).toFixed(p);
+    const toDecimal = Math.random() < 0.5;
+    let question, answer, candidates, steps;
+    if (toDecimal) {
+      question = `${n}/${d} を小数で表すと？`;
+      answer = decStr;
+      candidates = [
+        ((n + 1) / d).toFixed(p),
+        (Math.max(1, n - 1) / d).toFixed(p),
+        (d / n).toFixed(p),
+        `${n}.${d}`,
+      ];
+      steps = [`${n} ÷ ${d} を計算する`, `= ${decStr}`];
+    } else {
+      question = `${decStr} を分数で表すと？`;
+      answer = fracToStr(n, d);
+      candidates = [
+        fracToStr(n + 1, d),
+        fracToStr(Math.max(1, n - 1), d),
+        `${d}/${n}`,
+        fracToStr(n, d + 1),
+      ];
+      steps = [`${decStr} = ${n}/${d}`];
+    }
+    return { category: 'fracDecConvert5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   /* ---------- 問題生成関数 ---------- */
