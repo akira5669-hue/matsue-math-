@@ -361,6 +361,8 @@ function handleLog_(ctx, body) {
   if (!row) return { ok: false, error: 'not_found' };
 
   ctx.records.appendRow([new Date(), id, row.name, category, correct]);
+  var newRow = ctx.records.getLastRow();
+  ctx.records.getRange(newRow, 2).setNumberFormat('@').setValue(id);
   return { ok: true };
 }
 
