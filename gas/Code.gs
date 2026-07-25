@@ -311,7 +311,7 @@ function handleLogin_(ctx, body) {
   }
   ctx.students.getRange(row.rowIndex, 11).setValue(now);
 
-  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp };
+  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade };
 }
 
 // パスワード再設定：先生がStudentsシートのpasswordHash・salt列を空にした
@@ -348,7 +348,7 @@ function handleGetPoints_(ctx, body) {
   if (!id) return { ok: false, error: 'missing_id' };
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
-  return { ok: true, points: row.points, level: row.level, exp: row.exp };
+  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade };
 }
 
 function handleLog_(ctx, body) {

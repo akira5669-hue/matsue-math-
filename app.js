@@ -2959,6 +2959,7 @@
     total: 0,
     correct: 0,
     streak: 0,
+    streakAboveGrade: true,
     catStats: {},
     current: null,
     answered: false,
@@ -3053,6 +3054,18 @@
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
+
+  const GRADE_RANK = { '小4': 1, '小5': 2, '小6': 3, '中1': 4, '中2': 5, '中3': 6 };
+  const categoryGrade = Object.fromEntries(CATEGORIES.map(c => {
+    const m = c.label.match(/（(小[456]|中[123])）/);
+    return [c.id, m ? m[1] : null];
+  }));
+  function isAboveOwnGrade(catId, ownGrade) {
+    const ownRank = GRADE_RANK[ownGrade];
+    const catRank = GRADE_RANK[categoryGrade[catId]];
+    if (!ownRank || !catRank) return false;
+    return catRank > ownRank;
+  }
 
   /* ---------- 描画 ---------- */
 
@@ -3160,10 +3173,17 @@
 
     const correctStr = String(state.current.answer);
     const isCorrect = choiceStr === correctStr;
-    if (isCorrect) { state.correct++; state.streak++; }
-    else { state.streak = 0; }
-
     const catId = state.current.category;
+    const session = loadSession();
+    const ownGrade = session && session.grade;
+    if (isCorrect) {
+      if (state.streak === 0) state.streakAboveGrade = true;
+      state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
+      state.correct++; state.streak++;
+    } else {
+      state.streak = 0;
+    }
+
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
     if (isCorrect) state.catStats[catId].correct++;
@@ -3174,7 +3194,6 @@
       else if (b === btn) b.classList.add('is-incorrect');
     });
 
-    const session = loadSession();
     if (session && session.id) {
       apiPost('log', { id: session.id, category: catId, correct: isCorrect }).catch(function () { });
     }
@@ -3188,7 +3207,9 @@
     if (isCorrect && state.streak >= 10) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
-      const pointsToAdd = Math.max(0, Math.min(10, POINTS_DAILY_CAP - state.pointsToday));
+      const bonusEligible = state.streakAboveGrade;
+      const basePoints = bonusEligible ? 20 : 10;
+      const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
       state.exp += 10;
@@ -3196,6 +3217,7 @@
       const leveledUp = newLevel > state.level;
       state.level = newLevel;
       state.streak = 0;
+      state.streakAboveGrade = true;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       saveGameState(state);
       if (session && session.id) {
@@ -3205,7 +3227,8 @@
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const prevEnemy = ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
-      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP ` : '(本日のMP上限に到達) ';
+      const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
+      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
       winHtml = `<div class="win-banner">${lvlMsg}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}</div>`;
     }
 
@@ -3357,7 +3380,7 @@
         showFieldError(els.loginError, msg);
         return;
       }
-      saveSession({ id: id, name: res.name });
+      saveSession({ id: id, name: res.name, grade: res.grade });
       reconcilePoints(id, res.points, res.level, res.exp);
       showApp(res.name, false);
       if (res.pointsReset) {
@@ -3421,7 +3444,7 @@
         showFieldError(els.registerError, msg);
         return;
       }
-      saveSession({ id: res.id, name: res.name });
+      saveSession({ id: res.id, name: res.name, grade: grade });
       window.alert('登録が完了しました！\n\nあなたのID: ' + res.id + '\n\n次回からは、このIDとパスワードでログインします。忘れずに控えておいてください。');
       showApp(res.name, false);
     }).catch(function () {
@@ -3813,7 +3836,13 @@
     showApp(existingSession.name, !!existingSession.guest);
     if (existingSession.id) {
       apiPost('getPoints', { id: existingSession.id }).then(function (res) {
-        if (res.ok) reconcilePoints(existingSession.id, res.points, res.level, res.exp);
+        if (res.ok) {
+          reconcilePoints(existingSession.id, res.points, res.level, res.exp);
+          if (!existingSession.grade && res.grade) {
+            existingSession.grade = res.grade;
+            saveSession(existingSession);
+          }
+        }
       }).catch(function () { });
     }
   } else {
