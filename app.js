@@ -4246,7 +4246,10 @@
     els.giftSummary.textContent = isOpen
       ? `現在のMP: ${state.points}（交換受付期間中）`
       : `現在のMP: ${state.points}（交換受付期間外です。受付期間: ${windowText}）`;
-    els.giftList.innerHTML = catalog.map(function (item) {
+    var grade = ((loadSession() || {}).grade) || '';
+    var isJhs = /^中[123]$/.test(grade);
+    var visibleCatalog = catalog.filter(function (item) { return item.audience !== 'jhs' || isJhs; });
+    els.giftList.innerHTML = visibleCatalog.map(function (item) {
       var canAfford = state.points >= item.mp;
       var actionHtml = !isOpen
         ? `<span class="gift-insufficient">受付期間外</span>`
@@ -4274,6 +4277,7 @@
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
         else if (res.error === 'out_of_period') msg = `交換受付期間外です。受付期間: ${res.windowText || giftWindowTextCache}`;
         else if (res.error === 'out_of_stock') msg = '現在この商品の在庫がありません。先生に確認するか、しばらくしてからもう一度お試しください。';
+        else if (res.error === 'audience_restricted') msg = 'この商品は中学生限定です。';
         window.alert(msg);
         btn.disabled = false;
         return;
