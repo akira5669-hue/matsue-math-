@@ -3186,7 +3186,9 @@
     },
     thinker: {
       id: 'thinker', name: '考えるAKR', img: 'images/thinker_akr.png',
-      lines: null,
+      lines: {
+        defeat: '君が勉強することを諦めても、僕は応援することを諦めない。',
+      },
     },
   };
   const RARE_CHANCE_ZOMBIE = 0.08;
