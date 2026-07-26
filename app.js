@@ -3184,6 +3184,10 @@
         miss: 'ミスは誰にでもある。大事なのは、そこからどう立て直すかだ！',
       },
     },
+    thinker: {
+      id: 'thinker', name: '考えるAKR', img: 'images/thinker_akr.png',
+      lines: null,
+    },
   };
   const RARE_CHANCE_ZOMBIE = 0.08;
   const RARE_CHANCE_SANTA = 1 / 30;
@@ -3221,7 +3225,7 @@
     pointsToday: (savedGame && savedGame.pointsToday) || 0,
     pointsDate: (savedGame && savedGame.pointsDate) || null,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
-    rareType: (savedGame && (savedGame.rareType === 'zombie' || savedGame.rareType === 'santa')) ? savedGame.rareType : rollRareType(),
+    rareType: (savedGame && RARE_TYPES[savedGame.rareType]) ? savedGame.rareType : rollRareType(),
     items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
   };
 
@@ -3505,7 +3509,7 @@
       }
 
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-      state.rareType = rollRareType();
+      state.rareType = (leveledUp && newLevel === 100) ? 'thinker' : rollRareType();
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
@@ -3517,6 +3521,7 @@
       const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
       const rareTag = wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
+        : wasRareType === 'thinker' ? '<span class="rare-badge">🤔レベル100記念撃破！🤔</span>'
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
