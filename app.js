@@ -1887,13 +1887,14 @@
     }
   }
 
+  // 小4はまだ約分を習っていないため、分母はそのまま（約分しない）。
+  // ただし分子が分母の倍数になる場合（=整数になる場合）だけ整数で答える。
   function mixedFracStr(num, den) {
-    const [rn, rd] = reduceFrac(num, den);
-    if (rd === 1) return `${rn}`;
-    const whole = Math.floor(rn / rd);
-    const rem = rn % rd;
-    if (whole === 0) return `${rn}/${rd}`;
-    return `${whole} ${rem}/${rd}`;
+    if (num % den === 0) return `${num / den}`;
+    const whole = Math.floor(num / den);
+    const rem = num % den;
+    if (whole === 0) return `${rem}/${den}`;
+    return `${whole} ${rem}/${den}`;
   }
 
   // 小数のたし算・ひき算（小4）
