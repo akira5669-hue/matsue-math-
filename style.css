@@ -639,8 +639,11 @@ h1 {
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
-.user-greeting { margin: 0; font-size: 14px; font-weight: 700; }
-.user-bar-actions { display: flex; gap: 8px; }
+.user-greeting { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.user-bar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.user-avatar-badge { display: inline-flex; width: 32px; height: 32px; }
+.user-avatar-badge[hidden] { display: none; }
+.user-avatar-badge svg { width: 100%; height: 100%; border-radius: 50%; background: var(--c-bg); border: 1.5px solid var(--c-line); }
 
 /* Gift panel */
 .gift-panel {
@@ -939,6 +942,38 @@ h1 {
   margin-bottom: 10px;
   animation: win-pop 0.35s ease;
 }
+
+/* アバター作成 */
+.avatar-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.avatar-preview-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+.avatar-preview { width: 140px; height: 168px; }
+.avatar-preview svg { width: 100%; height: 100%; display: block; }
+.avatar-picker { margin-bottom: 16px; }
+.avatar-picker-label { margin: 0 0 8px; font-size: 12px; font-weight: 700; color: var(--c-ink-soft); }
+.avatar-swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.avatar-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid var(--c-line);
+  background: var(--c-bg);
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-swatch svg { width: 32px; height: 32px; }
+.avatar-swatch.is-color { }
+.avatar-swatch.is-selected { border-color: var(--c-positive); box-shadow: 0 0 0 2px var(--c-positive-soft); }
+.avatar-save-msg { margin: 12px 0 0; font-size: 13px; font-weight: 700; color: var(--c-correct); }
 .cal-header {
   display: flex;
   align-items: center;

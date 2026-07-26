@@ -1,11 +1,15 @@
 /**
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
- * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount
+ * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount | avatar
  *
  * prefectureCount: 「47都道府県制覇」特別企画。10問正解（敵を倒す）ごとに
  * 北海道(1)から沖縄(47)の順で1県ずつ達成数が増える。既存の生徒は列が
  * 空欄のままなので 0 として扱う。
+ *
+ * avatar: レベル300以上またはMP10000以上で作成できるアバターの選択内容
+ * （{hair,face,skin,hairColor,outfitColor} のJSON文字列）。未作成の生徒は
+ * 空欄のままなのでnullとして扱う。
  *
  * 5日以上ログインが無かった場合、次回ログイン時にMPは0にリセットされる
  * （経験値・レベルはリセットされない）。
@@ -178,7 +182,7 @@ function findStudentRow_(sheet, id) {
         rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
         grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
         level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null,
-        prefectureCount: Number(data[i][11]) || 0
+        prefectureCount: Number(data[i][11]) || 0, avatar: data[i][12] || null
       };
     }
   }
@@ -216,6 +220,8 @@ function doPost(e) {
     return jsonOut_(handleHistory_(ctx, body));
   } else if (action === 'syncPoints') {
     return jsonOut_(handleSyncPoints_(ctx, body));
+  } else if (action === 'saveAvatar') {
+    return jsonOut_(handleSaveAvatar_(ctx, body));
   } else if (action === 'getPoints') {
     return jsonOut_(handleGetPoints_(ctx, body));
   } else if (action === 'ranking') {
@@ -324,7 +330,7 @@ function handleLogin_(ctx, body) {
   }
   ctx.students.getRange(row.rowIndex, 11).setValue(now);
 
-  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount };
+  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar };
 }
 
 // パスワード再設定：先生がStudentsシートのpasswordHash・salt列を空にした
@@ -361,7 +367,7 @@ function handleGetPoints_(ctx, body) {
   if (!id) return { ok: false, error: 'missing_id' };
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
-  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount };
+  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar };
 }
 
 function handleLog_(ctx, body) {
@@ -459,6 +465,30 @@ function handleSyncPoints_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
   }
 
+  return { ok: true };
+}
+
+// アバター作成はレベル300以上またはMP10000以上で解放される。
+// クライアントの申告を信用せず、サーバー側の実際のレベル・MPで検証する。
+function handleSaveAvatar_(ctx, body) {
+  var id = String(body.id || '').trim();
+  if (!id) return { ok: false, error: 'missing_fields' };
+
+  var row = findStudentRow_(ctx.students, id);
+  if (!row) return { ok: false, error: 'not_found' };
+  if (row.level < 300 && row.points < 10000) return { ok: false, error: 'not_unlocked' };
+
+  var sel = body.avatar;
+  if (!sel || typeof sel !== 'object') return { ok: false, error: 'invalid_avatar' };
+  var keys = ['hair', 'face', 'skin', 'hairColor', 'outfitColor'];
+  var clean = {};
+  for (var i = 0; i < keys.length; i++) {
+    var v = String(sel[keys[i]] || '').trim();
+    if (!/^[a-zA-Z0-9]{1,20}$/.test(v)) return { ok: false, error: 'invalid_avatar' };
+    clean[keys[i]] = v;
+  }
+
+  ctx.students.getRange(row.rowIndex, 13).setValue(JSON.stringify(clean));
   return { ok: true };
 }
 

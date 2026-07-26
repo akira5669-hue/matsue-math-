@@ -11,6 +11,25 @@
   var PREFECTURE_DATA = (typeof PREFECTURE_INFO !== 'undefined') ? PREFECTURE_INFO : [];
   var PREFECTURE_MAP_SVG_SAFE = (typeof JAPAN_MAP_SVG !== 'undefined') ? JAPAN_MAP_SVG : '';
 
+  // アバター作成データ（avatar-data.js）が読み込めなくてもアプリ全体が
+  // 壊れないようフォールバックする。
+  var AVATAR_HAIR_SAFE = (typeof AVATAR_HAIR !== 'undefined') ? AVATAR_HAIR : [];
+  var AVATAR_FACE_SAFE = (typeof AVATAR_FACE !== 'undefined') ? AVATAR_FACE : [];
+  var AVATAR_SKIN_COLORS_SAFE = (typeof AVATAR_SKIN_COLORS !== 'undefined') ? AVATAR_SKIN_COLORS : [];
+  var AVATAR_HAIR_COLORS_SAFE = (typeof AVATAR_HAIR_COLORS !== 'undefined') ? AVATAR_HAIR_COLORS : [];
+  var AVATAR_OUTFIT_COLORS_SAFE = (typeof AVATAR_OUTFIT_COLORS !== 'undefined') ? AVATAR_OUTFIT_COLORS : [];
+  var buildAvatarSvgSafe = (typeof buildAvatarSvg !== 'undefined') ? buildAvatarSvg : function () { return ''; };
+  var AVATAR_LEVEL_THRESHOLD = 300;
+  var AVATAR_MP_THRESHOLD = 10000;
+  var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
+  function parseAvatarJson(raw) {
+    if (!raw) return null;
+    try {
+      var obj = JSON.parse(raw);
+      return (obj && typeof obj === 'object') ? obj : null;
+    } catch (e) { return null; }
+  }
+
   function apiPost(action, payload) {
     var body = Object.assign({ action: action }, payload || {});
     return fetch(API_URL, {
@@ -59,7 +78,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
-        rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount,
+        rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
       }));
     } catch (e) { }
   }
@@ -3384,6 +3403,7 @@
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
     prefectureCount: Math.max(0, Math.min(47, (savedGame && Number(savedGame.prefectureCount)) || 0)),
+    avatar: (savedGame && savedGame.avatar && typeof savedGame.avatar === 'object') ? savedGame.avatar : null,
   };
 
   const els = {
@@ -3473,6 +3493,20 @@
     prefectureProgress: document.getElementById('prefectureProgress'),
     prefectureMapWrap: document.getElementById('prefectureMapWrap'),
     prefectureList: document.getElementById('prefectureList'),
+    userAvatarBadge: document.getElementById('userAvatarBadge'),
+    avatarToggle: document.getElementById('avatarToggle'),
+    avatarPanel: document.getElementById('avatarPanel'),
+    avatarLocked: document.getElementById('avatarLocked'),
+    avatarLockedText: document.getElementById('avatarLockedText'),
+    avatarBuilder: document.getElementById('avatarBuilder'),
+    avatarPreview: document.getElementById('avatarPreview'),
+    avatarHairRow: document.getElementById('avatarHairRow'),
+    avatarHairColorRow: document.getElementById('avatarHairColorRow'),
+    avatarFaceRow: document.getElementById('avatarFaceRow'),
+    avatarSkinRow: document.getElementById('avatarSkinRow'),
+    avatarOutfitColorRow: document.getElementById('avatarOutfitColorRow'),
+    avatarSaveBtn: document.getElementById('avatarSaveBtn'),
+    avatarSaveMsg: document.getElementById('avatarSaveMsg'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -3583,6 +3617,17 @@
     els.statExpSub.textContent = `経験値 ${state.exp}（Lv.${state.level}）`;
     els.statLevel.textContent = state.level;
     els.expBarInner.style.width = `${((state.exp % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
+    updateUserAvatarBadge();
+  }
+
+  function updateUserAvatarBadge() {
+    if (state.avatar && AVATAR_HAIR_SAFE.length > 0) {
+      els.userAvatarBadge.innerHTML = buildAvatarSvgSafe(state.avatar);
+      els.userAvatarBadge.hidden = false;
+    } else {
+      els.userAvatarBadge.hidden = true;
+      els.userAvatarBadge.innerHTML = '';
+    }
   }
 
   function handleAnswer(btn, choiceStr) {
@@ -3845,6 +3890,8 @@
       }
       saveSession({ id: id, name: res.name, grade: res.grade });
       state.enabled = new Set(defaultEnabledIds(res.grade));
+      state.avatar = parseAvatarJson(res.avatar);
+      saveGameState(state);
       reconcilePoints(id, res.points, res.level, res.exp, res.prefectureCount);
       showApp(res.name, false);
       if (res.pointsReset) {
@@ -4163,6 +4210,7 @@
     els.rankingPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -4236,6 +4284,7 @@
     els.historyPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -4302,6 +4351,7 @@
     els.historyPanel.setAttribute('hidden', '');
     els.rankingPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -4361,9 +4411,110 @@
     els.historyPanel.setAttribute('hidden', '');
     els.rankingPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
+  }
+
+  /* ---------- アバター作成 ---------- */
+
+  function avatarUnlocked() {
+    return state.level >= AVATAR_LEVEL_THRESHOLD || state.points >= AVATAR_MP_THRESHOLD;
+  }
+
+  var avatarDraft = null;
+
+  function renderAvatarSwatchRow(rowEl, group, options, isColor) {
+    rowEl.innerHTML = '';
+    options.forEach(function (opt) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'avatar-swatch' + (isColor ? ' is-color' : '');
+      btn.title = opt.name;
+      btn.dataset.value = opt.id;
+      if (isColor) {
+        btn.style.background = opt.hex;
+      } else {
+        var previewSel = Object.assign({}, avatarDraft, group === 'hair' ? { hair: opt.id } : { face: opt.id });
+        btn.innerHTML = buildAvatarSvgSafe(previewSel);
+      }
+      btn.classList.toggle('is-selected', avatarDraft[group] === opt.id);
+      btn.addEventListener('click', function () {
+        avatarDraft[group] = opt.id;
+        renderAvatarBuilder();
+      });
+      rowEl.appendChild(btn);
+    });
+  }
+
+  function renderAvatarBuilder() {
+    els.avatarPreview.innerHTML = buildAvatarSvgSafe(avatarDraft);
+    renderAvatarSwatchRow(els.avatarHairRow, 'hair', AVATAR_HAIR_SAFE, false);
+    renderAvatarSwatchRow(els.avatarFaceRow, 'face', AVATAR_FACE_SAFE, false);
+    renderAvatarSwatchRow(els.avatarSkinRow, 'skin', AVATAR_SKIN_COLORS_SAFE, true);
+    renderAvatarSwatchRow(els.avatarHairColorRow, 'hairColor', AVATAR_HAIR_COLORS_SAFE, true);
+    renderAvatarSwatchRow(els.avatarOutfitColorRow, 'outfitColor', AVATAR_OUTFIT_COLORS_SAFE, true);
+  }
+
+  function renderAvatarPanel() {
+    var unlocked = avatarUnlocked();
+    els.avatarLocked.hidden = unlocked;
+    els.avatarBuilder.hidden = !unlocked;
+    if (!unlocked) {
+      els.avatarLockedText.textContent = `レベル${AVATAR_LEVEL_THRESHOLD}、またはMP${AVATAR_MP_THRESHOLD}でアバターが作れるようになります。（現在: レベル${state.level} / MP${state.points}）`;
+      return;
+    }
+    if (AVATAR_HAIR_SAFE.length === 0) {
+      els.avatarLocked.hidden = false;
+      els.avatarBuilder.hidden = true;
+      els.avatarLockedText.textContent = 'アバターデータの読み込みに失敗しました。ページを再読み込みしてください。';
+      return;
+    }
+    avatarDraft = Object.assign({}, AVATAR_DEFAULT_SELECTION, state.avatar || {});
+    els.avatarSaveMsg.hidden = true;
+    renderAvatarBuilder();
+  }
+
+  function toggleAvatar() {
+    var isHidden = els.avatarPanel.hasAttribute('hidden');
+    if (!isHidden) { els.avatarPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+
+    els.avatarPanel.removeAttribute('hidden');
+    renderAvatarPanel();
+  }
+
+  function handleAvatarSave() {
+    var session = loadSession();
+    if (!session || !session.id) {
+      els.avatarSaveMsg.hidden = false;
+      els.avatarSaveMsg.textContent = 'この機能は生徒登録した方のみご利用いただけます。';
+      return;
+    }
+    els.avatarSaveBtn.disabled = true;
+    apiPost('saveAvatar', { id: session.id, avatar: avatarDraft }).then(function (res) {
+      els.avatarSaveBtn.disabled = false;
+      if (!res.ok) {
+        els.avatarSaveMsg.hidden = false;
+        els.avatarSaveMsg.textContent = res.error === 'not_unlocked'
+          ? 'まだアバター作成が解放されていません。'
+          : '保存に失敗しました。もう一度お試しください。';
+        return;
+      }
+      state.avatar = Object.assign({}, avatarDraft);
+      saveGameState(state);
+      updateUserAvatarBadge();
+      els.avatarSaveMsg.hidden = false;
+      els.avatarSaveMsg.textContent = '保存しました！';
+    }).catch(function () {
+      els.avatarSaveBtn.disabled = false;
+      els.avatarSaveMsg.hidden = false;
+      els.avatarSaveMsg.textContent = '通信に失敗しました。もう一度お試しください。';
+    });
   }
 
   /* ---------- 初期化 ---------- */
@@ -4387,6 +4538,8 @@
   els.rankingTabToday.addEventListener('click', function () { selectRankingMode('today'); });
   els.giftToggle.addEventListener('click', toggleGift);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
+  els.avatarToggle.addEventListener('click', toggleAvatar);
+  els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
 
   var existingSession = loadSession();
   if (existingSession) {
@@ -4394,6 +4547,8 @@
     if (existingSession.id) {
       apiPost('getPoints', { id: existingSession.id }).then(function (res) {
         if (res.ok) {
+          var parsedAvatar = parseAvatarJson(res.avatar);
+          if (parsedAvatar) { state.avatar = parsedAvatar; saveGameState(state); updateUserAvatarBadge(); }
           reconcilePoints(existingSession.id, res.points, res.level, res.exp, res.prefectureCount);
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
