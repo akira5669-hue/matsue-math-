@@ -840,6 +840,103 @@ h1 {
   opacity: 0.45;
   filter: grayscale(1);
 }
+
+/* 47都道府県制覇 */
+.prefecture-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.prefecture-progress {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-positive);
+}
+.prefecture-map-wrap {
+  max-width: 420px;
+  margin: 0 auto 16px;
+}
+.prefecture-map-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.prefecture-map-wrap svg .prefecture {
+  fill: #dcdcdc;
+  stroke: #fff;
+  stroke-width: 1.2;
+  transition: fill 0.5s ease;
+}
+.prefecture-map-wrap svg .prefecture.unlocked.hokkaido        { fill: #6bb8f2; }
+.prefecture-map-wrap svg .prefecture.unlocked.tohoku           { fill: #7dd3a8; }
+.prefecture-map-wrap svg .prefecture.unlocked.kanto             { fill: #f6c66b; }
+.prefecture-map-wrap svg .prefecture.unlocked.chubu              { fill: #f29e6b; }
+.prefecture-map-wrap svg .prefecture.unlocked.kinki               { fill: #ef8a8a; }
+.prefecture-map-wrap svg .prefecture.unlocked.chugoku               { fill: #c893e0; }
+.prefecture-map-wrap svg .prefecture.unlocked.shikoku                 { fill: #8fc9e8; }
+.prefecture-map-wrap svg .prefecture.unlocked.kyushu-okinawa            { fill: #f28fb0; }
+.prefecture-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.prefecture-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.prefecture-row.is-unlocked {
+  background: var(--c-bg);
+}
+.prefecture-row.is-locked {
+  color: var(--c-ink-soft);
+  opacity: 0.5;
+}
+.prefecture-row-name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.prefecture-row-trivia {
+  color: var(--c-ink-soft);
+  text-align: right;
+}
+.prefecture-gain-banner {
+  background: linear-gradient(90deg, #e0f2fe, #ecfeff);
+  border: 1.5px solid #0ea5e9;
+  border-radius: 10px;
+  color: #0c4a6e;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+  animation: win-pop 0.35s ease;
+}
+.prefecture-gain-banner .prefecture-trivia {
+  font-weight: 500;
+  font-size: 12px;
+}
+.prefecture-complete-banner {
+  background: linear-gradient(90deg, #fef3c7, #fde68a);
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  animation: win-pop 0.35s ease;
+}
 .cal-header {
   display: flex;
   align-items: center;

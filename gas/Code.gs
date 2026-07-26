@@ -1,7 +1,11 @@
 /**
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
- * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin
+ * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount
+ *
+ * prefectureCount: 「47都道府県制覇」特別企画。10問正解（敵を倒す）ごとに
+ * 北海道(1)から沖縄(47)の順で1県ずつ達成数が増える。既存の生徒は列が
+ * 空欄のままなので 0 として扱う。
  *
  * 5日以上ログインが無かった場合、次回ログイン時にMPは0にリセットされる
  * （経験値・レベルはリセットされない）。
@@ -165,7 +169,8 @@ function findStudentRow_(sheet, id) {
       return {
         rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
         grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
-        level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null
+        level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null,
+        prefectureCount: Number(data[i][11]) || 0
       };
     }
   }
@@ -311,7 +316,7 @@ function handleLogin_(ctx, body) {
   }
   ctx.students.getRange(row.rowIndex, 11).setValue(now);
 
-  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade };
+  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount };
 }
 
 // パスワード再設定：先生がStudentsシートのpasswordHash・salt列を空にした
@@ -348,7 +353,7 @@ function handleGetPoints_(ctx, body) {
   if (!id) return { ok: false, error: 'missing_id' };
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
-  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade };
+  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount };
 }
 
 function handleLog_(ctx, body) {
@@ -439,6 +444,11 @@ function handleSyncPoints_(ctx, body) {
     var level = Math.max(1, Math.floor(Number(body.level)) || 1);
     var exp = Math.max(0, Math.floor(Number(body.exp)) || 0);
     ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[level, exp]]);
+  }
+
+  if (body.prefectureCount !== undefined) {
+    var prefectureCount = Math.max(0, Math.min(47, Math.floor(Number(body.prefectureCount)) || 0));
+    ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
   }
 
   return { ok: true };

@@ -181,6 +181,7 @@
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
         <button id="rankingToggle" class="ghost-btn" type="button">ランキング</button>
         <button id="historyToggle" class="ghost-btn" type="button">学習記録</button>
+        <button id="prefectureToggle" class="ghost-btn" type="button">🗾都道府県制覇</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
       </div>
     </section>
@@ -201,6 +202,14 @@
       </div>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
       <div class="ranking-list" id="rankingList"></div>
+    </section>
+
+    <section class="prefecture-panel" id="prefecturePanel" hidden>
+      <h3 class="history-title">🗾 特別夏バージョン：47都道府県制覇</h3>
+      <p class="history-summary">10問正解で敵を倒すごとに、北海道から沖縄まで順番に1県ずつ塗られていくよ！</p>
+      <p class="prefecture-progress" id="prefectureProgress">読み込み中…</p>
+      <div class="prefecture-map-wrap" id="prefectureMapWrap"></div>
+      <div class="prefecture-list" id="prefectureList"></div>
     </section>
 
     <section class="history-panel" id="historyPanel" hidden>
@@ -295,6 +304,7 @@
 
 </div>
 
+<script src="japan-map-data.js"></script>
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

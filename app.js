@@ -6,6 +6,11 @@
   var API_URL = 'https://script.google.com/macros/s/AKfycbwqg5Dt1ZjD7FxTlQeVCEKcHf2jg6QHwr0cWPCTC0VAtDjiOVL1spjm1EjmTe5gh3rf9w/exec';
   var SESSION_KEY = 'matsue-math-session';
 
+  // 47都道府県制覇データ（japan-map-data.js）が何らかの理由で読み込めなくても
+  // 本体のゲーム進行（連続正解の勝利処理）が壊れないようフォールバックする。
+  var PREFECTURE_DATA = (typeof PREFECTURE_INFO !== 'undefined') ? PREFECTURE_INFO : [];
+  var PREFECTURE_MAP_SVG_SAFE = (typeof JAPAN_MAP_SVG !== 'undefined') ? JAPAN_MAP_SVG : '';
+
   function apiPost(action, payload) {
     var body = Object.assign({ action: action }, payload || {});
     return fetch(API_URL, {
@@ -51,7 +56,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
-        rareType: s.rareType, items: s.items,
+        rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount,
       }));
     } catch (e) { }
   }
@@ -3374,6 +3379,7 @@
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
+    prefectureCount: Math.max(0, Math.min(47, (savedGame && Number(savedGame.prefectureCount)) || 0)),
   };
 
   const els = {
@@ -3458,6 +3464,11 @@
     giftSummary: document.getElementById('giftSummary'),
     giftList: document.getElementById('giftList'),
     giftCodeResult: document.getElementById('giftCodeResult'),
+    prefectureToggle: document.getElementById('prefectureToggle'),
+    prefecturePanel: document.getElementById('prefecturePanel'),
+    prefectureProgress: document.getElementById('prefectureProgress'),
+    prefectureMapWrap: document.getElementById('prefectureMapWrap'),
+    prefectureList: document.getElementById('prefectureList'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -3646,11 +3657,22 @@
         itemGainedHtml = '<div class="item-gain-banner">😊🎭 スペシャルアイテム「ほほえみの仮面」を手に入れた！😊🎭</div>';
       }
 
+      const prevPrefectureCount = state.prefectureCount;
+      state.prefectureCount = Math.min(47, state.prefectureCount + 1);
+      const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
+
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       state.rareType = (leveledUp && newLevel === 100) ? 'thinker' : rollRareType();
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
+        apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).catch(function () { });
+      }
+      let prefectureGainedHtml = '';
+      if (newlyUnlockedPrefecture) {
+        prefectureGainedHtml = `<div class="prefecture-gain-banner">🗾「${newlyUnlockedPrefecture.name}」を制覇！（${state.prefectureCount}/47）<br><span class="prefecture-trivia">${newlyUnlockedPrefecture.trivia}</span></div>`;
+        if (state.prefectureCount === 47) {
+          prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 47都道府県制覇達成！おめでとう！🎉</div>`;
+        }
       }
       const prevEnemy = wasRareType ? RARE_TYPES[wasRareType] : ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const nextEnemy = currentEnemyDisplay(state);
@@ -3666,7 +3688,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${prefectureGainedHtml}`;
     }
 
     const streakHtml = state.streak >= 3
@@ -3819,7 +3841,7 @@
       }
       saveSession({ id: id, name: res.name, grade: res.grade });
       state.enabled = new Set(defaultEnabledIds(res.grade));
-      reconcilePoints(id, res.points, res.level, res.exp);
+      reconcilePoints(id, res.points, res.level, res.exp, res.prefectureCount);
       showApp(res.name, false);
       if (res.pointsReset) {
         window.alert('5日以上ログインが無かったため、MPが0にリセットされました。レベル・EXPはそのまま残っています。');
@@ -3839,23 +3861,25 @@
   // ログイン・再開時に、端末側とサーバー側のMP・レベル・EXPのうち
   // 進んでいる方に揃える（サーバー側での付与や別端末での進捗を
   // 取りこぼさない一方、同期し損ねた分の進捗も失わないようにする）。
-  function reconcilePoints(id, serverPoints, serverLevel, serverExp) {
+  function reconcilePoints(id, serverPoints, serverLevel, serverExp, serverPrefectureCount) {
     var sp = Number(serverPoints) || 0;
     var sl = Number(serverLevel) || 1;
     var se = Number(serverExp) || 0;
+    var spc = Number(serverPrefectureCount) || 0;
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
     if (isProgressGreater(sl, se, state.level, state.exp)) {
       state.level = sl; state.exp = se; changed = true;
     }
+    if (spc > state.prefectureCount) { state.prefectureCount = spc; changed = true; }
 
     if (changed) {
       saveGameState(state);
       updateGameHud();
     }
-    if (sp < state.points || isProgressGreater(state.level, state.exp, sl, se)) {
-      apiPost('syncPoints', { id: id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
+    if (sp < state.points || isProgressGreater(state.level, state.exp, sl, se) || spc < state.prefectureCount) {
+      apiPost('syncPoints', { id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).catch(function () { });
     }
   }
 
@@ -4133,6 +4157,7 @@
     if (!isHidden) { els.historyPanel.setAttribute('hidden', ''); return; }
     els.rankingPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -4205,6 +4230,7 @@
     if (!isHidden) { els.rankingPanel.setAttribute('hidden', ''); return; }
     els.historyPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -4270,6 +4296,7 @@
     if (!isHidden) { els.giftPanel.setAttribute('hidden', ''); return; }
     els.historyPanel.setAttribute('hidden', '');
     els.rankingPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -4288,6 +4315,50 @@
     }).catch(function () {
       els.giftSummary.textContent = '読み込みに失敗しました。';
     });
+  }
+
+  /* ---------- 47都道府県制覇（特別夏バージョン） ---------- */
+
+  var prefectureMapInjected = false;
+
+  function renderPrefectureMap() {
+    if (PREFECTURE_DATA.length === 0) {
+      els.prefectureProgress.textContent = '地図データの読み込みに失敗しました。ページを再読み込みしてください。';
+      return;
+    }
+    if (!prefectureMapInjected) {
+      els.prefectureMapWrap.innerHTML = PREFECTURE_MAP_SVG_SAFE;
+      prefectureMapInjected = true;
+    }
+    var count = state.prefectureCount;
+    var svgEl = els.prefectureMapWrap.querySelector('svg');
+    if (svgEl) {
+      PREFECTURE_DATA.forEach(function (p) {
+        var el = svgEl.querySelector('[data-code="' + p.code + '"]');
+        if (!el) return;
+        el.classList.toggle('unlocked', p.code <= count);
+      });
+    }
+    els.prefectureProgress.textContent = count >= 47
+      ? '🎉 47/47 都道府県すべて制覇しました！おめでとう！ 🎉'
+      : count + ' / 47 都道府県を制覇！（次は「' + PREFECTURE_DATA[count].name + '」）';
+    els.prefectureList.innerHTML = PREFECTURE_DATA.map(function (p) {
+      if (p.code > count) {
+        return '<div class="prefecture-row is-locked"><span class="prefecture-row-name">？？？</span></div>';
+      }
+      return '<div class="prefecture-row is-unlocked"><span class="prefecture-row-name">' + p.code + '. ' + p.name + '</span><span class="prefecture-row-trivia">' + p.trivia + '</span></div>';
+    }).join('');
+  }
+
+  function togglePrefecture() {
+    var isHidden = els.prefecturePanel.hasAttribute('hidden');
+    if (!isHidden) { els.prefecturePanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+
+    els.prefecturePanel.removeAttribute('hidden');
+    renderPrefectureMap();
   }
 
   /* ---------- 初期化 ---------- */
@@ -4310,6 +4381,7 @@
   els.rankingTabExp.addEventListener('click', function () { selectRankingMode('exp'); });
   els.rankingTabToday.addEventListener('click', function () { selectRankingMode('today'); });
   els.giftToggle.addEventListener('click', toggleGift);
+  els.prefectureToggle.addEventListener('click', togglePrefecture);
 
   var existingSession = loadSession();
   if (existingSession) {
@@ -4317,7 +4389,7 @@
     if (existingSession.id) {
       apiPost('getPoints', { id: existingSession.id }).then(function (res) {
         if (res.ok) {
-          reconcilePoints(existingSession.id, res.points, res.level, res.exp);
+          reconcilePoints(existingSession.id, res.points, res.level, res.exp, res.prefectureCount);
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);
