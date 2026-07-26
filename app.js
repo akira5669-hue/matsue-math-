@@ -290,10 +290,10 @@
   }
 
   function genSimul() {
-    const x = randNonZero(-5, 5), y = randNonZero(-5, 5);
+    let x = randNonZero(-5, 5), y = randNonZero(-5, 5);
     const askX = Math.random() < 0.5;
-    const pat = randInt(0, 2);
-    let q, eq1, eq2, answer, steps;
+    const pat = randInt(0, 5);
+    let q, eq1, eq2, eq1Html, answer, steps;
     if (pat === 0) {
       const c1 = x+y, c2 = x-y;
       eq1 = `x + y = ${c1}`; eq2 = `x − y = ${c2}`;
@@ -314,7 +314,7 @@
         steps = [`①−②: ${fmtCx(a-1)} = ${diff} → x = ${x}`, `②に代入: ${x} + y = ${c2}`, `y = ${c2-x} = ${y}`];
         answer = y;
       }
-    } else {
+    } else if (pat === 2) {
       const a = randInt(2, 4);
       const c1 = x+a*y, c2 = x+y, diff = c1-c2;
       eq1 = `x + ${a}y = ${c1}`; eq2 = `x + y = ${c2}`;
@@ -326,9 +326,50 @@
         steps = [`①−②: ${a-1}y = ${diff} → y = ${y}`, `②に代入: x + ${y} = ${c2}`, `x = ${c2-y} = ${x}`];
         answer = x;
       }
+    } else if (pat === 3) {
+      // かっこを含む連立方程式: a(x+y) = c1, x − y = c2
+      const a = randInt(2, 4);
+      const c1 = a * (x + y), c2 = x - y;
+      const sum = x + y;
+      eq1 = `${a}(x + y) = ${c1}`; eq2 = `x − y = ${c2}`;
+      q = `${eq1}、${eq2} のとき ${askX?'x':'y'} = ?`;
+      steps = askX
+        ? [`①を展開して${a}で割る: x + y = ${sum}`, `①＋②: 2x = ${sum + c2}`, `x = ${x}`]
+        : [`①を展開して${a}で割る: x + y = ${sum}`, `①−②: 2y = ${sum - c2}`, `y = ${y}`];
+      answer = askX ? x : y;
+    } else if (pat === 4) {
+      // 小数の係数を含む連立方程式: ax + y = c1（aは小数）, x + y = c2
+      const aOptions = [0.5, 1.5, 2.5, 0.2, 0.4, 0.6, 0.8];
+      const a = aOptions[randInt(0, aOptions.length - 1)];
+      const c1 = Math.round((a * x + y) * 10) / 10, c2 = x + y;
+      const diff = Math.round((c1 - c2) * 10) / 10;
+      const denom = Math.round((a - 1) * 10) / 10;
+      eq1 = `${a}x + y = ${c1}`; eq2 = `x + y = ${c2}`;
+      q = `${eq1}、${eq2} のとき ${askX?'x':'y'} = ?`;
+      if (askX) {
+        steps = [`①−②: (${a}−1)x = ${diff}`, `${fmtNum(denom)}x = ${diff}`, `x = ${diff}÷${fmtNum(denom)} = ${x}`];
+        answer = x;
+      } else {
+        steps = [`①−②: ${fmtNum(denom)}x = ${diff} → x = ${x}`, `②に代入: ${x} + y = ${c2}`, `y = ${c2-x} = ${y}`];
+        answer = y;
+      }
+    } else {
+      // 分数を含む連立方程式: x/a = y（つまり x = ay）, x + y = c2
+      const a = [2, 3, 4, 5][randInt(0, 3)];
+      y = randNonZero(-5, 5);
+      x = a * y;
+      const c2 = x + y;
+      eq1 = `x/${a} = y`;
+      eq1Html = `<span class="frac"><span class="num">x</span><span class="den">${a}</span></span> = y`;
+      eq2 = `x + y = ${c2}`;
+      q = `${eq1}、${eq2} のとき ${askX?'x':'y'} = ?`;
+      steps = askX
+        ? [`①より x = ${a}y`, `②に代入: ${a}y + y = ${c2}`, `${a+1}y = ${c2} → y = ${y}`, `x = ${a}×${y} = ${x}`]
+        : [`①より x = ${a}y`, `②に代入: ${a}y + y = ${c2}`, `${a+1}y = ${c2}`, `y = ${y}`];
+      answer = askX ? x : y;
     }
     const wrongs = [-answer, answer+1, answer-1].filter((v,i,arr)=>arr.indexOf(v)===i&&v!==answer);
-    const questionHtml = stackLines(eq1, eq2, `のとき ${askX?'x':'y'} = ?`);
+    const questionHtml = stackLines(eq1Html || eq1, eq2, `のとき ${askX?'x':'y'} = ?`);
     return { category:'simul', question:q, questionHtml, answer, choices:buildChoices(answer,wrongs), steps };
   }
 
