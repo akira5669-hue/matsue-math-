@@ -40,8 +40,7 @@ var EXCHANGE_WINDOW_TEXT = '5月1日〜3日、12月30日〜31日、1月1日';
 
 // MP(旧ポイント)交換カタログ。10MP = 1円。costはクライアントの申告を信用せず、
 // ここを唯一の正として毎回サーバー側で検証する。
-// audience: 'all'（小学生・中学生とも交換可）または 'jhs'（中学生のみ交換可）。
-// 省略時は既存商品と同様に制限なし。
+// 「中学生向け」等は商品名に添える説明表示のみで、交換自体は学年を問わず全員可能。
 var GIFT_CATALOG = [
   { itemId: 'amazon300', label: 'Amazonギフト券 300円分', yen: 300, mp: 3000 },
   { itemId: 'amazon700', label: 'Amazonギフト券 700円分', yen: 700, mp: 7000 },
@@ -49,13 +48,13 @@ var GIFT_CATALOG = [
   { itemId: 'amazon2000', label: 'Amazonギフト券 2000円分', yen: 2000, mp: 20000 },
   { itemId: 'amazon5000', label: 'Amazonギフト券 5000円分', yen: 5000, mp: 50000 },
   { itemId: 'amazon10000', label: 'Amazonギフト券 10000円分', yen: 10000, mp: 100000 },
-  { itemId: 'specialA', label: 'スペシャルグッズA', mp: 20000, audience: 'all' },
-  { itemId: 'specialB', label: 'スペシャルグッズB', mp: 35000, audience: 'all' },
-  { itemId: 'specialC', label: 'スペシャルグッズC', mp: 50000, audience: 'all' },
-  { itemId: 'specialD', label: 'スペシャルグッズD', mp: 35000, audience: 'jhs' },
-  { itemId: 'specialE', label: 'スペシャルグッズE', mp: 55000, audience: 'jhs' },
-  { itemId: 'specialF', label: 'スペシャルグッズF', mp: 75000, audience: 'jhs' },
-  { itemId: 'specialS', label: 'スペシャルグッズS', mp: 100000, audience: 'jhs' },
+  { itemId: 'specialA', label: 'スペシャルグッズA（小・中学生向け）', mp: 20000 },
+  { itemId: 'specialB', label: 'スペシャルグッズB（小・中学生向け）', mp: 35000 },
+  { itemId: 'specialC', label: 'スペシャルグッズC（小・中学生向け）', mp: 50000 },
+  { itemId: 'specialD', label: 'スペシャルグッズD（中学生向け）', mp: 35000 },
+  { itemId: 'specialE', label: 'スペシャルグッズE（中学生向け）', mp: 55000 },
+  { itemId: 'specialF', label: 'スペシャルグッズF（中学生向け）', mp: 75000 },
+  { itemId: 'specialS', label: 'スペシャルグッズS（中学生向け）', mp: 100000 },
 ];
 
 var GIFTCODES_SHEET = 'GiftCodes';
@@ -620,7 +619,6 @@ function handleRedeemGift_(ctx, body) {
   try {
     var row = findStudentRow_(ctx.students, id);
     if (!row) return { ok: false, error: 'not_found' };
-    if (item.audience === 'jhs' && !/^中[123]$/.test(row.grade)) return { ok: false, error: 'audience_restricted' };
     if (row.points < item.mp) return { ok: false, error: 'insufficient_points' };
 
     var claimed = claimGiftCode_(ctx, itemId, id);

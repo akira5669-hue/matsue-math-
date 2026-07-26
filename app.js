@@ -51,6 +51,9 @@
       return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   }
+  function clearGameState() {
+    try { localStorage.removeItem(GAME_KEY); } catch (e) { }
+  }
   function saveGameState(s) {
     try {
       localStorage.setItem(GAME_KEY, JSON.stringify({
@@ -3907,9 +3910,11 @@
         return;
       }
       saveSession({ id: res.id, name: res.name, grade: grade });
-      state.enabled = new Set(defaultEnabledIds(grade));
+      clearGameState();
       window.alert('登録が完了しました！\n\nあなたのID: ' + res.id + '\n\n次回からは、このIDとパスワードでログインします。忘れずに控えておいてください。');
-      showApp(res.name, false);
+      // 同じ端末で以前に別の生徒が使っていた場合、ポイント等がメモリ上に
+      // 残らないよう、ページごと再読み込みしてまっさらな状態から始める。
+      window.location.reload();
     }).catch(function () {
       els.registerSubmit.disabled = false;
       showFieldError(els.registerError, '通信に失敗しました。もう一度お試しください。');
@@ -4050,13 +4055,12 @@
 
   function handleLogout() {
     clearSession();
-    els.appMain.hidden = true;
-    els.historyPanel.hidden = true;
-    els.rankingPanel.hidden = true;
-    els.giftPanel.hidden = true;
-    els.loginCard.hidden = false;
-    resetLoginForms();
-    els.loginId.focus();
+    clearGameState();
+    // 同じ端末で別のIDに切り替えた際に、前の生徒のポイント・レベル・
+    // 都道府県制覇の進捗などがメモリ上に残ったまま次のログインに
+    // 引き継がれてしまわないよう、ページごと再読み込みして完全に
+    // まっさらな状態にする。
+    window.location.reload();
   }
 
   /* ---------- 学習記録 ---------- */
@@ -4246,10 +4250,7 @@
     els.giftSummary.textContent = isOpen
       ? `現在のMP: ${state.points}（交換受付期間中）`
       : `現在のMP: ${state.points}（交換受付期間外です。受付期間: ${windowText}）`;
-    var grade = ((loadSession() || {}).grade) || '';
-    var isJhs = /^中[123]$/.test(grade);
-    var visibleCatalog = catalog.filter(function (item) { return item.audience !== 'jhs' || isJhs; });
-    els.giftList.innerHTML = visibleCatalog.map(function (item) {
+    els.giftList.innerHTML = catalog.map(function (item) {
       var canAfford = state.points >= item.mp;
       var actionHtml = !isOpen
         ? `<span class="gift-insufficient">受付期間外</span>`
@@ -4277,7 +4278,6 @@
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
         else if (res.error === 'out_of_period') msg = `交換受付期間外です。受付期間: ${res.windowText || giftWindowTextCache}`;
         else if (res.error === 'out_of_stock') msg = '現在この商品の在庫がありません。先生に確認するか、しばらくしてからもう一度お試しください。';
-        else if (res.error === 'audience_restricted') msg = 'この商品は中学生限定です。';
         window.alert(msg);
         btn.disabled = false;
         return;
