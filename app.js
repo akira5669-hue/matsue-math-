@@ -159,9 +159,9 @@
   /* ---------- 追加ジェネレータ ---------- */
 
   function genEquation() {
-    const ans = randNonZero(-9, 9);
-    const pat = randInt(0, 2);
-    let q, steps;
+    let ans = randNonZero(-9, 9);
+    const pat = randInt(0, 5);
+    let q, questionHtml, steps;
     if (pat === 0) {
       const a = randNonZero(-5, 5);
       const b = a * ans;
@@ -177,7 +177,7 @@
       q = `${aD}x ${bS} = ${c} を解け。x = ?`;
       const rhs = c - b;
       steps = [`移項: ${fmtCx(a)} = ${c} − ${fmtNum(b)} = ${rhs}`, `両辺を ${fmtNum(a)} で割る`, `x = ${rhs} ÷ ${fmtNum(a)} = ${ans}`];
-    } else {
+    } else if (pat === 2) {
       const a = randNonZero(-4, 4);
       let c; do { c = randNonZero(-4, 4); } while (c === a);
       const b = randNonZero(-9, 9);
@@ -189,9 +189,41 @@
       q = `${aD}x ${bS} = ${cD}x ${dS} を解け。x = ?`;
       const lc = a - c, rhs = d - b;
       steps = [`移項: ${fmtCx(a)} − ${fmtNum(c)}x = ${fmtNum(d)} − ${fmtNum(b)}`, `${fmtCx(lc)} = ${rhs}`, `x = ${rhs} ÷ ${fmtNum(lc)} = ${ans}`];
+    } else if (pat === 3) {
+      // 小数を含む方程式: ax + b = c (a, b は小数)
+      const aOptions = [0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 1.2, 1.5];
+      const a = aOptions[randInt(0, aOptions.length - 1)];
+      const b = randNonZero(-90, 90) / 10;
+      ans = randNonZero(-6, 6);
+      const c = Math.round((a * ans + b) * 10) / 10;
+      const bS = b < 0 ? ` − ${Math.abs(b)}` : `+ ${b}`;
+      q = `${a}x ${bS} = ${c} を解け。x = ?`;
+      const rhs = Math.round((c - b) * 10) / 10;
+      steps = [`移項: ${a}x = ${c} − ${fmtNum(b)} = ${fmtNum(rhs)}`, `両辺を ${a} で割る`, `x = ${fmtNum(rhs)} ÷ ${a} = ${ans}`];
+    } else if (pat === 4) {
+      // 分数を含む方程式: x/a + b = c
+      const a = [2, 3, 4, 5][randInt(0, 3)];
+      const q2 = randNonZero(-6, 6);
+      ans = a * q2;
+      const b = randNonZero(-9, 9);
+      const c = q2 + b;
+      const bS = b < 0 ? ` − ${Math.abs(b)}` : `+ ${b}`;
+      q = `x/${a} ${bS} = ${c} を解け。x = ?`;
+      questionHtml = `<span class="frac"><span class="num">x</span><span class="den">${a}</span></span> ${bS} = ${c} を解け。x = ?`;
+      steps = [`移項: x/${a} = ${c} − ${fmtNum(b)} = ${q2}`, `両辺に ${a} をかける`, `x = ${q2} × ${a} = ${ans}`];
+    } else {
+      // （　　）を含む方程式: a(x + b) = c
+      const a = randInt(2, 5);
+      const b = randNonZero(-9, 9);
+      ans = randNonZero(-6, 6);
+      const inner = ans + b;
+      const c = a * inner;
+      const bS = b < 0 ? ` − ${Math.abs(b)}` : `+ ${b}`;
+      q = `${a}(x ${bS}) = ${c} を解け。x = ?`;
+      steps = [`両辺を ${a} で割る: x ${bS} = ${c} ÷ ${a} = ${inner}`, `移項: x = ${inner} − ${fmtNum(b)} = ${ans}`];
     }
     const wrongs = [-ans, ans+1, ans-1].filter((v,i,arr)=>arr.indexOf(v)===i&&v!==ans);
-    return { category:'equation', question:q, answer:ans, choices:buildChoices(ans,wrongs), steps };
+    return { category:'equation', question:q, questionHtml, answer:ans, choices:buildChoices(ans,wrongs), steps };
   }
 
   function genExpand2() {
