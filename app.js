@@ -3190,18 +3190,29 @@
         defeat: '君が勉強することを諦めても、僕は応援することを諦めない。',
       },
     },
+    smile: {
+      id: 'smile', name: 'ほほえみAKR', img: 'images/smile_akr.png',
+      lines: {
+        miss: 'バファリンの半分は優しさ、AKRの半分は…採点の厳しさでできている笑',
+      },
+    },
   };
   const RARE_CHANCE_ZOMBIE = 0.08;
   const RARE_CHANCE_SANTA = 1 / 30;
+  const RARE_CHANCE_SMILE = 1 / 30;
   const RARE_BONUS_MP = 10;
+  const SMILE_BONUS_MP = 20;
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
+  const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
+    { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
   ];
   function rollRareType() {
     const r = Math.random();
     if (r < RARE_CHANCE_SANTA) return 'santa';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE) return 'zombie';
+    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE) return 'smile';
     return null;
   }
   function currentEnemyDisplay(st) {
@@ -3492,7 +3503,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : 0;
       const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
@@ -3508,6 +3519,9 @@
       if (wasRareType === 'santa' && !state.items.includes(SPECIAL_ITEM_FLAME_SWORD)) {
         state.items.push(SPECIAL_ITEM_FLAME_SWORD);
         itemGainedHtml = '<div class="item-gain-banner">🔥⚔️ スペシャルアイテム「炎の剣」を手に入れた！🔥⚔️</div>';
+      } else if (wasRareType === 'smile' && !state.items.includes(SPECIAL_ITEM_SMILE_MASK)) {
+        state.items.push(SPECIAL_ITEM_SMILE_MASK);
+        itemGainedHtml = '<div class="item-gain-banner">😊🎭 スペシャルアイテム「ほほえみの仮面」を手に入れた！😊🎭</div>';
       }
 
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
@@ -3524,6 +3538,7 @@
       const rareTag = wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
         : wasRareType === 'thinker' ? '<span class="rare-badge">🤔レベル100記念撃破！🤔</span>'
+        : wasRareType === 'smile' ? ('<span class="rare-badge">😊レア撃破！+' + SMILE_BONUS_MP + 'MP✨</span>')
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
