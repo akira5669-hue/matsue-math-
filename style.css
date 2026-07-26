@@ -573,6 +573,7 @@ h1 {
   color: var(--c-ink-soft);
 }
 .login-form { display: flex; flex-direction: column; gap: 6px; }
+.login-form[hidden] { display: none; }
 .login-label {
   display: block;
   font-size: 13px;
@@ -605,6 +606,7 @@ h1 {
   padding-top: 14px;
   border-top: 1px solid var(--c-line);
 }
+.guardian-child[hidden] { display: none; }
 .guardian-child:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 .guardian-child-title {
   margin: 0 0 6px;
