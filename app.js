@@ -921,6 +921,28 @@
     { id: 'prismVolume6',    label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,    defaultOff: true },
   ];
 
+  const GRADE_RANK = { '小4': 1, '小5': 2, '小6': 3, '中1': 4, '中2': 5, '中3': 6 };
+  const categoryGrade = Object.fromEntries(CATEGORIES.map(c => {
+    const m = c.label.match(/（(小[456]|中[123])）/);
+    return [c.id, m ? m[1] : null];
+  }));
+  function isAboveOwnGrade(catId, ownGrade) {
+    const ownRank = GRADE_RANK[ownGrade];
+    const catRank = GRADE_RANK[categoryGrade[catId]];
+    if (!ownRank || !catRank) return false;
+    return catRank > ownRank;
+  }
+  // 学年が分かっている場合は「自分の学年以下」の単元だけを初期状態でON。
+  // 学年不明（ゲスト等）の場合は、これまで通り小4〜6の復習系だけOFFにする。
+  function defaultEnabledIds(grade) {
+    const ownRank = GRADE_RANK[grade];
+    if (!ownRank) return CATEGORIES.filter(c => !c.defaultOff).map(c => c.id);
+    return CATEGORIES.filter(c => {
+      const rank = GRADE_RANK[categoryGrade[c.id]];
+      return rank && rank <= ownRank;
+    }).map(c => c.id);
+  }
+
   /* ---------- 小学校範囲の分数ユーティリティ ---------- */
 
   function gcdFrac(a, b) {
@@ -3231,14 +3253,14 @@
     catStats: {},
     current: null,
     answered: false,
-    enabled: new Set(CATEGORIES.filter(c => !c.defaultOff).map(c => c.id)),
+    enabled: new Set(defaultEnabledIds((loadSession() || {}).grade)),
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
     pointsToday: (savedGame && savedGame.pointsToday) || 0,
     pointsDate: (savedGame && savedGame.pointsDate) || null,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
-    rareType: (savedGame && RARE_TYPES[savedGame.rareType]) ? savedGame.rareType : rollRareType(),
+    rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
   };
 
@@ -3327,18 +3349,6 @@
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
-
-  const GRADE_RANK = { '小4': 1, '小5': 2, '小6': 3, '中1': 4, '中2': 5, '中3': 6 };
-  const categoryGrade = Object.fromEntries(CATEGORIES.map(c => {
-    const m = c.label.match(/（(小[456]|中[123])）/);
-    return [c.id, m ? m[1] : null];
-  }));
-  function isAboveOwnGrade(catId, ownGrade) {
-    const ownRank = GRADE_RANK[ownGrade];
-    const catRank = GRADE_RANK[categoryGrade[catId]];
-    if (!ownRank || !catRank) return false;
-    return catRank > ownRank;
-  }
 
   /* ---------- 描画 ---------- */
 
@@ -3696,6 +3706,7 @@
         return;
       }
       saveSession({ id: id, name: res.name, grade: res.grade });
+      state.enabled = new Set(defaultEnabledIds(res.grade));
       reconcilePoints(id, res.points, res.level, res.exp);
       showApp(res.name, false);
       if (res.pointsReset) {
@@ -3760,6 +3771,7 @@
         return;
       }
       saveSession({ id: res.id, name: res.name, grade: grade });
+      state.enabled = new Set(defaultEnabledIds(grade));
       window.alert('登録が完了しました！\n\nあなたのID: ' + res.id + '\n\n次回からは、このIDとパスワードでログインします。忘れずに控えておいてください。');
       showApp(res.name, false);
     }).catch(function () {
@@ -4197,6 +4209,8 @@
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);
+            state.enabled = new Set(defaultEnabledIds(res.grade));
+            renderSettings();
           }
         }
       }).catch(function () { });
