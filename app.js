@@ -51,7 +51,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
-        isRareEnemy: s.isRareEnemy,
+        rareType: s.rareType, items: s.items,
       }));
     } catch (e) { }
   }
@@ -3167,10 +3167,41 @@
     { name: 'ハナマルオ',      emoji: '⭕' },
   ];
 
-  const RARE_ENEMY = { name: 'ゾンビAKR', img: 'images/zombie_akr.png' };
-  const RARE_CHANCE = 0.08;
+  const RARE_TYPES = {
+    zombie: {
+      id: 'zombie', name: 'ゾンビAKR', img: 'images/zombie_akr.png',
+      lines: {
+        appear: 'へへっ、僕を倒すのは簡単じゃないぞ〜',
+        defeat: 'これで、君は勉強の時に1人じゃない！いつでも僕がそばにいるよ笑',
+        miss: '間違えたら振り出しに戻る…それが10問連続の厳しさだ！',
+      },
+    },
+    santa: {
+      id: 'santa', name: 'サンタAKR', img: 'images/santa_akr.png',
+      lines: {
+        appear: '逃げも隠れもしない…と言いたいけど、1問間違えたら逃げます笑',
+        defeat: '僕を倒した君には、スペシャルアイテムをプレゼント！',
+        miss: '不安になっても、構いません。ただし、どっしり構えて10問いってみよう！',
+      },
+    },
+  };
+  const RARE_CHANCE_ZOMBIE = 0.08;
+  const RARE_CHANCE_SANTA = 1 / 30;
   const RARE_BONUS_MP = 10;
-  function rollRare() { return Math.random() < RARE_CHANCE; }
+  const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
+  const SPECIAL_ITEMS = [
+    { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
+  ];
+  function rollRareType() {
+    const r = Math.random();
+    if (r < RARE_CHANCE_SANTA) return 'santa';
+    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE) return 'zombie';
+    return null;
+  }
+  function currentEnemyDisplay(st) {
+    if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
+    return ENEMIES[st.enemyIdx];
+  }
 
   /* ---------- アプリ状態 ---------- */
 
@@ -3190,7 +3221,8 @@
     pointsToday: (savedGame && savedGame.pointsToday) || 0,
     pointsDate: (savedGame && savedGame.pointsDate) || null,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
-    isRareEnemy: (savedGame && typeof savedGame.isRareEnemy === 'boolean') ? savedGame.isRareEnemy : rollRare(),
+    rareType: (savedGame && (savedGame.rareType === 'zombie' || savedGame.rareType === 'santa')) ? savedGame.rareType : rollRareType(),
+    items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
   };
 
   const els = {
@@ -3208,6 +3240,7 @@
     expBarInner: document.getElementById('expBarInner'),
     enemyEmoji: document.getElementById('enemyEmoji'),
     enemyName: document.getElementById('enemyName'),
+    enemySpeech: document.getElementById('enemySpeech'),
     hpBarInner: document.getElementById('hpBarInner'),
     hpText: document.getElementById('hpText'),
     resetBtn: document.getElementById('resetBtn'),
@@ -3262,6 +3295,7 @@
     historyCats: document.getElementById('historyCats'),
     historyRecent: document.getElementById('historyRecent'),
     historyBadges: document.getElementById('historyBadges'),
+    historyItems: document.getElementById('historyItems'),
     rankingToggle: document.getElementById('rankingToggle'),
     rankingPanel: document.getElementById('rankingPanel'),
     rankingTabExp: document.getElementById('rankingTabExp'),
@@ -3371,15 +3405,22 @@
 
   function updateGameHud() {
     const hp = Math.max(0, 10 - state.streak);
-    const enemy = state.isRareEnemy ? RARE_ENEMY : ENEMIES[state.enemyIdx];
+    const enemy = currentEnemyDisplay(state);
+    const isRare = !!state.rareType;
     if (enemy.img) {
-      els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${state.isRareEnemy ? ' is-rare' : ''}">`;
+      els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
     } else {
       els.enemyEmoji.textContent = enemy.emoji;
     }
-    els.enemyEmoji.classList.toggle('is-rare', !!state.isRareEnemy);
-    els.enemyName.textContent = (state.isRareEnemy ? '✨ ' : '') + enemy.name + (state.isRareEnemy ? ' ✨' : '');
-    els.enemyName.classList.toggle('is-rare-name', !!state.isRareEnemy);
+    els.enemyEmoji.classList.toggle('is-rare', isRare);
+    els.enemyName.textContent = (isRare ? '✨ ' : '') + enemy.name + (isRare ? ' ✨' : '');
+    els.enemyName.classList.toggle('is-rare-name', isRare);
+    if (isRare && enemy.lines && enemy.lines.appear) {
+      els.enemySpeech.textContent = enemy.lines.appear;
+      els.enemySpeech.hidden = false;
+    } else {
+      els.enemySpeech.hidden = true;
+    }
     const hpPct = hp * 10;
     els.hpBarInner.style.width = `${hpPct}%`;
     els.hpBarInner.style.background = hp <= 3 ? '#ef4444' : hp <= 6 ? '#f59e0b' : '#22c55e';
@@ -3400,12 +3441,24 @@
     const catId = state.current.category;
     const session = loadSession();
     const ownGrade = session && session.grade;
+    let missLineHtml = '';
     if (isCorrect) {
       if (state.streak === 0) state.streakAboveGrade = true;
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.correct++; state.streak++;
     } else {
+      const enemyBeforeMiss = currentEnemyDisplay(state);
+      if (enemyBeforeMiss.lines && enemyBeforeMiss.lines.miss) {
+        missLineHtml = `<div class="enemy-quote-banner">${enemyBeforeMiss.lines.miss}</div>`;
+      }
+      const santaFled = state.rareType === 'santa';
       state.streak = 0;
+      if (santaFled) {
+        missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = rollRareType();
+        saveGameState(state);
+      }
     }
 
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
@@ -3432,8 +3485,9 @@
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
-      const wasRareDefeated = state.isRareEnemy;
-      const basePoints = (bonusEligible ? 20 : 10) + (wasRareDefeated ? RARE_BONUS_MP : 0);
+      const wasRareType = state.rareType;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : 0;
+      const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
@@ -3443,21 +3497,32 @@
       state.level = newLevel;
       state.streak = 0;
       state.streakAboveGrade = true;
+
+      let itemGainedHtml = '';
+      if (wasRareType === 'santa' && !state.items.includes(SPECIAL_ITEM_FLAME_SWORD)) {
+        state.items.push(SPECIAL_ITEM_FLAME_SWORD);
+        itemGainedHtml = '<div class="item-gain-banner">🔥⚔️ スペシャルアイテム「炎の剣」を手に入れた！🔥⚔️</div>';
+      }
+
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-      state.isRareEnemy = rollRare();
+      state.rareType = rollRareType();
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp }).catch(function () { });
       }
-      const nextEnemy = state.isRareEnemy ? RARE_ENEMY : ENEMIES[state.enemyIdx];
+      const prevEnemy = wasRareType ? RARE_TYPES[wasRareType] : ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
+      const nextEnemy = currentEnemyDisplay(state);
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
-      const prevEnemy = wasRareDefeated ? RARE_ENEMY : ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
       const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
-      const rareTag = wasRareDefeated ? '<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>' : '';
-      const rareNextTag = state.isRareEnemy ? '<span class="rare-badge">✨レア出現！✨</span>' : '';
+      const rareTag = wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
+        : '';
+      const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
+        ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
+      const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}`;
     }
 
     const streakHtml = state.streak >= 3
@@ -3468,7 +3533,7 @@
       (isCorrect
         ? `<span class="fb-result">正解！${streakHtml}</span>`
         : `<span class="fb-result">不正解。正解は <strong>${stepToHtml(correctStr)}</strong> です。</span>`)
-      + winHtml + stepsHtml;
+      + missLineHtml + winHtml + stepsHtml;
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
 
     els.nextBtn.disabled = false;
@@ -3881,8 +3946,17 @@
     }).join('');
   }
 
+  function renderItems() {
+    els.historyItems.innerHTML = SPECIAL_ITEMS.map(function (it) {
+      const owned = state.items.includes(it.id);
+      const cls = 'badge-item' + (owned ? ' badge-earned' : ' badge-locked');
+      return `<div class="${cls}" title="${it.desc}"><span class="badge-icon">${it.icon}</span><span class="badge-name">${it.name}</span></div>`;
+    }).join('');
+  }
+
   function renderHistory(data) {
     renderBadges(data);
+    renderItems();
     els.historySummary.textContent = data.total === 0
       ? 'まだ記録がありません。問題を解いてみましょう。'
       : `のべ ${data.total} 問中 ${data.correct} 問正解（正答率 ${Math.round((data.correct / data.total) * 100)}%）`;
@@ -3919,6 +3993,7 @@
     els.historyStreak.textContent = '';
     els.historyCalendar.innerHTML = '';
     els.historyBadges.innerHTML = '';
+    els.historyItems.innerHTML = '';
     els.historyCats.innerHTML = '';
     els.historyRecent.innerHTML = '';
 

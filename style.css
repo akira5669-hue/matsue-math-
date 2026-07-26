@@ -241,6 +241,40 @@ h1 {
   margin-right: 8px;
   vertical-align: middle;
 }
+.enemy-speech {
+  background: var(--c-surface);
+  border: 1px dashed #f59e0b;
+  border-radius: 10px;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  margin: -10px 0 16px;
+  line-height: 1.5;
+}
+.enemy-quote-banner {
+  background: var(--c-bg);
+  border-left: 3px solid #f59e0b;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.item-gain-banner {
+  background: linear-gradient(90deg, #fee2e2, #ffedd5);
+  border: 1.5px solid #f97316;
+  border-radius: 10px;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+  animation: win-pop 0.35s ease;
+}
 
 /* Quiz card */
 .quiz-card {
