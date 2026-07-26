@@ -4245,8 +4245,9 @@
     els.rankingList.innerHTML = res.ranking.map(function (r) {
       var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
       var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+      var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
       var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : `Lv.${r.level}（経験値 ${r.exp}）`;
-      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
+      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
     }).join('');
   }
 

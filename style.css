@@ -43,7 +43,7 @@ body {
 }
 .school-name {
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: 45px;
   font-weight: 900;
   letter-spacing: 0.12em;
   color: var(--c-ink);
@@ -758,6 +758,17 @@ h1 {
   min-width: 2em;
 }
 .ranking-name { flex: 1; font-weight: 700; }
+.ranking-grade {
+  display: inline-block;
+  margin-right: 6px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  color: var(--c-ink-soft);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
 .ranking-you-tag {
   display: inline-block;
   margin-left: 6px;

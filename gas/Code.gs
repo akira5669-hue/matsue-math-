@@ -520,14 +520,15 @@ function handleRanking_(ctx, body) {
     if (!id) continue;
     var level = Number(data[i][8]) || 1;
     var exp = Number(data[i][9]) || 0;
-    rows.push({ id: id, level: level, exp: exp });
+    var grade = data[i][5] || '';
+    rows.push({ id: id, level: level, exp: exp, grade: grade });
   }
   rows.sort(function (a, b) {
     if (b.level !== a.level) return b.level - a.level;
     return b.exp - a.exp;
   });
   var top = rows.slice(0, 50).map(function (r, idx) {
-    return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, isYou: r.id === myId };
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, grade: r.grade, isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
@@ -546,15 +547,20 @@ function handleRankingToday_(ctx, body) {
     counts[id].total++;
     if (!!data[i][4]) counts[id].correct++;
   }
+  var gradeById = {};
+  var sdata = ctx.students.getDataRange().getValues();
+  for (var j = 1; j < sdata.length; j++) {
+    gradeById[String(sdata[j][0]).trim()] = sdata[j][5] || '';
+  }
   var rows = Object.keys(counts).map(function (id) {
-    return { id: id, correct: counts[id].correct, total: counts[id].total };
+    return { id: id, correct: counts[id].correct, total: counts[id].total, grade: gradeById[id] || '' };
   });
   rows.sort(function (a, b) {
     if (b.correct !== a.correct) return b.correct - a.correct;
     return b.total - a.total;
   });
   var top = rows.slice(0, 50).map(function (r, idx) {
-    return { rank: idx + 1, nickname: nicknameForId_(r.id), correct: r.correct, total: r.total, isYou: r.id === myId };
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), correct: r.correct, total: r.total, grade: r.grade, isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
