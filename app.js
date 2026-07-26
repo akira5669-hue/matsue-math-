@@ -931,7 +931,13 @@
     { id: 'unit4',          label: '単位の変換（小4）',                   gen: genUnit4,          defaultOff: true },
     { id: 'mul3x2_4',       label: '3桁×2桁のかけ算（小4）',              gen: genMul3x2_4,       defaultOff: true },
     { id: 'divRemainder4',  label: 'あまりのあるわり算（小4）',           gen: genDivRemainder4,  defaultOff: true },
+    { id: 'div2by1_4',      label: '2桁÷1桁のわり算（小4）',             gen: genDiv2by1_4,      defaultOff: true },
+    { id: 'div2by2_4',      label: '2桁÷2桁のわり算（小4）',             gen: genDiv2by2_4,      defaultOff: true },
+    { id: 'div3by1_4',      label: '3桁÷1桁のわり算（小4）',             gen: genDiv3by1_4,      defaultOff: true },
+    { id: 'div3by2_4',      label: '3桁÷2桁のわり算（小4）',             gen: genDiv3by2_4,      defaultOff: true },
+    { id: 'div3by3_4',      label: '3桁÷3桁のわり算（小4）',             gen: genDiv3by3_4,      defaultOff: true },
     { id: 'rectArea4',      label: '長方形・正方形の面積（小4）',        gen: genRectArea4,      defaultOff: true },
+    { id: 'largeNum4',      label: '億・兆の大きな数（小4）',             gen: genLargeNum4,      defaultOff: true },
 
     // ---------- 小5 ----------
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
@@ -1059,6 +1065,58 @@
       `= ${answer}`,
     ];
     return { category: 'round4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 億・兆の大きな数（小4）
+  function formatJp4Groups(numStr) {
+    const rev = numStr.split('').reverse();
+    const groups = [];
+    for (let i = 0; i < rev.length; i += 4) groups.push(rev.slice(i, i + 4).reverse().join(''));
+    return groups.reverse().join(',');
+  }
+  function genLargeNum4() {
+    const pat = randInt(0, 1);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 億・兆の位の数字
+      let numStr = String(randInt(1, 9));
+      for (let i = 1; i < 16; i++) numStr += String(randInt(0, 9));
+      const places = [
+        { label: '億', pow: 8 }, { label: '十億', pow: 9 }, { label: '百億', pow: 10 }, { label: '千億', pow: 11 },
+        { label: '兆', pow: 12 }, { label: '十兆', pow: 13 }, { label: '百兆', pow: 14 }, { label: '千兆', pow: 15 },
+      ];
+      const place = places[randInt(0, places.length - 1)];
+      const digit = parseInt(numStr[15 - place.pow], 10);
+      question = `${formatJp4Groups(numStr)} という数の「${place.label}の位」の数字は？`;
+      answer = digit;
+      const wrongSet = new Set([digit]);
+      wrongs = [];
+      while (wrongs.length < 3) {
+        const d = randInt(0, 9);
+        if (!wrongSet.has(d)) { wrongSet.add(d); wrongs.push(d); }
+      }
+      steps = [`右から${place.pow + 1}桁目が「${place.label}の位」`, `その数字は ${digit}`];
+    } else {
+      // 億・兆と数字の変換
+      const useCho = Math.random() < 0.5;
+      const unit = useCho ? '兆' : '億';
+      const mult = useCho ? 1000000000000 : 100000000;
+      const count = useCho ? randInt(2, 9) : randInt(2, 999);
+      const value = count * mult;
+      const toNumeral = Math.random() < 0.5;
+      if (toNumeral) {
+        question = `${count}${unit} を数字で表すと？`;
+        answer = value;
+        wrongs = [(count - 1) * mult, (count + 1) * mult, value + mult * 10].filter(v => v !== value && v > 0);
+        steps = [`1${unit} = ${mult}`, `${count} × ${mult} = ${value}`];
+      } else {
+        question = `${formatJp4Groups(String(value))} は何${unit}ですか？`;
+        answer = count;
+        wrongs = [count + 1, Math.max(1, count - 1), count * 10].filter(v => v !== count);
+        steps = [`1${unit} = ${mult}`, `${value} ÷ ${mult} = ${count}`];
+      }
+    }
+    return { category: 'largeNum4', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
@@ -1426,6 +1484,26 @@
     steps = [`${divisor} × ${quotient} = ${divisor * quotient}`, `${dividend} − ${divisor * quotient} = ${remainder}`, `商 ${quotient}、あまり ${remainder}`];
     return { category: 'divRemainder4', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
+
+  // 桁数を指定したわり算の筆算（あまりなし）（小4）
+  // divisor は [divMin, divMax] からランダムに選び、その範囲で dividend が
+  // [dividendMin, dividendMax] に収まるような商をランダムに選ぶ。
+  function genCleanDivision(category, divMin, divMax, dividendMin, dividendMax) {
+    const divisor = randInt(divMin, divMax);
+    const minQ = Math.max(2, Math.ceil(dividendMin / divisor));
+    const maxQ = Math.floor(dividendMax / divisor);
+    const quotient = randInt(minQ, maxQ);
+    const dividend = divisor * quotient;
+    const question = `${dividend} ÷ ${divisor} = ?`;
+    const wrongs = [quotient + 1, Math.max(1, quotient - 1), divisor];
+    const steps = [`${divisor} × ${quotient} = ${dividend}`, `${dividend} ÷ ${divisor} = ${quotient}`];
+    return { category, question, answer: quotient, choices: buildChoices(quotient, wrongs), steps };
+  }
+  function genDiv2by1_4() { return genCleanDivision('div2by1_4', 2, 9, 10, 99); }
+  function genDiv2by2_4() { return genCleanDivision('div2by2_4', 10, 49, 20, 99); }
+  function genDiv3by1_4() { return genCleanDivision('div3by1_4', 2, 9, 100, 999); }
+  function genDiv3by2_4() { return genCleanDivision('div3by2_4', 12, 99, 100, 999); }
+  function genDiv3by3_4() { return genCleanDivision('div3by3_4', 100, 499, 100, 999); }
 
   // 長方形・正方形の面積（小4）
   function genRectArea4() {
