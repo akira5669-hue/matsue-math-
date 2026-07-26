@@ -1011,6 +1011,7 @@
 
     // ---------- 小5 ----------
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
+    { id: 'decMul5',         label: '小数のかけ算（小5）',                 gen: genDecMul5,         defaultOff: true },
     { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
@@ -1267,6 +1268,29 @@
       `= ${answer}`,
     ];
     return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+  }
+
+  // 小数のかけ算（小5、小数×小数）
+  function genDecMul5() {
+    let aTenths, bTenths;
+    do { aTenths = randInt(11, 99); } while (aTenths % 10 === 0);
+    do { bTenths = randInt(11, 99); } while (bTenths % 10 === 0);
+    const productHundredths = aTenths * bTenths;
+    const a = (aTenths / 10).toFixed(1);
+    const b = (bTenths / 10).toFixed(1);
+    const answer = (productHundredths / 100).toString();
+    const question = `${a} × ${b} = ?`;
+    const candidates = [
+      ((productHundredths + 10) / 100).toString(),
+      (Math.max(1, productHundredths - 10) / 100).toString(),
+      ((productHundredths + 100) / 100).toString(),
+      (Math.round(productHundredths / 10) / 10).toString(),
+    ];
+    const steps = [
+      `${aTenths} × ${bTenths} = ${productHundredths}（0.01のまとまりが${productHundredths}個）`,
+      `= ${answer}`,
+    ];
+    return { category: 'decMul5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   // 小数のわり算（小5、商は整数になる）
