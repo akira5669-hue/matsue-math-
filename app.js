@@ -144,7 +144,7 @@
   }
 
   function stepToHtml(s) {
-    const parts = String(s).split(/([\w]+\/[\w]+)/);
+    const parts = String(s).split(/(√?[\w]+\/√?[\w]+)/);
     return parts.map((part, i) => {
       if (i % 2 === 1) {
         const slash = part.indexOf('/');
@@ -834,12 +834,14 @@
       const b = nonPerf[randInt(0, nonPerf.length-1)];
       const k = randInt(1, 5), a = k*b;
       q = `${a}/√${b} を有理化すると？`;
+      const fracHtml = `<span class="frac"><span class="num">${a}</span><span class="den">√${b}</span></span>`;
+      const questionHtml = `${fracHtml} を有理化すると？`;
       const answerStr2 = sqrtStr(k, b);
       steps = [
         `分母に √${b} をかける: ${a}/√${b} × √${b}/√${b}`,
         `= ${a}√${b} / ${b} = ${answerStr2}`,
       ];
-      return { category:'sqrtmd', question:q, answer: answerStr2, choices: buildChoicesFromList(answerStr2, [`${a}√${b}`, sqrtStr(k+1, b), sqrtStr(Math.max(1,k-1), b), sqrtStr(k, b===2?3:2)]), steps };
+      return { category:'sqrtmd', question:q, questionHtml, answer: answerStr2, choices: buildChoicesFromList(answerStr2, [`${a}√${b}`, sqrtStr(k+1, b), sqrtStr(Math.max(1,k-1), b), sqrtStr(k, b===2?3:2)]), steps };
     }
     return { category:'sqrtmd', question:q, answer, choices:buildChoices(answer, wrongs), steps };
   }
