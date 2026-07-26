@@ -575,7 +575,7 @@
 
   function genProportion() {
     const pat = randInt(0, 7);
-    let question, answer, steps, wrongs;
+    let question, questionHtml, answer, steps, wrongs;
     if (pat === 0) {
       const a = randNonZero(-7, 7), x = randNonZero(-7, 7), y = a*x;
       const aD = a===1?'':a===-1?'−':`${a}`;
@@ -591,6 +591,7 @@
     } else if (pat === 2) {
       const x = randNonZero(-6, 6), y = randNonZero(-6, 6), a = x*y;
       question = `y = ${a}/x で x = ${x} のとき y = ?`;
+      questionHtml = `y = <span class="frac"><span class="num">${a}</span><span class="den">x</span></span> で x = ${x} のとき y = ?`;
       steps = [`y = ${a} ÷ ${fmtNum(x)} = ${y}`];
       answer = y; wrongs = [-y, a, y+1];
     } else if (pat === 3) {
@@ -631,10 +632,11 @@
       // 反比例グラフから a を求める（座標指定）
       const x = randNonZero(-6, 6), y = randNonZero(-6, 6), a = x*y;
       question = `反比例のグラフが点 (${x}, ${y}) を通る。y = a/x の a は？`;
+      questionHtml = `反比例のグラフが点 (${x}, ${y}) を通る。y = <span class="frac"><span class="num">a</span><span class="den">x</span></span> の a は？`;
       steps = [`y = a/x に代入: ${y} = a ÷ ${fmtNum(x)}`, `a = ${x} × ${y} = ${a}`];
       answer = a; wrongs = [-a, x+y, a+1];
     }
-    return { category:'proportion', question, answer, choices:buildChoices(answer, wrongs), steps };
+    return { category:'proportion', question, questionHtml, answer, choices:buildChoices(answer, wrongs), steps };
   }
 
   /* ---------- 一次関数 ---------- */
