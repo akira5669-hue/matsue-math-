@@ -1041,11 +1041,15 @@
     { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',        gen: genArrangeCombine6, defaultOff: true },
     { id: 'circleArea6',     label: '円の面積（小6）',                     gen: genCircleArea6,     defaultOff: true },
     { id: 'prismVolume6',    label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,    defaultOff: true },
+    // ---------- 小3 ----------
+    { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
+    { id: 'largeNum3',       label: '大きな数（小3）',                     gen: genLargeNum3,       defaultOff: true },
+    { id: 'clockTime3',      label: '時こくと時間（小3）',                 gen: genClockTime3,      defaultOff: true },
   ];
 
-  const GRADE_RANK = { '小4': 1, '小5': 2, '小6': 3, '中1': 4, '中2': 5, '中3': 6 };
+  const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
   const categoryGrade = Object.fromEntries(CATEGORIES.map(c => {
-    const m = c.label.match(/（(小[456]|中[123])）/);
+    const m = c.label.match(/（(小[3456]|中[123])）/);
     return [c.id, m ? m[1] : null];
   }));
   function isAboveOwnGrade(catId, ownGrade) {
@@ -1199,6 +1203,107 @@
       }
     }
     return { category: 'largeNum4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 大きな数（小3）：万の位までの理解、10倍・100倍・1000倍、10でわる
+  function genLargeNum3() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 万の位までの位の数字（8桁、〜9999万台まで。億の位は小4で扱うため使わない）
+      let numStr = String(randInt(1, 9));
+      for (let i = 1; i < 8; i++) numStr += String(randInt(0, 9));
+      const places = [
+        { label: '一', pow: 0 }, { label: '十', pow: 1 }, { label: '百', pow: 2 }, { label: '千', pow: 3 },
+        { label: '万', pow: 4 }, { label: '十万', pow: 5 }, { label: '百万', pow: 6 }, { label: '千万', pow: 7 },
+      ];
+      const place = places[randInt(0, places.length - 1)];
+      const digit = parseInt(numStr[7 - place.pow], 10);
+      question = `${formatJp4Groups(numStr)} という数の「${place.label}の位」の数字は？`;
+      answer = digit;
+      const wrongSet = new Set([digit]);
+      wrongs = [];
+      while (wrongs.length < 3) {
+        const d = randInt(0, 9);
+        if (!wrongSet.has(d)) { wrongSet.add(d); wrongs.push(d); }
+      }
+      steps = [`右から${place.pow + 1}桁目が「${place.label}の位」`, `その数字は ${digit}`];
+    } else if (pat === 1) {
+      // 10倍・100倍・1000倍
+      const base = randInt(2, 9999);
+      const mult = [10, 100, 1000][randInt(0, 2)];
+      const answerVal = base * mult;
+      question = `${base} を ${mult}倍すると？`;
+      answer = answerVal;
+      wrongs = [base * (mult / 10), base * (mult * 10), answerVal + mult].filter(v => v !== answerVal && v > 0);
+      steps = [`${base} × ${mult} = ${answerVal}`];
+    } else {
+      // 10でわる（10分の1にする）
+      const core = randInt(2, 9999);
+      const base = core * 10;
+      question = `${base} を 10 でわった数は？`;
+      answer = core;
+      wrongs = [core + 1, Math.max(1, core - 1), base * 10].filter(v => v !== core);
+      steps = [`${base} ÷ 10 = ${core}`];
+    }
+    return { category: 'largeNum3', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 時こくと時間（小3）：時刻の何分後、単位換算、時刻の差
+  function genClockTime3() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const startHour = randInt(1, 9);
+      const startMin = randInt(0, 11) * 5;
+      const durationMin = randInt(1, 6) * 10;
+      const total = startMin + durationMin;
+      const endHour = startHour + Math.floor(total / 60);
+      const endMin = total % 60;
+      question = `${startHour}時${startMin}分の${durationMin}分後は何時何分？`;
+      answer = `${endHour}時${endMin}分`;
+      const wrongCands = [
+        `${endHour}時${(endMin + 10) % 60}分`,
+        `${endHour - 1 >= 1 ? endHour - 1 : endHour + 1}時${endMin}分`,
+        `${endHour}時${Math.max(0, endMin - 10)}分`,
+      ];
+      steps = [`${startMin}分 + ${durationMin}分 = ${total}分`, `${total}分 = ${Math.floor(total / 60)}時間${total % 60}分`, `${startHour}時 + ${Math.floor(total / 60)}時間 = ${endHour}時、のこり${endMin}分 → ${answer}`];
+      return { category: 'clockTime3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 1) {
+      const kind = randInt(0, 2);
+      if (kind === 0) {
+        const min = randInt(1, 9);
+        question = `${min}分は何秒？`;
+        answer = min * 60;
+        wrongs = [answer + 60, Math.max(1, answer - 60), min * 100];
+      } else if (kind === 1) {
+        const minVal = randInt(1, 9);
+        const sec = minVal * 60;
+        question = `${sec}秒は何分？`;
+        answer = minVal;
+        wrongs = [answer + 1, Math.max(1, answer - 1), sec / 100];
+      } else {
+        const hr = randInt(1, 5);
+        question = `${hr}時間は何分？`;
+        answer = hr * 60;
+        wrongs = [answer + 60, Math.max(1, answer - 60), hr * 100];
+      }
+      wrongs = wrongs.filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
+      steps = [`= ${answer}`];
+      return { category: 'clockTime3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const startHour = randInt(1, 6);
+      const startMin = randInt(0, 11) * 5;
+      const durationMin = randInt(1, 8) * 10;
+      const total = startMin + durationMin;
+      const endHour = startHour + Math.floor(total / 60);
+      const endMin = total % 60;
+      question = `${startHour}時${startMin}分から${endHour}時${endMin}分までは何分間？`;
+      answer = durationMin;
+      wrongs = [durationMin + 10, Math.max(1, durationMin - 10), durationMin + 60].filter(v => v !== durationMin);
+      steps = [`${startHour}時${startMin}分 から ${endHour}時${endMin}分 まで`, `= ${durationMin}分間`];
+      return { category: 'clockTime3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
   }
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
@@ -2166,6 +2271,26 @@
     const wrongs = [answer + b, Math.max(1, answer - b), a * (b + 1), a * bTens + a * bOnes + 10];
     const steps = [`${a} × ${b} = ${a} × ${bTens} + ${a} × ${bOnes}`, `= ${a * bTens} + ${a * bOnes}`, `= ${answer}`];
     return { category: 'mul3x2_4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // かけ算の筆算（小3）：2桁×1桁、3桁×1桁
+  function genMulWritten3() {
+    const pat = randInt(0, 1);
+    const b = randInt(2, 9);
+    const a = pat === 0 ? randInt(10, 99) : randInt(100, 999);
+    const answer = a * b;
+    const question = `${a} × ${b} = ?`;
+    const wrongs = [answer + b, Math.max(1, answer - b), a * (b + 1), Math.max(1, a * (b - 1))]
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+    let steps;
+    if (pat === 0) {
+      const tens = Math.floor(a / 10) * 10, ones = a % 10;
+      steps = [`${a} × ${b} = ${tens} × ${b} + ${ones} × ${b}`, `= ${tens * b} + ${ones * b}`, `= ${answer}`];
+    } else {
+      const hundreds = Math.floor(a / 100) * 100, rest = a % 100;
+      steps = [`${a} × ${b} = ${hundreds} × ${b} + ${rest} × ${b}`, `= ${hundreds * b} + ${rest * b}`, `= ${answer}`];
+    }
+    return { category: 'mulWritten3', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   /* ---------- 問題生成関数 ---------- */
