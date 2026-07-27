@@ -637,6 +637,41 @@ h1 {
 .user-avatar-badge[hidden] { display: none; }
 .user-avatar-badge svg { width: 100%; height: 100%; border-radius: 50%; background: var(--c-bg); border: 1.5px solid var(--c-line); }
 
+/* Daily mission banner */
+.mission-banner {
+  background: linear-gradient(135deg, #fff8e1, #fef3c7);
+  border: 1.5px solid #fcd34d;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.mission-banner[hidden] { display: none; }
+.mission-title { margin: 0 0 6px; font-size: 15px; font-weight: 900; color: #92400e; }
+.mission-desc { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--c-ink); }
+.mission-progress-row { display: flex; align-items: center; gap: 10px; }
+.mission-progress-bar-outer {
+  flex: 1;
+  height: 12px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.mission-progress-bar-inner {
+  height: 100%;
+  background: #f59e0b;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.mission-progress-text { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #92400e; min-width: 44px; text-align: right; }
+.mission-reward { margin: 8px 0 0; font-size: 12px; font-weight: 700; color: #b45309; }
+.mission-banner.is-complete { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-color: #34d399; }
+.mission-banner.is-complete .mission-title,
+.mission-banner.is-complete .mission-desc,
+.mission-banner.is-complete .mission-reward { color: #047857; }
+.mission-banner.is-complete .mission-progress-bar-outer { border-color: #34d399; }
+.mission-banner.is-complete .mission-progress-bar-inner { background: #10b981; }
+
 /* Gift panel */
 .gift-panel {
   background: var(--c-surface);

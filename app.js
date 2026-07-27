@@ -79,6 +79,8 @@
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
+        missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
+        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
       }));
     } catch (e) { }
   }
@@ -1067,6 +1069,26 @@
       const rank = GRADE_RANK[categoryGrade[c.id]];
       return rank && rank <= ownRank;
     }).map(c => c.id);
+  }
+
+  /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
+
+  const MISSION_TARGET = 10;
+  const MISSION_REWARD_MP = 20;
+
+  function hashStr(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    }
+    return h;
+  }
+  // 日付＋学年で決まる（＝同じ学年の生徒には同じ日は同じミッションが出る）
+  function pickDailyMissionCategory(grade, dateKey) {
+    const pool = CATEGORIES.filter(c => categoryGrade[c.id] === grade);
+    const src = pool.length > 0 ? pool : CATEGORIES;
+    const idx = hashStr(`${dateKey}:${grade}`) % src.length;
+    return src[idx];
   }
 
   /* ---------- 小学校範囲の分数ユーティリティ ---------- */
@@ -3729,6 +3751,11 @@
     items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
     prefectureCount: Math.max(0, Math.min(47, (savedGame && Number(savedGame.prefectureCount)) || 0)),
     avatar: (savedGame && savedGame.avatar && typeof savedGame.avatar === 'object') ? savedGame.avatar : null,
+    missionDate: (savedGame && savedGame.missionDate) || null,
+    missionGrade: (savedGame && savedGame.missionGrade) || null,
+    missionCategoryId: (savedGame && savedGame.missionCategoryId) || null,
+    missionCorrect: (savedGame && Number(savedGame.missionCorrect)) || 0,
+    missionClaimed: !!(savedGame && savedGame.missionClaimed),
   };
 
   const els = {
@@ -3808,6 +3835,11 @@
     rankingTabToday: document.getElementById('rankingTabToday'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
+    missionBanner: document.getElementById('missionBanner'),
+    missionDesc: document.getElementById('missionDesc'),
+    missionProgressBarInner: document.getElementById('missionProgressBarInner'),
+    missionProgressText: document.getElementById('missionProgressText'),
+    missionReward: document.getElementById('missionReward'),
     giftToggle: document.getElementById('giftToggle'),
     giftPanel: document.getElementById('giftPanel'),
     giftSummary: document.getElementById('giftSummary'),
@@ -3955,6 +3987,41 @@
     }
   }
 
+  function ensureDailyMission(grade) {
+    if (!grade) return;
+    const today = todayKey();
+    if (state.missionDate !== today || state.missionGrade !== grade) {
+      const cat = pickDailyMissionCategory(grade, today);
+      state.missionDate = today;
+      state.missionGrade = grade;
+      state.missionCategoryId = cat.id;
+      state.missionCorrect = 0;
+      state.missionClaimed = false;
+      saveGameState(state);
+    }
+  }
+
+  function renderMissionBanner() {
+    const session = loadSession();
+    const grade = session && session.grade;
+    if (!grade) { els.missionBanner.hidden = true; return; }
+    ensureDailyMission(grade);
+    els.missionBanner.hidden = false;
+    const label = categoryLabel[state.missionCategoryId] || '';
+    const shown = Math.min(state.missionCorrect, MISSION_TARGET);
+    const pct = Math.round((shown / MISSION_TARGET) * 100);
+    els.missionProgressBarInner.style.width = `${pct}%`;
+    els.missionProgressText.textContent = `${shown}/${MISSION_TARGET}`;
+    els.missionBanner.classList.toggle('is-complete', state.missionClaimed);
+    if (state.missionClaimed) {
+      els.missionDesc.textContent = `${label} をクリア済み！`;
+      els.missionReward.textContent = `🎉 +${MISSION_REWARD_MP}MP ゲット！また明日ちょうせんしよう`;
+    } else {
+      els.missionDesc.textContent = `${label} を${MISSION_TARGET}問正解しよう！`;
+      els.missionReward.textContent = `クリアすると +${MISSION_REWARD_MP}MP！`;
+    }
+  }
+
   function handleAnswer(btn, choiceStr) {
     if (state.answered) return;
     state.answered = true;
@@ -4072,6 +4139,20 @@
       winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${prefectureGainedHtml}`;
     }
 
+    let missionHtml = '';
+    if (isCorrect && state.missionCategoryId && catId === state.missionCategoryId && !state.missionClaimed) {
+      state.missionCorrect = Math.min(MISSION_TARGET, state.missionCorrect + 1);
+      if (state.missionCorrect >= MISSION_TARGET) {
+        state.missionClaimed = true;
+        state.points += MISSION_REWARD_MP;
+        missionHtml = `<div class="win-banner">🎯 今日のミッション達成！ +${MISSION_REWARD_MP}MP 🎉</div>`;
+        if (session && session.id) {
+          apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).catch(function () { });
+        }
+      }
+      saveGameState(state);
+    }
+
     const streakHtml = state.streak >= 3
       ? `<span class="streak-badge">${state.streak}問連続正解</span>`
       : '';
@@ -4080,12 +4161,13 @@
       (isCorrect
         ? `<span class="fb-result">正解！${streakHtml}</span>`
         : `<span class="fb-result">不正解。正解は <strong>${stepToHtml(correctStr)}</strong> です。</span>`)
-      + missLineHtml + winHtml + stepsHtml;
+      + missLineHtml + winHtml + missionHtml + stepsHtml;
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
 
     els.nextBtn.disabled = false;
     updateStats();
     updateGameHud();
+    renderMissionBanner();
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
   }
 
@@ -4193,6 +4275,7 @@
     renderSettings();
     updateStats();
     updateGameHud();
+    renderMissionBanner();
     nextQuestion();
     initInstallBanner();
   }
