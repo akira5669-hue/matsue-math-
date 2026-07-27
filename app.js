@@ -3781,7 +3781,14 @@
       state.rareType = (leveledUp && newLevel === 100) ? 'thinker' : rollRareType();
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).catch(function () { });
+        apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).then(function (res) {
+          if (res && res.bonusAwarded > 0) {
+            state.points += res.bonusAwarded;
+            saveGameState(state);
+            updateGameHud();
+            window.alert(`🎉 都道府県制覇ボーナス！+${res.bonusAwarded}MP 🎉`);
+          }
+        }).catch(function () { });
       }
       let prefectureGainedHtml = '';
       if (newlyUnlockedPrefecture) {

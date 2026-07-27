@@ -389,6 +389,15 @@ function dateKeyTokyo_(d) {
   return Utilities.formatDate(new Date(d), 'Asia/Tokyo', 'yyyy-MM-dd');
 }
 
+// 47都道府県制覇ボーナス: 8月31日まで、初めて47/47を達成したタイミングで
+// +300MPを自動付与する（クライアントの自己申告を信用せず、サーバー側で
+// 「前回はまだ47未満だったか」を見て一度だけ付与する）。
+var PREFECTURE_BONUS_MP = 300;
+var PREFECTURE_BONUS_DEADLINE = '2026-08-31';
+function isWithinPrefectureBonusWindow_() {
+  return dateKeyTokyo_(new Date()) <= PREFECTURE_BONUS_DEADLINE;
+}
+
 function handleHistory_(ctx, body) {
   var id = String(body.id || '').trim();
   if (!id) return { ok: false, error: 'missing_id' };
@@ -452,7 +461,16 @@ function handleSyncPoints_(ctx, body) {
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
 
-  ctx.students.getRange(row.rowIndex, 7).setValue(Math.max(0, Math.floor(points)));
+  var bonusAwarded = 0;
+  if (body.prefectureCount !== undefined) {
+    var prefectureCount = Math.max(0, Math.min(47, Math.floor(Number(body.prefectureCount)) || 0));
+    if (prefectureCount === 47 && row.prefectureCount < 47 && isWithinPrefectureBonusWindow_()) {
+      bonusAwarded = PREFECTURE_BONUS_MP;
+    }
+    ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
+  }
+
+  ctx.students.getRange(row.rowIndex, 7).setValue(Math.max(0, Math.floor(points)) + bonusAwarded);
 
   if (body.level !== undefined && body.exp !== undefined) {
     var level = Math.max(1, Math.floor(Number(body.level)) || 1);
@@ -460,13 +478,9 @@ function handleSyncPoints_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[level, exp]]);
   }
 
-  if (body.prefectureCount !== undefined) {
-    var prefectureCount = Math.max(0, Math.min(47, Math.floor(Number(body.prefectureCount)) || 0));
-    ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
-  }
-
-  return { ok: true };
+  return { ok: true, bonusAwarded: bonusAwarded };
 }
+
 
 // アバター作成はレベル300以上またはMP10000以上で解放される。
 // クライアントの申告を信用せず、サーバー側の実際のレベル・MPで検証する。
