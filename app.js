@@ -170,6 +170,17 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // 負の分数は、分子に「−」を付けるのではなく、（分数）の外側に「−」を
+  // 横並びで付けて表す（例: 2分の3の負の数 → −(3/2)）。正の分数には
+  // 不要なかっこを付けない。
+  function negFracHtml(num, den, neg) {
+    const inner = `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+    return neg ? `−(${inner})` : inner;
+  }
+  function negFracStr(num, den, neg) {
+    return neg ? `−(${num}/${den})` : `${num}/${den}`;
+  }
+
   function stepToHtml(s) {
     const parts = String(s).split(/(√?[\w]+\/√?[\w]+)/);
     return parts.map((part, i) => {
@@ -3000,9 +3011,9 @@
         {a:12,num:3,den:4,neg:false,ans:16},{a:8,num:4,den:3,neg:false,ans:6},
       ];
       const c = cs[randInt(0, cs.length - 1)];
-      const fracStr = `(${c.neg ? '−' : ''}${c.num}/${c.den})`;
+      const fracStr = negFracStr(c.num, c.den, c.neg);
       question = `${fmtMono(c.a, v)} ÷ ${fracStr} = ?`;
-      const fracHtml = `<span class="frac"><span class="num">${c.neg ? '−' : ''}${c.num}</span><span class="den">${c.den}</span></span>`;
+      const fracHtml = negFracHtml(c.num, c.den, c.neg);
       const questionHtml = `${escHtml(fmtMono(c.a, v))} ÷ ${fracHtml} = ?`;
       answer = fmtMono(c.ans, v);
       choices = monoChoices(c.ans, v);
@@ -3015,15 +3026,16 @@
     } else {
       // 単項式 × 分数
       const den = [2, 3, 4, 5][randInt(0, 3)];
-      const num = randInt(1, 9);
+      let num;
+      do { num = randInt(1, 9); } while (num === den);
       const neg = Math.random() < 0.5;
       const q = randNonZero(-6, 6);
       const a = den * q;
       const signedNum = neg ? -num : num;
       const ans = q * signedNum;
-      const fracStr = `(${neg ? '−' : ''}${num}/${den})`;
+      const fracStr = negFracStr(num, den, neg);
       question = `${fmtMono(a, v)} × ${fracStr} = ?`;
-      const fracHtml = `<span class="frac"><span class="num">${neg ? '−' : ''}${num}</span><span class="den">${den}</span></span>`;
+      const fracHtml = negFracHtml(num, den, neg);
       const questionHtml = `${escHtml(fmtMono(a, v))} × ${fracHtml} = ?`;
       answer = fmtMono(ans, v);
       choices = monoChoices(ans, v);
@@ -3082,15 +3094,16 @@
     } else if (pat === 4) {
       // (ax+b) × 分数
       const FD = [2, 3, 4][randInt(0, 2)];
-      const FN = randInt(1, 9);
+      let FN;
+      do { FN = randInt(1, 9); } while (FN === FD);
       const negFrac = Math.random() < 0.5;
       const s = negFrac ? -1 : 1;
       const p = randNonZero(-6, 6), q = randNonZero(-9, 9);
       const a = FD * p, b = FD * q;
       const rx = s * FN * p, rc = s * FN * q;
-      const fracStr = `(${negFrac ? '−' : ''}${FN}/${FD})`;
+      const fracStr = negFracStr(FN, FD, negFrac);
       question = `(${fmtPoly(a, v, b)}) × ${fracStr} = ?`;
-      const fracHtml = `<span class="frac"><span class="num">${negFrac ? '−' : ''}${FN}</span><span class="den">${FD}</span></span>`;
+      const fracHtml = negFracHtml(FN, FD, negFrac);
       questionHtml = `(${escHtml(fmtPoly(a, v, b))}) × ${fracHtml} = ?`;
       answer = fmtPoly(rx, v, rc);
       choices = polyChoices(rx, v, rc);
@@ -3098,15 +3111,16 @@
     } else if (pat === 5) {
       // (ax+b) ÷ 分数
       const FD = [2, 3, 4][randInt(0, 2)];
-      const FN = [2, 3, 5, 7][randInt(0, 3)];
+      const FNoptions = [2, 3, 5, 7].filter(n => n !== FD);
+      const FN = FNoptions[randInt(0, FNoptions.length - 1)];
       const negFrac = Math.random() < 0.5;
       const s = negFrac ? -1 : 1;
       const p = randNonZero(-6, 6), q = randNonZero(-9, 9);
       const a = FN * p, b = FN * q;
       const rx = s * FD * p, rc = s * FD * q;
-      const fracStr = `(${negFrac ? '−' : ''}${FN}/${FD})`;
+      const fracStr = negFracStr(FN, FD, negFrac);
       question = `(${fmtPoly(a, v, b)}) ÷ ${fracStr} = ?`;
-      const fracHtml = `<span class="frac"><span class="num">${negFrac ? '−' : ''}${FN}</span><span class="den">${FD}</span></span>`;
+      const fracHtml = negFracHtml(FN, FD, negFrac);
       questionHtml = `(${escHtml(fmtPoly(a, v, b))}) ÷ ${fracHtml} = ?`;
       answer = fmtPoly(rx, v, rc);
       choices = polyChoices(rx, v, rc);
@@ -3182,29 +3196,34 @@
       const den1 = [2, 3, 4, 5, 7][randInt(0, 4)];
       const p1 = randNonZero(-4, 4), q1 = randNonZero(-4, 4);
       const aa = den1 * p1, bb = den1 * q1;
-      const num1 = randInt(1, 6);
-      const rx1 = p1 * num1, rc1 = q1 * num1;
+      let num1;
+      do { num1 = randInt(1, 6); } while (num1 === den1);
+      const neg1 = Math.random() < 0.5;
+      const signedNum1 = neg1 ? -num1 : num1;
+      const rx1 = p1 * signedNum1, rc1 = q1 * signedNum1;
 
       const den2opts = [2, 3, 4, 5, 7].filter(d => d !== den1);
       const den2 = den2opts[randInt(0, den2opts.length - 1)];
       const p2 = randNonZero(-4, 4), q2 = randNonZero(-4, 4);
       const cc = den2 * p2, dd = den2 * q2;
-      const num2 = randInt(1, 6);
+      let num2;
+      do { num2 = randInt(1, 6); } while (num2 === den2);
+      // 2つ目の分数の符号は常に正にする（間の演算子（+/−）が符号を担うため、
+      // 「− −(...)」のような紛らわしい二重符号表示を避ける）。
       const rx2 = p2 * num2, rc2 = q2 * num2;
 
       const opAdd = Math.random() < 0.5;
       const rx = rx1 + (opAdd ? rx2 : -rx2), rc = rc1 + (opAdd ? rc2 : -rc2);
 
-      const fracStr1 = `${num1}/${den1}`, fracStr2 = `${num2}/${den2}`;
-      question = `(${fracStr1})(${fmtPoly(aa, v, bb)}) ${opAdd ? '+' : '−'} (${fracStr2})(${fmtPoly(cc, v, dd)}) = ?`;
-      const frac1Html = `<span class="frac"><span class="num">${num1}</span><span class="den">${den1}</span></span>`;
-      const frac2Html = `<span class="frac"><span class="num">${num2}</span><span class="den">${den2}</span></span>`;
-      questionHtml = `(${frac1Html})(${escHtml(fmtPoly(aa, v, bb))}) ${opAdd ? '+' : '−'} (${frac2Html})(${escHtml(fmtPoly(cc, v, dd))}) = ?`;
+      const fracStr1 = negFracStr(num1, den1, neg1), fracStr2 = negFracStr(num2, den2, false);
+      question = `${fracStr1}(${fmtPoly(aa, v, bb)}) ${opAdd ? '+' : '−'} ${fracStr2}(${fmtPoly(cc, v, dd)}) = ?`;
+      const frac1Html = negFracHtml(num1, den1, neg1), frac2Html = negFracHtml(num2, den2, false);
+      questionHtml = `${frac1Html}(${escHtml(fmtPoly(aa, v, bb))}) ${opAdd ? '+' : '−'} ${frac2Html}(${escHtml(fmtPoly(cc, v, dd))}) = ?`;
       answer = fmtPoly(rx, v, rc);
       choices = polyChoices(rx, v, rc);
       steps = [
-        `①: (${fracStr1})(${fmtPoly(aa, v, bb)}) = ${fmtPoly(rx1, v, rc1)}`,
-        `②: ${opAdd ? '' : '−'}(${fracStr2})(${fmtPoly(cc, v, dd)}) = ${fmtPoly(opAdd?rx2:-rx2, v, opAdd?rc2:-rc2)}`,
+        `①: ${fracStr1}(${fmtPoly(aa, v, bb)}) = ${fmtPoly(rx1, v, rc1)}`,
+        `②: ${opAdd ? '' : '−'}${fracStr2}(${fmtPoly(cc, v, dd)}) = ${fmtPoly(opAdd?rx2:-rx2, v, opAdd?rc2:-rc2)}`,
         `①＋②（同類項をまとめる）: ${answer}`,
       ];
     }
