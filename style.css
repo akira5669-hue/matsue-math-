@@ -443,7 +443,7 @@ h1 {
   border: none;
   color: var(--c-ink-soft);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   padding: 8px 2px;
   cursor: pointer;
@@ -459,7 +459,7 @@ h1 {
 }
 .settings-hint {
   margin: 0 0 12px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-ink-soft);
 }
 .settings-actions {
@@ -492,7 +492,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 17px;
 }
 .settings-item input { accent-color: var(--c-ink); width: 16px; height: 16px; flex-shrink: 0; }
 .cat-label { flex: 1; }
@@ -524,14 +524,6 @@ h1 {
 @keyframes streak-pop {
   from { transform: scale(0.8); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
-}
-
-/* Footer */
-.app-footer {
-  margin-top: 28px;
-  font-size: 12px;
-  color: var(--c-ink-soft);
-  text-align: center;
 }
 
 /* Login */
