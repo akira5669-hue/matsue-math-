@@ -2970,7 +2970,7 @@
   /* ---------- 1次式と数の乗法・除法（中1） ---------- */
 
   function genLinearMul() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 3);
     const v = ['a', 'x', 'n', 'm'][randInt(0, 3)];
     let question, answer, choices, steps;
 
@@ -2991,7 +2991,7 @@
       answer = fmtMono(ans, v);
       choices = monoChoices(ans, v);
       steps = [`係数を割る: ${a} ÷ ${fmtNum(k)} = ${ans}`, `= ${answer}`];
-    } else {
+    } else if (pat === 2) {
       const cs = [
         {a:6,num:2,den:3,neg:false,ans:9},{a:-6,num:2,den:3,neg:false,ans:-9},
         {a:18,num:2,den:3,neg:false,ans:27},{a:18,num:2,den:3,neg:true,ans:-27},
@@ -3012,6 +3012,26 @@
         `= ${answer}`,
       ];
       return { category: 'linearMul', question, questionHtml, answer, choices, steps };
+    } else {
+      // 単項式 × 分数
+      const den = [2, 3, 4, 5][randInt(0, 3)];
+      const num = randInt(1, 9);
+      const neg = Math.random() < 0.5;
+      const q = randNonZero(-6, 6);
+      const a = den * q;
+      const signedNum = neg ? -num : num;
+      const ans = q * signedNum;
+      const fracStr = `(${neg ? '−' : ''}${num}/${den})`;
+      question = `${fmtMono(a, v)} × ${fracStr} = ?`;
+      const fracHtml = `<span class="frac"><span class="num">${neg ? '−' : ''}${num}</span><span class="den">${den}</span></span>`;
+      const questionHtml = `${escHtml(fmtMono(a, v))} × ${fracHtml} = ?`;
+      answer = fmtMono(ans, v);
+      choices = monoChoices(ans, v);
+      steps = [
+        `係数どうしをかける: ${a} × ${neg ? '−' : ''}${num}/${den} = ${ans}`,
+        `= ${answer}`,
+      ];
+      return { category: 'linearMul', question, questionHtml, answer, choices, steps };
     }
     return { category: 'linearMul', question, answer, choices, steps };
   }
@@ -3019,9 +3039,9 @@
   /* ---------- 多項式と数の乗法・除法（中1） ---------- */
 
   function genPolyMul() {
-    const pat = randInt(0, 3);
+    const pat = randInt(0, 6);
     const v = ['a', 'x', 'n', 'm'][randInt(0, 3)];
-    let question, answer, choices, steps;
+    let question, questionHtml, answer, choices, steps;
 
     if (pat === 0) {
       // k(ax+b) 正のk
@@ -3050,7 +3070,7 @@
       answer = fmtPoly(rx, v, rc);
       choices = polyChoices(rx, v, rc);
       steps = [`各項を${k}で割る`, `${a}${v} ÷ ${k} = ${rx}${v}、${b} ÷ ${k} = ${rc}`, `= ${answer}`];
-    } else {
+    } else if (pat === 3) {
       // (ax+b) ÷ 負のk
       const kabs = [2, 3, 4][randInt(0, 2)];
       const a = randNonZero(-6, 6) * kabs, b = randNonZero(-6, 6) * kabs;
@@ -3059,20 +3079,65 @@
       answer = fmtPoly(rx, v, rc);
       choices = polyChoices(rx, v, rc);
       steps = [`各項を${-kabs}で割る`, `${a}${v} ÷ (${-kabs}) = ${rx}${v}、${b} ÷ (${-kabs}) = ${rc}`, `= ${answer}`];
+    } else if (pat === 4) {
+      // (ax+b) × 分数
+      const FD = [2, 3, 4][randInt(0, 2)];
+      const FN = randInt(1, 9);
+      const negFrac = Math.random() < 0.5;
+      const s = negFrac ? -1 : 1;
+      const p = randNonZero(-6, 6), q = randNonZero(-9, 9);
+      const a = FD * p, b = FD * q;
+      const rx = s * FN * p, rc = s * FN * q;
+      const fracStr = `(${negFrac ? '−' : ''}${FN}/${FD})`;
+      question = `(${fmtPoly(a, v, b)}) × ${fracStr} = ?`;
+      const fracHtml = `<span class="frac"><span class="num">${negFrac ? '−' : ''}${FN}</span><span class="den">${FD}</span></span>`;
+      questionHtml = `(${escHtml(fmtPoly(a, v, b))}) × ${fracHtml} = ?`;
+      answer = fmtPoly(rx, v, rc);
+      choices = polyChoices(rx, v, rc);
+      steps = [`各項に${negFrac ? '−' : ''}${FN}/${FD}をかける`, `${a}${v} × (...) = ${rx}${v}、${b} × (...) = ${rc}`, `= ${answer}`];
+    } else if (pat === 5) {
+      // (ax+b) ÷ 分数
+      const FD = [2, 3, 4][randInt(0, 2)];
+      const FN = [2, 3, 5, 7][randInt(0, 3)];
+      const negFrac = Math.random() < 0.5;
+      const s = negFrac ? -1 : 1;
+      const p = randNonZero(-6, 6), q = randNonZero(-9, 9);
+      const a = FN * p, b = FN * q;
+      const rx = s * FD * p, rc = s * FD * q;
+      const fracStr = `(${negFrac ? '−' : ''}${FN}/${FD})`;
+      question = `(${fmtPoly(a, v, b)}) ÷ ${fracStr} = ?`;
+      const fracHtml = `<span class="frac"><span class="num">${negFrac ? '−' : ''}${FN}</span><span class="den">${FD}</span></span>`;
+      questionHtml = `(${escHtml(fmtPoly(a, v, b))}) ÷ ${fracHtml} = ?`;
+      answer = fmtPoly(rx, v, rc);
+      choices = polyChoices(rx, v, rc);
+      steps = [`割り算 → 逆数をかける: ×(${negFrac ? '' : '−'}${FD}/${FN})`, `${a}${v} × (...) = ${rx}${v}、${b} × (...) = ${rc}`, `= ${answer}`];
+    } else {
+      // 分数の形の1次式 × 整数（例: (3x−7)/4 × 8）
+      const den = [2, 3, 4, 5][randInt(0, 3)];
+      const m = randNonZero(-6, 6);
+      const k = den * m;
+      const a = randNonZero(-9, 9), b = randNonZero(-9, 9);
+      const rx = a * m, rc = b * m;
+      question = `(${fmtPoly(a, v, b)})/${den} × ${k} = ?`;
+      const fracHtml = `<span class="frac"><span class="num">${escHtml(fmtPoly(a, v, b))}</span><span class="den">${den}</span></span>`;
+      questionHtml = `${fracHtml} × ${k} = ?`;
+      answer = fmtPoly(rx, v, rc);
+      choices = polyChoices(rx, v, rc);
+      steps = [`先に ${k} ÷ ${den} = ${m} を計算`, `(${fmtPoly(a, v, b)}) × ${m}`, `= ${answer}`];
     }
-    return { category: 'polyMul', question, answer, choices, steps };
+    return { category: 'polyMul', question, questionHtml, answer, choices, steps };
   }
 
   /* ---------- 1次式の加法と減法（中1） ---------- */
 
   function genLinearAddSub() {
-    const pat = randInt(0, 1);
+    const pat = randInt(0, 3);
     const v = ['a', 'x', 'n', 'm'][randInt(0, 3)];
-    const a = randNonZero(-5, 5), b = randNonZero(-9, 9);
-    const c = randNonZero(-5, 5), d = randNonZero(-9, 9);
-    let question, answer, choices, steps;
+    let question, questionHtml, answer, choices, steps;
 
     if (pat === 0) {
+      const a = randNonZero(-5, 5), b = randNonZero(-9, 9);
+      const c = randNonZero(-5, 5), d = randNonZero(-9, 9);
       const rx = a + c, rc = b + d;
       question = `(${fmtPoly(a, v, b)}) + (${fmtPoly(c, v, d)}) = ?`;
       answer = fmtPoly(rx, v, rc);
@@ -3082,7 +3147,9 @@
         `数の項: ${b} + (${d}) = ${rc}`,
         `= ${answer}`,
       ];
-    } else {
+    } else if (pat === 1) {
+      const a = randNonZero(-5, 5), b = randNonZero(-9, 9);
+      const c = randNonZero(-5, 5), d = randNonZero(-9, 9);
       const rx = a - c, rc = b - d;
       question = `(${fmtPoly(a, v, b)}) − (${fmtPoly(c, v, d)}) = ?`;
       answer = fmtPoly(rx, v, rc);
@@ -3093,8 +3160,55 @@
         `数の項: ${b} + (${-d}) = ${rc}`,
         `= ${answer}`,
       ];
+    } else if (pat === 2) {
+      // 分配してから同類項をまとめる: k(ax+b) ± m(cx+d)
+      const k = randNonZero(-8, 8);
+      const aa = randNonZero(-6, 6), bb = randNonZero(-9, 9);
+      const m = randInt(2, 8);
+      const cc = randNonZero(-6, 6), dd = randNonZero(-9, 9);
+      const opAdd = Math.random() < 0.5;
+      const signedM = opAdd ? m : -m;
+      const rx = k * aa + signedM * cc, rc = k * bb + signedM * dd;
+      question = `${k}(${fmtPoly(aa, v, bb)}) ${opAdd ? '+' : '−'} ${m}(${fmtPoly(cc, v, dd)}) = ?`;
+      answer = fmtPoly(rx, v, rc);
+      choices = polyChoices(rx, v, rc);
+      steps = [
+        `①: ${k}(${fmtPoly(aa, v, bb)}) = ${fmtPoly(k*aa, v, k*bb)}`,
+        `②: ${opAdd ? '' : '−'}${m}(${fmtPoly(cc, v, dd)}) = ${fmtPoly(signedM*cc, v, signedM*dd)}`,
+        `①＋②（同類項をまとめる）: ${answer}`,
+      ];
+    } else {
+      // 分数の係数で分配してから同類項をまとめる
+      const den1 = [2, 3, 4, 5, 7][randInt(0, 4)];
+      const p1 = randNonZero(-4, 4), q1 = randNonZero(-4, 4);
+      const aa = den1 * p1, bb = den1 * q1;
+      const num1 = randInt(1, 6);
+      const rx1 = p1 * num1, rc1 = q1 * num1;
+
+      const den2opts = [2, 3, 4, 5, 7].filter(d => d !== den1);
+      const den2 = den2opts[randInt(0, den2opts.length - 1)];
+      const p2 = randNonZero(-4, 4), q2 = randNonZero(-4, 4);
+      const cc = den2 * p2, dd = den2 * q2;
+      const num2 = randInt(1, 6);
+      const rx2 = p2 * num2, rc2 = q2 * num2;
+
+      const opAdd = Math.random() < 0.5;
+      const rx = rx1 + (opAdd ? rx2 : -rx2), rc = rc1 + (opAdd ? rc2 : -rc2);
+
+      const fracStr1 = `${num1}/${den1}`, fracStr2 = `${num2}/${den2}`;
+      question = `(${fracStr1})(${fmtPoly(aa, v, bb)}) ${opAdd ? '+' : '−'} (${fracStr2})(${fmtPoly(cc, v, dd)}) = ?`;
+      const frac1Html = `<span class="frac"><span class="num">${num1}</span><span class="den">${den1}</span></span>`;
+      const frac2Html = `<span class="frac"><span class="num">${num2}</span><span class="den">${den2}</span></span>`;
+      questionHtml = `(${frac1Html})(${escHtml(fmtPoly(aa, v, bb))}) ${opAdd ? '+' : '−'} (${frac2Html})(${escHtml(fmtPoly(cc, v, dd))}) = ?`;
+      answer = fmtPoly(rx, v, rc);
+      choices = polyChoices(rx, v, rc);
+      steps = [
+        `①: (${fracStr1})(${fmtPoly(aa, v, bb)}) = ${fmtPoly(rx1, v, rc1)}`,
+        `②: ${opAdd ? '' : '−'}(${fracStr2})(${fmtPoly(cc, v, dd)}) = ${fmtPoly(opAdd?rx2:-rx2, v, opAdd?rc2:-rc2)}`,
+        `①＋②（同類項をまとめる）: ${answer}`,
+      ];
     }
-    return { category: 'linearAddSub', question, answer, choices, steps };
+    return { category: 'linearAddSub', question, questionHtml, answer, choices, steps };
   }
 
   /* ---------- π選択肢ヘルパー ---------- */
