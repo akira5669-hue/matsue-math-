@@ -130,11 +130,15 @@ function buildAvatarSvg(sel) {
   var blushSvg = '<ellipse cx="33" cy="48" rx="6" ry="3.6" fill="#ff9d9d" opacity="0.45"/>'
     + '<ellipse cx="67" cy="48" rx="6" ry="3.6" fill="#ff9d9d" opacity="0.45"/>';
 
-  var bodySvg = '<path d="M14,120 Q13,86 32,82 Q41,90 50,90 Q59,90 68,82 Q87,86 86,120 Z" fill="' + outfitColor.hex + '" stroke="' + outfitOutline + '" stroke-width="1.6" stroke-linejoin="round"/>'
-    + '<path d="M42,84 Q50,92 58,84 L54,80 Q50,84 46,80 Z" fill="' + collarShade + '"/>';
+  var shouldersSvg = '<path d="M14,120 Q13,86 32,82 Q41,90 50,90 Q59,90 68,82 Q87,86 86,120 Z" fill="' + outfitColor.hex + '" stroke="' + outfitOutline + '" stroke-width="1.6" stroke-linejoin="round"/>';
+  var collarShadeSvg = '<path d="M42,84 Q50,92 58,84 L54,80 Q50,84 46,80 Z" fill="' + collarShade + '"/>';
+
+  var neckSvg = '<rect x="42" y="58" width="16" height="28" rx="6" fill="' + skin.hex + '" stroke="' + skinOutline + '" stroke-width="1.6"/>';
 
   return '<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">'
-    + bodySvg
+    + shouldersSvg
+    + neckSvg
+    + collarShadeSvg
     + '<circle cx="50" cy="42" r="26" fill="' + skin.hex + '" stroke="' + skinOutline + '" stroke-width="1.6"/>'
     + earsSvg
     + blushSvg
