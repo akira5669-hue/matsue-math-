@@ -4052,6 +4052,10 @@
     avatarOutfitColorRow: document.getElementById('avatarOutfitColorRow'),
     avatarSaveBtn: document.getElementById('avatarSaveBtn'),
     avatarSaveMsg: document.getElementById('avatarSaveMsg'),
+    worldToggle: document.getElementById('worldToggle'),
+    worldPanel: document.getElementById('worldPanel'),
+    worldProgress: document.getElementById('worldProgress'),
+    worldStageList: document.getElementById('worldStageList'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -4477,6 +4481,9 @@
     els.rankingPanel.hidden = true;
     els.giftToggle.hidden = !!isGuest;
     els.giftPanel.hidden = true;
+    var session = loadSession();
+    els.worldToggle.hidden = !(session && session.id === '00001');
+    els.worldPanel.hidden = true;
     drawNumberline();
     renderSettings();
     updateStats();
@@ -4832,6 +4839,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -4907,6 +4915,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -4974,6 +4983,7 @@
     els.rankingPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -5034,6 +5044,7 @@
     els.rankingPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
@@ -5105,9 +5116,48 @@
     els.rankingPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
     renderAvatarPanel();
+  }
+
+  /* ---------- 世界制覇（開発中プレビュー、00001のみ表示） ---------- */
+
+  function renderWorldPanel() {
+    if (!Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) {
+      els.worldProgress.textContent = '国データの読み込みに失敗しました。ページを再読み込みしてください。';
+      return;
+    }
+    var total = WORLD_DATA.length;
+    var count = Math.max(0, Math.min(total, Math.floor(state.level / 10)));
+    els.worldProgress.textContent = count >= total
+      ? '🎉 ' + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
+      : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + ((count + 1) * 10) + 'で制覇）';
+    els.worldStageList.innerHTML = WORLD_STAGES.map(function (stage) {
+      var countries = WORLD_DATA.filter(function (c) { return c.stage === stage.id; });
+      var chips = countries.map(function (c) {
+        var unlocked = c.code <= count;
+        return '<span class="world-chip ' + (unlocked ? 'is-unlocked' : 'is-locked') + '">'
+          + (unlocked ? c.code + '. ' + c.name : '？？？') + '</span>';
+      }).join('');
+      return '<div class="world-stage-block"><p class="world-stage-title">' + stage.name + '</p>'
+        + '<p class="world-stage-desc">' + stage.desc + '</p>'
+        + '<div class="world-country-grid">' + chips + '</div></div>';
+    }).join('');
+  }
+
+  function toggleWorld() {
+    var isHidden = els.worldPanel.hasAttribute('hidden');
+    if (!isHidden) { els.worldPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+
+    els.worldPanel.removeAttribute('hidden');
+    renderWorldPanel();
   }
 
   function handleAvatarSave() {
@@ -5161,6 +5211,7 @@
   els.giftToggle.addEventListener('click', toggleGift);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
+  els.worldToggle.addEventListener('click', toggleWorld);
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
 
   var existingSession = loadSession();

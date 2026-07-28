@@ -184,6 +184,7 @@
         <button id="historyToggle" class="ghost-btn" type="button">学習記録</button>
         <button id="prefectureToggle" class="ghost-btn" type="button">🗾都道府県制覇</button>
         <button id="avatarToggle" class="ghost-btn" type="button">🎨アバター作成</button>
+        <button id="worldToggle" class="ghost-btn" type="button" hidden>🌍世界制覇（開発中）</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
       </div>
     </section>
@@ -222,6 +223,13 @@
       <p class="prefecture-progress" id="prefectureProgress">読み込み中…</p>
       <div class="prefecture-map-wrap" id="prefectureMapWrap"></div>
       <div class="prefecture-list" id="prefectureList"></div>
+    </section>
+
+    <section class="world-panel" id="worldPanel" hidden>
+      <h3 class="history-title">🌍 世界制覇を目指せ！！（開発中プレビュー）</h3>
+      <p class="history-summary">レベルが10上がるごとに、世界の国を1つずつ制覇していくよ！（全100ヵ国）</p>
+      <p class="world-progress" id="worldProgress">読み込み中…</p>
+      <div class="world-stage-list" id="worldStageList"></div>
     </section>
 
     <section class="avatar-panel" id="avatarPanel" hidden>
@@ -346,6 +354,7 @@
 
 <script src="japan-map-data.js"></script>
 <script src="avatar-data.js"></script>
+<script src="world-data.js"></script>
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

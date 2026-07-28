@@ -981,6 +981,63 @@ h1 {
   animation: win-pop 0.35s ease;
 }
 
+/* World conquest (dev preview, admin-only) */
+.world-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.world-progress {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-positive);
+}
+.world-stage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.world-stage-block {
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.world-stage-title {
+  font-size: 13px;
+  font-weight: 900;
+  margin: 0 0 2px;
+}
+.world-stage-desc {
+  font-size: 11px;
+  color: var(--c-ink-soft);
+  margin: 0 0 8px;
+}
+.world-country-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.world-chip {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  white-space: nowrap;
+}
+.world-chip.is-unlocked {
+  background: var(--c-positive-soft);
+  color: var(--c-positive);
+  border-color: var(--c-positive);
+  font-weight: 700;
+}
+.world-chip.is-locked {
+  color: var(--c-ink-soft);
+  opacity: 0.5;
+}
+
 /* アバター作成 */
 .avatar-panel {
   background: var(--c-surface);
