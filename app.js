@@ -2942,8 +2942,36 @@
     return `<svg width="118" height="105" viewBox="0 0 118 105" style="display:block;margin:0 auto 8px"><path d="${d}" fill="none" stroke="#1c2127" stroke-width="1.5"/>${extra}</svg>`;
   }
 
+  const VERT_PAIR = { a: 'c', b: 'd', c: 'a', d: 'b' };
+  const CORRESPONDING_PAIR = { a: 'e', b: 'f', c: 'g', d: 'h', e: 'a', f: 'b', g: 'c', h: 'd' };
+  const ALTERNATE_PAIR = { c: 'e', d: 'f', e: 'c', f: 'd' };
+
+  function mkVerticalAnglesSvg(givenLabel, theta) {
+    const pos = { a: [35, 25], b: [78, 25], c: [78, 78], d: [35, 78] };
+    const parts = Object.keys(pos).map(k => {
+      const [x, y] = pos[k];
+      const txt = k === givenLabel ? `${k}=${theta}°` : k;
+      const color = k === givenLabel ? '#c23b2e' : '#1c2127';
+      return `<text x="${x}" y="${y}" font-size="13" font-weight="bold" fill="${color}" text-anchor="middle">${txt}</text>`;
+    }).join('');
+    return `<svg width="115" height="100" viewBox="0 0 115 100" style="display:block;margin:0 auto 8px"><line x1="8" y1="50" x2="106" y2="50" stroke="#1c2127" stroke-width="1.5"/><line x1="25" y1="15" x2="89" y2="85" stroke="#1c2127" stroke-width="1.5"/>${parts}</svg>`;
+  }
+
+  function mkParallelTransversalSvg(givenLabel, theta, targetLabel) {
+    const topPos = { a: [30, 18], b: [66, 18], c: [66, 42], d: [30, 42] };
+    const botPos = { e: [54, 58], f: [90, 58], g: [90, 82], h: [54, 82] };
+    const allPos = Object.assign({}, topPos, botPos);
+    const parts = Object.keys(allPos).map(k => {
+      const [x, y] = allPos[k];
+      const txt = k === givenLabel ? `${k}=${theta}°` : k;
+      const color = k === givenLabel ? '#c23b2e' : (k === targetLabel ? '#2563eb' : '#1c2127');
+      return `<text x="${x}" y="${y}" font-size="12" font-weight="bold" fill="${color}" text-anchor="middle">${txt}</text>`;
+    }).join('');
+    return `<svg width="130" height="105" viewBox="0 0 130 105" style="display:block;margin:0 auto 8px"><line x1="8" y1="30" x2="118" y2="30" stroke="#1c2127" stroke-width="1.5"/><line x1="8" y1="70" x2="118" y2="70" stroke="#1c2127" stroke-width="1.5"/><line x1="30" y1="0" x2="90" y2="100" stroke="#1c2127" stroke-width="1.5"/><text x="122" y="34" font-size="12" fill="#1c2127">l</text><text x="122" y="74" font-size="12" fill="#1c2127">m</text>${parts}</svg>`;
+  }
+
   function genAngle() {
-    const pat = randInt(0, 7);
+    const pat = randInt(0, 10);
     let question, questionHtml, answer, steps, wrongs;
     if (pat === 0) {
       const a = randInt(30, 80), b = randInt(20, Math.min(80, 170 - a));
@@ -2995,7 +3023,7 @@
       steps = [`外角の和 = 360°`, `辺の数 = 360 ÷ ${ext} = ${n}（${kanjiDigit(n)}角形）`];
       answer = n; wrongs = [n - 1, n + 1, n + 2];
       questionHtml = mkPolySvg(n, true) + `<span style="display:block">${question}</span>`;
-    } else {
+    } else if (pat === 7) {
       const base = randInt(20, 79), top = 180 - 2 * base;
       const askTop = Math.random() < 0.5;
       if (askTop) {
@@ -3009,6 +3037,38 @@
         answer = base; wrongs = [top, 180 - base, base + 10];
         questionHtml = `<svg width="115" height="100" viewBox="0 0 115 100" style="display:block;margin:0 auto 8px"><path d="M57,10 L8,86 L106,86 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="29.1" y1="45.8" x2="35.9" y2="50.2" stroke="#1c2127" stroke-width="1.5"/><line x1="78.1" y1="50.2" x2="84.9" y2="45.8" stroke="#1c2127" stroke-width="1.5"/><text x="50" y="32" font-size="13" font-weight="bold" fill="#1c2127" text-anchor="middle">${top}°</text><text x="20" y="78" font-size="13" font-weight="bold" fill="#c23b2e">x</text><text x="76" y="78" font-size="13" font-weight="bold" fill="#c23b2e">x</text></svg><span style="display:block">${question}</span>`;
       }
+    } else if (pat === 8) {
+      // 対頂角
+      const givenLabel = ['a', 'b', 'c', 'd'][randInt(0, 3)];
+      const targetLabel = VERT_PAIR[givenLabel];
+      const theta = randInt(20, 160);
+      question = `右の図で、∠${givenLabel} = ${theta}° のとき、∠${givenLabel}の対頂角 ∠${targetLabel} の大きさは？`;
+      answer = theta;
+      wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
+      steps = [`対頂角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
+      questionHtml = mkVerticalAnglesSvg(givenLabel, theta) + `<span style="display:block">${question}</span>`;
+    } else if (pat === 9) {
+      // 同位角（平行線）
+      const labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+      const givenLabel = labels[randInt(0, labels.length - 1)];
+      const targetLabel = CORRESPONDING_PAIR[givenLabel];
+      const theta = randInt(20, 160);
+      question = `下の図で、l ∥ m のとき、∠${givenLabel} = ${theta}° です。∠${givenLabel}の同位角 ∠${targetLabel} の大きさは？`;
+      answer = theta;
+      wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
+      steps = [`l ∥ m のとき、同位角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
+      questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question}</span>`;
+    } else {
+      // 錯角（平行線、内側の角どうし）
+      const labels = ['c', 'd', 'e', 'f'];
+      const givenLabel = labels[randInt(0, labels.length - 1)];
+      const targetLabel = ALTERNATE_PAIR[givenLabel];
+      const theta = randInt(20, 160);
+      question = `下の図で、l ∥ m のとき、∠${givenLabel} = ${theta}° です。∠${givenLabel}の錯角 ∠${targetLabel} の大きさは？`;
+      answer = theta;
+      wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
+      steps = [`l ∥ m のとき、錯角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
+      questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question}</span>`;
     }
     return { category: 'angle', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
   }
