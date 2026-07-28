@@ -3743,6 +3743,12 @@
         defeat: '君が勉強することを諦めても、僕は応援することを諦めない。',
       },
     },
+    hikizaru: {
+      id: 'hikizaru', name: 'ひきザル', img: 'images/hikizaru.png',
+      lines: {
+        defeat: 'ヒキッ！ここまで来れたのは、迷いを一つずつ「引き算」してきたからだね。400レベル達成、おめでとう！',
+      },
+    },
     smile: {
       id: 'smile', name: 'ほほえみAKR', img: 'images/smile_akr.png',
       lines: {
@@ -4185,7 +4191,7 @@
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
 
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-      state.rareType = (leveledUp && newLevel === 100) ? 'thinker' : rollRareType();
+      state.rareType = (leveledUp && newLevel === 100) ? 'thinker' : (leveledUp && newLevel === 400) ? 'hikizaru' : rollRareType();
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).then(function (res) {
@@ -4215,6 +4221,7 @@
         : wasRareType === 'smile' ? ('<span class="rare-badge">😊レア撃破！+' + SMILE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'nekoda' ? '<span class="rare-badge">🐈レア撃破！🐈</span>'
         : wasRareType === 'warisu' ? ('<span class="rare-badge">🐿️レア撃破！+' + WARISU_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
