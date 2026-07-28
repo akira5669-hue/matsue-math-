@@ -3749,23 +3749,35 @@
         miss: 'バファリンの半分は優しさ、AKRの半分は…採点の厳しさでできている笑',
       },
     },
+    nekoda: {
+      id: 'nekoda', name: 'ネコダ', emoji: '🐈',
+      lines: {
+        appear: 'にゃ〜ん。1問でも間違えたら、すぐ逃げちゃうにゃ！',
+        defeat: 'にゃーん！やるにゃね！ネコのシャーペンをあげるにゃ🐈',
+        miss: 'あちゃ〜、逃げちゃったにゃ…',
+      },
+    },
   };
   const RARE_CHANCE_ZOMBIE = 0.08;
   const RARE_CHANCE_SANTA = 1 / 30;
   const RARE_CHANCE_SMILE = 1 / 30;
+  const RARE_CHANCE_NEKODA = 1 / 20;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
+  const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
     { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
+    { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
   ];
   function rollRareType() {
     const r = Math.random();
     if (r < RARE_CHANCE_SANTA) return 'santa';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE) return 'zombie';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE) return 'smile';
+    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA) return 'nekoda';
     return null;
   }
   function currentEnemyDisplay(st) {
@@ -4087,9 +4099,15 @@
         missLineHtml = `<div class="enemy-quote-banner">${enemyBeforeMiss.lines.miss}</div>`;
       }
       const santaFled = state.rareType === 'santa';
+      const nekodaFled = state.rareType === 'nekoda';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = rollRareType();
+        saveGameState(state);
+      } else if (nekodaFled) {
+        missLineHtml += `<div class="enemy-quote-banner">🐈💨 ネコダは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = rollRareType();
         saveGameState(state);
@@ -4140,6 +4158,9 @@
       } else if (wasRareType === 'smile' && !state.items.includes(SPECIAL_ITEM_SMILE_MASK)) {
         state.items.push(SPECIAL_ITEM_SMILE_MASK);
         itemGainedHtml = '<div class="item-gain-banner">😊🎭 スペシャルアイテム「ほほえみの仮面」を手に入れた！😊🎭</div>';
+      } else if (wasRareType === 'nekoda' && !state.items.includes(SPECIAL_ITEM_CAT_PENCIL)) {
+        state.items.push(SPECIAL_ITEM_CAT_PENCIL);
+        itemGainedHtml = '<div class="item-gain-banner">🐈✏️ スペシャルアイテム「ネコのシャーペン」を手に入れた！🐈✏️</div>';
       }
 
       const prevPrefectureCount = state.prefectureCount;
@@ -4175,6 +4196,7 @@
         : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
         : wasRareType === 'thinker' ? '<span class="rare-badge">🤔レベル100記念撃破！🤔</span>'
         : wasRareType === 'smile' ? ('<span class="rare-badge">😊レア撃破！+' + SMILE_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'nekoda' ? '<span class="rare-badge">🐈レア撃破！🐈</span>'
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
