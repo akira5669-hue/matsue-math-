@@ -2230,13 +2230,13 @@
     const a = (aTenths / 10).toFixed(1);
     const b = (bTenths / 10).toFixed(1);
     const resultTenths = isAdd ? aTenths + bTenths : aTenths - bTenths;
-    const answer = (resultTenths / 10).toFixed(1);
+    const answer = trimTrailingZeros((resultTenths / 10).toFixed(1));
     const question = `${a} ${isAdd ? '+' : '−'} ${b} = ?`;
     const candidates = [
-      (Math.max(0, resultTenths - 10) / 10).toFixed(1),
-      ((resultTenths + 10) / 10).toFixed(1),
+      trimTrailingZeros((Math.max(0, resultTenths - 10) / 10).toFixed(1)),
+      trimTrailingZeros(((resultTenths + 10) / 10).toFixed(1)),
       `${Math.round(resultTenths / 10)}`,
-      (Math.abs(aTenths - bTenths) / 10).toFixed(1),
+      trimTrailingZeros((Math.abs(aTenths - bTenths) / 10).toFixed(1)),
     ];
     const steps = [`小数点をそろえて計算する`, `${a} ${isAdd ? '+' : '−'} ${b} = ${answer}`];
     return { category: 'decAddSub4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
@@ -2295,10 +2295,10 @@
     let question, answer, candidates, wrongs;
     if (pat === 0) {
       const mm = randInt(2, 99);
-      const cmStr = (mm / 10).toFixed(1);
+      const cmStr = trimTrailingZeros((mm / 10).toFixed(1));
       question = `${mm} mm は 何 cm ？`;
       answer = cmStr;
-      candidates = [`${mm}`, ((mm + 10) / 10).toFixed(1), (Math.max(1, mm - 10) / 10).toFixed(1), (mm / 100).toFixed(2)];
+      candidates = [`${mm}`, trimTrailingZeros(((mm + 10) / 10).toFixed(1)), trimTrailingZeros((Math.max(1, mm - 10) / 10).toFixed(1)), (mm / 100).toFixed(2)];
       return { category: 'unit4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`1cm = 10mm なので ÷10`, `${mm} ÷ 10 = ${cmStr} cm`] };
     } else if (pat === 1) {
       const cm = randInt(1, 99);
@@ -2307,10 +2307,10 @@
       return { category: 'unit4', question: `${cm} cm は 何 mm ？`, answer, choices: buildChoices(answer, wrongs), steps: [`1cm = 10mm なので ×10`, `${cm} × 10 = ${answer} mm`] };
     } else if (pat === 2) {
       const g = randInt(1, 49) * 100;
-      const kgStr = (g / 1000).toFixed(1);
+      const kgStr = trimTrailingZeros((g / 1000).toFixed(1));
       question = `${g} g は 何 kg ？`;
       answer = kgStr;
-      candidates = [`${g}`, ((g + 1000) / 1000).toFixed(1), (Math.max(100, g - 1000) / 1000).toFixed(1), (g / 100).toFixed(1)];
+      candidates = [`${g}`, trimTrailingZeros(((g + 1000) / 1000).toFixed(1)), trimTrailingZeros((Math.max(100, g - 1000) / 1000).toFixed(1)), trimTrailingZeros((g / 100).toFixed(1))];
       return { category: 'unit4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`1000g = 1kg なので ÷1000`, `${g} ÷ 1000 = ${kgStr} kg`] };
     } else if (pat === 3) {
       const kgTenths = randInt(1, 99);
