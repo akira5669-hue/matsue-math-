@@ -1331,7 +1331,7 @@
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
   function genFourOps4() {
-    const pattern = randInt(0, 3);
+    const pattern = randInt(0, 6);
     let question, answer, wrongs, steps;
 
     if (pattern === 0) {
@@ -1356,7 +1356,7 @@
       question = `${a} + ${b} ÷ ${c} = ?`;
       wrongs = [(a + b) / c, a + b - c, a * q];
       steps = [`÷ を先に計算: ${b} ÷ ${c} = ${q}`, `= ${a} + ${q} = ${answer}`];
-    } else {
+    } else if (pattern === 3) {
       const a = randInt(2, 20), b = randInt(2, 20), c = randInt(2, 9);
       const useMinus = a > b && Math.random() < 0.5;
       const inner = useMinus ? a - b : a + b;
@@ -1365,6 +1365,40 @@
       const wrongMisreadNoParen = useMinus ? a - b * c : a + b * c;
       wrongs = [wrongMisreadNoParen, inner + c, a * c + (useMinus ? -b : b)];
       steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${inner}`, `= ${inner} × ${c} = ${answer}`];
+    } else if (pattern === 4) {
+      // (a±b) ÷ c ＝きれいに割り切れるよう内側の値を先に作る
+      const c = randInt(2, 9), q = randInt(2, 9);
+      const inner = c * q;
+      const useMinus = Math.random() < 0.5;
+      let a, b;
+      if (useMinus) { b = randInt(1, 15); a = inner + b; } else { b = randInt(1, inner - 1); a = inner - b; }
+      answer = q;
+      question = `(${a} ${useMinus ? '−' : '+'} ${b}) ÷ ${c} = ?`;
+      const wrongMisreadNoParen = useMinus ? a - b / c : a + b / c;
+      wrongs = [wrongMisreadNoParen, inner - c, inner * c];
+      steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${inner}`, `= ${inner} ÷ ${c} = ${answer}`];
+    } else if (pattern === 5) {
+      // c × (a±b)：かっこが右側にくる形
+      const a = randInt(2, 20), b = randInt(2, 20), c = randInt(2, 9);
+      const useMinus = a > b && Math.random() < 0.5;
+      const inner = useMinus ? a - b : a + b;
+      answer = c * inner;
+      question = `${c} × (${a} ${useMinus ? '−' : '+'} ${b}) = ?`;
+      const wrongMisreadNoParen = useMinus ? c * a - b : c * a + b;
+      wrongs = [wrongMisreadNoParen, inner + c, c * a + (useMinus ? -b : b)];
+      steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${inner}`, `= ${c} × ${inner} = ${answer}`];
+    } else {
+      // c ÷ (a±b)：かっこの中がわり算の相手になる形
+      const q = randInt(2, 9), innerVal = randInt(2, 9);
+      const c = q * innerVal;
+      const useMinus = Math.random() < 0.5;
+      let a, b;
+      if (useMinus) { b = randInt(1, 15); a = innerVal + b; } else { b = randInt(1, innerVal - 1); a = innerVal - b; }
+      answer = q;
+      question = `${c} ÷ (${a} ${useMinus ? '−' : '+'} ${b}) = ?`;
+      const wrongMisreadNoParen = useMinus ? c / a - b : c / a + b;
+      wrongs = [wrongMisreadNoParen, c - innerVal, c * innerVal];
+      steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${innerVal}`, `= ${c} ÷ ${innerVal} = ${answer}`];
     }
 
     wrongs = wrongs.map(Math.round);
