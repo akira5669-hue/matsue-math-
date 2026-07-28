@@ -3750,11 +3750,19 @@
       },
     },
     nekoda: {
-      id: 'nekoda', name: 'ネコダ', emoji: '🐈',
+      id: 'nekoda', name: 'ネコダ', img: 'images/nekoda.png',
       lines: {
         appear: 'にゃ〜ん。1問でも間違えたら、すぐ逃げちゃうにゃ！',
         defeat: 'にゃーん！やるにゃね！ネコのシャーペンをあげるにゃ🐈',
         miss: 'あちゃ〜、逃げちゃったにゃ…',
+      },
+    },
+    warisu: {
+      id: 'warisu', name: 'わりーリス', img: 'images/waririsu.png',
+      lines: {
+        appear: '割り算は得意だけど、1問間違えたらすぐ逃げちゃうよ！',
+        defeat: 'よくやったね！ボーナスMPをあげるよ！',
+        miss: 'あ、逃げられた…また今度ね！',
       },
     },
   };
@@ -3762,8 +3770,10 @@
   const RARE_CHANCE_SANTA = 1 / 30;
   const RARE_CHANCE_SMILE = 1 / 30;
   const RARE_CHANCE_NEKODA = 1 / 20;
+  const RARE_CHANCE_WARISU = 1 / 50;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
+  const WARISU_BONUS_MP = 30;
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
@@ -3778,6 +3788,7 @@
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE) return 'zombie';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE) return 'smile';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA) return 'nekoda';
+    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU) return 'warisu';
     return null;
   }
   function currentEnemyDisplay(st) {
@@ -4100,6 +4111,7 @@
       }
       const santaFled = state.rareType === 'santa';
       const nekodaFled = state.rareType === 'nekoda';
+      const warisuFled = state.rareType === 'warisu';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -4108,6 +4120,11 @@
         saveGameState(state);
       } else if (nekodaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🐈💨 ネコダは逃げてしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = rollRareType();
+        saveGameState(state);
+      } else if (warisuFled) {
+        missLineHtml += `<div class="enemy-quote-banner">🐿️💨 わりーリスは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = rollRareType();
         saveGameState(state);
@@ -4139,7 +4156,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : 0;
       const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
@@ -4197,6 +4214,7 @@
         : wasRareType === 'thinker' ? '<span class="rare-badge">🤔レベル100記念撃破！🤔</span>'
         : wasRareType === 'smile' ? ('<span class="rare-badge">😊レア撃破！+' + SMILE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'nekoda' ? '<span class="rare-badge">🐈レア撃破！🐈</span>'
+        : wasRareType === 'warisu' ? ('<span class="rare-badge">🐿️レア撃破！+' + WARISU_BONUS_MP + 'MP✨</span>')
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
