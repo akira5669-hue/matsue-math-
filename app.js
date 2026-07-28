@@ -1331,7 +1331,7 @@
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
   function genFourOps4() {
-    const pattern = randInt(0, 6);
+    const pattern = randInt(0, 8);
     let question, answer, wrongs, steps;
 
     if (pattern === 0) {
@@ -1387,7 +1387,7 @@
       const wrongMisreadNoParen = useMinus ? c * a - b : c * a + b;
       wrongs = [wrongMisreadNoParen, inner + c, c * a + (useMinus ? -b : b)];
       steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${inner}`, `= ${c} × ${inner} = ${answer}`];
-    } else {
+    } else if (pattern === 6) {
       // c ÷ (a±b)：かっこの中がわり算の相手になる形
       const q = randInt(2, 9), innerVal = randInt(2, 9);
       const c = q * innerVal;
@@ -1399,6 +1399,27 @@
       const wrongMisreadNoParen = useMinus ? c / a - b : c / a + b;
       wrongs = [wrongMisreadNoParen, c - innerVal, c * innerVal];
       steps = [`かっこの中を先に計算: ${a} ${useMinus ? '−' : '+'} ${b} = ${innerVal}`, `= ${c} ÷ ${innerVal} = ${answer}`];
+    } else if (pattern === 7) {
+      // a ÷ b + c × d：かっこなしで、わり算とかけ算の2つの項を+でつなぐ
+      const b = randInt(2, 9), q = randInt(2, 9), a = b * q;
+      const c = randInt(2, 9), d = randInt(2, 9);
+      const cd = c * d;
+      answer = q + cd;
+      question = `${a} ÷ ${b} + ${c} × ${d} = ?`;
+      wrongs = [(a / b + c) * d, a / (b + c) * d, q * d + c];
+      steps = [`÷ と × をそれぞれ先に計算: ${a} ÷ ${b} = ${q}、${c} × ${d} = ${cd}`, `= ${q} + ${cd} = ${answer}`];
+    } else {
+      // a ± b × c ÷ d：かっこなしで、×÷のチェーンを先に計算してから+-
+      const d = randInt(2, 9), m = randInt(2, 9), b = randInt(2, 9);
+      const c = d * m;
+      const chain = b * m;
+      const useMinus = Math.random() < 0.5;
+      const a = useMinus ? chain + randInt(10, 500) : randInt(1, 50);
+      answer = useMinus ? a - chain : a + chain;
+      question = `${a} ${useMinus ? '−' : '+'} ${b} × ${c} ÷ ${d} = ?`;
+      const wrongLeftToRight = useMinus ? (a - b) * c / d : (a + b) * c / d;
+      wrongs = [wrongLeftToRight, useMinus ? a - b * c : a + b * c, chain + (useMinus ? -d : d)];
+      steps = [`× と ÷ を先に計算: ${b} × ${c} = ${b * c}、${b * c} ÷ ${d} = ${chain}`, `= ${a} ${useMinus ? '−' : '+'} ${chain} = ${answer}`];
     }
 
     wrongs = wrongs.map(Math.round);
