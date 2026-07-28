@@ -1024,6 +1024,7 @@
 
     // ---------- 小5 ----------
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
+    { id: 'fracReduceConvert5', label: '約分・通分（小5）',                gen: genFracReduceConvert5, defaultOff: true },
     { id: 'decMul5',         label: '小数のかけ算（小5）',                 gen: genDecMul5,         defaultOff: true },
     { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
@@ -1406,6 +1407,49 @@
       `= ${answer}`,
     ];
     return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+  }
+
+  // 約分・通分（小5）
+  function genFracReduceConvert5() {
+    const pat = randInt(0, 2);
+    if (pat === 0) {
+      // 約分：既約分数を作り、それを何倍かした分数を約分できるか問う
+      let n0, d0;
+      do {
+        d0 = randInt(2, 9);
+        n0 = randInt(1, d0 - 1);
+      } while (gcdFrac(n0, d0) !== 1);
+      const g = randInt(2, 5);
+      const n = n0 * g, d = d0 * g;
+      const question = `${n}/${d} を約分すると？`;
+      const answer = `${n0}/${d0}`;
+      const candidates = [`${n}/${d}`, `${n0 * 2}/${d0 * 2}`, `${n0}/${d0 + 1}`];
+      const steps = [`${n}と${d}の最大公約数は ${g}`, `${n}/${d} = ${n0}/${d0}`];
+      return { category: 'fracReduceConvert5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+    } else if (pat === 1) {
+      // 通分：共通の分母（最小公倍数）を求める
+      let d1, d2;
+      do { d1 = randInt(2, 9); d2 = randInt(2, 9); } while (d1 === d2 || d2 % d1 === 0 || d1 % d2 === 0);
+      const n1 = randInt(1, d1 - 1), n2 = randInt(1, d2 - 1);
+      const L = lcmFrac(d1, d2);
+      const question = `${n1}/${d1} と ${n2}/${d2} を通分するとき、共通の分母はいくつ？`;
+      const answer = L;
+      const wrongs = [d1 * d2, L + Math.max(d1, d2), Math.max(d1, d2)].filter(v => v !== L);
+      const steps = [`${d1}と${d2}の最小公倍数を求める`, `= ${L}`];
+      return { category: 'fracReduceConvert5', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 通分：同じ大きさの分数に直す
+      let d1, d2;
+      do { d1 = randInt(2, 9); d2 = randInt(2, 9); } while (d1 === d2 || d2 % d1 === 0 || d1 % d2 === 0);
+      const n1 = randInt(1, d1 - 1);
+      const L = lcmFrac(d1, d2);
+      const mult = L / d1;
+      const question = `${n1}/${d1} を、分母が${L}の分数に直すと？`;
+      const answer = `${n1 * mult}/${L}`;
+      const candidates = [`${n1}/${L}`, `${n1 * mult + 1}/${L}`, `${(n1 * mult) - mult}/${L}`].filter(c => parseInt(c.split('/')[0], 10) !== 0);
+      const steps = [`${d1} × ${mult} = ${L} なので、分子と分母に${mult}をかける`, `${n1} × ${mult} = ${n1 * mult}`, `= ${n1 * mult}/${L}`];
+      return { category: 'fracReduceConvert5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+    }
   }
 
   // 小数のかけ算（小5、小数×小数）
