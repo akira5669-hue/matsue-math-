@@ -1,7 +1,7 @@
 /**
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
- * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount | avatar
+ * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount | avatar | apologyBonusGrantedAt
  *
  * prefectureCount: 「47都道府県制覇」特別企画。10問正解（敵を倒す）ごとに
  * 北海道(1)から沖縄(47)の順で1県ずつ達成数が増える。既存の生徒は列が
@@ -10,6 +10,11 @@
  * avatar: レベル300以上またはMP10000以上で作成できるアバターの選択内容
  * （{hair,face,skin,hairColor,outfitColor} のJSON文字列）。未作成の生徒は
  * 空欄のままなのでnullとして扱う。
+ *
+ * apologyBonusGrantedAt: ログアウト時にアイテムが消える不具合のお詫びとして、
+ * APOLOGY_BONUS_START〜APOLOGY_BONUS_ENDの期間中に一度だけ全員へ
+ * APOLOGY_BONUS_MPを付与する。付与済みの生徒にはこの列へ日時が入り、
+ * 同じ生徒に二重付与しないようにする。
  *
  * 5日以上ログインが無かった場合、次回ログイン時にMPは0にリセットされる
  * （経験値・レベルはリセットされない）。
@@ -194,7 +199,8 @@ function findStudentRow_(sheet, id) {
         rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
         grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
         level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null,
-        prefectureCount: Number(data[i][11]) || 0, avatar: data[i][12] || null
+        prefectureCount: Number(data[i][11]) || 0, avatar: data[i][12] || null,
+        apologyBonusGrantedAt: data[i][13] || null
       };
     }
   }
@@ -346,8 +352,12 @@ function handleLogin_(ctx, body) {
   }
   ctx.students.getRange(row.rowIndex, 11).setValue(now);
 
+  row.points = points;
+  var apologyBonusAwarded = maybeGrantApologyBonus_(ctx, row);
+  points = row.points;
+
   var pendingItems = takePendingItemGrants_(ctx, id);
-  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems };
+  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded };
 }
 
 // 管理者(ID 00001)が、ログアウト時のバグ等でアイテム・レアキャラ図鑑を失った生徒に
@@ -434,8 +444,9 @@ function handleGetPoints_(ctx, body) {
   if (!id) return { ok: false, error: 'missing_id' };
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
+  var apologyBonusAwarded = maybeGrantApologyBonus_(ctx, row);
   var pendingItems = takePendingItemGrants_(ctx, id);
-  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems };
+  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded };
 }
 
 function handleLog_(ctx, body) {
@@ -464,6 +475,26 @@ var PREFECTURE_BONUS_MP = 300;
 var PREFECTURE_BONUS_DEADLINE = '2026-08-31';
 function isWithinPrefectureBonusWindow_() {
   return dateKeyTokyo_(new Date()) <= PREFECTURE_BONUS_DEADLINE;
+}
+
+// ログアウト時にアイテム・レアキャラ図鑑が消えてしまう不具合のお詫びとして、
+// 2026-07-31〜2026-08-02の間にログイン/再開した生徒へ一度だけ+300MPを付与する。
+var APOLOGY_BONUS_MP = 300;
+var APOLOGY_BONUS_START = '2026-07-31';
+var APOLOGY_BONUS_END = '2026-08-02';
+function isWithinApologyBonusWindow_() {
+  var today = dateKeyTokyo_(new Date());
+  return today >= APOLOGY_BONUS_START && today <= APOLOGY_BONUS_END;
+}
+// 対象の生徒行にまだ未付与なら+300MPして記録し、実際に付与した額(0 or 300)を返す。
+function maybeGrantApologyBonus_(ctx, row) {
+  if (!isWithinApologyBonusWindow_() || row.apologyBonusGrantedAt) return 0;
+  var newPoints = row.points + APOLOGY_BONUS_MP;
+  ctx.students.getRange(row.rowIndex, 7).setValue(newPoints);
+  ctx.students.getRange(row.rowIndex, 14).setValue(new Date());
+  row.points = newPoints;
+  row.apologyBonusGrantedAt = new Date();
+  return APOLOGY_BONUS_MP;
 }
 
 function handleHistory_(ctx, body) {

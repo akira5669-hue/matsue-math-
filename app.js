@@ -4228,6 +4228,7 @@
     rankingTabPoints: document.getElementById('rankingTabPoints'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
+    apologyBanner: document.getElementById('apologyBanner'),
     missionBanner: document.getElementById('missionBanner'),
     missionDesc: document.getElementById('missionDesc'),
     missionProgressBarInner: document.getElementById('missionProgressBarInner'),
@@ -4407,6 +4408,19 @@
       state.missionClaimed = false;
       saveGameState(state);
     }
+  }
+
+  // ログアウト時にアイテムが消える不具合のお詫び告知バナー。
+  // サーバー側の300MP付与ウィンドウ(APOLOGY_BONUS_START〜END in Code.gs)と同じ期間だけ表示する。
+  const APOLOGY_BANNER_START = '2026-07-31';
+  const APOLOGY_BANNER_END = '2026-08-02';
+  function isWithinApologyBannerWindow() {
+    const today = todayKey();
+    return today >= APOLOGY_BANNER_START && today <= APOLOGY_BANNER_END;
+  }
+  function renderApologyBanner() {
+    const session = loadSession();
+    els.apologyBanner.hidden = !(session && session.id && isWithinApologyBannerWindow());
   }
 
   function renderMissionBanner() {
@@ -4726,6 +4740,7 @@
     renderSettings();
     updateStats();
     updateGameHud();
+    renderApologyBanner();
     renderMissionBanner();
     nextQuestion();
     initInstallBanner();
@@ -4770,6 +4785,11 @@
         state.missionClaimed = !!progress.missionClaimed;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
+      // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
+      // reconcilePointsを呼ぶ前にローカルへ加算しておく。先にreconcileしてしまうと、
+      // 端末側の方が(付与前の値で)大きかった場合、その古い値がサーバーへ書き戻されて
+      // 付与直後のMPを消してしまう恐れがある。
+      if (res.apologyBonusAwarded > 0) state.points += res.apologyBonusAwarded;
       state.enabled = new Set(defaultEnabledIds(res.grade));
       state.avatar = parseAvatarJson(res.avatar);
       saveGameState(state);
@@ -4777,6 +4797,9 @@
       showApp(res.name, false);
       if (res.pointsReset) {
         window.alert('5日以上ログインが無かったため、MPが0にリセットされました。レベル・EXPはそのまま残っています。');
+      }
+      if (res.apologyBonusAwarded > 0) {
+        window.alert(`🙇 お詫びとして+${res.apologyBonusAwarded}MPを付与しました！`);
       }
     }).catch(function () {
       els.loginSubmit.disabled = false;
@@ -5638,12 +5661,16 @@
           var parsedAvatar = parseAvatarJson(res.avatar);
           if (parsedAvatar) { state.avatar = parsedAvatar; saveGameState(state); updateUserAvatarBadge(); }
           if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
+          if (res.apologyBonusAwarded > 0) { state.points += res.apologyBonusAwarded; saveGameState(state); }
           reconcilePoints(existingSession.id, res.points, res.level, res.exp, res.prefectureCount);
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);
             state.enabled = new Set(defaultEnabledIds(res.grade));
             renderSettings();
+          }
+          if (res.apologyBonusAwarded > 0) {
+            window.alert(`🙇 お詫びとして+${res.apologyBonusAwarded}MPを付与しました！`);
           }
         }
       }).catch(function () { });
