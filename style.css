@@ -995,6 +995,20 @@ h1 {
   font-weight: 700;
   color: var(--c-positive);
 }
+.world-map-wrap {
+  max-width: 100%;
+  margin: 0 auto 16px;
+  overflow-x: auto;
+}
+.world-map-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.world-map-wrap svg .is-unlocked-country,
+.world-map-wrap svg .is-unlocked-country .landxx {
+  fill: var(--c-positive) !important;
+}
 .world-stage-list {
   display: flex;
   flex-direction: column;
@@ -1028,10 +1042,24 @@ h1 {
   white-space: nowrap;
 }
 .world-chip.is-unlocked {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  border-radius: 8px;
   background: var(--c-positive-soft);
-  color: var(--c-positive);
   border-color: var(--c-positive);
+  padding: 5px 9px;
+  white-space: normal;
+}
+.world-chip-name {
+  color: var(--c-positive);
   font-weight: 700;
+}
+.world-chip-trivia {
+  color: var(--c-ink-soft);
+  font-size: 10px;
+  font-weight: 500;
 }
 .world-chip.is-locked {
   color: var(--c-ink-soft);

@@ -4115,6 +4115,7 @@
     worldToggle: document.getElementById('worldToggle'),
     worldPanel: document.getElementById('worldPanel'),
     worldProgress: document.getElementById('worldProgress'),
+    worldMapWrap: document.getElementById('worldMapWrap'),
     worldStageList: document.getElementById('worldStageList'),
   };
 
@@ -5184,6 +5185,36 @@
 
   /* ---------- 世界制覇（開発中プレビュー、00001のみ表示） ---------- */
 
+  var worldMapInjected = false;
+  var worldMapLoading = false;
+
+  function applyWorldMapColors(count) {
+    if (!worldMapInjected) return;
+    WORLD_DATA.forEach(function (c) {
+      if (!c.iso) return;
+      var el = els.worldMapWrap.querySelector('[id="' + c.iso + '"]');
+      if (!el) return;
+      el.classList.toggle('is-unlocked-country', c.code <= count);
+    });
+  }
+
+  function ensureWorldMapLoaded(count) {
+    if (worldMapInjected || worldMapLoading) return;
+    worldMapLoading = true;
+    try {
+      fetch('world-map.svg').then(function (res) { return res.text(); }).then(function (svgText) {
+        els.worldMapWrap.innerHTML = svgText;
+        worldMapInjected = true;
+        worldMapLoading = false;
+        applyWorldMapColors(count);
+      }).catch(function () {
+        worldMapLoading = false;
+      });
+    } catch (e) {
+      worldMapLoading = false;
+    }
+  }
+
   function renderWorldPanel() {
     if (!Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) {
       els.worldProgress.textContent = '国データの読み込みに失敗しました。ページを再読み込みしてください。';
@@ -5194,12 +5225,15 @@
     els.worldProgress.textContent = count >= total
       ? '🎉 ' + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
       : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + ((count + 1) * 10) + 'で制覇）';
+    ensureWorldMapLoaded(count);
+    applyWorldMapColors(count);
     els.worldStageList.innerHTML = WORLD_STAGES.map(function (stage) {
       var countries = WORLD_DATA.filter(function (c) { return c.stage === stage.id; });
       var chips = countries.map(function (c) {
         var unlocked = c.code <= count;
-        return '<span class="world-chip ' + (unlocked ? 'is-unlocked' : 'is-locked') + '">'
-          + (unlocked ? c.code + '. ' + c.name : '？？？') + '</span>';
+        if (!unlocked) return '<span class="world-chip is-locked">？？？</span>';
+        return '<span class="world-chip is-unlocked"><span class="world-chip-name">' + c.code + '. ' + c.name + '</span>'
+          + (c.trivia ? '<span class="world-chip-trivia">' + c.trivia + '</span>' : '') + '</span>';
       }).join('');
       return '<div class="world-stage-block"><p class="world-stage-title">' + stage.name + '</p>'
         + '<p class="world-stage-desc">' + stage.desc + '</p>'
