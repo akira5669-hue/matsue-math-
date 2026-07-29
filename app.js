@@ -4137,6 +4137,16 @@
     thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
   };
 
+  // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
+  // 確実にするため、セッションが既にある場合はページ読み込み時に一度、無条件で
+  // 書き込んでおく。これが無いと「再ログインではなく既存セッションの再読み込みで、
+  // かつポイント等に差分が無い」場合にsaveGameStateが一度も呼ばれないまま
+  // ログアウトされ、アイテム等が新ストレージへ移行される前に消えてしまう。
+  (function migrateAccountProgressOnLoad_() {
+    var sess = loadSession();
+    if (sess && sess.id) saveGameState(state);
+  })();
+
   const els = {
     questionText: document.getElementById('questionText'),
     categoryTag: document.getElementById('categoryTag'),
