@@ -618,6 +618,7 @@ function hashStr_(s) {
 }
 
 function nicknameForId_(id) {
+  if (String(id).trim() === '00001') return '先生';
   var h = hashStr_(String(id));
   var prefix = NICK_PREFIX_[h % NICK_PREFIX_.length];
   var suffix = NICK_SUFFIX_[Math.floor(h / NICK_PREFIX_.length) % NICK_SUFFIX_.length];
