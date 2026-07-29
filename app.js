@@ -81,6 +81,7 @@
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
+        rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
       }));
     } catch (e) { }
   }
@@ -4041,6 +4042,8 @@
     const idx = Math.max(0, Math.floor(level / 50) - 1) % WARLORD_IDS.length;
     return WARLORD_IDS[idx];
   }
+  const RARE_COLLECTION_THRESHOLD = 5;
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu'].concat(WARLORD_IDS);
   const RARE_CHANCE_ZOMBIE = 0.08;
   const RARE_CHANCE_SANTA = 1 / 30;
   const RARE_CHANCE_SMILE = 1 / 30;
@@ -4098,6 +4101,8 @@
     missionCategoryId: (savedGame && savedGame.missionCategoryId) || null,
     missionCorrect: (savedGame && Number(savedGame.missionCorrect)) || 0,
     missionClaimed: !!(savedGame && savedGame.missionClaimed),
+    rareDefeats: (savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {},
+    rareCollected: (savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : [],
   };
 
   const els = {
@@ -4171,6 +4176,7 @@
     historyRecent: document.getElementById('historyRecent'),
     historyBadges: document.getElementById('historyBadges'),
     historyItems: document.getElementById('historyItems'),
+    historyRareCollection: document.getElementById('historyRareCollection'),
     rankingToggle: document.getElementById('rankingToggle'),
     rankingPanel: document.getElementById('rankingPanel'),
     rankingTabExp: document.getElementById('rankingTabExp'),
@@ -4460,6 +4466,15 @@
         itemGainedHtml = '<div class="item-gain-banner">🐈✏️ スペシャルアイテム「ネコのシャーペン」を手に入れた！🐈✏️</div>';
       }
 
+      let collectionGainedHtml = '';
+      if (wasRareType && RARE_COLLECTIBLE_IDS.indexOf(wasRareType) !== -1) {
+        state.rareDefeats[wasRareType] = (state.rareDefeats[wasRareType] || 0) + 1;
+        if (state.rareDefeats[wasRareType] >= RARE_COLLECTION_THRESHOLD && state.rareCollected.indexOf(wasRareType) === -1) {
+          state.rareCollected.push(wasRareType);
+          collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${RARE_TYPES[wasRareType].name}」を${RARE_COLLECTION_THRESHOLD}回撃破してコレクションにゲットした！🎖️</div>`;
+        }
+      }
+
       const prevPrefectureCount = state.prefectureCount;
       state.prefectureCount = Math.min(47, state.prefectureCount + 1);
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
@@ -4505,7 +4520,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${prefectureGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -4963,8 +4978,22 @@
     }).join('');
   }
 
+  function renderRareCollection() {
+    els.historyRareCollection.innerHTML = RARE_COLLECTIBLE_IDS.map(function (id) {
+      const rt = RARE_TYPES[id];
+      const collected = state.rareCollected.indexOf(id) !== -1;
+      const cls = 'badge-item' + (collected ? ' badge-earned' : ' badge-locked');
+      const iconHtml = rt.img ? `<img src="${rt.img}" alt="">` : (rt.emoji || '❓');
+      const label = collected ? rt.name : '？？？';
+      const defeatCount = state.rareDefeats[id] || 0;
+      const title = collected ? rt.name : `あと${Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount)}回撃破でゲット`;
+      return `<div class="${cls}" title="${title}"><span class="badge-icon">${iconHtml}</span><span class="badge-name">${label}</span></div>`;
+    }).join('');
+  }
+
   function renderHistory(data) {
     renderBadges(data);
+    renderRareCollection();
     renderItems();
     els.historySummary.textContent = data.total === 0
       ? 'まだ記録がありません。問題を解いてみましょう。'
@@ -5006,6 +5035,7 @@
     els.historyCalendar.innerHTML = '';
     els.historyBadges.innerHTML = '';
     els.historyItems.innerHTML = '';
+    els.historyRareCollection.innerHTML = '';
     els.historyCats.innerHTML = '';
     els.historyRecent.innerHTML = '';
 

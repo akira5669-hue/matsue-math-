@@ -877,6 +877,25 @@ h1 {
   background: #fff8e1;
   border: 1.5px solid #f5b400;
 }
+.history-section-label {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--c-ink-soft);
+  margin: 0 0 8px;
+}
+.history-rare-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.history-rare-collection .badge-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 50%;
+}
 .badge-item.badge-locked {
   background: var(--c-bg);
   border: 1px solid var(--c-line);
