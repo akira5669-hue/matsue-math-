@@ -228,6 +228,8 @@ function doPost(e) {
     return jsonOut_(handleRanking_(ctx, body));
   } else if (action === 'rankingToday') {
     return jsonOut_(handleRankingToday_(ctx, body));
+  } else if (action === 'rankingPoints') {
+    return jsonOut_(handleRankingPoints_(ctx, body));
   } else if (action === 'registerGuardian') {
     return jsonOut_(handleRegisterGuardian_(ctx, body));
   } else if (action === 'giftCatalog') {
@@ -575,6 +577,26 @@ function handleRankingToday_(ctx, body) {
   });
   var top = rows.slice(0, 50).map(function (r, idx) {
     return { rank: idx + 1, nickname: nicknameForId_(r.id), correct: r.correct, total: r.total, grade: r.grade, isYou: r.id === myId };
+  });
+  return { ok: true, ranking: top };
+}
+
+// MP(ポイント)ランキング。生徒の実際のMP保有量を見せるため、閲覧はID 00001のみに限定する。
+function handleRankingPoints_(ctx, body) {
+  var myId = String(body.id || '').trim();
+  if (myId !== '00001') return { ok: false, error: 'forbidden' };
+  var data = ctx.students.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var id = String(data[i][0]).trim();
+    if (!id) continue;
+    var points = Number(data[i][6]) || 0;
+    var grade = data[i][5] || '';
+    rows.push({ id: id, points: points, grade: grade });
+  }
+  rows.sort(function (a, b) { return b.points - a.points; });
+  var top = rows.slice(0, 50).map(function (r, idx) {
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, grade: r.grade, isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
