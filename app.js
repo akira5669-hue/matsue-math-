@@ -81,7 +81,7 @@
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
-        rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
+        rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
       }));
     } catch (e) { }
   }
@@ -4103,6 +4103,7 @@
     missionClaimed: !!(savedGame && savedGame.missionClaimed),
     rareDefeats: (savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {},
     rareCollected: (savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : [],
+    thinkerMilestone: (savedGame && savedGame.thinkerMilestone) || null,
   };
 
   const els = {
@@ -4473,6 +4474,10 @@
           state.rareCollected.push(wasRareType);
           collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${RARE_TYPES[wasRareType].name}」を${RARE_COLLECTION_THRESHOLD}回撃破してコレクションにゲットした！🎖️</div>`;
         }
+      } else if (wasRareType === 'thinker' && state.thinkerMilestone === 1000 && state.rareCollected.indexOf('thinker') === -1) {
+        // 考えるAKRはレベル100では記念撃破のみだが、レベル1000で再登場したときに倒すとコレクションにゲットできる
+        state.rareCollected.push('thinker');
+        collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${RARE_TYPES.thinker.name}」をコレクションにゲットした！🎖️</div>`;
       }
 
       const prevPrefectureCount = state.prefectureCount;
@@ -4480,10 +4485,12 @@
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
 
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-      state.rareType = (leveledUp && newLevel === 100) ? 'thinker'
-        : (leveledUp && newLevel === 400) ? 'hikizaru'
-        : (leveledUp && newLevel % 50 === 0) ? warlordForLevel(newLevel)
-        : rollRareType();
+      state.thinkerMilestone = null;
+      if (leveledUp && newLevel === 100) { state.rareType = 'thinker'; state.thinkerMilestone = 100; }
+      else if (leveledUp && newLevel === 1000) { state.rareType = 'thinker'; state.thinkerMilestone = 1000; }
+      else if (leveledUp && newLevel === 400) { state.rareType = 'hikizaru'; }
+      else if (leveledUp && newLevel % 50 === 0) { state.rareType = warlordForLevel(newLevel); }
+      else { state.rareType = rollRareType(); }
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).then(function (res) {
@@ -4979,14 +4986,22 @@
   }
 
   function renderRareCollection() {
-    els.historyRareCollection.innerHTML = RARE_COLLECTIBLE_IDS.map(function (id) {
+    const ids = RARE_COLLECTIBLE_IDS.concat(['thinker']);
+    els.historyRareCollection.innerHTML = ids.map(function (id) {
       const rt = RARE_TYPES[id];
       const collected = state.rareCollected.indexOf(id) !== -1;
       const cls = 'badge-item' + (collected ? ' badge-earned' : ' badge-locked');
       const iconHtml = rt.img ? `<img src="${rt.img}" alt="">` : (rt.emoji || '❓');
       const label = collected ? rt.name : '？？？';
-      const defeatCount = state.rareDefeats[id] || 0;
-      const title = collected ? rt.name : `あと${Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount)}回撃破でゲット`;
+      let title;
+      if (collected) {
+        title = rt.name;
+      } else if (id === 'thinker') {
+        title = 'レベル1000で登場する考えるAKRを倒すとゲット';
+      } else {
+        const defeatCount = state.rareDefeats[id] || 0;
+        title = `あと${Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount)}回撃破でゲット`;
+      }
       return `<div class="${cls}" title="${title}"><span class="badge-icon">${iconHtml}</span><span class="badge-name">${label}</span></div>`;
     }).join('');
   }
