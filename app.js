@@ -5286,13 +5286,17 @@
   var worldMapInjected = false;
   var worldMapLoading = false;
 
+  var WORLD_REGION_KEYS = ['eastasia', 'europe', 'africa', 'middleeast', 'southasia', 'oceania', 'northamerica', 'southamerica', 'pacific'];
+
   function applyWorldMapColors(count) {
     if (!worldMapInjected) return;
     WORLD_DATA.forEach(function (c) {
       if (!c.iso) return;
       var el = els.worldMapWrap.querySelector('[id="' + c.iso + '"]');
       if (!el) return;
-      el.classList.toggle('is-unlocked-country', c.code <= count);
+      var unlocked = c.code <= count;
+      el.classList.toggle('is-unlocked-country', unlocked);
+      WORLD_REGION_KEYS.forEach(function (r) { el.classList.toggle('region-' + r, unlocked && c.region === r); });
     });
   }
 

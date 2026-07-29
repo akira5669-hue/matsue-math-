@@ -1009,6 +1009,15 @@ h1 {
 .world-map-wrap svg .is-unlocked-country .landxx {
   fill: var(--c-positive) !important;
 }
+.world-map-wrap svg .region-eastasia,     .world-map-wrap svg .region-eastasia .landxx     { fill: #4fa8e8 !important; }
+.world-map-wrap svg .region-europe,       .world-map-wrap svg .region-europe .landxx       { fill: #52c97a !important; }
+.world-map-wrap svg .region-africa,       .world-map-wrap svg .region-africa .landxx       { fill: #f2b84b !important; }
+.world-map-wrap svg .region-middleeast,   .world-map-wrap svg .region-middleeast .landxx   { fill: #f2794b !important; }
+.world-map-wrap svg .region-southasia,    .world-map-wrap svg .region-southasia .landxx    { fill: #e8567a !important; }
+.world-map-wrap svg .region-oceania,      .world-map-wrap svg .region-oceania .landxx      { fill: #34c6c6 !important; }
+.world-map-wrap svg .region-northamerica, .world-map-wrap svg .region-northamerica .landxx { fill: #a45fe0 !important; }
+.world-map-wrap svg .region-southamerica, .world-map-wrap svg .region-southamerica .landxx { fill: #e85fa0 !important; }
+.world-map-wrap svg .region-pacific,      .world-map-wrap svg .region-pacific .landxx      { fill: #8fd14f !important; }
 .world-stage-list {
   display: flex;
   flex-direction: column;
