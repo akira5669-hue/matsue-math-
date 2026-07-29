@@ -985,6 +985,7 @@
     { id: 'linearAddSub',label: '1次式の加減（中1）',             gen: genLinearAddSub },
     { id: 'planeFigure', label: '平面図形（中1）',                gen: genPlaneFigure },
     { id: 'solidFigure', label: '空間図形（中1）',                gen: genSolidFigure },
+    { id: 'construction', label: '作図（中1）',                    gen: genConstruction },
 
     // ---------- 中2 ----------
     { id: 'simul',      label: '連立方程式（中2）',               gen: genSimul },
@@ -3611,6 +3612,65 @@
       steps = [`台形の面積 = (上底+下底) × 高さ ÷ 2 = (${a}+${b}) × ${h} ÷ 2 = ${ans} cm²`];
     }
     return { category: 'planeFigure', question, questionHtml, answer, choices, steps };
+  }
+
+  /* ---------- 作図（中1） ---------- */
+
+  function genConstruction() {
+    const pat = randInt(0, 5);
+    let question, questionHtml, answer, choices, steps;
+    if (pat === 0) {
+      // 垂直二等分線の性質：2点から等距離
+      const x = randInt(3, 15);
+      question = `線分ABの垂直二等分線上に点Pがある。PA = ${x} cm のとき、PBの長さは？`;
+      answer = x;
+      choices = buildChoices(x, [x * 2, Math.max(1, Math.floor(x / 2)), x + 3]);
+      steps = [`垂直二等分線上の点は、2点A、Bから等しい距離にある`, `PB = PA = ${x} cm`];
+      questionHtml = `<svg width="130" height="100" viewBox="0 0 130 100" style="display:block;margin:0 auto 8px"><line x1="20" y1="60" x2="90" y2="60" stroke="#1c2127" stroke-width="1.5"/><line x1="55" y1="15" x2="55" y2="88" stroke="#1c2127" stroke-width="1.5"/><circle cx="55" cy="25" r="2.5" fill="#c23b2e"/><line x1="55" y1="25" x2="20" y2="60" stroke="#c23b2e" stroke-width="1.2" stroke-dasharray="3,2"/><line x1="55" y1="25" x2="90" y2="60" stroke="#c23b2e" stroke-width="1.2" stroke-dasharray="3,2"/><text x="12" y="72" font-size="12" font-weight="bold">A</text><text x="94" y="72" font-size="12" font-weight="bold">B</text><text x="60" y="20" font-size="12" font-weight="bold" fill="#c23b2e">P</text></svg><span style="display:block">${question}</span>`;
+    } else if (pat === 1) {
+      // 角の二等分線の性質：2辺から等距離
+      const x = randInt(3, 15);
+      question = `∠AOBの二等分線上に点Pがある。Pから辺OAまでの距離が ${x} cm のとき、辺OBまでの距離は？`;
+      answer = x;
+      choices = buildChoices(x, [x * 2, Math.max(1, Math.floor(x / 2)), x + 3]);
+      steps = [`角の二等分線上の点は、2辺から等しい距離にある`, `辺OBまでの距離 = ${x} cm`];
+      questionHtml = `<svg width="130" height="100" viewBox="0 0 130 100" style="display:block;margin:0 auto 8px"><line x1="15" y1="88" x2="118" y2="88" stroke="#1c2127" stroke-width="1.5"/><line x1="15" y1="88" x2="60" y2="12" stroke="#1c2127" stroke-width="1.5"/><line x1="15" y1="88" x2="98" y2="38" stroke="#c23b2e" stroke-width="1.5"/><circle cx="66" cy="55" r="2.5" fill="#c23b2e"/><line x1="66" y1="55" x2="66" y2="88" stroke="#555" stroke-width="1" stroke-dasharray="3,2"/><line x1="66" y1="55" x2="45.5" y2="43.5" stroke="#555" stroke-width="1" stroke-dasharray="3,2"/><text x="6" y="94" font-size="11" font-weight="bold">O</text><text x="62" y="10" font-size="11" font-weight="bold">A</text><text x="102" y="40" font-size="11" font-weight="bold">B</text><text x="70" y="52" font-size="11" font-weight="bold" fill="#c23b2e">P</text></svg><span style="display:block">${question}</span>`;
+    } else if (pat === 2) {
+      // 用語：2点から等距離の軌跡
+      question = `2点A、Bから等しい距離にある点の集まり（軌跡）を表す直線を何というか？`;
+      answer = '垂直二等分線';
+      choices = shuffle(['垂直二等分線', '角の二等分線', '円の接線', '中線']);
+      steps = [`2点から等距離にある点は、その2点を結ぶ線分の垂直二等分線上にある`];
+    } else if (pat === 3) {
+      // 用語：角の2辺から等距離の軌跡
+      question = `∠AOBの2辺から等しい距離にある点の集まり（軌跡）を表す直線を何というか？`;
+      answer = '角の二等分線';
+      choices = shuffle(['角の二等分線', '垂直二等分線', '垂線', '対角線']);
+      steps = [`角の2辺から等距離にある点は、その角の二等分線上にある`];
+    } else if (pat === 4) {
+      // 垂直二等分線の作図手順（最初の操作）
+      question = `線分ABの垂直二等分線を作図するとき、最初に行う操作として正しいのは？`;
+      answer = '点A、Bをそれぞれ中心として、等しい半径の円（弧）をかく';
+      choices = shuffle([
+        '点A、Bをそれぞれ中心として、等しい半径の円（弧）をかく',
+        '分度器でABの角度を測る',
+        '点Aを中心として、Bを通る円をかく',
+        '定規でABを2倍に延長する',
+      ]);
+      steps = [`A、Bを中心に等しい半径の弧をかき、2つの交点を通る直線をひくと垂直二等分線になる`];
+    } else {
+      // 角の二等分線の作図手順（最初の操作）
+      question = `∠AOBの二等分線を作図するとき、最初に行う操作として正しいのは？`;
+      answer = '点Oを中心として円（弧）をかき、辺OA、OBとの交点をつくる';
+      choices = shuffle([
+        '点Oを中心として円（弧）をかき、辺OA、OBとの交点をつくる',
+        '分度器で∠AOBの大きさを測る',
+        '辺OA、OBの中点をそれぞれ求める',
+        '点Oから辺ABに垂線をひく',
+      ]);
+      steps = [`Oを中心とする弧でOA、OB上に交点をつくり、そこから等しい半径の弧を交わらせて二等分線をひく`];
+    }
+    return { category: 'construction', question, questionHtml, answer, choices, steps };
   }
 
   /* ---------- 空間図形（中1） ---------- */
