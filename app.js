@@ -64,6 +64,25 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
+  // 本日の獲得MP上限(pointsToday/pointsDate)・アイテム・レアキャラ図鑑(rareDefeats/
+  // rareCollected)・考えるAKRの出現状態(thinkerMilestone)は、ログアウト時にmatsue-math-game
+  // ごと消去されると「ログアウトしてまたログインするだけで今日の上限がリセットされてMPが
+  // 無限に増やせてしまう」「アイテムやレアキャラ図鑑が消えてしまう」という不具合になる。
+  // これを防ぐため、これらの値はアカウント(ID)ごとの別キーに保存し、ログアウト操作では
+  // 消さないようにする（アカウント切り替え時の汚染防止のためのclearGameStateとは独立させている）。
+  function accountProgressKey_(id) {
+    return 'matsue-math-progress-' + (id || 'guest');
+  }
+  function loadAccountProgress_(id) {
+    try {
+      var raw = localStorage.getItem(accountProgressKey_(id));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function saveAccountProgress_(id, data) {
+    try { localStorage.setItem(accountProgressKey_(id), JSON.stringify(data)); } catch (e) { }
+  }
+
   function loadGameState() {
     try {
       var raw = localStorage.getItem(GAME_KEY);
@@ -84,6 +103,14 @@
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
       }));
     } catch (e) { }
+    var sess = loadSession();
+    if (sess && sess.id) {
+      saveAccountProgress_(sess.id, {
+        pointsToday: s.pointsToday, pointsDate: s.pointsDate,
+        items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
+        thinkerMilestone: s.thinkerMilestone,
+      });
+    }
   }
 
   /* ---------- 基本ユーティリティ ---------- */
@@ -4077,6 +4104,7 @@
   /* ---------- アプリ状態 ---------- */
 
   const savedGame = loadGameState();
+  const savedProgress = loadAccountProgress_((loadSession() || {}).id);
   const state = {
     total: 0,
     correct: 0,
@@ -4089,11 +4117,14 @@
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
-    pointsToday: (savedGame && savedGame.pointsToday) || 0,
-    pointsDate: (savedGame && savedGame.pointsDate) || null,
+    // pointsToday/pointsDate/items/rareDefeats/rareCollected/thinkerMilestoneは
+    // アカウントごとの別ストレージ(progress)を優先し、まだ無い場合のみ従来の
+    // matsue-math-game側の値を使う(移行用フォールバック)。
+    pointsToday: (savedProgress && savedProgress.pointsToday) || (savedGame && savedGame.pointsToday) || 0,
+    pointsDate: (savedProgress && savedProgress.pointsDate) || (savedGame && savedGame.pointsDate) || null,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
-    items: (savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : [],
+    items: (savedProgress && Array.isArray(savedProgress.items)) ? savedProgress.items.slice() : ((savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : []),
     prefectureCount: Math.max(0, Math.min(47, (savedGame && Number(savedGame.prefectureCount)) || 0)),
     avatar: (savedGame && savedGame.avatar && typeof savedGame.avatar === 'object') ? savedGame.avatar : null,
     missionDate: (savedGame && savedGame.missionDate) || null,
@@ -4101,9 +4132,9 @@
     missionCategoryId: (savedGame && savedGame.missionCategoryId) || null,
     missionCorrect: (savedGame && Number(savedGame.missionCorrect)) || 0,
     missionClaimed: !!(savedGame && savedGame.missionClaimed),
-    rareDefeats: (savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {},
-    rareCollected: (savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : [],
-    thinkerMilestone: (savedGame && savedGame.thinkerMilestone) || null,
+    rareDefeats: (savedProgress && savedProgress.rareDefeats && typeof savedProgress.rareDefeats === 'object') ? Object.assign({}, savedProgress.rareDefeats) : ((savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {}),
+    rareCollected: (savedProgress && Array.isArray(savedProgress.rareCollected)) ? savedProgress.rareCollected.slice() : ((savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : []),
+    thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
   };
 
   const els = {
@@ -4698,6 +4729,15 @@
         return;
       }
       saveSession({ id: id, name: res.name, grade: res.grade });
+      const progress = loadAccountProgress_(id);
+      if (progress) {
+        state.pointsToday = progress.pointsToday || 0;
+        state.pointsDate = progress.pointsDate || null;
+        state.items = Array.isArray(progress.items) ? progress.items.slice() : state.items;
+        state.rareDefeats = (progress.rareDefeats && typeof progress.rareDefeats === 'object') ? Object.assign({}, progress.rareDefeats) : state.rareDefeats;
+        state.rareCollected = Array.isArray(progress.rareCollected) ? progress.rareCollected.slice() : state.rareCollected;
+        state.thinkerMilestone = progress.thinkerMilestone || state.thinkerMilestone;
+      }
       state.enabled = new Set(defaultEnabledIds(res.grade));
       state.avatar = parseAvatarJson(res.avatar);
       saveGameState(state);
