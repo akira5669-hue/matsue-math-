@@ -5319,7 +5319,9 @@
       return;
     }
     var total = WORLD_DATA.length;
-    var count = Math.max(0, Math.min(total, Math.floor(state.level / 10)));
+    // このパネルはID 00001にしか表示されないプレビュー専用のため、実際のレベルに関わらず
+    // 常に「全ヵ国制覇済み」の状態を見せる（実装イメージの確認用）。
+    var count = total;
     els.worldProgress.textContent = count >= total
       ? '🎉 ' + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
       : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + ((count + 1) * 10) + 'で制覇）';
