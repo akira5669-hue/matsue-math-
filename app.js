@@ -3946,7 +3946,101 @@
         miss: 'あ、逃げられた…また今度ね！',
       },
     },
+    warlord_nobunaga: {
+      id: 'warlord_nobunaga', name: '織田信長', emoji: '🔥', isWarlord: true,
+      lines: {
+        appear: '天下布武！儂に挑む度胸、褒めてつかわす。',
+        defeat: '『鳴かぬなら 殺してしまえ ホトトギス』…実際に言ったかは諸説あるがな。桶狭間の奇襲や長篠の鉄砲隊で、常識を破り続けた男よ。天下布武、覚えておけ！',
+      },
+    },
+    warlord_hideyoshi: {
+      id: 'warlord_hideyoshi', name: '豊臣秀吉', emoji: '🐒', isWarlord: true,
+      lines: {
+        appear: 'サルと呼ばれたこの儂が、天下人になったのだぞ！',
+        defeat: '農民から天下人にまで登り詰めた、この儂の出世物語はすごいだろう？人たらしの秘訣は、いつも相手の気持ちを考えること。太閤検地や刀狩りも、儂の発明だぞ！',
+      },
+    },
+    warlord_ieyasu: {
+      id: 'warlord_ieyasu', name: '徳川家康', emoji: '🐢', isWarlord: true,
+      lines: {
+        appear: '鳴くまで待とう…とは言うが、勝負は待ってやらぬぞ。',
+        defeat: '『鳴かぬなら 鳴くまで待とう ホトトギス』——我慢強さこそ我が武器。関ヶ原の戦いに勝利し、260年続く江戸幕府を開いたのじゃ。',
+      },
+    },
+    warlord_shingen: {
+      id: 'warlord_shingen', name: '武田信玄', emoji: '🐯', isWarlord: true,
+      lines: {
+        appear: '甲斐の虎、参る。風のように速く、山のように動かぬぞ。',
+        defeat: '『風林火山』の旗印のもと、甲斐の虎と恐れられた男よ。上杉謙信とのライバル関係、川中島の戦いは今も語り継がれておる。',
+      },
+    },
+    warlord_kenshin: {
+      id: 'warlord_kenshin', name: '上杉謙信', emoji: '⚡', isWarlord: true,
+      lines: {
+        appear: '軍神と呼ばれし我に、その一問で挑むか。',
+        defeat: '毘沙門天の化身とまで呼ばれた軍神、それが我じゃ。敵に塩を送ったという逸話もあるほど、義を重んじた武将なのだ。',
+      },
+    },
+    warlord_masamune: {
+      id: 'warlord_masamune', name: '伊達政宗', emoji: '🐉', isWarlord: true,
+      lines: {
+        appear: '独眼竜政宗、参上。片目でも見えぬものなどないわ。',
+        defeat: '独眼竜と呼ばれたこの伊達政宗、隻眼でも天下を狙ったのだ！派手な兜と甲冑は「伊達者」の語源にもなったのだぞ。',
+      },
+    },
+    warlord_yukimura: {
+      id: 'warlord_yukimura', name: '真田幸村', emoji: '🔴', isWarlord: true,
+      lines: {
+        appear: '日本一の兵、真田幸村。真っ赤な甲冑、見忘れるなよ。',
+        defeat: '大坂の陣で徳川本陣に迫った、日本一の兵と称えられたこの真田幸村じゃ。真っ赤な甲冑「真田の赤備え」、目に焼き付いたか？',
+      },
+    },
+    warlord_mitsuhide: {
+      id: 'warlord_mitsuhide', name: '明智光秀', emoji: '🌙', isWarlord: true,
+      lines: {
+        appear: '敵は本能寺にあり…お主がその敵かもしれぬな。',
+        defeat: '本能寺の変で主君・信長を討った男、それが儂じゃ。なぜ謀反を起こしたのか、その理由は今も歴史のミステリーなのだよ。',
+      },
+    },
+    warlord_motonari: {
+      id: 'warlord_motonari', name: '毛利元就', emoji: '🏹', isWarlord: true,
+      lines: {
+        appear: '一本の矢では折れても、三本まとまれば折れぬぞ。',
+        defeat: '『一本の矢は折れるが、三本まとめれば折れぬ』——三本の矢の教えを息子たちに残した、それが儂じゃ。中国地方の覇者よ。',
+      },
+    },
+    warlord_ujiyasu: {
+      id: 'warlord_ujiyasu', name: '北条氏康', emoji: '🛡️', isWarlord: true,
+      lines: {
+        appear: '小田原城は難攻不落。お主の挑戦、受けて立とう。',
+        defeat: '小田原城を本拠に、関東に覇を唱えたのがこの北条氏康じゃ。民のための「四公六民」の税制、覚えておけよ。',
+      },
+    },
+    warlord_mitsunari: {
+      id: 'warlord_mitsunari', name: '石田三成', emoji: '📜', isWarlord: true,
+      lines: {
+        appear: '義のために、この石田三成、参る。',
+        defeat: '関ヶ原の戦いで西軍を率いたのが、この石田三成だ。義に厚く、豊臣家への忠義を最後まで貫いたのだぞ。',
+      },
+    },
+    warlord_yoshihiro: {
+      id: 'warlord_yoshihiro', name: '島津義弘', emoji: '🌊', isWarlord: true,
+      lines: {
+        appear: '鬼島津、参る。退くも一つの戦法よ。',
+        defeat: '関ヶ原の戦場のど真ん中を敵陣突破して薩摩に帰った、あの「島津の退き口」の主が儂じゃ。鬼島津と恐れられたわい。',
+      },
+    },
   };
+
+  const WARLORD_IDS = [
+    'warlord_nobunaga', 'warlord_hideyoshi', 'warlord_ieyasu', 'warlord_shingen',
+    'warlord_kenshin', 'warlord_masamune', 'warlord_yukimura', 'warlord_mitsuhide',
+    'warlord_motonari', 'warlord_ujiyasu', 'warlord_mitsunari', 'warlord_yoshihiro',
+  ];
+  function warlordForLevel(level) {
+    const idx = Math.max(0, Math.floor(level / 50) - 1) % WARLORD_IDS.length;
+    return WARLORD_IDS[idx];
+  }
   const RARE_CHANCE_ZOMBIE = 0.08;
   const RARE_CHANCE_SANTA = 1 / 30;
   const RARE_CHANCE_SMILE = 1 / 30;
@@ -4371,7 +4465,10 @@
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
 
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-      state.rareType = (leveledUp && newLevel === 100) ? 'thinker' : (leveledUp && newLevel === 400) ? 'hikizaru' : rollRareType();
+      state.rareType = (leveledUp && newLevel === 100) ? 'thinker'
+        : (leveledUp && newLevel === 400) ? 'hikizaru'
+        : (leveledUp && newLevel % 50 === 0) ? warlordForLevel(newLevel)
+        : rollRareType();
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).then(function (res) {
@@ -4402,6 +4499,7 @@
         : wasRareType === 'nekoda' ? '<span class="rare-badge">🐈レア撃破！🐈</span>'
         : wasRareType === 'warisu' ? ('<span class="rare-badge">🐿️レア撃破！+' + WARISU_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
+        : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
