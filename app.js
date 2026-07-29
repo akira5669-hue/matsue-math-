@@ -5232,8 +5232,18 @@
       var chips = countries.map(function (c) {
         var unlocked = c.code <= count;
         if (!unlocked) return '<span class="world-chip is-locked">？？？</span>';
-        return '<span class="world-chip is-unlocked"><span class="world-chip-name">' + c.code + '. ' + c.name + '</span>'
-          + (c.trivia ? '<span class="world-chip-trivia">' + c.trivia + '</span>' : '') + '</span>';
+        var d = c.details;
+        var detailsHtml = d
+          ? '<div class="world-chip-details">'
+            + '<p><span class="world-chip-detail-label">🌾特産物</span>' + d.specialty + '</p>'
+            + '<p><span class="world-chip-detail-label">📍有名な地名</span>' + d.places + '</p>'
+            + '<p><span class="world-chip-detail-label">🎎文化</span>' + d.culture + '</p>'
+            + '<p><span class="world-chip-detail-label">🏛️遺産</span>' + d.heritage + '</p>'
+            + '</div>'
+          : '';
+        return '<details class="world-chip is-unlocked"><summary><span class="world-chip-name">' + c.code + '. ' + c.name + '</span>'
+          + (c.trivia ? '<span class="world-chip-trivia">' + c.trivia + '</span>' : '') + '</summary>'
+          + detailsHtml + '</details>';
       }).join('');
       return '<div class="world-stage-block"><p class="world-stage-title">' + stage.name + '</p>'
         + '<p class="world-stage-desc">' + stage.desc + '</p>'

@@ -1042,24 +1042,44 @@ h1 {
   white-space: nowrap;
 }
 .world-chip.is-unlocked {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
+  display: block;
   border-radius: 8px;
   background: var(--c-positive-soft);
   border-color: var(--c-positive);
   padding: 5px 9px;
   white-space: normal;
 }
+.world-chip.is-unlocked > summary {
+  cursor: pointer;
+}
 .world-chip-name {
   color: var(--c-positive);
   font-weight: 700;
 }
 .world-chip-trivia {
+  display: block;
   color: var(--c-ink-soft);
   font-size: 10px;
   font-weight: 500;
+  margin-top: 2px;
+}
+.world-chip-details {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--c-positive);
+}
+.world-chip-details p {
+  margin: 3px 0 0;
+  font-size: 10px;
+  color: var(--c-ink-soft);
+}
+.world-chip-details p:first-child {
+  margin-top: 0;
+}
+.world-chip-detail-label {
+  font-weight: 700;
+  color: var(--c-positive);
+  margin-right: 4px;
 }
 .world-chip.is-locked {
   color: var(--c-ink-soft);
