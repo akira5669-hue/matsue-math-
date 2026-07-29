@@ -4412,8 +4412,8 @@
 
   // ログアウト時にアイテムが消える不具合のお詫び告知バナー。
   // サーバー側の300MP付与ウィンドウ(APOLOGY_BONUS_START〜END in Code.gs)と同じ期間だけ表示する。
-  const APOLOGY_BANNER_START = '2026-07-31';
-  const APOLOGY_BANNER_END = '2026-08-02';
+  const APOLOGY_BANNER_START = '2026-07-30';
+  const APOLOGY_BANNER_END = '2026-08-01';
   function isWithinApologyBannerWindow() {
     const today = todayKey();
     return today >= APOLOGY_BANNER_START && today <= APOLOGY_BANNER_END;

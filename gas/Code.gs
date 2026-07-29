@@ -480,8 +480,8 @@ function isWithinPrefectureBonusWindow_() {
 // ログアウト時にアイテム・レアキャラ図鑑が消えてしまう不具合のお詫びとして、
 // 2026-07-31〜2026-08-02の間にログイン/再開した生徒へ一度だけ+300MPを付与する。
 var APOLOGY_BONUS_MP = 300;
-var APOLOGY_BONUS_START = '2026-07-31';
-var APOLOGY_BONUS_END = '2026-08-02';
+var APOLOGY_BONUS_START = '2026-07-30';
+var APOLOGY_BONUS_END = '2026-08-01';
 function isWithinApologyBonusWindow_() {
   var today = dateKeyTokyo_(new Date());
   return today >= APOLOGY_BONUS_START && today <= APOLOGY_BONUS_END;
