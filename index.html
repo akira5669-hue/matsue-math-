@@ -185,6 +185,7 @@
         <button id="prefectureToggle" class="ghost-btn" type="button">🗾都道府県制覇</button>
         <button id="avatarToggle" class="ghost-btn" type="button">🎨アバター作成</button>
         <button id="worldToggle" class="ghost-btn" type="button" hidden>🌍世界制覇（開発中）</button>
+        <button id="grantToggle" class="ghost-btn" type="button" hidden>🎁アイテム付与</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
       </div>
     </section>
@@ -232,6 +233,27 @@
       <p class="world-progress" id="worldProgress">読み込み中…</p>
       <div class="world-map-wrap" id="worldMapWrap"></div>
       <div class="world-stage-list" id="worldStageList"></div>
+    </section>
+
+    <section class="grant-panel" id="grantPanel" hidden>
+      <h3 class="history-title">🎁 アイテム付与（管理用）</h3>
+      <p class="history-summary">ログアウト時のバグ等でアイテムやレアキャラ図鑑を失った生徒に、次回ログイン時に届くよう付与予約します。</p>
+      <form id="grantForm" class="grant-form">
+        <label class="grant-field">生徒ID
+          <input type="text" id="grantTargetId" placeholder="例: 00104" maxlength="5" required />
+        </label>
+        <fieldset class="grant-items-fieldset">
+          <legend>特別アイテム</legend>
+          <label><input type="checkbox" id="grantFlameSword" value="flameSword" /> 🔥⚔️ 炎の剣</label>
+          <label><input type="checkbox" id="grantSmileMask" value="smileMask" /> 😊🎭 ほほえみの仮面</label>
+          <label><input type="checkbox" id="grantCatPencil" value="catPencil" /> 🐈 ネコのシャーペン</label>
+        </fieldset>
+        <label class="grant-field">その他（レアキャラ図鑑のID、カンマ区切り。例: zombie,santa,warlord_nobunaga,thinker）
+          <input type="text" id="grantOtherIds" placeholder="任意" />
+        </label>
+        <button type="submit" class="primary-btn" id="grantSubmitBtn">付与する</button>
+      </form>
+      <p class="grant-result" id="grantResult"></p>
     </section>
 
     <section class="avatar-panel" id="avatarPanel" hidden>

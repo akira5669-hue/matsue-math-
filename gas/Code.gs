@@ -62,6 +62,7 @@ var GIFT_CATALOG = [
 ];
 
 var GIFTCODES_SHEET = 'GiftCodes';
+var ITEMGRANTS_SHEET = 'ItemGrants';
 var LOW_STOCK_THRESHOLDS = [10, 5];
 
 // 交換受付期間: 5/1〜5/3、12/30〜12/31、1/1（日本時間）
@@ -163,7 +164,18 @@ function getOrInitSheets_() {
     giftCodes.appendRow(['itemId', 'code', 'status', 'usedBy', 'usedAt']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes };
+  // ItemGrants: アイテム・レアキャラ図鑑はクライアント側(localStorage)のみのデータのため、
+  // ログアウト時のバグ等で消えてしまった生徒に、管理者(ID 00001)が個別に付与できるように
+  // する一時保管シート。付与内容は次回ログイン/再開時に一度だけ配布し、配布後は消去する。
+  var itemGrants = ss.getSheetByName(ITEMGRANTS_SHEET);
+  if (!itemGrants) {
+    itemGrants = ss.insertSheet(ITEMGRANTS_SHEET);
+  }
+  if (itemGrants.getLastRow() === 0) {
+    itemGrants.appendRow(['id', 'itemIds', 'grantedAt']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants };
 }
 
 function sha256Hex_(text) {
@@ -230,6 +242,8 @@ function doPost(e) {
     return jsonOut_(handleRankingToday_(ctx, body));
   } else if (action === 'rankingPoints') {
     return jsonOut_(handleRankingPoints_(ctx, body));
+  } else if (action === 'grantItems') {
+    return jsonOut_(handleGrantItems_(ctx, body));
   } else if (action === 'registerGuardian') {
     return jsonOut_(handleRegisterGuardian_(ctx, body));
   } else if (action === 'giftCatalog') {
@@ -332,7 +346,58 @@ function handleLogin_(ctx, body) {
   }
   ctx.students.getRange(row.rowIndex, 11).setValue(now);
 
-  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar };
+  var pendingItems = takePendingItemGrants_(ctx, id);
+  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems };
+}
+
+// 管理者(ID 00001)が、ログアウト時のバグ等でアイテム・レアキャラ図鑑を失った生徒に
+// 個別付与するための一時保管シートから、該当IDの分を取り出して消去する
+// （次回ログイン/再開時に一度だけクライアントへ配布される）。
+function takePendingItemGrants_(ctx, id) {
+  if (!ctx.itemGrants) return [];
+  var data = ctx.itemGrants.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(id).trim()) {
+      var itemIds = String(data[i][1] || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      if (itemIds.length === 0) return [];
+      ctx.itemGrants.deleteRow(i + 1);
+      return itemIds;
+    }
+  }
+  return [];
+}
+
+// 管理者(ID 00001)専用：アイテム・レアキャラ図鑑を指定した生徒に付与予約する。
+function handleGrantItems_(ctx, body) {
+  var callerId = String(body.id || '').trim();
+  if (callerId !== '00001') return { ok: false, error: 'forbidden' };
+
+  var targetId = String(body.targetId || '').trim();
+  var itemIds = Array.isArray(body.itemIds) ? body.itemIds.map(function (s) { return String(s).trim(); }).filter(Boolean) : [];
+  if (!targetId || itemIds.length === 0) return { ok: false, error: 'missing_fields' };
+
+  var targetRow = findStudentRow_(ctx.students, targetId);
+  if (!targetRow) return { ok: false, error: 'not_found' };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var data = ctx.itemGrants.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === targetId) {
+        var existing = String(data[i][1] || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        var merged = existing.concat(itemIds.filter(function (x) { return existing.indexOf(x) === -1; }));
+        ctx.itemGrants.getRange(i + 1, 2, 1, 2).setValues([[merged.join(','), new Date()]]);
+        return { ok: true };
+      }
+    }
+    ctx.itemGrants.appendRow([targetId, itemIds.join(','), new Date()]);
+    var newRow = ctx.itemGrants.getLastRow();
+    ctx.itemGrants.getRange(newRow, 1).setNumberFormat('@').setValue(targetId);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // パスワード再設定：先生がStudentsシートのpasswordHash・salt列を空にした
@@ -369,7 +434,8 @@ function handleGetPoints_(ctx, body) {
   if (!id) return { ok: false, error: 'missing_id' };
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
-  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar };
+  var pendingItems = takePendingItemGrants_(ctx, id);
+  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems };
 }
 
 function handleLog_(ctx, body) {

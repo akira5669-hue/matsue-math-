@@ -1114,6 +1114,65 @@ h1 {
   opacity: 0.5;
 }
 
+/* アイテム付与（管理用、admin-only） */
+.grant-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.grant-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+}
+.grant-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.grant-field input[type="text"] {
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 10px;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+}
+.grant-items-fieldset {
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.grant-items-fieldset legend {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  padding: 0 4px;
+}
+.grant-items-fieldset label {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.grant-result {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.grant-result.is-error { color: var(--c-incorrect); }
+.grant-result.is-success { color: var(--c-positive); }
+
 /* アバター作成 */
 .avatar-panel {
   background: var(--c-surface);

@@ -109,6 +109,8 @@
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
+        missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
+        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
       });
     }
   }
@@ -4120,18 +4122,18 @@
     // pointsToday/pointsDate/items/rareDefeats/rareCollected/thinkerMilestoneは
     // アカウントごとの別ストレージ(progress)を優先し、まだ無い場合のみ従来の
     // matsue-math-game側の値を使う(移行用フォールバック)。
-    pointsToday: (savedProgress && savedProgress.pointsToday) || (savedGame && savedGame.pointsToday) || 0,
+    pointsToday: savedProgress ? (Number(savedProgress.pointsToday) || 0) : ((savedGame && Number(savedGame.pointsToday)) || 0),
     pointsDate: (savedProgress && savedProgress.pointsDate) || (savedGame && savedGame.pointsDate) || null,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedProgress && Array.isArray(savedProgress.items)) ? savedProgress.items.slice() : ((savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : []),
     prefectureCount: Math.max(0, Math.min(47, (savedGame && Number(savedGame.prefectureCount)) || 0)),
     avatar: (savedGame && savedGame.avatar && typeof savedGame.avatar === 'object') ? savedGame.avatar : null,
-    missionDate: (savedGame && savedGame.missionDate) || null,
-    missionGrade: (savedGame && savedGame.missionGrade) || null,
-    missionCategoryId: (savedGame && savedGame.missionCategoryId) || null,
-    missionCorrect: (savedGame && Number(savedGame.missionCorrect)) || 0,
-    missionClaimed: !!(savedGame && savedGame.missionClaimed),
+    missionDate: (savedProgress && savedProgress.missionDate) || (savedGame && savedGame.missionDate) || null,
+    missionGrade: (savedProgress && savedProgress.missionGrade) || (savedGame && savedGame.missionGrade) || null,
+    missionCategoryId: (savedProgress && savedProgress.missionCategoryId) || (savedGame && savedGame.missionCategoryId) || null,
+    missionCorrect: savedProgress ? (Number(savedProgress.missionCorrect) || 0) : ((savedGame && Number(savedGame.missionCorrect)) || 0),
+    missionClaimed: (savedProgress ? !!savedProgress.missionClaimed : !!(savedGame && savedGame.missionClaimed)),
     rareDefeats: (savedProgress && savedProgress.rareDefeats && typeof savedProgress.rareDefeats === 'object') ? Object.assign({}, savedProgress.rareDefeats) : ((savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {}),
     rareCollected: (savedProgress && Array.isArray(savedProgress.rareCollected)) ? savedProgress.rareCollected.slice() : ((savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : []),
     thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
@@ -4260,6 +4262,16 @@
     worldProgress: document.getElementById('worldProgress'),
     worldMapWrap: document.getElementById('worldMapWrap'),
     worldStageList: document.getElementById('worldStageList'),
+    grantToggle: document.getElementById('grantToggle'),
+    grantPanel: document.getElementById('grantPanel'),
+    grantForm: document.getElementById('grantForm'),
+    grantTargetId: document.getElementById('grantTargetId'),
+    grantFlameSword: document.getElementById('grantFlameSword'),
+    grantSmileMask: document.getElementById('grantSmileMask'),
+    grantCatPencil: document.getElementById('grantCatPencil'),
+    grantOtherIds: document.getElementById('grantOtherIds'),
+    grantSubmitBtn: document.getElementById('grantSubmitBtn'),
+    grantResult: document.getElementById('grantResult'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -4707,6 +4719,8 @@
     var session = loadSession();
     els.worldToggle.hidden = !(session && session.id === '00001');
     els.worldPanel.hidden = true;
+    els.grantToggle.hidden = !(session && session.id === '00001');
+    els.grantPanel.hidden = true;
     els.rankingTabPoints.hidden = !(session && session.id === '00001');
     drawNumberline();
     renderSettings();
@@ -4743,13 +4757,19 @@
       saveSession({ id: id, name: res.name, grade: res.grade });
       const progress = loadAccountProgress_(id);
       if (progress) {
-        state.pointsToday = progress.pointsToday || 0;
+        state.pointsToday = Number(progress.pointsToday) || 0;
         state.pointsDate = progress.pointsDate || null;
         state.items = Array.isArray(progress.items) ? progress.items.slice() : state.items;
         state.rareDefeats = (progress.rareDefeats && typeof progress.rareDefeats === 'object') ? Object.assign({}, progress.rareDefeats) : state.rareDefeats;
         state.rareCollected = Array.isArray(progress.rareCollected) ? progress.rareCollected.slice() : state.rareCollected;
         state.thinkerMilestone = progress.thinkerMilestone || state.thinkerMilestone;
+        state.missionDate = progress.missionDate || null;
+        state.missionGrade = progress.missionGrade || null;
+        state.missionCategoryId = progress.missionCategoryId || null;
+        state.missionCorrect = Number(progress.missionCorrect) || 0;
+        state.missionClaimed = !!progress.missionClaimed;
       }
+      if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       state.enabled = new Set(defaultEnabledIds(res.grade));
       state.avatar = parseAvatarJson(res.avatar);
       saveGameState(state);
@@ -5037,6 +5057,28 @@
     }).join('');
   }
 
+  // 管理者(ID 00001)がgrantItemsで付与予約したアイテム・レアキャラ図鑑を、
+  // ログイン/再開時に受け取ってstateへ反映する。
+  function applyPendingItemGrants(itemIds) {
+    var changed = false;
+    var grantedNames = [];
+    (itemIds || []).forEach(function (id) {
+      var specialDef = SPECIAL_ITEMS.find(function (it) { return it.id === id; });
+      if (specialDef) {
+        if (!state.items.includes(id)) { state.items.push(id); changed = true; }
+        grantedNames.push(specialDef.name);
+      } else if (id === 'thinker' || RARE_COLLECTIBLE_IDS.indexOf(id) !== -1) {
+        if (state.rareCollected.indexOf(id) === -1) { state.rareCollected.push(id); changed = true; }
+        grantedNames.push(RARE_TYPES[id] ? RARE_TYPES[id].name : id);
+      }
+    });
+    if (changed) {
+      saveGameState(state);
+      updateGameHud();
+      window.alert('🎁 運営より、以前失われたアイテムが復活しました：' + grantedNames.join('、'));
+    }
+  }
+
   function renderRareCollection() {
     const ids = RARE_COLLECTIBLE_IDS.concat(['thinker']);
     els.historyRareCollection.innerHTML = ids.map(function (id) {
@@ -5095,6 +5137,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -5174,6 +5217,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -5242,6 +5286,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -5303,6 +5348,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
@@ -5375,6 +5421,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
     renderAvatarPanel();
@@ -5462,9 +5509,67 @@
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.worldPanel.removeAttribute('hidden');
     renderWorldPanel();
+  }
+
+  /* ---------- アイテム付与（管理用、00001のみ表示） ---------- */
+
+  function toggleGrant() {
+    var isHidden = els.grantPanel.hasAttribute('hidden');
+    if (!isHidden) { els.grantPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+
+    els.grantResult.textContent = '';
+    els.grantResult.className = 'grant-result';
+    els.grantPanel.removeAttribute('hidden');
+  }
+
+  function handleGrantSubmit(ev) {
+    ev.preventDefault();
+    var session = loadSession();
+    if (!session || session.id !== '00001') return;
+
+    var targetId = els.grantTargetId.value.trim();
+    var itemIds = [];
+    if (els.grantFlameSword.checked) itemIds.push('flameSword');
+    if (els.grantSmileMask.checked) itemIds.push('smileMask');
+    if (els.grantCatPencil.checked) itemIds.push('catPencil');
+    var otherIds = els.grantOtherIds.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    itemIds = itemIds.concat(otherIds);
+
+    if (!targetId || itemIds.length === 0) {
+      els.grantResult.textContent = '生徒IDと、付与するアイテムを1つ以上指定してください。';
+      els.grantResult.className = 'grant-result is-error';
+      return;
+    }
+
+    els.grantSubmitBtn.disabled = true;
+    apiPost('grantItems', { id: session.id, targetId: targetId, itemIds: itemIds }).then(function (res) {
+      els.grantSubmitBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '付与に失敗しました。';
+        if (res.error === 'not_found') msg = 'そのIDの生徒が見つかりません。';
+        else if (res.error === 'forbidden') msg = 'この操作は許可されていません。';
+        els.grantResult.textContent = msg;
+        els.grantResult.className = 'grant-result is-error';
+        return;
+      }
+      els.grantResult.textContent = `ID ${targetId} への付与を予約しました。次回ログイン/再開時に届きます。`;
+      els.grantResult.className = 'grant-result is-success';
+      els.grantForm.reset();
+    }).catch(function () {
+      els.grantSubmitBtn.disabled = false;
+      els.grantResult.textContent = '通信に失敗しました。もう一度お試しください。';
+      els.grantResult.className = 'grant-result is-error';
+    });
   }
 
   function handleAvatarSave() {
@@ -5520,6 +5625,8 @@
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
+  els.grantToggle.addEventListener('click', toggleGrant);
+  els.grantForm.addEventListener('submit', handleGrantSubmit);
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
 
   var existingSession = loadSession();
@@ -5530,6 +5637,7 @@
         if (res.ok) {
           var parsedAvatar = parseAvatarJson(res.avatar);
           if (parsedAvatar) { state.avatar = parsedAvatar; saveGameState(state); updateUserAvatarBadge(); }
+          if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
           reconcilePoints(existingSession.id, res.points, res.level, res.exp, res.prefectureCount);
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
