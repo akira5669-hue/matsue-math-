@@ -101,7 +101,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
-        wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
+        wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -3986,6 +3986,14 @@
         miss: 'わんっ…逃げちゃった…また今度ね！',
       },
     },
+    doubleorhalf: {
+      id: 'doubleorhalf', name: 'ダブルorハーフ', img: 'images/doubleorhalf.png',
+      lines: {
+        appear: '今日獲得したMP、2倍にするか半分にするか勝負だ！1問でも間違えたら逃げるぞ！',
+        defeat: 'やったな！今日のMPが2倍になったぞ！',
+        miss: '残念、逃げてしまった…今日のMPは半分になってしまった…',
+      },
+    },
     mistakeking: {
       id: 'mistakeking', name: '間違い大魔王', img: 'images/mistakeking.png',
       lines: {
@@ -4098,6 +4106,7 @@
   const RARE_CHANCE_WARISU = 1 / 50;
   const RARE_CHANCE_MISTAKEKING = 1 / 10;
   const RARE_CHANCE_INUDA = 1 / 20;
+  const RARE_CHANCE_DOUBLEORHALF = 1 / 50;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -4128,7 +4137,15 @@
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU) return 'warisu';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING) return 'mistakeking';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING + chanceInuda) return 'inuda';
+    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING + chanceInuda + RARE_CHANCE_DOUBLEORHALF) return 'doubleorhalf';
     return null;
+  }
+  // ダブルorハーフが新しく出現した瞬間の「本日の獲得MP(pointsToday)」を記録しておく。
+  // 撃破/失敗時にはこのスナップショットを2倍/半分にする（出現後に稼いだ分は対象外）。
+  function assignRareType(state) {
+    const t = rollRareType();
+    if (t === 'doubleorhalf') state.doubleOrHalfSnapshot = state.pointsToday;
+    return t;
   }
   function currentEnemyDisplay(st) {
     if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
@@ -4177,6 +4194,7 @@
     thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
     // 間違い大魔王が出題する「間違えた問題」の保存庫。カテゴリID→問題スナップショット配列。
     wrongBank: (savedProgress && savedProgress.wrongBank && typeof savedProgress.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedProgress.wrongBank)) : ((savedGame && savedGame.wrongBank && typeof savedGame.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedGame.wrongBank)) : {}),
+    doubleOrHalfSnapshot: (savedGame && Number(savedGame.doubleOrHalfSnapshot)) || 0,
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -4654,26 +4672,36 @@
       const nekodaFled = state.rareType === 'nekoda';
       const warisuFled = state.rareType === 'warisu';
       const inudaFled = state.rareType === 'inuda';
+      const doubleOrHalfFled = state.rareType === 'doubleorhalf';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-        state.rareType = rollRareType();
+        state.rareType = assignRareType(state);
         saveGameState(state);
       } else if (nekodaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🐈💨 ネコダは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-        state.rareType = rollRareType();
+        state.rareType = assignRareType(state);
         saveGameState(state);
       } else if (warisuFled) {
         missLineHtml += `<div class="enemy-quote-banner">🐿️💨 わりーリスは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-        state.rareType = rollRareType();
+        state.rareType = assignRareType(state);
         saveGameState(state);
       } else if (inudaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🐶💨 イヌダは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-        state.rareType = rollRareType();
+        state.rareType = assignRareType(state);
+        saveGameState(state);
+      } else if (doubleOrHalfFled) {
+        const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
+        const halfAmount = Math.floor(snapshot / 2);
+        state.points = Math.max(0, state.points - halfAmount);
+        state.pointsToday = Math.max(0, state.pointsToday - halfAmount);
+        missLineHtml += `<div class="enemy-quote-banner">💦 ダブルorハーフは逃げてしまった…本日のMPが半分に（-${halfAmount}MP）</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
         saveGameState(state);
       }
     }
@@ -4708,6 +4736,13 @@
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
+      let doubleGainedHtml = '';
+      if (wasRareType === 'doubleorhalf') {
+        const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
+        state.points += snapshot;
+        state.pointsToday += snapshot;
+        doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${snapshot}MP）💰</div>`;
+      }
       state.exp += 10;
       const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
       const leveledUp = newLevel > state.level;
@@ -4754,7 +4789,7 @@
       else if (leveledUp && newLevel === 1000) { state.rareType = 'thinker'; state.thinkerMilestone = 1000; }
       else if (leveledUp && newLevel === 400) { state.rareType = 'hikizaru'; }
       else if (leveledUp && newLevel % 50 === 0) { state.rareType = warlordForLevel(newLevel); }
-      else { state.rareType = rollRareType(); }
+      else { state.rareType = assignRareType(state); }
       saveGameState(state);
       if (session && session.id) {
         apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).then(function (res) {
@@ -4801,7 +4836,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
