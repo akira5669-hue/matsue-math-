@@ -838,6 +838,18 @@ h1 {
   background: #fff8e1;
   border: 1.5px solid #f5b400;
 }
+.ranking-nearby {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--c-line);
+}
+.ranking-nearby[hidden] { display: none; }
+.ranking-nearby-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+}
 .ranking-rank {
   font-family: var(--font-mono);
   font-weight: 900;

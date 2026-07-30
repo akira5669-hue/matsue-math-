@@ -4292,6 +4292,8 @@
     rankingTabPoints: document.getElementById('rankingTabPoints'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
+    rankingNearby: document.getElementById('rankingNearby'),
+    rankingNearbyList: document.getElementById('rankingNearbyList'),
     apologyBanner: document.getElementById('apologyBanner'),
     worldLaunchBanner: document.getElementById('worldLaunchBanner'),
     worldLaunchText: document.getElementById('worldLaunchText'),
@@ -5431,20 +5433,31 @@
 
   var rankingMode = 'exp';
 
+  function rankingRowHtml(r, mode) {
+    var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
+    var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
+    var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : mode === 'points' ? `${r.points}MP` : `Lv.${r.level}（経験値 ${r.exp}）`;
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
+  }
+
   function renderRanking(res, mode) {
     if (res.ranking.length === 0) {
       els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : 'まだランキングデータがありません。';
       els.rankingList.innerHTML = '';
+      els.rankingNearby.hidden = true;
       return;
     }
     els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
-    els.rankingList.innerHTML = res.ranking.map(function (r) {
-      var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
-      var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
-      var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
-      var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : mode === 'points' ? `${r.points}MP` : `Lv.${r.level}（経験値 ${r.exp}）`;
-      return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
-    }).join('');
+    els.rankingList.innerHTML = res.ranking.map(function (r) { return rankingRowHtml(r, mode); }).join('');
+
+    if (Array.isArray(res.nearby) && res.nearby.length > 0) {
+      els.rankingNearby.hidden = false;
+      els.rankingNearbyList.innerHTML = res.nearby.map(function (r) { return rankingRowHtml(r, mode); }).join('');
+    } else {
+      els.rankingNearby.hidden = true;
+      els.rankingNearbyList.innerHTML = '';
+    }
   }
 
   function setRankingTabActive(mode) {

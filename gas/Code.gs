@@ -630,6 +630,23 @@ function displayGradeForId_(id, grade) {
   return String(id).trim() === '00001' ? '先生' : grade;
 }
 
+// 上位50位のリストとは別に、自分の順位を中心とした前後3位(計最大7件)を返す。
+// 自分が上位50位に入っていない場合でも、自分の順位が分かるようにするため。
+function buildNearbyRanking_(rows, myId, mapFn) {
+  var myIndex = -1;
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id === myId) { myIndex = i; break; }
+  }
+  if (myIndex === -1) return [];
+  var start = Math.max(0, myIndex - 3);
+  var end = Math.min(rows.length, myIndex + 4);
+  var out = [];
+  for (var j = start; j < end; j++) {
+    out.push(mapFn(rows[j], j));
+  }
+  return out;
+}
+
 function handleRanking_(ctx, body) {
   var myId = String(body.id || '').trim();
   var data = ctx.students.getDataRange().getValues();
@@ -646,10 +663,12 @@ function handleRanking_(ctx, body) {
     if (b.level !== a.level) return b.level - a.level;
     return b.exp - a.exp;
   });
-  var top = rows.slice(0, 50).map(function (r, idx) {
+  var mapFn = function (r, idx) {
     return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
-  });
-  return { ok: true, ranking: top };
+  };
+  var top = rows.slice(0, 50).map(mapFn);
+  var nearby = buildNearbyRanking_(rows, myId, mapFn);
+  return { ok: true, ranking: top, nearby: nearby };
 }
 
 // 本日（日本時間）の正解数ランキング。Recordsシートから当日分だけ集計する。
@@ -697,10 +716,12 @@ function handleRankingPoints_(ctx, body) {
     rows.push({ id: id, points: points, grade: grade });
   }
   rows.sort(function (a, b) { return b.points - a.points; });
-  var top = rows.slice(0, 50).map(function (r, idx) {
+  var mapFn = function (r, idx) {
     return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
-  });
-  return { ok: true, ranking: top };
+  };
+  var top = rows.slice(0, 50).map(mapFn);
+  var nearby = buildNearbyRanking_(rows, myId, mapFn);
+  return { ok: true, ranking: top, nearby: nearby };
 }
 
 function handleRegisterGuardian_(ctx, body) {
