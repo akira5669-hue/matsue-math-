@@ -101,6 +101,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
+        wrongBank: s.wrongBank,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -111,6 +112,7 @@
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
+        wrongBank: s.wrongBank,
       });
     }
   }
@@ -3976,6 +3978,14 @@
         miss: 'あ、逃げられた…また今度ね！',
       },
     },
+    mistakeking: {
+      id: 'mistakeking', name: '間違い大魔王', img: 'images/mistakeking.png',
+      lines: {
+        appear: '😈 我は間違い大魔王！お前が間違えた問題、もう一度見せてもらうぞ！',
+        defeat: '😈 ぐぬぬ…！お前が間違いを克服するとはな…だが次はもっと手強い間違いを用意してやるぞ！',
+        miss: '😈 まだまだじゃのう…！その調子で間違え続けるがいい！',
+      },
+    },
     warlord_nobunaga: {
       id: 'warlord_nobunaga', name: '織田信長', img: 'images/warlord_nobunaga.png', isWarlord: true,
       lines: {
@@ -4078,9 +4088,11 @@
   const RARE_CHANCE_SMILE = 1 / 30;
   const RARE_CHANCE_NEKODA = 1 / 20;
   const RARE_CHANCE_WARISU = 1 / 50;
+  const RARE_CHANCE_MISTAKEKING = 1 / 10;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
+  const MISTAKEKING_BONUS_MP = 30;
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
@@ -4096,6 +4108,7 @@
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE) return 'smile';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA) return 'nekoda';
     if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU) return 'warisu';
+    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING) return 'mistakeking';
     return null;
   }
   function currentEnemyDisplay(st) {
@@ -4137,6 +4150,8 @@
     rareDefeats: (savedProgress && savedProgress.rareDefeats && typeof savedProgress.rareDefeats === 'object') ? Object.assign({}, savedProgress.rareDefeats) : ((savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {}),
     rareCollected: (savedProgress && Array.isArray(savedProgress.rareCollected)) ? savedProgress.rareCollected.slice() : ((savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : []),
     thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
+    // 間違い大魔王が出題する「間違えた問題」の保存庫。カテゴリID→問題スナップショット配列。
+    wrongBank: (savedProgress && savedProgress.wrongBank && typeof savedProgress.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedProgress.wrongBank)) : ((savedGame && savedGame.wrongBank && typeof savedGame.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedGame.wrongBank)) : {}),
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -4328,9 +4343,42 @@
     return src[randInt(0, src.length - 1)];
   }
 
+  /* ---------- 間違い大魔王：間違えた問題の保存庫 ---------- */
+
+  const WRONG_BANK_MAX_PER_CATEGORY = 20;
+  function wrongBankKeyFor(q) {
+    return q.questionHtml || q.question;
+  }
+  function recordWrongQuestion(q) {
+    const catId = q.category;
+    if (!state.wrongBank[catId]) state.wrongBank[catId] = [];
+    const bank = state.wrongBank[catId];
+    const key = wrongBankKeyFor(q);
+    if (bank.some(b => wrongBankKeyFor(b) === key)) return;
+    bank.push({ category: q.category, question: q.question, questionHtml: q.questionHtml, answer: q.answer, choices: q.choices.slice(), steps: q.steps });
+    if (bank.length > WRONG_BANK_MAX_PER_CATEGORY) bank.shift();
+  }
+  function clearWrongQuestion(q) {
+    const bank = state.wrongBank[q.category];
+    if (!bank) return;
+    const key = wrongBankKeyFor(q);
+    const idx = bank.findIndex(b => wrongBankKeyFor(b) === key);
+    if (idx !== -1) bank.splice(idx, 1);
+  }
+  // 選択中(有効)な単元の中から、間違えた問題をランダムに1つ選ぶ。無ければnull。
+  function pickMistakeKingQuestion() {
+    const pool = [];
+    state.enabled.forEach(id => {
+      const bank = state.wrongBank[id];
+      if (bank && bank.length > 0) bank.forEach(snap => pool.push(snap));
+    });
+    if (pool.length === 0) return null;
+    return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
+  }
+
   function nextQuestion() {
-    const cat = pickGenerator();
-    const q = cat.gen();
+    const mistakeQ = state.rareType === 'mistakeking' ? pickMistakeKingQuestion() : null;
+    const q = mistakeQ || (function () { const cat = pickGenerator(); return cat.gen(); })();
     state.current = q;
     state.answered = false;
 
@@ -4459,11 +4507,15 @@
       if (state.streak === 0) state.streakAboveGrade = true;
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.correct++; state.streak++;
+      clearWrongQuestion(state.current);
+      saveGameState(state);
     } else {
       const enemyBeforeMiss = currentEnemyDisplay(state);
       if (enemyBeforeMiss.lines && enemyBeforeMiss.lines.miss) {
         missLineHtml = `<div class="enemy-quote-banner">${enemyBeforeMiss.lines.miss}</div>`;
       }
+      recordWrongQuestion(state.current);
+      saveGameState(state);
       const santaFled = state.rareType === 'santa';
       const nekodaFled = state.rareType === 'nekoda';
       const warisuFled = state.rareType === 'warisu';
@@ -4511,7 +4563,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : 0;
       const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
@@ -4783,6 +4835,7 @@
         state.missionCategoryId = progress.missionCategoryId || null;
         state.missionCorrect = Number(progress.missionCorrect) || 0;
         state.missionClaimed = !!progress.missionClaimed;
+        state.wrongBank = (progress.wrongBank && typeof progress.wrongBank === 'object') ? JSON.parse(JSON.stringify(progress.wrongBank)) : state.wrongBank;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
