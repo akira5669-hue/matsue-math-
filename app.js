@@ -101,7 +101,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
-        wrongBank: s.wrongBank,
+        wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -112,7 +112,7 @@
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
-        wrongBank: s.wrongBank,
+        wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
       });
     }
   }
@@ -4128,7 +4128,13 @@
     catStats: {},
     current: null,
     answered: false,
-    enabled: new Set(defaultEnabledIds((loadSession() || {}).grade)),
+    // 出題範囲(有効カテゴリ)の設定は、アカウント別ストレージ(progress)を優先し、
+    // 保存されていなければ学年ごとのデフォルトを使う。
+    enabled: new Set((function () {
+      var savedEnabled = (savedProgress && Array.isArray(savedProgress.enabled) && savedProgress.enabled.length > 0) ? savedProgress.enabled
+        : ((savedGame && Array.isArray(savedGame.enabled) && savedGame.enabled.length > 0) ? savedGame.enabled : null);
+      return savedEnabled || defaultEnabledIds((loadSession() || {}).grade);
+    })()),
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -4327,6 +4333,7 @@
           state.enabled.add(id);
           cb.checked = true;
         }
+        saveGameState(state);
       });
     });
   }
@@ -4711,10 +4718,12 @@
   document.getElementById('selectAllBtn').addEventListener('click', () => {
     CATEGORIES.forEach(c => state.enabled.add(c.id));
     renderSettings();
+    saveGameState(state);
   });
   document.getElementById('deselectAllBtn').addEventListener('click', () => {
     state.enabled.clear();
     renderSettings();
+    saveGameState(state);
   });
 
   els.nextBtn.addEventListener('click', nextQuestion);
@@ -4843,7 +4852,7 @@
       // 端末側の方が(付与前の値で)大きかった場合、その古い値がサーバーへ書き戻されて
       // 付与直後のMPを消してしまう恐れがある。
       if (res.apologyBonusAwarded > 0) state.points += res.apologyBonusAwarded;
-      state.enabled = new Set(defaultEnabledIds(res.grade));
+      state.enabled = (progress && Array.isArray(progress.enabled) && progress.enabled.length > 0) ? new Set(progress.enabled) : new Set(defaultEnabledIds(res.grade));
       state.avatar = parseAvatarJson(res.avatar);
       saveGameState(state);
       reconcilePoints(id, res.points, res.level, res.exp, res.prefectureCount);
@@ -5719,7 +5728,9 @@
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);
-            state.enabled = new Set(defaultEnabledIds(res.grade));
+            // 学年不明の間に既に保存済みの出題範囲設定があれば、それを優先して上書きしない。
+            var hadSavedEnabled = savedProgress && Array.isArray(savedProgress.enabled) && savedProgress.enabled.length > 0;
+            if (!hadSavedEnabled) state.enabled = new Set(defaultEnabledIds(res.grade));
             renderSettings();
           }
           if (res.apologyBonusAwarded > 0) {
