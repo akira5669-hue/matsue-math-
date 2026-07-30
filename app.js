@@ -4787,7 +4787,7 @@
     els.worldPanel.hidden = true;
     els.grantToggle.hidden = !(session && session.id === '00001');
     els.grantPanel.hidden = true;
-    els.rankingTabPoints.hidden = !(session && session.id === '00001');
+    els.rankingTabPoints.hidden = !!isGuest;
     drawNumberline();
     renderSettings();
     updateStats();
