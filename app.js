@@ -4256,6 +4256,8 @@
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
     apologyBanner: document.getElementById('apologyBanner'),
+    worldLaunchBanner: document.getElementById('worldLaunchBanner'),
+    worldLaunchText: document.getElementById('worldLaunchText'),
     missionBanner: document.getElementById('missionBanner'),
     missionDesc: document.getElementById('missionDesc'),
     missionProgressBarInner: document.getElementById('missionProgressBarInner'),
@@ -4524,6 +4526,15 @@
     els.statLevel.textContent = state.level;
     els.expBarInner.style.width = `${((state.exp % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
     updateUserAvatarBadge();
+    updateWorldToggleVisibility();
+    renderWorldLaunchBanner();
+  }
+
+  // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
+  function updateWorldToggleVisibility() {
+    var session = loadSession();
+    var isGuestSession = !session || !session.id || session.guest;
+    els.worldToggle.hidden = !!isGuestSession || state.level < 100;
   }
 
   function updateUserAvatarBadge() {
@@ -4561,6 +4572,18 @@
   function renderApologyBanner() {
     const session = loadSession();
     els.apologyBanner.hidden = !(session && session.id && isWithinApologyBannerWindow());
+  }
+
+  // 世界旅行編スタートの告知バナー。レベル100未満は「あと何レベル」、100以上は「挑戦しよう」の案内を出す。
+  function renderWorldLaunchBanner() {
+    const session = loadSession();
+    if (!session || !session.id) { els.worldLaunchBanner.hidden = true; return; }
+    els.worldLaunchBanner.hidden = false;
+    if (state.level < 100) {
+      els.worldLaunchText.textContent = `🌍 世界旅行編スタート！レベル100になったら世界一周に出発できるよ。あとレベル${100 - state.level}で出発だ！`;
+    } else {
+      els.worldLaunchText.textContent = '🌍 世界旅行編スタート！画面上の「🌍世界制覇」ボタンから世界一周に出発しよう！10レベルごとに1ヵ国ずつ制覇していくぞ。';
+    }
   }
 
   function renderMissionBanner() {
@@ -4663,6 +4686,7 @@
       state.exp += 10;
       const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
       const leveledUp = newLevel > state.level;
+      const prevWorldCount = worldCountForLevel(state.level);
       state.level = newLevel;
       state.streak = 0;
       state.streakAboveGrade = true;
@@ -4696,6 +4720,9 @@
       state.prefectureCount = Math.min(47, state.prefectureCount + 1);
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
 
+      const newWorldCount = worldCountForLevel(state.level);
+      const newlyUnlockedCountry = (newWorldCount > prevWorldCount && Array.isArray(WORLD_DATA) && WORLD_DATA.length > 0) ? WORLD_DATA[newWorldCount - 1] : null;
+
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       state.thinkerMilestone = null;
       if (leveledUp && newLevel === 100) { state.rareType = 'thinker'; state.thinkerMilestone = 100; }
@@ -4721,6 +4748,15 @@
           prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 47都道府県制覇達成！おめでとう！🎉</div>`;
         }
       }
+      let worldGainedHtml = '';
+      if (newlyUnlockedCountry) {
+        worldGainedHtml = `<div class="world-gain-banner">🌍「${newlyUnlockedCountry.name}」を制覇！（${newWorldCount}/${WORLD_DATA.length}）<br><span class="world-funny-moment">${funnyMomentForCountry(newlyUnlockedCountry)}</span><br><span class="world-trivia">${newlyUnlockedCountry.trivia}</span></div>`;
+        if (newWorldCount === WORLD_DATA.length) {
+          worldGainedHtml += `<div class="prefecture-complete-banner">🎉 世界${WORLD_DATA.length}ヵ国制覇達成！おめでとう！🎉</div>`;
+        }
+      } else if (state.level >= 100 && Math.random() < WORLD_SENSEI_RANDOM_CHANCE) {
+        worldGainedHtml = `<div class="world-gain-banner">${pickWorldSenseiLine()}</div>`;
+      }
       const prevEnemy = wasRareType ? RARE_TYPES[wasRareType] : ENEMIES[(state.enemyIdx - 1 + ENEMIES.length) % ENEMIES.length];
       const nextEnemy = currentEnemyDisplay(state);
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
@@ -4739,7 +4775,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -4877,7 +4913,7 @@
     els.giftToggle.hidden = !!isGuest;
     els.giftPanel.hidden = true;
     var session = loadSession();
-    els.worldToggle.hidden = !(session && session.id === '00001');
+    updateWorldToggleVisibility();
     els.worldPanel.hidden = true;
     els.grantToggle.hidden = !(session && session.id === '00001');
     els.grantPanel.hidden = true;
@@ -4887,6 +4923,7 @@
     updateStats();
     updateGameHud();
     renderApologyBanner();
+    renderWorldLaunchBanner();
     renderMissionBanner();
     nextQuestion();
     initInstallBanner();
@@ -5617,6 +5654,52 @@
     syncWorldMapZoomClone();
   }
 
+  // 世界旅行編：レベル100から開始し、10レベルごとに1ヵ国ずつ制覇していく。
+  function worldCountForLevel(level) {
+    if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) return 0;
+    if (level < 100) return 0;
+    return Math.min(WORLD_DATA.length, Math.floor((level - 100) / 10) + 1);
+  }
+
+  // 国ごとの専用ネタ(funnyMoment)が無い場合の、AKRの旅先ハプニング汎用ネタ。
+  var WORLD_GENERIC_FUNNY_MOMENTS = [
+    'AKRが時差ボケで、ずっとあくびをしている。',
+    'AKRが現地の言葉が分からず、ジェスチャーだけで頑張っている。',
+    'AKRがスーツケースを開けたら、お土産で溢れかえっていた。',
+    'AKRが空港の乗り換えで迷子になりかける。',
+    'AKRが現地の激辛料理に挑戦して、涙目になる。',
+    'AKRが記念写真を撮ろうとして、逆光で真っ暗な写真になる。',
+    'AKRが両替に失敗して、お土産を買いすぎてしまう。',
+    'AKRが時差で真夜中に元気満々になってしまう。',
+  ];
+  function funnyMomentForCountry(country) {
+    if (country && country.funnyMoment) return country.funnyMoment;
+    return WORLD_GENERIC_FUNNY_MOMENTS[randInt(0, WORLD_GENERIC_FUNNY_MOMENTS.length - 1)];
+  }
+
+  // 松江塾っぽい、おもしろトーク集（国を制覇した時以外の「随時」のひとことで使う）。
+  var WORLD_SENSEI_LINES = [
+    'また1つ制覇したな！この調子で計算ドリルも制覇してくれよ〜。',
+    '先生も一度は海外に行ってみたいけど、今日も採点で家から出られません。',
+    '移動時間ゼロ、旅費もゼロ。これが計算力トラベルのすごいところだ！',
+    '世界は広いが、君の計算力はもっと広がっていくぞ！',
+    'パスポートはいらない。必要なのは正解を出す力だけだ！',
+    '先生の学生時代の夢は世界一周。今の君はもう半分以上叶えてるぞ、すごいな。',
+    '次の国に行く前に、小テストの復習は済んだか？（心配性の先生より）',
+    '制覇スピード、速すぎないか？ちゃんと復習もしてるか後で確認するからな！',
+    '旅先で食べたいものランキング1位は…先生的には地元のご飯かな。',
+    '夏休みの宿題、世界一周と同じペースで進んでるか？',
+    'この国に着いたなら、次はテストで高得点という国を制覇しよう。',
+    '先生、地図帳を眺めるのが好きだったんだ。今の君は実際に「制覇」してるんだからすごいよ。',
+    '海外旅行の前に、まずは今日の宿題からだな（笑）',
+    '君の計算力、もう立派なパスポートだな。',
+  ];
+  function pickWorldSenseiLine() {
+    return WORLD_SENSEI_LINES[randInt(0, WORLD_SENSEI_LINES.length - 1)];
+  }
+  // 国を制覇した時以外にも、随時（低確率で）先生トークを見せる。
+  var WORLD_SENSEI_RANDOM_CHANCE = 1 / 8;
+
   // 世界地図が小さくて国が分かりにくいという声を受けて、地域ごとに拡大表示できるようにする。
   // 同じ(着色済みの)地図をクローンし、viewBoxだけ切り替えて特定地域を拡大表示する。
   var WORLD_MAP_ZOOMS = [
@@ -5678,17 +5761,15 @@
   }
 
   function renderWorldPanel() {
-    if (!Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) {
+    if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) {
       els.worldProgress.textContent = '国データの読み込みに失敗しました。ページを再読み込みしてください。';
       return;
     }
     var total = WORLD_DATA.length;
-    // このパネルはID 00001にしか表示されないプレビュー専用のため、実際のレベルに関わらず
-    // 常に「全ヵ国制覇済み」の状態を見せる（実装イメージの確認用）。
-    var count = total;
+    var count = worldCountForLevel(state.level);
     els.worldProgress.textContent = count >= total
       ? '🎉 ' + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
-      : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + ((count + 1) * 10) + 'で制覇）';
+      : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + (100 + count * 10) + 'で制覇）';
     ensureWorldMapLoaded(count);
     applyWorldMapColors(count);
     renderWorldZoomTabs();
@@ -5707,6 +5788,7 @@
             + '</div>'
           : '';
         return '<details class="world-chip is-unlocked"><summary><span class="world-chip-name">' + c.code + '. ' + c.name + '</span>'
+          + (c.funnyMoment ? '<span class="world-chip-funny">😄' + c.funnyMoment + '</span>' : '')
           + (c.trivia ? '<span class="world-chip-trivia">' + c.trivia + '</span>' : '') + '</summary>'
           + detailsHtml + '</details>';
       }).join('');
