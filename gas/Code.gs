@@ -684,10 +684,9 @@ function handleRankingToday_(ctx, body) {
   return { ok: true, ranking: top };
 }
 
-// MP(ポイント)ランキング。生徒の実際のMP保有量を見せるため、閲覧はID 00001のみに限定する。
+// MP(ポイント)ランキング。全員が閲覧可能。
 function handleRankingPoints_(ctx, body) {
   var myId = String(body.id || '').trim();
-  if (myId !== '00001') return { ok: false, error: 'forbidden' };
   var data = ctx.students.getDataRange().getValues();
   var rows = [];
   for (var i = 1; i < data.length; i++) {
