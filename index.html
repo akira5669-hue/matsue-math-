@@ -349,6 +349,16 @@
       <p class="category-tag" id="categoryTag">加法</p>
       <h2 class="question" id="questionText">読み込み中…</h2>
 
+      <button id="memoToggle" class="ghost-btn memo-toggle-btn" type="button">✏️ 計算メモ</button>
+      <div class="memo-panel" id="memoPanel" hidden>
+        <canvas id="memoCanvas" class="memo-canvas"></canvas>
+        <div class="memo-toolbar">
+          <button type="button" class="memo-tool-btn is-active" id="memoPenBtn">✏️ ペン</button>
+          <button type="button" class="memo-tool-btn" id="memoEraserBtn">🧹 消しゴム</button>
+          <button type="button" class="memo-tool-btn" id="memoClearBtn">🗑️ クリア</button>
+        </div>
+      </div>
+
       <div class="choices" id="choices" role="group" aria-label="選択肢"></div>
 
       <div class="feedback" id="feedback" aria-live="assertive"></div>

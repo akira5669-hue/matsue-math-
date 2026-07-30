@@ -4173,6 +4173,12 @@
   const els = {
     questionText: document.getElementById('questionText'),
     categoryTag: document.getElementById('categoryTag'),
+    memoToggle: document.getElementById('memoToggle'),
+    memoPanel: document.getElementById('memoPanel'),
+    memoCanvas: document.getElementById('memoCanvas'),
+    memoPenBtn: document.getElementById('memoPenBtn'),
+    memoEraserBtn: document.getElementById('memoEraserBtn'),
+    memoClearBtn: document.getElementById('memoClearBtn'),
     choices: document.getElementById('choices'),
     feedback: document.getElementById('feedback'),
     nextBtn: document.getElementById('nextBtn'),
@@ -4383,7 +4389,84 @@
     return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
   }
 
+  /* ---------- 計算メモ（手書き） ---------- */
+
+  let memoTool = 'pen';
+  let memoDrawing = false;
+  let memoLastX = 0;
+  let memoLastY = 0;
+  let memoSized = false;
+
+  function memoCtx() {
+    return els.memoCanvas.getContext && els.memoCanvas.getContext('2d');
+  }
+  function sizeMemoCanvasIfNeeded() {
+    if (memoSized) return;
+    const w = els.memoCanvas.clientWidth;
+    const h = els.memoCanvas.clientHeight;
+    if (!w || !h) return;
+    els.memoCanvas.width = w;
+    els.memoCanvas.height = h;
+    memoSized = true;
+  }
+  function clearMemoCanvas() {
+    const ctx = memoCtx();
+    if (!ctx) return;
+    ctx.clearRect(0, 0, els.memoCanvas.width, els.memoCanvas.height);
+  }
+  function memoPointFromEvent(ev) {
+    const rect = els.memoCanvas.getBoundingClientRect();
+    return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+  }
+  function setMemoTool(tool) {
+    memoTool = tool;
+    els.memoPenBtn.classList.toggle('is-active', tool === 'pen');
+    els.memoEraserBtn.classList.toggle('is-active', tool === 'eraser');
+  }
+  function toggleMemo() {
+    const isHidden = els.memoPanel.hasAttribute('hidden');
+    if (!isHidden) { els.memoPanel.setAttribute('hidden', ''); return; }
+    els.memoPanel.removeAttribute('hidden');
+    sizeMemoCanvasIfNeeded();
+  }
+
+  els.memoToggle.addEventListener('click', toggleMemo);
+  els.memoPenBtn.addEventListener('click', () => setMemoTool('pen'));
+  els.memoEraserBtn.addEventListener('click', () => setMemoTool('eraser'));
+  els.memoClearBtn.addEventListener('click', clearMemoCanvas);
+  els.memoCanvas.addEventListener('pointerdown', (ev) => {
+    sizeMemoCanvasIfNeeded();
+    memoDrawing = true;
+    const p = memoPointFromEvent(ev);
+    memoLastX = p.x; memoLastY = p.y;
+  });
+  els.memoCanvas.addEventListener('pointermove', (ev) => {
+    if (!memoDrawing) return;
+    const ctx = memoCtx();
+    if (!ctx) return;
+    const p = memoPointFromEvent(ev);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (memoTool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = 20;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 3;
+    }
+    ctx.beginPath();
+    ctx.moveTo(memoLastX, memoLastY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    memoLastX = p.x; memoLastY = p.y;
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((evName) => {
+    els.memoCanvas.addEventListener(evName, () => { memoDrawing = false; });
+  });
+
   function nextQuestion() {
+    clearMemoCanvas();
     const mistakeQ = state.rareType === 'mistakeking' ? pickMistakeKingQuestion() : null;
     const q = mistakeQ || (function () { const cat = pickGenerator(); return cat.gen(); })();
     state.current = q;
