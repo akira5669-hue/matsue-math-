@@ -618,11 +618,16 @@ function hashStr_(s) {
 }
 
 function nicknameForId_(id) {
-  if (String(id).trim() === '00001') return '先生';
   var h = hashStr_(String(id));
   var prefix = NICK_PREFIX_[h % NICK_PREFIX_.length];
   var suffix = NICK_SUFFIX_[Math.floor(h / NICK_PREFIX_.length) % NICK_SUFFIX_.length];
   return prefix + suffix;
+}
+
+// ランキング上の学年表示。ID 00001(先生の管理用アカウント)だけは
+// 実際の学年(中3、defaultEnabledIds等の内部処理用)ではなく「先生」と表示する。
+function displayGradeForId_(id, grade) {
+  return String(id).trim() === '00001' ? '先生' : grade;
 }
 
 function handleRanking_(ctx, body) {
@@ -642,7 +647,7 @@ function handleRanking_(ctx, body) {
     return b.exp - a.exp;
   });
   var top = rows.slice(0, 50).map(function (r, idx) {
-    return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, grade: r.grade, isYou: r.id === myId };
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
@@ -674,7 +679,7 @@ function handleRankingToday_(ctx, body) {
     return b.total - a.total;
   });
   var top = rows.slice(0, 50).map(function (r, idx) {
-    return { rank: idx + 1, nickname: nicknameForId_(r.id), correct: r.correct, total: r.total, grade: r.grade, isYou: r.id === myId };
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), correct: r.correct, total: r.total, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
@@ -694,7 +699,7 @@ function handleRankingPoints_(ctx, body) {
   }
   rows.sort(function (a, b) { return b.points - a.points; });
   var top = rows.slice(0, 50).map(function (r, idx) {
-    return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, grade: r.grade, isYou: r.id === myId };
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
   });
   return { ok: true, ranking: top };
 }
