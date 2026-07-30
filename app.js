@@ -3986,6 +3986,14 @@
         miss: 'わんっ…逃げちゃった…また今度ね！',
       },
     },
+    iine: {
+      id: 'iine', name: 'いいねAKR', img: 'images/iine.png',
+      lines: {
+        appear: 'いつも見てるぜ！1問でも間違えたら逃げちゃうぞ！',
+        defeat: 'いいね！よくやったな！',
+        miss: 'あちゃー、逃げちゃったぜ…また今度な！',
+      },
+    },
     doubleorhalf: {
       id: 'doubleorhalf', name: 'ダブルorハーフ', img: 'images/doubleorhalf.png',
       lines: {
@@ -4098,7 +4106,7 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine'].concat(WARLORD_IDS);
   const RARE_CHANCE_ZOMBIE = 0.08;
   const RARE_CHANCE_SANTA = 1 / 30;
   const RARE_CHANCE_SMILE = 1 / 30;
@@ -4107,11 +4115,14 @@
   const RARE_CHANCE_MISTAKEKING = 1 / 10;
   const RARE_CHANCE_INUDA = 1 / 20;
   const RARE_CHANCE_DOUBLEORHALF = 1 / 50;
+  const RARE_CHANCE_IINE = 1 / 30;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
   const MISTAKEKING_BONUS_MP = 30;
   const INUDA_BONUS_MP = 20;
+  // いいねAKRを撃破した時、5分の1の確率で斬鉄剣をゲットできる。
+  const IINE_ITEM_DROP_CHANCE = 1 / 5;
   // イヌダは期間限定キャラ(2026-07-30〜2026-08-31)。この期間だけ出現する。
   const INUDA_START = '2026-07-30';
   const INUDA_END = '2026-08-31';
@@ -4122,22 +4133,35 @@
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
+  const SPECIAL_ITEM_ZANTETSUKEN = 'zantetsuken';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
     { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
     { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
+    { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
   ];
+  // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
+  // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
+  // 出現確率を配列で並べ、実行時に累積和を取ることでその種のバグを防ぐ。
   function rollRareType() {
     const r = Math.random();
     const chanceInuda = isWithinInudaWindow() ? RARE_CHANCE_INUDA : 0;
-    if (r < RARE_CHANCE_SANTA) return 'santa';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE) return 'zombie';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE) return 'smile';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA) return 'nekoda';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU) return 'warisu';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING) return 'mistakeking';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING + chanceInuda) return 'inuda';
-    if (r < RARE_CHANCE_SANTA + RARE_CHANCE_ZOMBIE + RARE_CHANCE_SMILE + RARE_CHANCE_NEKODA + RARE_CHANCE_WARISU + RARE_CHANCE_MISTAKEKING + chanceInuda + RARE_CHANCE_DOUBLEORHALF) return 'doubleorhalf';
+    const slices = [
+      ['santa', RARE_CHANCE_SANTA],
+      ['zombie', RARE_CHANCE_ZOMBIE],
+      ['smile', RARE_CHANCE_SMILE],
+      ['nekoda', RARE_CHANCE_NEKODA],
+      ['warisu', RARE_CHANCE_WARISU],
+      ['mistakeking', RARE_CHANCE_MISTAKEKING],
+      ['iine', RARE_CHANCE_IINE],
+      ['inuda', chanceInuda],
+      ['doubleorhalf', RARE_CHANCE_DOUBLEORHALF],
+    ];
+    let cumulative = 0;
+    for (let i = 0; i < slices.length; i++) {
+      cumulative += slices[i][1];
+      if (r < cumulative) return slices[i][0];
+    }
     return null;
   }
   // ダブルorハーフが新しく出現した瞬間の「本日の獲得MP(pointsToday)」を記録しておく。
@@ -4675,6 +4699,7 @@
       const warisuFled = state.rareType === 'warisu';
       const inudaFled = state.rareType === 'inuda';
       const doubleOrHalfFled = state.rareType === 'doubleorhalf';
+      const iineFled = state.rareType === 'iine';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -4702,6 +4727,11 @@
         state.points = Math.max(0, state.points - halfAmount);
         state.pointsToday = Math.max(0, state.pointsToday - halfAmount);
         missLineHtml += `<div class="enemy-quote-banner">💦 ダブルorハーフは逃げてしまった…本日のMPが半分に（-${halfAmount}MP）</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
+        saveGameState(state);
+      } else if (iineFled) {
+        missLineHtml += `<div class="enemy-quote-banner">👍💨 いいねAKRは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
         saveGameState(state);
@@ -4763,6 +4793,9 @@
       } else if (wasRareType === 'nekoda' && !state.items.includes(SPECIAL_ITEM_CAT_PENCIL)) {
         state.items.push(SPECIAL_ITEM_CAT_PENCIL);
         itemGainedHtml = '<div class="item-gain-banner">🐈✏️ スペシャルアイテム「ネコのシャーペン」を手に入れた！🐈✏️</div>';
+      } else if (wasRareType === 'iine' && !state.items.includes(SPECIAL_ITEM_ZANTETSUKEN) && Math.random() < IINE_ITEM_DROP_CHANCE) {
+        state.items.push(SPECIAL_ITEM_ZANTETSUKEN);
+        itemGainedHtml = '<div class="item-gain-banner">⚔️ スペシャルアイテム「斬鉄剣」を手に入れた！⚔️</div>';
       }
 
       let collectionGainedHtml = '';
@@ -4831,6 +4864,7 @@
         : wasRareType === 'nekoda' ? '<span class="rare-badge">🐈レア撃破！🐈</span>'
         : wasRareType === 'warisu' ? ('<span class="rare-badge">🐿️レア撃破！+' + WARISU_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'inuda' ? ('<span class="rare-badge">🐶レア撃破！+' + INUDA_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'iine' ? '<span class="rare-badge">👍レア撃破！👍</span>'
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
