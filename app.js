@@ -3004,7 +3004,7 @@
   }
 
   function genAngle() {
-    const pat = randInt(0, 10);
+    const pat = randInt(0, 12);
     let question, questionHtml, answer, steps, wrongs;
     if (pat === 0) {
       const a = randInt(30, 80), b = randInt(20, Math.min(80, 170 - a));
@@ -3034,7 +3034,7 @@
       answer = 360; wrongs = [180, 540, 720];
       questionHtml = mkPolySvg(n, true) + `<span style="display:block">${question}</span>`;
     } else if (pat === 4) {
-      const ns = [4, 5, 6, 8, 9, 10, 12];
+      const ns = [4, 5, 6, 8, 9, 10, 12, 15, 18, 20];
       const n = ns[randInt(0, ns.length - 1)];
       const s = (n - 2) * 180, interior = s / n;
       question = `正${kanjiDigit(n)}角形の1つの内角は？`;
@@ -3091,7 +3091,7 @@
       wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
       steps = [`l ∥ m のとき、同位角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
       questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question}</span>`;
-    } else {
+    } else if (pat === 10) {
       // 錯角（平行線、内側の角どうし）
       const labels = ['c', 'd', 'e', 'f'];
       const givenLabel = labels[randInt(0, labels.length - 1)];
@@ -3102,6 +3102,22 @@
       wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
       steps = [`l ∥ m のとき、錯角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
       questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question}</span>`;
+    } else if (pat === 11) {
+      const ns = [4, 5, 6, 8, 9, 10, 12, 15, 18, 20];
+      const n = ns[randInt(0, ns.length - 1)];
+      const ext = 360 / n;
+      question = `正${kanjiDigit(n)}角形の1つの外角は？`;
+      steps = [`外角の和はつねに360°`, `1つの外角 = 360 ÷ ${n} = ${ext}°`];
+      answer = ext; wrongs = [360 - ext, (n - 2) * 180 / n, ext + 10];
+      questionHtml = mkPolySvg(n, true) + `<span style="display:block">${question}</span>`;
+    } else {
+      const ns = [4, 5, 6, 8, 9, 10, 12, 15, 18, 20];
+      const n = ns[randInt(0, ns.length - 1)];
+      const interior = 180 - 360 / n;
+      question = `1つの内角が ${interior}° である正多角形は正何角形？`;
+      steps = [`1つの外角 = 180 − ${interior} = ${180 - interior}°`, `辺の数 = 360 ÷ ${180 - interior} = ${n}（正${kanjiDigit(n)}角形）`];
+      answer = n; wrongs = [n - 1, n + 1, n + 2];
+      questionHtml = mkPolySvg(n, false) + `<span style="display:block">${question}</span>`;
     }
     return { category: 'angle', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
   }
