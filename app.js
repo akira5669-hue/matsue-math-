@@ -4289,6 +4289,8 @@
     worldPanel: document.getElementById('worldPanel'),
     worldProgress: document.getElementById('worldProgress'),
     worldMapWrap: document.getElementById('worldMapWrap'),
+    worldZoomTabs: document.getElementById('worldZoomTabs'),
+    worldMapZoomWrap: document.getElementById('worldMapZoomWrap'),
     worldStageList: document.getElementById('worldStageList'),
     grantToggle: document.getElementById('grantToggle'),
     grantPanel: document.getElementById('grantPanel'),
@@ -5612,6 +5614,50 @@
       el.classList.toggle('is-unlocked-country', unlocked);
       WORLD_REGION_KEYS.forEach(function (r) { el.classList.toggle('region-' + r, unlocked && c.region === r); });
     });
+    syncWorldMapZoomClone();
+  }
+
+  // 世界地図が小さくて国が分かりにくいという声を受けて、地域ごとに拡大表示できるようにする。
+  // 同じ(着色済みの)地図をクローンし、viewBoxだけ切り替えて特定地域を拡大表示する。
+  var WORLD_MAP_ZOOMS = [
+    { id: 'eurasia', label: 'ユーラシア', viewBox: '880 60 1500 640' },
+    { id: 'africa_middleeast', label: 'アフリカ・中東', viewBox: '1150 320 700 760' },
+    { id: 'southasia_oceania', label: '南・東南アジア/オセアニア', viewBox: '1550 320 1200 760' },
+    { id: 'northamerica', label: '北アメリカ', viewBox: '0 0 1050 620' },
+    { id: 'southamerica', label: '南米', viewBox: '380 480 700 700' },
+    { id: 'pacific', label: '太平洋の島々', viewBox: '2250 650 504 400' },
+  ];
+  var worldMapZoomActiveId = WORLD_MAP_ZOOMS[0].id;
+
+  function applyWorldMapZoomViewBox() {
+    var svg = els.worldMapZoomWrap.querySelector('svg');
+    if (!svg) return;
+    var zoom = WORLD_MAP_ZOOMS.find(function (z) { return z.id === worldMapZoomActiveId; });
+    if (!zoom) return;
+    svg.setAttribute('viewBox', zoom.viewBox);
+    // 元のwidth/height属性(2754x1398)が残っていると、一部ブラウザでCSSのwidth:100%と
+    // 競合してズーム後のviewBoxが正しく反映されないことがあるため、明示的に取り除く。
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+  }
+
+  function syncWorldMapZoomClone() {
+    if (!worldMapInjected) return;
+    els.worldMapZoomWrap.innerHTML = els.worldMapWrap.innerHTML;
+    applyWorldMapZoomViewBox();
+  }
+
+  function renderWorldZoomTabs() {
+    els.worldZoomTabs.innerHTML = WORLD_MAP_ZOOMS.map(function (z) {
+      return '<button type="button" class="world-zoom-tab-btn' + (z.id === worldMapZoomActiveId ? ' is-active' : '') + '" data-zoom="' + z.id + '">' + z.label + '</button>';
+    }).join('');
+    Array.from(els.worldZoomTabs.querySelectorAll('button')).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        worldMapZoomActiveId = btn.dataset.zoom;
+        renderWorldZoomTabs();
+        applyWorldMapZoomViewBox();
+      });
+    });
   }
 
   function ensureWorldMapLoaded(count) {
@@ -5645,6 +5691,7 @@
       : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + ((count + 1) * 10) + 'で制覇）';
     ensureWorldMapLoaded(count);
     applyWorldMapColors(count);
+    renderWorldZoomTabs();
     els.worldStageList.innerHTML = WORLD_STAGES.map(function (stage) {
       var countries = WORLD_DATA.filter(function (c) { return c.stage === stage.id; });
       var chips = countries.map(function (c) {

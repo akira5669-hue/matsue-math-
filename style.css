@@ -1087,6 +1087,38 @@ h1 {
 .world-map-wrap svg .region-northamerica, .world-map-wrap svg .region-northamerica .landxx { fill: #a45fe0 !important; }
 .world-map-wrap svg .region-southamerica, .world-map-wrap svg .region-southamerica .landxx { fill: #e85fa0 !important; }
 .world-map-wrap svg .region-pacific,      .world-map-wrap svg .region-pacific .landxx      { fill: #8fd14f !important; }
+.world-zoom-label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+}
+.world-zoom-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.world-zoom-tab-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-ink);
+  cursor: pointer;
+}
+.world-zoom-tab-btn.is-active {
+  background: var(--c-positive);
+  border-color: var(--c-positive);
+  color: #fff;
+}
+.world-map-zoom-wrap {
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  padding: 6px;
+}
 .world-stage-list {
   display: flex;
   flex-direction: column;
