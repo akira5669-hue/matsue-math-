@@ -2978,6 +2978,8 @@
   const VERT_PAIR = { a: 'c', b: 'd', c: 'a', d: 'b' };
   const CORRESPONDING_PAIR = { a: 'e', b: 'f', c: 'g', d: 'h', e: 'a', f: 'b', g: 'c', h: 'd' };
   const ALTERNATE_PAIR = { c: 'e', d: 'f', e: 'c', f: 'd' };
+  // 教科書と同じく、平行記号を斜めに表示する（プレーンテキストの∥だと縦棒に見えるため）。
+  const PARALLEL_SYM_HTML = '<span style="display:inline-block;transform:skewX(-18deg)">∥</span>';
 
   function mkVerticalAnglesSvg(givenLabel, theta) {
     const pos = { a: [35, 25], b: [78, 25], c: [78, 78], d: [35, 78] };
@@ -3090,7 +3092,7 @@
       answer = theta;
       wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
       steps = [`l ∥ m のとき、同位角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
-      questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question}</span>`;
+      questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question.replace('∥', PARALLEL_SYM_HTML)}</span>`;
     } else if (pat === 10) {
       // 錯角（平行線、内側の角どうし）
       const labels = ['c', 'd', 'e', 'f'];
@@ -3101,7 +3103,7 @@
       answer = theta;
       wrongs = [180 - theta, theta + 10, Math.max(1, theta - 10)];
       steps = [`l ∥ m のとき、錯角は等しい`, `∠${targetLabel} = ∠${givenLabel} = ${theta}°`];
-      questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question}</span>`;
+      questionHtml = mkParallelTransversalSvg(givenLabel, theta, targetLabel) + `<span style="display:block">${question.replace('∥', PARALLEL_SYM_HTML)}</span>`;
     } else if (pat === 11) {
       const ns = [4, 5, 6, 8, 9, 10, 12, 15, 18, 20];
       const n = ns[randInt(0, ns.length - 1)];
