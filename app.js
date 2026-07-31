@@ -5907,7 +5907,7 @@
     renderAvatarPanel();
   }
 
-  /* ---------- 世界制覇（開発中プレビュー、00001のみ表示） ---------- */
+  /* ---------- 世界制覇 ---------- */
 
   var worldMapInjected = false;
   var worldMapLoading = false;
