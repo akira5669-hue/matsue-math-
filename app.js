@@ -5059,7 +5059,7 @@
       if (!res.ok) {
         var msg = '通信に失敗しました。もう一度お試しください。';
         if (res.error === 'not_found') msg = 'そのIDは登録されていません。先生に確認してください。';
-        else if (res.error === 'no_password') msg = 'まだパスワードが設定されていません。「新規登録」から設定してください。';
+        else if (res.error === 'no_password') msg = 'パスワードが未設定です。下の「パスワードを忘れた方はこちら」から新しいパスワードを設定してください。';
         else if (res.error === 'wrong_password') {
           msg = 'パスワードが違います。';
           if (res.attemptsRemaining !== undefined) msg += `（あと${res.attemptsRemaining}回間違えるとロックされます）`;
