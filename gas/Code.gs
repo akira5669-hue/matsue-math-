@@ -232,7 +232,11 @@ function findStudentRow_(sheet, id) {
         items: parseJsonCell_(data[i][14], []),
         rareCollected: parseJsonCell_(data[i][15], []),
         rareDefeats: parseJsonCell_(data[i][16], {}),
-        thinkerMilestone: data[i][17] || null
+        thinkerMilestone: data[i][17] || null,
+        // 累計の正解数。handleLog_で正解のたびに1ずつ加算しておくことで、Recordsシート
+        // 全体を毎回スキャンしなくても「この生徒が実際に解いた問題数」を安く参照できる
+        // (syncPointsの妥当性チェックで、EXPが実際の正解数に見合っているかの検証に使う)。
+        loggedCorrectCount: Number(data[i][18]) || 0
       };
     }
   }
@@ -501,6 +505,11 @@ function handleLog_(ctx, body) {
   ctx.records.appendRow([new Date(), id, row.name, category, correct]);
   var newRow = ctx.records.getLastRow();
   ctx.records.getRange(newRow, 2).setNumberFormat('@').setValue(id);
+
+  if (correct) {
+    ctx.students.getRange(row.rowIndex, 19).setValue(row.loggedCorrectCount + 1);
+  }
+
   return { ok: true };
 }
 
@@ -595,18 +604,33 @@ function handleHistory_(ctx, body) {
 // クライアントから送られてくるpoints/level/expを無条件に信用すると、ブラウザの
 // localStorageを直接書き換えるだけで無制限に値を水増しできてしまう(実際に、作成
 // 4日後のアカウントがlevel1507/exp15060/MP27300を主張していたが、記録されている
-// 正解数からはlevel946程度が上限という不整合が見つかった)。アカウント作成日からの
-// 経過日数に基づく現実的な上限でクランプすることで、この種の不正な値の急増を防ぐ。
-var MAX_EXP_PER_DAY_ = 500; // 1日50連勝(500問正解)相当。実際の生徒にとって十分すぎるほど余裕を持たせた上限
+// 正解数からはlevel946程度が上限という不整合が見つかった)。
+//
+// EXPには本来1日あたりの上限が無い(何連勝しても際限なく増える設計)ため、最初は
+// 「1日あたりの上限」でEXPもクランプしていたが、これは間違いだった。全く同じくらいの
+// アカウント年齢・正解数を持つ2人の生徒を比較したところ、非常に活発な生徒(00025)は
+// 正解数に対してMPは低い比率(0.18MP/問)だった一方、不正の疑いがある生徒(00124)は
+// 正解数に対してMPが極端に高い比率(2.89MP/問)だった。つまり:
+//   - EXPは「実際に記録されている正解数」からしか上限を決められない(日数ベースだと
+//     熱心な生徒を誤って締め出してしまう)。
+//   - MPは1日100MPというアプリ自身の設計上の上限があるため、引き続き日数ベースで
+//     妥当(ただしダブルorハーフによる倍増や各種一時ボーナスを考慮し、バッファは
+//     余裕を持たせる)。
+var EXP_LOG_BUFFER_MULTIPLIER_ = 1.4; // 記録されている正解数から達成可能なEXPの上限に、通信エラー等でログに残らなかった分も見込んで4割上乗せ
+var EXP_LOG_BUFFER_FLAT_ = 500; // 正解数がまだ少ない新規アカウントのための最低保証分
 var POINTS_DAILY_CAP_ = 100; // クライアント側のPOINTS_DAILY_CAPと同じ値
-var POINTS_BONUS_BUFFER_ = 1000; // お詫び300MP・都道府県制覇300MP・ミッション等の一時ボーナスをまとめて許容する上乗せ分
+var POINTS_BONUS_BUFFER_ = 2500; // お詫び300MP・都道府県制覇300MP・ミッション・ダブルorハーフの倍増運等をまとめて許容する上乗せ分
+// loggedCorrectCountは新しく追加した列のため、導入時は既存の生徒全員をRecordsシートから
+// 一括バックフィル(debugBackfillLoggedCorrectCounts、実施済み)した後にこのフラグを有効化した。
+var EXP_CLAMP_ENABLED_ = true;
 function plausibilityCeilings_(row) {
   var now = new Date();
   var daysSinceCreation = row.createdAt
     ? Math.max(1, Math.ceil((now.getTime() - new Date(row.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
     : 1;
+  var maxAchievableExp = Math.floor((Number(row.loggedCorrectCount) || 0) / 10) * 10;
   return {
-    maxExp: daysSinceCreation * MAX_EXP_PER_DAY_,
+    maxExp: EXP_CLAMP_ENABLED_ ? (maxAchievableExp * EXP_LOG_BUFFER_MULTIPLIER_ + EXP_LOG_BUFFER_FLAT_) : Infinity,
     maxPoints: daysSinceCreation * POINTS_DAILY_CAP_ + POINTS_BONUS_BUFFER_,
   };
 }
