@@ -191,6 +191,18 @@ function sha256Hex_(text) {
   }).join('');
 }
 
+// アイテム・図鑑(rareCollected)・レアキャラ撃破回数(rareDefeats)のようにJSONで
+// シートのセルへ保存しているフィールドを安全にパースする(空セル・壊れた値はデフォルト値)。
+function parseJsonCell_(raw, fallback) {
+  if (!raw) return fallback;
+  try {
+    var v = JSON.parse(raw);
+    return (v === null || v === undefined) ? fallback : v;
+  } catch (e) {
+    return fallback;
+  }
+}
+
 function findStudentRow_(sheet, id) {
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
@@ -200,7 +212,14 @@ function findStudentRow_(sheet, id) {
         grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
         level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null,
         prefectureCount: Number(data[i][11]) || 0, avatar: data[i][12] || null,
-        apologyBonusGrantedAt: data[i][13] || null
+        apologyBonusGrantedAt: data[i][13] || null,
+        // items/rareCollected/rareDefeats/thinkerMilestoneは、以前はクライアント側の
+        // localStorageのみで管理していたため、同じIDを複数端末で使うと図鑑・アイテムの
+        // 状態が端末ごとにズレてしまう不具合があった。サーバー側にも保存・同期する。
+        items: parseJsonCell_(data[i][14], []),
+        rareCollected: parseJsonCell_(data[i][15], []),
+        rareDefeats: parseJsonCell_(data[i][16], {}),
+        thinkerMilestone: data[i][17] || null
       };
     }
   }
@@ -357,7 +376,11 @@ function handleLogin_(ctx, body) {
   points = row.points;
 
   var pendingItems = takePendingItemGrants_(ctx, id);
-  return { ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded };
+  return {
+    ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade,
+    prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded,
+    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone
+  };
 }
 
 // 管理者(ID 00001)が、ログアウト時のバグ等でアイテム・レアキャラ図鑑を失った生徒に
@@ -446,7 +469,11 @@ function handleGetPoints_(ctx, body) {
   if (!row) return { ok: false, error: 'not_found' };
   var apologyBonusAwarded = maybeGrantApologyBonus_(ctx, row);
   var pendingItems = takePendingItemGrants_(ctx, id);
-  return { ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded };
+  return {
+    ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount,
+    avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded,
+    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone
+  };
 }
 
 function handleLog_(ctx, body) {
@@ -575,6 +602,23 @@ function handleSyncPoints_(ctx, body) {
     var level = Math.max(1, Math.floor(Number(body.level)) || 1);
     var exp = Math.max(0, Math.floor(Number(body.exp)) || 0);
     ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[level, exp]]);
+  }
+
+  // アイテム・図鑑(rareCollected)・レアキャラ撃破回数(rareDefeats)・考えるAKRの
+  // 出現状態(thinkerMilestone)もサーバーへ保存し、同じIDを複数端末で使っても
+  // 端末間で図鑑・アイテムがズレないようにする。クライアント側で既にマージ済みの
+  // 状態を送ってくる想定なので、そのままJSONで書き込む。
+  if (body.items !== undefined) {
+    ctx.students.getRange(row.rowIndex, 15).setValue(JSON.stringify(Array.isArray(body.items) ? body.items : []));
+  }
+  if (body.rareCollected !== undefined) {
+    ctx.students.getRange(row.rowIndex, 16).setValue(JSON.stringify(Array.isArray(body.rareCollected) ? body.rareCollected : []));
+  }
+  if (body.rareDefeats !== undefined) {
+    ctx.students.getRange(row.rowIndex, 17).setValue(JSON.stringify((body.rareDefeats && typeof body.rareDefeats === 'object') ? body.rareDefeats : {}));
+  }
+  if (body.thinkerMilestone !== undefined) {
+    ctx.students.getRange(row.rowIndex, 18).setValue(body.thinkerMilestone || '');
   }
 
   return { ok: true, bonusAwarded: bonusAwarded };

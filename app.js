@@ -4944,7 +4944,7 @@
       else { state.rareType = assignRareType(state); }
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).then(function (res) {
+        apiPost('syncPoints', buildProgressSyncPayload(session.id)).then(function (res) {
           if (res && res.bonusAwarded > 0) {
             state.points += res.bonusAwarded;
             saveGameState(state);
@@ -5002,7 +5002,7 @@
         state.points += MISSION_REWARD_MP;
         missionHtml = `<div class="win-banner">🎯 今日のミッション達成！ +${MISSION_REWARD_MP}MP 🎉</div>`;
         if (session && session.id) {
-          apiPost('syncPoints', { id: session.id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).catch(function () { });
+          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
         }
       }
       saveGameState(state);
@@ -5195,7 +5195,7 @@
       state.enabled = (progress && Array.isArray(progress.enabled) && progress.enabled.length > 0) ? new Set(progress.enabled) : new Set(defaultEnabledIds(res.grade));
       state.avatar = parseAvatarJson(res.avatar);
       saveGameState(state);
-      reconcilePoints(id, res.points, res.level, res.exp, res.prefectureCount);
+      reconcilePoints(id, res);
       showApp(res.name, false);
       if (res.pointsReset) {
         window.alert('5日以上ログインが無かったため、MPが0にリセットされました。レベル・EXPはそのまま残っています。');
@@ -5214,15 +5214,35 @@
     if (level1 !== level2) return level1 > level2;
     return exp1 > exp2;
   }
+  // 考えるAKRの出現状態は null < 100 < 1000 の順で「進んでいる」とみなす
+  function thinkerMilestoneRank(v) {
+    return v === 1000 ? 2 : v === 100 ? 1 : 0;
+  }
 
-  // ログイン・再開時に、端末側とサーバー側のMP・レベル・EXPのうち
-  // 進んでいる方に揃える（サーバー側での付与や別端末での進捗を
-  // 取りこぼさない一方、同期し損ねた分の進捗も失わないようにする）。
-  function reconcilePoints(id, serverPoints, serverLevel, serverExp, serverPrefectureCount) {
-    var sp = Number(serverPoints) || 0;
-    var sl = Number(serverLevel) || 1;
-    var se = Number(serverExp) || 0;
-    var spc = Number(serverPrefectureCount) || 0;
+  // points/level/exp/prefectureCount/items/rareCollected/rareDefeats/thinkerMilestoneを
+  // まとめてサーバーへ送るための共通ペイロード(syncPointsアクション)。
+  function buildProgressSyncPayload(id) {
+    return {
+      id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount,
+      items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
+    };
+  }
+
+  // ログイン・再開時に、端末側とサーバー側の進捗のうち進んでいる方に揃える。
+  // MP・レベル・EXP・都道府県制覇数は「大きい方」を採用。アイテム・図鑑・レア撃破回数は
+  // 端末ごとに独立して増えていく(同じIDを複数端末で使うと図鑑がズレる不具合の原因だった)
+  // ため、どちらか一方を採用するのではなく和集合(アイテム・図鑑)・最大値(撃破回数)で
+  // マージする。マージの結果、端末側の方が進んでいる項目があればサーバーへ書き戻す。
+  function reconcilePoints(id, server) {
+    server = server || {};
+    var sp = Number(server.points) || 0;
+    var sl = Number(server.level) || 1;
+    var se = Number(server.exp) || 0;
+    var spc = Number(server.prefectureCount) || 0;
+    var sItems = Array.isArray(server.items) ? server.items : [];
+    var sRareCollected = Array.isArray(server.rareCollected) ? server.rareCollected : [];
+    var sRareDefeats = (server.rareDefeats && typeof server.rareDefeats === 'object') ? server.rareDefeats : {};
+    var sThinkerMilestone = server.thinkerMilestone || null;
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -5230,13 +5250,32 @@
       state.level = sl; state.exp = se; changed = true;
     }
     if (spc > state.prefectureCount) { state.prefectureCount = spc; changed = true; }
+    sItems.forEach(function (itemId) {
+      if (state.items.indexOf(itemId) === -1) { state.items.push(itemId); changed = true; }
+    });
+    sRareCollected.forEach(function (rid) {
+      if (state.rareCollected.indexOf(rid) === -1) { state.rareCollected.push(rid); changed = true; }
+    });
+    Object.keys(sRareDefeats).forEach(function (k) {
+      var sv = Number(sRareDefeats[k]) || 0;
+      if (sv > (Number(state.rareDefeats[k]) || 0)) { state.rareDefeats[k] = sv; changed = true; }
+    });
+    if (thinkerMilestoneRank(sThinkerMilestone) > thinkerMilestoneRank(state.thinkerMilestone)) {
+      state.thinkerMilestone = sThinkerMilestone; changed = true;
+    }
 
     if (changed) {
       saveGameState(state);
       updateGameHud();
     }
-    if (sp < state.points || isProgressGreater(state.level, state.exp, sl, se) || spc < state.prefectureCount) {
-      apiPost('syncPoints', { id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount }).catch(function () { });
+
+    var localAhead = sp < state.points || isProgressGreater(state.level, state.exp, sl, se) || spc < state.prefectureCount
+      || state.items.some(function (x) { return sItems.indexOf(x) === -1; })
+      || state.rareCollected.some(function (x) { return sRareCollected.indexOf(x) === -1; })
+      || Object.keys(state.rareDefeats).some(function (k) { return (Number(state.rareDefeats[k]) || 0) > (Number(sRareDefeats[k]) || 0); })
+      || thinkerMilestoneRank(state.thinkerMilestone) > thinkerMilestoneRank(sThinkerMilestone);
+    if (localAhead) {
+      apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
   }
 
@@ -6165,7 +6204,7 @@
           if (parsedAvatar) { state.avatar = parsedAvatar; saveGameState(state); updateUserAvatarBadge(); }
           if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
           if (res.apologyBonusAwarded > 0) { state.points += res.apologyBonusAwarded; saveGameState(state); }
-          reconcilePoints(existingSession.id, res.points, res.level, res.exp, res.prefectureCount);
+          reconcilePoints(existingSession.id, res);
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);
