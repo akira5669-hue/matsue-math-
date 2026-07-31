@@ -68,6 +68,7 @@ var GIFT_CATALOG = [
 
 var GIFTCODES_SHEET = 'GiftCodes';
 var ITEMGRANTS_SHEET = 'ItemGrants';
+var ANOMALYLOG_SHEET = 'PointsAnomalyLog';
 var LOW_STOCK_THRESHOLDS = [10, 5];
 
 // 交換受付期間: 5/1〜5/3、12/30〜12/31、1/1（日本時間）
@@ -180,7 +181,18 @@ function getOrInitSheets_() {
     itemGrants.appendRow(['id', 'itemIds', 'grantedAt']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants };
+  // PointsAnomalyLog: syncPoints受信時にpoints/level/expの妥当性チェック(クランプ)が
+  // 実際に発動した場合、その記録をここへ残す。先生が不正なポイント水増しの発生に
+  // いつでも気付けるようにするための監査ログ(通常は空のまま)。
+  var anomalyLog = ss.getSheetByName(ANOMALYLOG_SHEET);
+  if (!anomalyLog) {
+    anomalyLog = ss.insertSheet(ANOMALYLOG_SHEET);
+  }
+  if (anomalyLog.getLastRow() === 0) {
+    anomalyLog.appendRow(['timestamp', 'id', 'name', 'submittedPoints', 'clampedPoints', 'submittedExp', 'clampedExp', 'submittedLevel', 'clampedLevel']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog };
 }
 
 function sha256Hex_(text) {
@@ -617,13 +629,30 @@ function handleSyncPoints_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
   }
 
-  var clampedPoints = Math.min(Math.max(0, Math.floor(points)), ceilings.maxPoints);
+  var rawPoints = Math.max(0, Math.floor(points));
+  var clampedPoints = Math.min(rawPoints, ceilings.maxPoints);
   ctx.students.getRange(row.rowIndex, 7).setValue(clampedPoints + bonusAwarded);
 
+  var rawExp = null, clampedExp = null, rawLevel = null, clampedLevel = null;
   if (body.level !== undefined && body.exp !== undefined) {
-    var exp = Math.min(Math.max(0, Math.floor(Number(body.exp)) || 0), ceilings.maxExp);
-    var level = Math.max(1, Math.min(Math.floor(Number(body.level)) || 1, Math.floor(exp / 10) + 1));
-    ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[level, exp]]);
+    rawExp = Math.max(0, Math.floor(Number(body.exp)) || 0);
+    clampedExp = Math.min(rawExp, ceilings.maxExp);
+    rawLevel = Math.max(1, Math.floor(Number(body.level)) || 1);
+    clampedLevel = Math.max(1, Math.min(rawLevel, Math.floor(clampedExp / 10) + 1));
+    ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[clampedLevel, clampedExp]]);
+  }
+
+  // 実際にクランプが発動した(=送られてきた値が現実的な上限を超えていた)場合のみ、
+  // 先生がいつでも確認できるよう監査ログへ記録する。通常の同期では何も記録されない。
+  var pointsWasClamped = rawPoints > clampedPoints;
+  var expWasClamped = rawExp !== null && rawExp > clampedExp;
+  if ((pointsWasClamped || expWasClamped) && ctx.anomalyLog) {
+    ctx.anomalyLog.appendRow([
+      new Date(), id, row.name,
+      rawPoints, clampedPoints,
+      rawExp === null ? '' : rawExp, clampedExp === null ? '' : clampedExp,
+      rawLevel === null ? '' : rawLevel, clampedLevel === null ? '' : clampedLevel
+    ]);
   }
 
   // アイテム・図鑑(rareCollected)・レアキャラ撃破回数(rareDefeats)・考えるAKRの
