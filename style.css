@@ -971,6 +971,28 @@ h1 {
   background: #fff8e1;
   border: 1.5px solid #f5b400;
 }
+/* 5回撃破でゲット(通常の枠)の後、さらに撃破を重ねるごとに枠が光る段位演出。
+   10回=ブロンズ、15回=シルバー、20回=ゴールド(高い段位ほど優先表示)。 */
+.badge-item.badge-tier-bronze {
+  border: 2px solid #b5651d;
+  box-shadow: 0 0 8px 1px rgba(181, 101, 29, 0.6);
+}
+.badge-item.badge-tier-silver {
+  border: 2px solid #b8c0c8;
+  box-shadow: 0 0 9px 2px rgba(192, 200, 208, 0.75);
+}
+.badge-item.badge-tier-gold {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 12px 3px rgba(255, 215, 0, 0.85);
+  animation: badge-gold-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-gold-pulse {
+  0%, 100% { box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.7); }
+  50% { box-shadow: 0 0 16px 5px rgba(255, 215, 0, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-item.badge-tier-gold { animation: none; }
+}
 .history-section-label {
   font-size: 12px;
   font-weight: 900;

@@ -649,6 +649,34 @@ function plausibilityCeilings_(row) {
   };
 }
 
+// 世界制覇(大陸ボーナス)：都道府県制覇ボーナスと同じ考え方で、クライアントの自己申告
+// (継続リスト等)を信用せず、サーバー側で保持しているlevelから導出した「制覇済み国数」の
+// 遷移(前回のlevel→今回のlevel)だけを見て、大陸の制覇をまたいだ場合にのみ一度だけ+500MPを
+// 付与する。新しい永続フィールドを増やさずに済むうえ、levelは既に妥当性チェック済みなので
+// 改ざんの心配もない。
+var WORLD_DATA_LENGTH_ = 100;
+var CONTINENT_BONUS_MP_ = 500;
+var CONTINENT_DEFS_ = [
+  { id: 'asia', maxCode: 66 }, // 東アジア(1-6)+中東(47-55)+南アジア(56-66)
+  { id: 'europe', maxCode: 28 }, // ヨーロッパ(7-28)
+  { id: 'africa', maxCode: 46 }, // アフリカ(29-46)
+  { id: 'northamerica', maxCode: 80 }, // 北アメリカ(69-80)
+  { id: 'southamerica', maxCode: 90 }, // 南アメリカ(81-90)
+  { id: 'oceania', maxCode: 100 }, // オセアニア(67-68)+太平洋の島国(91-100)
+];
+function worldCountForLevel_(level) {
+  if (level < 100) return 0;
+  return Math.min(WORLD_DATA_LENGTH_, Math.floor((level - 100) / 10) + 1);
+}
+function continentBonusForTransition_(prevCount, newCount) {
+  var bonus = 0;
+  for (var i = 0; i < CONTINENT_DEFS_.length; i++) {
+    var c = CONTINENT_DEFS_[i];
+    if (newCount >= c.maxCode && prevCount < c.maxCode) bonus += CONTINENT_BONUS_MP_;
+  }
+  return bonus;
+}
+
 function handleSyncPoints_(ctx, body) {
   var id = String(body.id || '').trim();
   var points = Number(body.points);
@@ -659,17 +687,16 @@ function handleSyncPoints_(ctx, body) {
   var ceilings = plausibilityCeilings_(row);
 
   var bonusAwarded = 0;
+  var prefectureBonusAwarded = 0;
+  var continentBonusAwarded = 0;
   if (body.prefectureCount !== undefined) {
     var prefectureCount = Math.max(0, Math.min(47, Math.floor(Number(body.prefectureCount)) || 0));
     if (prefectureCount === 47 && row.prefectureCount < 47 && isWithinPrefectureBonusWindow_()) {
-      bonusAwarded = PREFECTURE_BONUS_MP;
+      prefectureBonusAwarded = PREFECTURE_BONUS_MP;
+      bonusAwarded += prefectureBonusAwarded;
     }
     ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
   }
-
-  var rawPoints = Math.max(0, Math.floor(points));
-  var clampedPoints = Math.min(rawPoints, ceilings.maxPoints);
-  ctx.students.getRange(row.rowIndex, 7).setValue(clampedPoints + bonusAwarded);
 
   var rawExp = null, clampedExp = null, rawLevel = null, clampedLevel = null;
   if (body.level !== undefined && body.exp !== undefined) {
@@ -677,8 +704,14 @@ function handleSyncPoints_(ctx, body) {
     clampedExp = Math.min(rawExp, ceilings.maxExp);
     rawLevel = Math.max(1, Math.floor(Number(body.level)) || 1);
     clampedLevel = Math.max(1, Math.min(rawLevel, Math.floor(clampedExp / 10) + 1));
+    continentBonusAwarded = continentBonusForTransition_(worldCountForLevel_(row.level), worldCountForLevel_(clampedLevel));
+    bonusAwarded += continentBonusAwarded;
     ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[clampedLevel, clampedExp]]);
   }
+
+  var rawPoints = Math.max(0, Math.floor(points));
+  var clampedPoints = Math.min(rawPoints, ceilings.maxPoints);
+  ctx.students.getRange(row.rowIndex, 7).setValue(clampedPoints + bonusAwarded);
 
   // 実際にクランプが発動した(=送られてきた値が現実的な上限を超えていた)場合のみ、
   // 先生がいつでも確認できるよう監査ログへ記録する。通常の同期では何も記録されない。
@@ -710,7 +743,7 @@ function handleSyncPoints_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 18).setValue(body.thinkerMilestone || '');
   }
 
-  return { ok: true, bonusAwarded: bonusAwarded };
+  return { ok: true, bonusAwarded: bonusAwarded, prefectureBonusAwarded: prefectureBonusAwarded, continentBonusAwarded: continentBonusAwarded };
 }
 
 

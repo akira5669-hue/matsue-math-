@@ -4060,6 +4060,14 @@
         miss: '…去る。また今度な！',
       },
     },
+    fugoupakkun: {
+      id: 'fugoupakkun', name: '不等号パックン', img: 'images/fugoupakkun.png',
+      lines: {
+        appear: 'くらべっこ勝負だ！こっちがおおきいぞ！1問でも間違えたら逃げるぞ！',
+        defeat: 'やったー！よくくらべられたな！',
+        miss: 'あっ、こっちの方がおおきくなってる…逃げちゃうぞ！',
+      },
+    },
     mistakeking: {
       id: 'mistakeking', name: '間違い大魔王', img: 'images/mistakeking.png',
       lines: {
@@ -4164,13 +4172,13 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
-  // ソウブセン(1/20)・ナットマン(1/50)を追加した分、素の合計は42%→49%になったため、
-  // スケール係数も20/49に更新して合計20%を維持する。
-  const RARE_SCALE = 20 / 49; // 合計49%→20%
+  // 不等号パックン(1/30)を追加した分、素の合計は157/300(52.33%)になったため、
+  // スケール係数も60/157に更新して合計20%を維持する。
+  const RARE_SCALE = 60 / 157; // 合計52.33%→20%
   const RARE_CHANCE_ZOMBIE = 0.08 * RARE_SCALE;
   const RARE_CHANCE_SANTA = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SMILE = (1 / 30) * RARE_SCALE;
@@ -4182,6 +4190,7 @@
   const RARE_CHANCE_IINE = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SOUBUSEN = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_NATTOMAN = (1 / 50) * RARE_SCALE;
+  const RARE_CHANCE_FUGOUPAKKUN = (1 / 30) * RARE_SCALE;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -4189,6 +4198,7 @@
   const INUDA_BONUS_MP = 20;
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
+  const FUGOUPAKKUN_BONUS_MP = 20;
   // いいねAKRを撃破した時、5分の1の確率で斬鉄剣をゲットできる。
   const IINE_ITEM_DROP_CHANCE = 1 / 5;
   // イヌダは期間限定キャラ(2026-07-30〜2026-08-31)。この期間だけ出現する。
@@ -4212,12 +4222,14 @@
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
   const SPECIAL_ITEM_ZANTETSUKEN = 'zantetsuken';
   const SPECIAL_ITEM_NATTO_GOKORO = 'nattoGokoro';
+  const SPECIAL_ITEM_SUTOBOKE_SWORD = 'sutobokeSword';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
     { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
     { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
     { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
     { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
+    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）' },
   ];
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
@@ -4239,6 +4251,7 @@
       ['doubleorhalf', RARE_CHANCE_DOUBLEORHALF],
       ['soubusen', chanceSoubusen],
       ['nattoman', chanceNattoman],
+      ['fugoupakkun', RARE_CHANCE_FUGOUPAKKUN],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -4806,6 +4819,7 @@
       const iineFled = state.rareType === 'iine';
       const soubusenFled = state.rareType === 'soubusen';
       const nattomanFled = state.rareType === 'nattoman';
+      const fugoupakkunFled = state.rareType === 'fugoupakkun';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -4851,6 +4865,11 @@
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
         saveGameState(state);
+      } else if (fugoupakkunFled) {
+        missLineHtml += `<div class="enemy-quote-banner">💨 不等号パックンは逃げてしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
+        saveGameState(state);
       }
     }
 
@@ -4879,7 +4898,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
       const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
@@ -4951,7 +4970,8 @@
             state.points += res.bonusAwarded;
             saveGameState(state);
             updateGameHud();
-            window.alert(`🎉 都道府県制覇ボーナス！+${res.bonusAwarded}MP 🎉`);
+            if (res.prefectureBonusAwarded > 0) window.alert(`🎉 都道府県制覇ボーナス！+${res.prefectureBonusAwarded}MP 🎉`);
+            if (res.continentBonusAwarded > 0) window.alert(`🌏 大陸制覇ボーナス！+${res.continentBonusAwarded}MP 🌏`);
           }
         }).catch(function () { });
       }
@@ -4986,6 +5006,7 @@
         : wasRareType === 'iine' ? '<span class="rare-badge">👍レア撃破！👍</span>'
         : wasRareType === 'soubusen' ? ('<span class="rare-badge">✨レア撃破！+' + SOUBUSEN_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'nattoman' ? ('<span class="rare-badge">🫘レア撃破！+' + NATTOMAN_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'fugoupakkun' ? ('<span class="rare-badge">🔢レア撃破！+' + FUGOUPAKKUN_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
@@ -5545,21 +5566,36 @@
     }
   }
 
+  // 5回撃破でコレクション入り(通常枠)した後、さらに撃破を重ねると枠が段位で光る。
+  // 高い段位ほど優先(20回以上ならゴールド、15回以上ならシルバー、10回以上ならブロンズ)。
+  const RARE_TIER_GOLD_AT = 20;
+  const RARE_TIER_SILVER_AT = 15;
+  const RARE_TIER_BRONZE_AT = 10;
+  function rareTierClassFor(defeatCount) {
+    if (defeatCount >= RARE_TIER_GOLD_AT) return 'badge-tier-gold';
+    if (defeatCount >= RARE_TIER_SILVER_AT) return 'badge-tier-silver';
+    if (defeatCount >= RARE_TIER_BRONZE_AT) return 'badge-tier-bronze';
+    return '';
+  }
   function renderRareCollection() {
     const ids = RARE_COLLECTIBLE_IDS.concat(['thinker']);
     els.historyRareCollection.innerHTML = ids.map(function (id) {
       const rt = RARE_TYPES[id];
       const collected = state.rareCollected.indexOf(id) !== -1;
-      const cls = 'badge-item' + (collected ? ' badge-earned' : ' badge-locked');
+      const defeatCount = state.rareDefeats[id] || 0;
+      const tierCls = collected ? rareTierClassFor(defeatCount) : '';
+      const cls = 'badge-item' + (collected ? ' badge-earned' : ' badge-locked') + (tierCls ? ' ' + tierCls : '');
       const iconHtml = rt.img ? `<img src="${rt.img}" alt="">` : (rt.emoji || '❓');
       const label = collected ? rt.name : '？？？';
       let title;
       if (collected) {
         title = rt.name;
+        if (tierCls === 'badge-tier-gold') title += `（ゴールド・${defeatCount}回撃破）`;
+        else if (tierCls === 'badge-tier-silver') title += `（シルバー・${defeatCount}回撃破）`;
+        else if (tierCls === 'badge-tier-bronze') title += `（ブロンズ・${defeatCount}回撃破）`;
       } else if (id === 'thinker') {
         title = 'レベル1000で登場する考えるAKRを倒すとゲット';
       } else {
-        const defeatCount = state.rareDefeats[id] || 0;
         title = `あと${Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount)}回撃破でゲット`;
       }
       return `<div class="${cls}" title="${title}"><span class="badge-icon">${iconHtml}</span><span class="badge-name">${label}</span></div>`;
