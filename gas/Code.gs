@@ -236,7 +236,10 @@ function findStudentRow_(sheet, id) {
         // 累計の正解数。handleLog_で正解のたびに1ずつ加算しておくことで、Recordsシート
         // 全体を毎回スキャンしなくても「この生徒が実際に解いた問題数」を安く参照できる
         // (syncPointsの妥当性チェックで、EXPが実際の正解数に見合っているかの検証に使う)。
-        loggedCorrectCount: Number(data[i][18]) || 0
+        loggedCorrectCount: Number(data[i][18]) || 0,
+        // 本日(日本時間)の正解数/出題数。{date, correct, total}。日付が変わった分は
+        // handleLog_側でリセットしてから加算するので、ここでは生の値をそのまま返す。
+        todayStats: parseJsonCell_(data[i][19], null)
       };
     }
   }
@@ -509,6 +512,15 @@ function handleLog_(ctx, body) {
   if (correct) {
     ctx.students.getRange(row.rowIndex, 19).setValue(row.loggedCorrectCount + 1);
   }
+
+  // 本日のランキングは、以前はRecordsシート全体(数十万行規模)を毎回スキャンして
+  // 集計していたため表示が遅かった。ここで正解のたびに「今日の正解数/出題数」を
+  // その場で加算しておくことで、ランキング表示時はStudentsシートを読むだけで済むようにする。
+  var today = dateKeyTokyo_(new Date());
+  var stats = (row.todayStats && row.todayStats.date === today) ? row.todayStats : { date: today, correct: 0, total: 0 };
+  stats.total++;
+  if (correct) stats.correct++;
+  ctx.students.getRange(row.rowIndex, 20).setValue(JSON.stringify(stats));
 
   return { ok: true };
 }
@@ -790,28 +802,21 @@ function handleRanking_(ctx, body) {
   return { ok: true, ranking: top, nearby: nearby };
 }
 
-// 本日（日本時間）の正解数ランキング。Recordsシートから当日分だけ集計する。
+// 本日（日本時間）の正解数ランキング。以前はRecordsシート全体(数十万行規模)を毎回
+// スキャンしていて表示が遅かったため、handleLog_が正解のたびに加算しているStudents
+// シートの「今日の正解数/出題数」列を読むだけで済むように変更した。
 function handleRankingToday_(ctx, body) {
   var myId = String(body.id || '').trim();
   var todayKey = dateKeyTokyo_(new Date());
-  var data = ctx.records.getDataRange().getValues();
-  var counts = {};
-  for (var i = 1; i < data.length; i++) {
-    if (dateKeyTokyo_(data[i][0]) !== todayKey) continue;
-    var id = String(data[i][1]).trim();
-    if (!id) continue;
-    if (!counts[id]) counts[id] = { correct: 0, total: 0 };
-    counts[id].total++;
-    if (!!data[i][4]) counts[id].correct++;
-  }
-  var gradeById = {};
   var sdata = ctx.students.getDataRange().getValues();
+  var rows = [];
   for (var j = 1; j < sdata.length; j++) {
-    gradeById[String(sdata[j][0]).trim()] = sdata[j][5] || '';
+    var id = String(sdata[j][0]).trim();
+    if (!id) continue;
+    var stats = parseJsonCell_(sdata[j][19], null);
+    if (!stats || stats.date !== todayKey || !stats.total) continue;
+    rows.push({ id: id, correct: Number(stats.correct) || 0, total: Number(stats.total) || 0, grade: sdata[j][5] || '' });
   }
-  var rows = Object.keys(counts).map(function (id) {
-    return { id: id, correct: counts[id].correct, total: counts[id].total, grade: gradeById[id] || '' };
-  });
   rows.sort(function (a, b) {
     if (b.correct !== a.correct) return b.correct - a.correct;
     return b.total - a.total;
