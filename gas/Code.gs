@@ -209,6 +209,7 @@ function findStudentRow_(sheet, id) {
     if (String(data[i][0]).trim() === String(id).trim()) {
       return {
         rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
+        createdAt: data[i][4] || null,
         grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
         level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null,
         prefectureCount: Number(data[i][11]) || 0, avatar: data[i][12] || null,
@@ -579,6 +580,25 @@ function handleHistory_(ctx, body) {
   };
 }
 
+// クライアントから送られてくるpoints/level/expを無条件に信用すると、ブラウザの
+// localStorageを直接書き換えるだけで無制限に値を水増しできてしまう(実際に、作成
+// 4日後のアカウントがlevel1507/exp15060/MP27300を主張していたが、記録されている
+// 正解数からはlevel946程度が上限という不整合が見つかった)。アカウント作成日からの
+// 経過日数に基づく現実的な上限でクランプすることで、この種の不正な値の急増を防ぐ。
+var MAX_EXP_PER_DAY_ = 500; // 1日50連勝(500問正解)相当。実際の生徒にとって十分すぎるほど余裕を持たせた上限
+var POINTS_DAILY_CAP_ = 100; // クライアント側のPOINTS_DAILY_CAPと同じ値
+var POINTS_BONUS_BUFFER_ = 1000; // お詫び300MP・都道府県制覇300MP・ミッション等の一時ボーナスをまとめて許容する上乗せ分
+function plausibilityCeilings_(row) {
+  var now = new Date();
+  var daysSinceCreation = row.createdAt
+    ? Math.max(1, Math.ceil((now.getTime() - new Date(row.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
+    : 1;
+  return {
+    maxExp: daysSinceCreation * MAX_EXP_PER_DAY_,
+    maxPoints: daysSinceCreation * POINTS_DAILY_CAP_ + POINTS_BONUS_BUFFER_,
+  };
+}
+
 function handleSyncPoints_(ctx, body) {
   var id = String(body.id || '').trim();
   var points = Number(body.points);
@@ -586,6 +606,7 @@ function handleSyncPoints_(ctx, body) {
 
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
+  var ceilings = plausibilityCeilings_(row);
 
   var bonusAwarded = 0;
   if (body.prefectureCount !== undefined) {
@@ -596,11 +617,12 @@ function handleSyncPoints_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
   }
 
-  ctx.students.getRange(row.rowIndex, 7).setValue(Math.max(0, Math.floor(points)) + bonusAwarded);
+  var clampedPoints = Math.min(Math.max(0, Math.floor(points)), ceilings.maxPoints);
+  ctx.students.getRange(row.rowIndex, 7).setValue(clampedPoints + bonusAwarded);
 
   if (body.level !== undefined && body.exp !== undefined) {
-    var level = Math.max(1, Math.floor(Number(body.level)) || 1);
-    var exp = Math.max(0, Math.floor(Number(body.exp)) || 0);
+    var exp = Math.min(Math.max(0, Math.floor(Number(body.exp)) || 0), ceilings.maxExp);
+    var level = Math.max(1, Math.min(Math.floor(Number(body.level)) || 1, Math.floor(exp / 10) + 1));
     ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[level, exp]]);
   }
 
