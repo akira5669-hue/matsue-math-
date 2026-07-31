@@ -4044,6 +4044,22 @@
         miss: '残念、逃げてしまった…今日のMPは半分になってしまった…',
       },
     },
+    soubusen: {
+      id: 'soubusen', name: 'ゆうかんそうぶせん戦士', img: 'images/soubusen.png',
+      lines: {
+        appear: '勇敢そうぶせん戦士、参上！1問でも間違えたら撤退するぞ！',
+        defeat: 'よくやった！ボーナスMPをあげよう！',
+        miss: '…撤退する。また今度な！',
+      },
+    },
+    nattoman: {
+      id: 'nattoman', name: 'ナットマン', img: 'images/nattoman.png',
+      lines: {
+        appear: '納豆の鮮度が…1問でも間違えたら去るぞ！',
+        defeat: 'よくやったな！納豆心をあげよう！ボーナスMPもだ！',
+        miss: '…去る。また今度な！',
+      },
+    },
     mistakeking: {
       id: 'mistakeking', name: '間違い大魔王', img: 'images/mistakeking.png',
       lines: {
@@ -4148,11 +4164,13 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
-  const RARE_SCALE = 20 / 42; // 合計42%→20%
+  // ソウブセン(1/20)・ナットマン(1/50)を追加した分、素の合計は42%→49%になったため、
+  // スケール係数も20/49に更新して合計20%を維持する。
+  const RARE_SCALE = 20 / 49; // 合計49%→20%
   const RARE_CHANCE_ZOMBIE = 0.08 * RARE_SCALE;
   const RARE_CHANCE_SANTA = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SMILE = (1 / 30) * RARE_SCALE;
@@ -4162,11 +4180,15 @@
   const RARE_CHANCE_INUDA = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_DOUBLEORHALF = (1 / 50) * RARE_SCALE;
   const RARE_CHANCE_IINE = (1 / 30) * RARE_SCALE;
+  const RARE_CHANCE_SOUBUSEN = (1 / 20) * RARE_SCALE;
+  const RARE_CHANCE_NATTOMAN = (1 / 50) * RARE_SCALE;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
   const MISTAKEKING_BONUS_MP = 30;
   const INUDA_BONUS_MP = 20;
+  const SOUBUSEN_BONUS_MP = 20;
+  const NATTOMAN_BONUS_MP = 20;
   // いいねAKRを撃破した時、5分の1の確率で斬鉄剣をゲットできる。
   const IINE_ITEM_DROP_CHANCE = 1 / 5;
   // イヌダは期間限定キャラ(2026-07-30〜2026-08-31)。この期間だけ出現する。
@@ -4176,15 +4198,26 @@
     const today = todayKey();
     return today >= INUDA_START && today <= INUDA_END;
   }
+  // 期間限定キャラの汎用の期間判定(ソウブセン・ナットマンで使用)。
+  function isWithinDateWindow(startKey, endKey) {
+    const today = todayKey();
+    return today >= startKey && today <= endKey;
+  }
+  const SOUBUSEN_START = '2026-07-31';
+  const SOUBUSEN_END = '2026-08-31';
+  const NATTOMAN_START = '2026-07-31';
+  const NATTOMAN_END = '2026-08-31';
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
   const SPECIAL_ITEM_ZANTETSUKEN = 'zantetsuken';
+  const SPECIAL_ITEM_NATTO_GOKORO = 'nattoGokoro';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
     { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
     { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
     { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
+    { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
   ];
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
@@ -4192,6 +4225,8 @@
   function rollRareType() {
     const r = Math.random();
     const chanceInuda = isWithinInudaWindow() ? RARE_CHANCE_INUDA : 0;
+    const chanceSoubusen = isWithinDateWindow(SOUBUSEN_START, SOUBUSEN_END) ? RARE_CHANCE_SOUBUSEN : 0;
+    const chanceNattoman = isWithinDateWindow(NATTOMAN_START, NATTOMAN_END) ? RARE_CHANCE_NATTOMAN : 0;
     const slices = [
       ['santa', RARE_CHANCE_SANTA],
       ['zombie', RARE_CHANCE_ZOMBIE],
@@ -4202,6 +4237,8 @@
       ['iine', RARE_CHANCE_IINE],
       ['inuda', chanceInuda],
       ['doubleorhalf', RARE_CHANCE_DOUBLEORHALF],
+      ['soubusen', chanceSoubusen],
+      ['nattoman', chanceNattoman],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -4765,6 +4802,8 @@
       const inudaFled = state.rareType === 'inuda';
       const doubleOrHalfFled = state.rareType === 'doubleorhalf';
       const iineFled = state.rareType === 'iine';
+      const soubusenFled = state.rareType === 'soubusen';
+      const nattomanFled = state.rareType === 'nattoman';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -4800,6 +4839,16 @@
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
         saveGameState(state);
+      } else if (soubusenFled) {
+        missLineHtml += `<div class="enemy-quote-banner">💨 ゆうかんそうぶせん戦士は撤退してしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
+        saveGameState(state);
+      } else if (nattomanFled) {
+        missLineHtml += `<div class="enemy-quote-banner">🫘💨 ナットマンは去ってしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
+        saveGameState(state);
       }
     }
 
@@ -4828,7 +4877,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : 0;
       const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
@@ -4861,6 +4910,9 @@
       } else if (wasRareType === 'iine' && !state.items.includes(SPECIAL_ITEM_ZANTETSUKEN) && Math.random() < IINE_ITEM_DROP_CHANCE) {
         state.items.push(SPECIAL_ITEM_ZANTETSUKEN);
         itemGainedHtml = '<div class="item-gain-banner">⚔️ スペシャルアイテム「斬鉄剣」を手に入れた！⚔️</div>';
+      } else if (wasRareType === 'nattoman' && !state.items.includes(SPECIAL_ITEM_NATTO_GOKORO)) {
+        state.items.push(SPECIAL_ITEM_NATTO_GOKORO);
+        itemGainedHtml = '<div class="item-gain-banner">🧑‍🍳 スペシャルアイテム「納豆心」を手に入れた！🧑‍🍳</div>';
       }
 
       let collectionGainedHtml = '';
@@ -4930,6 +4982,8 @@
         : wasRareType === 'warisu' ? ('<span class="rare-badge">🐿️レア撃破！+' + WARISU_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'inuda' ? ('<span class="rare-badge">🐶レア撃破！+' + INUDA_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'iine' ? '<span class="rare-badge">👍レア撃破！👍</span>'
+        : wasRareType === 'soubusen' ? ('<span class="rare-badge">✨レア撃破！+' + SOUBUSEN_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'nattoman' ? ('<span class="rare-badge">🫘レア撃破！+' + NATTOMAN_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
