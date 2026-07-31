@@ -1081,6 +1081,7 @@
 
     // ---------- 小5 ----------
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
+    { id: 'decFracAddSub5',  label: '小数と分数のたし算・ひき算（小5）',   gen: genDecFracAddSub5,  defaultOff: true },
     { id: 'fracReduceConvert5', label: '約分・通分（小5）',                gen: genFracReduceConvert5, defaultOff: true },
     { id: 'decMul5',         label: '小数のかけ算（小5）',                 gen: genDecMul5,         defaultOff: true },
     { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
@@ -1519,6 +1520,45 @@
       `= ${answer}`,
     ];
     return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+  }
+
+  // 小数と分数のたし算・ひき算（小5）。答えは分数で表す。
+  function genDecFracAddSub5() {
+    const decTenths = randInt(1, 99); // 0.1〜9.9
+    const decStr = (decTenths / 10).toFixed(1);
+    const n1 = decTenths, d1 = 10; // 小数を分数(未約分)として扱う
+    const [n2, d2] = randFrac(9);
+
+    const isAdd = Math.random() < 0.5;
+    const L = lcmFrac(d1, d2);
+    const N1 = n1 * (L / d1);
+    const N2 = n2 * (L / d2);
+
+    // ひき算のときは大きい方から小さい方を引く(答えが負にならないようにする)。
+    const decimalFirst = isAdd ? Math.random() < 0.5 : N1 >= N2;
+    const opSym = isAdd ? '+' : '−';
+    const question = decimalFirst
+      ? `${decStr} ${opSym} ${n2}/${d2} = ?`
+      : `${n2}/${d2} ${opSym} ${decStr} = ?`;
+
+    const numAns = isAdd ? N1 + N2 : Math.abs(N1 - N2);
+    const denAns = L;
+    const answer = fracToStr(numAns, denAns);
+
+    const [, rd] = reduceFrac(numAns, denAns);
+    const wrongUnreduced = denAns === rd ? null : `${numAns}/${denAns}`;
+    const wrongAddDenom = `${n1 + n2}/${d1 + d2}`;
+    const wrongNumOnly = `${n1 + n2}/${L}`;
+    const candidates = [wrongUnreduced, wrongAddDenom, wrongNumOnly].filter(Boolean);
+
+    const steps = [
+      `${decStr} を分数に直す: ${decStr} = ${n1}/${d1}`,
+      `通分する: 分母を最小公倍数 ${L} にそろえる`,
+      `${n1}/${d1} = ${N1}/${L}、${n2}/${d2} = ${N2}/${L}`,
+      `${decimalFirst ? `${N1}/${L} ${opSym} ${N2}/${L}` : `${N2}/${L} ${opSym} ${N1}/${L}`} = ${numAns}/${denAns}`,
+      `= ${answer}`,
+    ];
+    return { category: 'decFracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   // 約分・通分（小5）
