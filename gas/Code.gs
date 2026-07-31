@@ -287,6 +287,8 @@ function doPost(e) {
     return jsonOut_(handleRankingToday_(ctx, body));
   } else if (action === 'rankingPoints') {
     return jsonOut_(handleRankingPoints_(ctx, body));
+  } else if (action === 'rankingGrade') {
+    return jsonOut_(handleRankingGrade_(ctx, body));
   } else if (action === 'grantItems') {
     return jsonOut_(handleGrantItems_(ctx, body));
   } else if (action === 'registerGuardian') {
@@ -800,6 +802,36 @@ function handleRanking_(ctx, body) {
   var top = rows.slice(0, 50).map(mapFn);
   var nearby = buildNearbyRanking_(rows, myId, mapFn);
   return { ok: true, ranking: top, nearby: nearby };
+}
+
+// 学年ごとのレベル(経験値)ランキング。リクエストした生徒と同じ学年の中だけで
+// 上位30位+自分の順位(前後3位)を返す。
+function handleRankingGrade_(ctx, body) {
+  var myId = String(body.id || '').trim();
+  var myRow = findStudentRow_(ctx.students, myId);
+  if (!myRow) return { ok: false, error: 'not_found' };
+  var myGrade = myRow.grade;
+  var data = ctx.students.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var id = String(data[i][0]).trim();
+    if (!id) continue;
+    var grade = data[i][5] || '';
+    if (grade !== myGrade) continue;
+    var level = Number(data[i][8]) || 1;
+    var exp = Number(data[i][9]) || 0;
+    rows.push({ id: id, level: level, exp: exp, grade: grade });
+  }
+  rows.sort(function (a, b) {
+    if (b.level !== a.level) return b.level - a.level;
+    return b.exp - a.exp;
+  });
+  var mapFn = function (r, idx) {
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), level: r.level, exp: r.exp, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
+  };
+  var top = rows.slice(0, 30).map(mapFn);
+  var nearby = buildNearbyRanking_(rows, myId, mapFn);
+  return { ok: true, grade: myGrade, ranking: top, nearby: nearby };
 }
 
 // 本日（日本時間）の正解数ランキング。以前はRecordsシート全体(数十万行規模)を毎回

@@ -4399,9 +4399,11 @@
     historyRareCollection: document.getElementById('historyRareCollection'),
     rankingToggle: document.getElementById('rankingToggle'),
     rankingPanel: document.getElementById('rankingPanel'),
+    rankingTitle: document.getElementById('rankingTitle'),
     rankingTabExp: document.getElementById('rankingTabExp'),
     rankingTabToday: document.getElementById('rankingTabToday'),
     rankingTabPoints: document.getElementById('rankingTabPoints'),
+    rankingTabGrade: document.getElementById('rankingTabGrade'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
     rankingNearby: document.getElementById('rankingNearby'),
@@ -5636,13 +5638,14 @@
   }
 
   function renderRanking(res, mode) {
+    els.rankingTitle.textContent = mode === 'grade' ? `ランキング（学年内 上位30位）${res.grade ? '【' + res.grade + '】' : ''}` : 'ランキング（上位50位）';
     if (res.ranking.length === 0) {
-      els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : 'まだランキングデータがありません。';
+      els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : mode === 'grade' ? 'まだ同学年のランキングデータがありません。' : 'まだランキングデータがありません。';
       els.rankingList.innerHTML = '';
       els.rankingNearby.hidden = true;
       return;
     }
-    els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
+    els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : mode === 'grade' ? `同学年 経験値上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
     els.rankingList.innerHTML = res.ranking.map(function (r) { return rankingRowHtml(r, mode); }).join('');
 
     if (Array.isArray(res.nearby) && res.nearby.length > 0) {
@@ -5661,6 +5664,8 @@
     els.rankingTabToday.setAttribute('aria-selected', String(mode === 'today'));
     els.rankingTabPoints.classList.toggle('is-active', mode === 'points');
     els.rankingTabPoints.setAttribute('aria-selected', String(mode === 'points'));
+    els.rankingTabGrade.classList.toggle('is-active', mode === 'grade');
+    els.rankingTabGrade.setAttribute('aria-selected', String(mode === 'grade'));
   }
 
   function loadRanking(mode) {
@@ -5669,7 +5674,7 @@
 
     var session = loadSession();
     if (!session || !session.id) return;
-    var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : 'ranking';
+    var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : 'ranking';
     apiPost(action, { id: session.id }).then(function (res) {
       if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
       renderRanking(res, mode);
@@ -6186,6 +6191,7 @@
   els.rankingTabExp.addEventListener('click', function () { selectRankingMode('exp'); });
   els.rankingTabToday.addEventListener('click', function () { selectRankingMode('today'); });
   els.rankingTabPoints.addEventListener('click', function () { selectRankingMode('points'); });
+  els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
   els.giftToggle.addEventListener('click', toggleGift);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);

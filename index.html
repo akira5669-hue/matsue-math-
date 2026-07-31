@@ -217,11 +217,12 @@
     </section>
 
     <section class="ranking-panel" id="rankingPanel" hidden>
-      <h3 class="history-title">ランキング（上位50位）</h3>
+      <h3 class="history-title" id="rankingTitle">ランキング（上位50位）</h3>
       <div class="login-tabs" role="tablist">
         <button type="button" class="login-tab is-active" id="rankingTabExp" role="tab" aria-selected="true">経験値ランキング</button>
         <button type="button" class="login-tab" id="rankingTabToday" role="tab" aria-selected="false">本日のランキング</button>
         <button type="button" class="login-tab" id="rankingTabPoints" role="tab" aria-selected="false" hidden>MPランキング</button>
+        <button type="button" class="login-tab" id="rankingTabGrade" role="tab" aria-selected="false">学年別ランキング</button>
       </div>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
       <div class="ranking-list" id="rankingList"></div>
