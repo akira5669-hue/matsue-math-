@@ -5139,9 +5139,10 @@
       let doubleGainedHtml = '';
       if (wasRareType === 'doubleorhalf') {
         const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
-        state.points += snapshot;
-        state.pointsToday += snapshot;
-        doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${snapshot}MP）💰</div>`;
+        const doubleBonusToAdd = Math.max(0, Math.min(snapshot, POINTS_DAILY_CAP - state.pointsToday));
+        state.points += doubleBonusToAdd;
+        state.pointsToday += doubleBonusToAdd;
+        doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${doubleBonusToAdd}MP）💰</div>`;
       }
       state.exp += 10;
       const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
