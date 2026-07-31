@@ -4123,15 +4123,19 @@
   }
   const RARE_COLLECTION_THRESHOLD = 5;
   const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine'].concat(WARLORD_IDS);
-  const RARE_CHANCE_ZOMBIE = 0.08;
-  const RARE_CHANCE_SANTA = 1 / 30;
-  const RARE_CHANCE_SMILE = 1 / 30;
-  const RARE_CHANCE_NEKODA = 1 / 20;
-  const RARE_CHANCE_WARISU = 1 / 50;
-  const RARE_CHANCE_MISTAKEKING = 1 / 10;
-  const RARE_CHANCE_INUDA = 1 / 20;
-  const RARE_CHANCE_DOUBLEORHALF = 1 / 50;
-  const RARE_CHANCE_IINE = 1 / 30;
+  // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
+  // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
+  // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
+  const RARE_SCALE = 20 / 42; // 合計42%→20%
+  const RARE_CHANCE_ZOMBIE = 0.08 * RARE_SCALE;
+  const RARE_CHANCE_SANTA = (1 / 30) * RARE_SCALE;
+  const RARE_CHANCE_SMILE = (1 / 30) * RARE_SCALE;
+  const RARE_CHANCE_NEKODA = (1 / 20) * RARE_SCALE;
+  const RARE_CHANCE_WARISU = (1 / 50) * RARE_SCALE;
+  const RARE_CHANCE_MISTAKEKING = (1 / 10) * RARE_SCALE;
+  const RARE_CHANCE_INUDA = (1 / 20) * RARE_SCALE;
+  const RARE_CHANCE_DOUBLEORHALF = (1 / 50) * RARE_SCALE;
+  const RARE_CHANCE_IINE = (1 / 30) * RARE_SCALE;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
