@@ -239,7 +239,9 @@ function findStudentRow_(sheet, id) {
         loggedCorrectCount: Number(data[i][18]) || 0,
         // 本日(日本時間)の正解数/出題数。{date, correct, total}。日付が変わった分は
         // handleLog_側でリセットしてから加算するので、ここでは生の値をそのまま返す。
-        todayStats: parseJsonCell_(data[i][19], null)
+        todayStats: parseJsonCell_(data[i][19], null),
+        // HP: 文章題を正解するたびに+10される新ステータス。
+        hp: Number(data[i][20]) || 0
       };
     }
   }
@@ -401,7 +403,7 @@ function handleLogin_(ctx, body) {
   return {
     ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade,
     prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded,
-    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone
+    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp
   };
 }
 
@@ -494,7 +496,7 @@ function handleGetPoints_(ctx, body) {
   return {
     ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount,
     avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded,
-    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone
+    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp
   };
 }
 
@@ -741,6 +743,9 @@ function handleSyncPoints_(ctx, body) {
   }
   if (body.thinkerMilestone !== undefined) {
     ctx.students.getRange(row.rowIndex, 18).setValue(body.thinkerMilestone || '');
+  }
+  if (body.hp !== undefined) {
+    ctx.students.getRange(row.rowIndex, 21).setValue(Math.max(0, Math.floor(Number(body.hp)) || 0));
   }
 
   return { ok: true, bonusAwarded: bonusAwarded, prefectureBonusAwarded: prefectureBonusAwarded, continentBonusAwarded: continentBonusAwarded };

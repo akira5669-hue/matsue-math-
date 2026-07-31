@@ -124,7 +124,7 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -136,7 +136,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
       });
     }
   }
@@ -322,6 +322,59 @@
     return { category:'equation', question:q, questionHtml, answer:ans, choices:buildChoices(ans,wrongs), steps };
   }
 
+  // 方程式の文章題（中1）。答えとなる整数を先に決め、そこから問題文の数値を
+  // 逆算して作ることで、常に綺麗な整数解になるようにしている。
+  function genEqWordProblem1() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // ある数のa倍にbを足す(引く)とresultになる
+      answer = randInt(2, 20);
+      const a = randInt(2, 9);
+      const b = randInt(1, 20);
+      const isAdd = Math.random() < 0.5;
+      const result = isAdd ? a * answer + b : a * answer - b;
+      question = isAdd
+        ? `ある数の${a}倍に${b}を足すと${result}になりました。ある数を求めなさい。`
+        : `ある数の${a}倍から${b}を引くと${result}になりました。ある数を求めなさい。`;
+      steps = isAdd
+        ? [`ある数をxとすると、${a}x + ${b} = ${result}`, `${a}x = ${result} − ${b} = ${a * answer}`, `x = ${a * answer} ÷ ${a} = ${answer}`]
+        : [`ある数をxとすると、${a}x − ${b} = ${result}`, `${a}x = ${result} + ${b} = ${a * answer}`, `x = ${a * answer} ÷ ${a} = ${answer}`];
+      wrongs = [answer + 1, answer - 1, a * answer];
+    } else if (pat === 1) {
+      // 個数と代金の文章題
+      answer = randInt(2, 15);
+      const price = [50, 80, 100, 120, 150, 200][randInt(0, 5)];
+      const fee = randInt(1, 4) * 50;
+      const total = price * answer + fee;
+      question = `1個${price}円のお菓子を何個か買って、${fee}円の箱代を払ったところ、合計金額は${total}円になりました。お菓子を何個買いましたか。`;
+      steps = [
+        `買った個数をx個とすると、${price}x + ${fee} = ${total}`,
+        `${price}x = ${total} − ${fee} = ${price * answer}`,
+        `x = ${price * answer} ÷ ${price} = ${answer}`,
+      ];
+      wrongs = [answer + 1, answer - 1, Math.round(total / price)].filter((v) => v !== answer);
+    } else {
+      // 過不足算: a個ずつ配るとb個余り、c個ずつ配るとd個不足する
+      answer = randInt(5, 20); // 人数
+      const a = randInt(2, 5);
+      const diff = randInt(1, 3);
+      const c = a + diff;
+      const totalDiff = diff * answer;
+      const b = randInt(1, totalDiff - 1);
+      const d = totalDiff - b;
+      question = `生徒にあめを${a}個ずつ配ると${b}個余り、${c}個ずつ配ると${d}個不足します。生徒の人数を求めなさい。`;
+      steps = [
+        `生徒の人数をx人とすると、あめの個数は ${a}x + ${b} でも ${c}x − ${d} でも表せる`,
+        `${a}x + ${b} = ${c}x − ${d}`,
+        `${b} + ${d} = ${c}x − ${a}x = ${diff}x`,
+        `x = ${totalDiff} ÷ ${diff} = ${answer}`,
+      ];
+      wrongs = [answer + 1, answer - 1, a + c];
+    }
+    return { category: 'eqWordProblem1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   function genExpand2() {
     const pat = randInt(0, 1);
     let q, answer, steps, wrongs;
@@ -440,6 +493,48 @@
     const wrongs = [-answer, answer+1, answer-1].filter((v,i,arr)=>arr.indexOf(v)===i&&v!==answer);
     const questionHtml = stackLines(eq1Html || eq1, eq2, `のとき ${askX?'x':'y'} = ?`);
     return { category:'simul', question:q, questionHtml, answer, choices:buildChoices(answer,wrongs), steps };
+  }
+
+  // 連立方程式の文章題（中2）。2つの答え(x,y)を先に決めて、そこから問題文の
+  // 数値を逆算して作ることで、常に綺麗な整数解になるようにしている。
+  function genSimulEqWordProblem2() {
+    const pat = randInt(0, 1);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 個数と代金: りんごx個・みかんy個、合計n個・合計m円
+      const x = randInt(2, 15), y = randInt(2, 15);
+      const priceApple = [80, 100, 120, 150, 180][randInt(0, 4)];
+      const priceMikan = [40, 50, 60, 80][randInt(0, 3)];
+      const n = x + y;
+      const m = priceApple * x + priceMikan * y;
+      const askApple = Math.random() < 0.5;
+      answer = askApple ? x : y;
+      question = `1個${priceApple}円のりんごと1個${priceMikan}円のみかんを合わせて${n}個買ったところ、代金の合計は${m}円でした。${askApple ? 'りんご' : 'みかん'}は何個買いましたか。`;
+      steps = [
+        `りんごの個数をx個、みかんの個数をy個とすると`,
+        `x + y = ${n} …①`,
+        `${priceApple}x + ${priceMikan}y = ${m} …②`,
+        `①より y = ${n} − x を②に代入して解くと、x = ${x}、y = ${y}`,
+        `${askApple ? 'りんご' : 'みかん'}は ${answer} 個`,
+      ];
+      wrongs = [askApple ? y : x, answer + 1, answer - 1].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
+    } else {
+      // 和差算: 2つの正の整数の和と差
+      const x = randInt(10, 40), y = randInt(1, x - 1); // x > y、どちらも正の整数
+      const p = x + y, q = x - y;
+      const askLarger = Math.random() < 0.5;
+      answer = askLarger ? x : y;
+      question = `2つの正の整数があります。この2つの数の和は${p}、差は${q}です。${askLarger ? '大きい方' : '小さい方'}の数を求めなさい。`;
+      steps = [
+        `大きい方をx、小さい方をyとすると`,
+        `x + y = ${p} …①`,
+        `x − y = ${q} …②`,
+        `①+②: 2x = ${p + q} → x = ${x}`,
+        `①より y = ${p} − ${x} = ${y}`,
+      ];
+      wrongs = [askLarger ? y : x, answer + 1, answer - 1].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
+    }
+    return { category: 'simulEqWordProblem2', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   function quadPolyStr(x2C, xC, con) {
@@ -673,6 +768,58 @@
       choices = shuffle([answer, roots(-r1, -r2), roots(r1-1, r2), roots(r1, r2+1)]);
     }
     return { category: 'quadratic', question: q, answer, choices, steps };
+  }
+
+  // 二次方程式の文章題（中3）。答えとなる整数を先に決め、そこから問題文の
+  // 数値を逆算して作ることで、常に綺麗な整数解になるようにしている。
+  function genQuadEqWordProblem3() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 連続する2つの正の整数の積
+      answer = randInt(3, 20);
+      const next = answer + 1;
+      const product = answer * next;
+      question = `連続する2つの正の整数があります。この2つの数の積が${product}であるとき、小さい方の整数を求めなさい。`;
+      steps = [
+        `小さい方の整数をxとすると、大きい方は x + 1`,
+        `x(x + 1) = ${product}`,
+        `x² + x − ${product} = 0`,
+        `(x − ${answer})(x + ${next}) = 0`,
+        `x は正の整数なので x = ${answer}`,
+      ];
+      wrongs = [next, answer - 1, answer + 2];
+    } else if (pat === 1) {
+      // 長方形: 縦が横よりdcm短い
+      answer = randInt(5, 15); // 横の長さ
+      const d = randInt(1, Math.min(5, answer - 1));
+      const tate = answer - d;
+      const area = answer * tate;
+      question = `縦の長さが横の長さより${d}cm短い長方形があります。面積が${area}cm²であるとき、横の長さを求めなさい。`;
+      steps = [
+        `横の長さをxcmとすると、縦の長さは (x − ${d})cm`,
+        `x(x − ${d}) = ${area}`,
+        `x² − ${d}x − ${area} = 0`,
+        `(x − ${answer})(x + ${tate + answer}) = 0`,
+        `x > ${d} なので x = ${answer}`,
+      ];
+      wrongs = [tate, answer + 1, answer - 1];
+    } else {
+      // 正方形の1辺をdcm伸ばしてできる長方形
+      answer = randInt(3, 12); // もとの正方形の1辺
+      const d = randInt(1, 6);
+      const area = answer * (answer + d);
+      question = `1辺の長さがxcmの正方形があります。1辺を${d}cm伸ばして長方形を作ったところ、面積が${area}cm²になりました。もとの正方形の1辺の長さを求めなさい。`;
+      steps = [
+        `もとの正方形の1辺をxcmとすると、長方形の面積は x(x + ${d})`,
+        `x(x + ${d}) = ${area}`,
+        `x² + ${d}x − ${area} = 0`,
+        `(x − ${answer})(x + ${answer + d}) = 0`,
+        `x は正の数なので x = ${answer}`,
+      ];
+      wrongs = [answer + d, answer + 1, answer - 1].filter((v) => v !== answer);
+    }
+    return { category: 'quadEqWordProblem3', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   /* ---------- 比例・反比例 ---------- */
@@ -1035,6 +1182,7 @@
     { id: 'subst',      label: '代入の計算（中1）',               gen: genSubst },
     { id: 'maxof4',     label: '大小関係（中1）',                 gen: genMaxOf4 },
     { id: 'equation',   label: '一次方程式（中1）',               gen: genEquation },
+    { id: 'eqWordProblem1', label: '方程式の文章題（中1）',        gen: genEqWordProblem1 },
     { id: 'proportion', label: '比例・反比例（中1）',             gen: genProportion },
     { id: 'linearMul',   label: '1次式×÷数（中1）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）',              gen: genPolyMul },
@@ -1045,6 +1193,7 @@
 
     // ---------- 中2 ----------
     { id: 'simul',      label: '連立方程式（中2）',               gen: genSimul },
+    { id: 'simulEqWordProblem2', label: '連立方程式の文章題（中2）', gen: genSimulEqWordProblem2 },
     { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
@@ -1057,6 +1206,7 @@
     { id: 'sqrt',       label: '平方根の計算（中3）',             gen: genSqrt },
     { id: 'sqrtmd',     label: '√のかけ算・割り算（中3）',       gen: genSqrtMulDiv },
     { id: 'quadratic',  label: '二次方程式（中3）',               gen: genQuadratic },
+    { id: 'quadEqWordProblem3', label: '二次方程式の文章題（中3）', gen: genQuadEqWordProblem3 },
     { id: 'quadfunc',   label: '二次関数（中3）',                 gen: genQuadFunc },
     { id: 'similarity',   label: '三角形の相似（中3）',            gen: genSimilarity },
     { id: 'circleAngle', label: '円周角（中3）',                   gen: genCircleAngle },
@@ -4108,6 +4258,15 @@
         miss: 'あっ、こっちの方がおおきくなってる…逃げちゃうぞ！',
       },
     },
+    // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選(rollRareType)とは
+    // 完全に独立した仕組みで、文章題の問題が出た瞬間に別枠で5%の確率で登場する。
+    sutoboke: {
+      id: 'sutoboke', name: 'スットボケAKR', img: 'images/sutoboke.png',
+      lines: {
+        appear: 'ん…？あれ、なんの問題だっけ…でも解けるぜ！',
+        defeat: 'おっと正解！たまには決めるもんだな！',
+      },
+    },
     mistakeking: {
       id: 'mistakeking', name: '間違い大魔王', img: 'images/mistakeking.png',
       lines: {
@@ -4239,6 +4398,18 @@
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
   const FUGOUPAKKUN_BONUS_MP = 20;
+  // 文章題(方程式・連立方程式・二次方程式の文章題)は、他の単元と違って10問連続正解では
+  // なく「1問正解でその場で勝利」という特別ルール。報酬もMP/経験値とも通常の勝利より
+  // 少なめの固定値にし、その代わりに新しいステータス「HP」を稼げるようにする。
+  const WORD_PROBLEM_CATEGORY_IDS = ['eqWordProblem1', 'simulEqWordProblem2', 'quadEqWordProblem3'];
+  const WORD_PROBLEM_MP = 50;
+  const WORD_PROBLEM_EXP = 1;
+  const WORD_PROBLEM_HP_GAIN = 10;
+  // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選とは独立して、文章題の
+  // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でスットボケの剣を
+  // ゲットできる(斬鉄剣と同様、確実ではなく確率ドロップ)。
+  const SUTOBOKE_CHANCE = 0.05;
+  const SUTOBOKE_ITEM_DROP_CHANCE = 1 / 10;
   // いいねAKRを撃破した時、5分の1の確率で斬鉄剣をゲットできる。
   const IINE_ITEM_DROP_CHANCE = 1 / 5;
   // イヌダは期間限定キャラ(2026-07-30〜2026-08-31)。この期間だけ出現する。
@@ -4359,6 +4530,9 @@
     // ensureCategoryDailyReset()でリセットされる。
     categoryDailyCounts: (savedProgress && savedProgress.categoryDailyCounts && typeof savedProgress.categoryDailyCounts === 'object') ? Object.assign({}, savedProgress.categoryDailyCounts) : ((savedGame && savedGame.categoryDailyCounts && typeof savedGame.categoryDailyCounts === 'object') ? Object.assign({}, savedGame.categoryDailyCounts) : {}),
     categoryDailyDate: (savedProgress && savedProgress.categoryDailyDate) || (savedGame && savedGame.categoryDailyDate) || null,
+    // HP: 文章題を正解するたびに+10される新ステータス。MP/経験値と同様、失われることのない
+    // 一方向に増えるだけの累積値。
+    hp: (savedProgress && Number(savedProgress.hp)) || (savedGame && Number(savedGame.hp)) || 0,
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -4388,6 +4562,7 @@
     statRate: document.getElementById('statRate'),
     statPoints: document.getElementById('statPoints'),
     statExpSub: document.getElementById('statExpSub'),
+    statHp: document.getElementById('statHp'),
     statLevel: document.getElementById('statLevel'),
     expBarInner: document.getElementById('expBarInner'),
     enemyEmoji: document.getElementById('enemyEmoji'),
@@ -4689,11 +4864,22 @@
     state.current = q;
     state.answered = false;
 
+    // スットボケAKRは文章題限定の独立したレア抽選。既存のレアキャラ抽選(rollRareType)や
+    // 連続正解の仕組みとは一切連動しない、文章題1問ごとの別枠のお楽しみ要素。
+    if (WORD_PROBLEM_CATEGORY_IDS.indexOf(q.category) !== -1) {
+      q.sutobokeActive = Math.random() < SUTOBOKE_CHANCE;
+    }
+
     els.categoryTag.textContent = categoryLabel[q.category];
+    const sutobokeBannerHtml = q.sutobokeActive
+      ? `<div class="enemy-quote-banner">✨${RARE_TYPES.sutoboke.name}出現！✨ ${RARE_TYPES.sutoboke.lines.appear}</div>`
+      : '';
     if (q.questionHtml) {
-      els.questionText.innerHTML = q.questionHtml;
+      els.questionText.innerHTML = sutobokeBannerHtml + q.questionHtml;
     } else {
-      els.questionText.textContent = q.question;
+      els.questionText.innerHTML = sutobokeBannerHtml;
+      const textNode = document.createTextNode(q.question);
+      els.questionText.appendChild(textNode);
     }
     els.feedback.innerHTML = '';
     els.feedback.className = 'feedback';
@@ -4735,6 +4921,7 @@
     els.hpBarInner.style.background = hp <= 3 ? '#ef4444' : hp <= 6 ? '#f59e0b' : '#22c55e';
     els.hpText.textContent = `${hp}/10`;
     els.statPoints.textContent = state.points;
+    els.statHp.textContent = Number(state.hp) || 0;
     els.statExpSub.textContent = `経験値 ${state.exp}（Lv.${state.level}）`;
     els.statLevel.textContent = state.level;
     els.expBarInner.style.width = `${((state.exp % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
@@ -4837,12 +5024,18 @@
     }
     const session = loadSession();
     const ownGrade = session && session.grade;
+    const isWordProblem = WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1;
     let missLineHtml = '';
     if (isCorrect) {
-      if (state.streak === 0) state.streakAboveGrade = true;
-      state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
-      state.correct++; state.streak++;
+      state.correct++;
       clearWrongQuestion(state.current);
+      // 文章題は「1問正解でその場で勝利」という独自ルールのため、他の単元と共有している
+      // 連続正解数(streak)には加算しない(下の専用の勝利処理で別途報酬を計算する)。
+      if (!isWordProblem) {
+        if (state.streak === 0) state.streakAboveGrade = true;
+        state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
+        state.streak++;
+      }
       saveGameState(state);
     } else {
       const enemyBeforeMiss = currentEnemyDisplay(state);
@@ -5055,6 +5248,38 @@
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
       winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
+    } else if (isCorrect && isWordProblem) {
+      // 文章題は10連続正解を待たず、1問正解したその場で「勝利」扱いにする専用ルート。
+      // 報酬もMP/経験値とも通常より控えめな固定値にし、代わりに新ステータスHPを稼げる。
+      const today = todayKey();
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
+      const pointsToAdd = Math.max(0, Math.min(WORD_PROBLEM_MP, POINTS_DAILY_CAP - state.pointsToday));
+      state.points += pointsToAdd;
+      state.pointsToday += pointsToAdd;
+      state.exp += WORD_PROBLEM_EXP;
+      state.hp = (Number(state.hp) || 0) + WORD_PROBLEM_HP_GAIN;
+      const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
+      const leveledUp = newLevel > state.level;
+      state.level = newLevel;
+
+      const sutobokeActive = !!q.sutobokeActive;
+      let sutobokeHtml = '';
+      if (sutobokeActive) {
+        if (!state.items.includes(SPECIAL_ITEM_SUTOBOKE_SWORD) && Math.random() < SUTOBOKE_ITEM_DROP_CHANCE) {
+          state.items.push(SPECIAL_ITEM_SUTOBOKE_SWORD);
+          sutobokeHtml = `<div class="enemy-quote-banner">${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">⚔️ スペシャルアイテム「スットボケの剣」を手に入れた！⚔️</div>`;
+        } else {
+          sutobokeHtml = `<div class="enemy-quote-banner">${RARE_TYPES.sutoboke.lines.defeat}</div>`;
+        }
+      }
+      saveGameState(state);
+      if (session && session.id) {
+        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP ` : '(本日のMP上限に到達) ';
+      const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
+      const sutobokeTag = sutobokeActive ? `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>` : '';
+      winHtml = `<div class="win-banner">${lvlMsg}${sutobokeTag}文章題クリア！ ${ptText}+${WORD_PROBLEM_EXP}exp +${WORD_PROBLEM_HP_GAIN}HP</div>${sutobokeHtml}`;
     }
 
     let missionHtml = '';
@@ -5248,6 +5473,7 @@
         state.wrongBank = (progress.wrongBank && typeof progress.wrongBank === 'object') ? JSON.parse(JSON.stringify(progress.wrongBank)) : state.wrongBank;
         state.categoryDailyCounts = (progress.categoryDailyCounts && typeof progress.categoryDailyCounts === 'object') ? Object.assign({}, progress.categoryDailyCounts) : state.categoryDailyCounts;
         state.categoryDailyDate = progress.categoryDailyDate || state.categoryDailyDate;
+        state.hp = Number(progress.hp) || state.hp;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -5288,6 +5514,7 @@
     return {
       id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount,
       items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
+      hp: state.hp,
     };
   }
 
@@ -5306,6 +5533,7 @@
     var sRareCollected = Array.isArray(server.rareCollected) ? server.rareCollected : [];
     var sRareDefeats = (server.rareDefeats && typeof server.rareDefeats === 'object') ? server.rareDefeats : {};
     var sThinkerMilestone = server.thinkerMilestone || null;
+    var sHp = Number(server.hp) || 0;
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -5313,6 +5541,7 @@
       state.level = sl; state.exp = se; changed = true;
     }
     if (spc > state.prefectureCount) { state.prefectureCount = spc; changed = true; }
+    if (sHp > (Number(state.hp) || 0)) { state.hp = sHp; changed = true; }
     sItems.forEach(function (itemId) {
       if (state.items.indexOf(itemId) === -1) { state.items.push(itemId); changed = true; }
     });
@@ -5336,7 +5565,8 @@
       || state.items.some(function (x) { return sItems.indexOf(x) === -1; })
       || state.rareCollected.some(function (x) { return sRareCollected.indexOf(x) === -1; })
       || Object.keys(state.rareDefeats).some(function (k) { return (Number(state.rareDefeats[k]) || 0) > (Number(sRareDefeats[k]) || 0); })
-      || thinkerMilestoneRank(state.thinkerMilestone) > thinkerMilestoneRank(sThinkerMilestone);
+      || thinkerMilestoneRank(state.thinkerMilestone) > thinkerMilestoneRank(sThinkerMilestone)
+      || (Number(state.hp) || 0) > sHp;
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -5680,6 +5910,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -5774,6 +6005,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -5843,6 +6075,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -5904,6 +6137,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
@@ -6172,6 +6406,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
     els.grantResult.className = 'grant-result';
