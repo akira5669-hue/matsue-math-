@@ -59,6 +59,28 @@
   var EXP_PER_LEVEL = 10;
   var MAX_LEVEL = 9999;
 
+  // 同じ単元ばかり周回してポイント・経験値を稼ぐのを防ぐため、単元ごとに1日の出題数へ
+  // 上限を設ける。90問解いた時点でその日は「コンプリート」扱いとしてチェックを外し、
+  // 選択できないようにする（100問は誤動作時の安全上限）。翌日になると自動的に解禁される。
+  var DAILY_CATEGORY_COMPLETE_AT = 90;
+  var DAILY_CATEGORY_HARD_CAP = 100;
+  var DAILY_CATEGORY_LIMIT_START = '2026-08-01';
+  function isDailyCategoryLimitActive() {
+    return todayKey() >= DAILY_CATEGORY_LIMIT_START;
+  }
+  function ensureCategoryDailyReset(s) {
+    var today = todayKey();
+    if (s.categoryDailyDate !== today) {
+      s.categoryDailyDate = today;
+      s.categoryDailyCounts = {};
+    }
+  }
+  function isCategoryCompleteToday(s, catId) {
+    if (!isDailyCategoryLimitActive()) return false;
+    ensureCategoryDailyReset(s);
+    return (s.categoryDailyCounts[catId] || 0) >= DAILY_CATEGORY_COMPLETE_AT;
+  }
+
   function todayKey() {
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -102,6 +124,7 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -113,6 +136,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate,
       });
     }
   }
@@ -4241,6 +4265,10 @@
     // 間違い大魔王が出題する「間違えた問題」の保存庫。カテゴリID→問題スナップショット配列。
     wrongBank: (savedProgress && savedProgress.wrongBank && typeof savedProgress.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedProgress.wrongBank)) : ((savedGame && savedGame.wrongBank && typeof savedGame.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedGame.wrongBank)) : {}),
     doubleOrHalfSnapshot: (savedGame && Number(savedGame.doubleOrHalfSnapshot)) || 0,
+    // 単元ごとの1日の出題数上限(DAILY_CATEGORY_COMPLETE_AT)のカウンタ。日付が変われば
+    // ensureCategoryDailyReset()でリセットされる。
+    categoryDailyCounts: (savedProgress && savedProgress.categoryDailyCounts && typeof savedProgress.categoryDailyCounts === 'object') ? Object.assign({}, savedProgress.categoryDailyCounts) : ((savedGame && savedGame.categoryDailyCounts && typeof savedGame.categoryDailyCounts === 'object') ? Object.assign({}, savedGame.categoryDailyCounts) : {}),
+    categoryDailyDate: (savedProgress && savedProgress.categoryDailyDate) || (savedGame && savedGame.categoryDailyDate) || null,
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -4281,6 +4309,7 @@
     settingsToggle: document.getElementById('settingsToggle'),
     settingsPanel: document.getElementById('settingsPanel'),
     settingsGrid: document.getElementById('settingsGrid'),
+    settingsDailyLimitNote: document.getElementById('settingsDailyLimitNote'),
     numberlineTicks: document.querySelector('.nl-ticks'),
 
     loginCard: document.getElementById('loginCard'),
@@ -4407,15 +4436,20 @@
   }
 
   function renderSettings() {
+    els.settingsDailyLimitNote.textContent = isDailyCategoryLimitActive()
+      ? '📌 同じ単元は1日最大100問まで（90問でその日はコンプリート）。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！'
+      : '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。';
     els.settingsGrid.innerHTML = CATEGORIES.map(c => {
       const cs = state.catStats[c.id];
       const acc = cs && cs.total >= 3
         ? `<span class="cat-acc">${Math.round(cs.correct / cs.total * 100)}%</span>`
         : '';
+      const complete = isCategoryCompleteToday(state, c.id);
+      const completeBadge = complete ? `<span class="cat-complete-badge">🌟コンプリート</span>` : '';
       return `
-        <label class="settings-item">
-          <input type="checkbox" data-cat="${c.id}" ${state.enabled.has(c.id) ? 'checked' : ''} />
-          <span class="cat-label">${c.label}</span>${acc}
+        <label class="settings-item${complete ? ' is-daily-complete' : ''}">
+          <input type="checkbox" data-cat="${c.id}" ${(state.enabled.has(c.id) && !complete) ? 'checked' : ''} ${complete ? 'disabled' : ''} />
+          <span class="cat-label">${c.label}</span>${acc}${completeBadge}
         </label>
       `;
     }).join('');
@@ -4440,9 +4474,11 @@
   }
 
   function pickGenerator() {
-    const pool = CATEGORIES.filter(c => state.enabled.has(c.id));
-    const src = pool.length > 0 ? pool : CATEGORIES;
-    return src[randInt(0, src.length - 1)];
+    const notComplete = c => !isCategoryCompleteToday(state, c.id);
+    const pool = CATEGORIES.filter(c => state.enabled.has(c.id) && notComplete(c));
+    const src = pool.length > 0 ? pool : CATEGORIES.filter(notComplete);
+    const finalSrc = src.length > 0 ? src : CATEGORIES;
+    return finalSrc[randInt(0, finalSrc.length - 1)];
   }
 
   /* ---------- 間違い大魔王：間違えた問題の保存庫 ---------- */
@@ -4700,6 +4736,13 @@
     const correctStr = String(state.current.answer);
     const isCorrect = choiceStr === correctStr;
     const catId = state.current.category;
+    // 同じ単元を1日90問解いたら、その単元はその日は出題対象から外す(DAILY_CATEGORY_COMPLETE_AT)。
+    // state.enabled(生徒が選んでいる単元)自体は変更しない。翌日に日付が変わればまた解けるように
+    // なるので、完了判定はカウンタから毎回その場で導出する(isCategoryCompleteToday)。
+    if (isDailyCategoryLimitActive()) {
+      ensureCategoryDailyReset(state);
+      state.categoryDailyCounts[catId] = (state.categoryDailyCounts[catId] || 0) + 1;
+    }
     const session = loadSession();
     const ownGrade = session && session.grade;
     let missLineHtml = '';
@@ -4970,7 +5013,7 @@
   els.resetBtn.addEventListener('click', resetStats);
   els.settingsToggle.addEventListener('click', () => {
     const isHidden = els.settingsPanel.hasAttribute('hidden');
-    if (isHidden) els.settingsPanel.removeAttribute('hidden');
+    if (isHidden) { els.settingsPanel.removeAttribute('hidden'); renderSettings(); }
     else els.settingsPanel.setAttribute('hidden', '');
     els.settingsToggle.setAttribute('aria-expanded', String(isHidden));
   });
@@ -5086,6 +5129,8 @@
         state.missionCorrect = Number(progress.missionCorrect) || 0;
         state.missionClaimed = !!progress.missionClaimed;
         state.wrongBank = (progress.wrongBank && typeof progress.wrongBank === 'object') ? JSON.parse(JSON.stringify(progress.wrongBank)) : state.wrongBank;
+        state.categoryDailyCounts = (progress.categoryDailyCounts && typeof progress.categoryDailyCounts === 'object') ? Object.assign({}, progress.categoryDailyCounts) : state.categoryDailyCounts;
+        state.categoryDailyDate = progress.categoryDailyDate || state.categoryDailyDate;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
