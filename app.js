@@ -6119,6 +6119,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
@@ -6216,6 +6217,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
@@ -6288,6 +6290,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
@@ -6350,6 +6353,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
@@ -6626,6 +6630,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
@@ -6687,7 +6692,6 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
 
@@ -6800,7 +6804,12 @@
     compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
       return apiPost('submitTestPhoto', { id: session.id, testType: 'ranking', scoreTier: tier, imageBase64: base64, mimeType: 'image/jpeg' });
     }).then(function (res) {
-      if (!res.ok) { els.rankingTestResult.textContent = '送信に失敗しました。もう一度お試しください。'; return; }
+      if (!res.ok) {
+        els.rankingTestResult.textContent = res.error === 'already_submitted_this_month'
+          ? '今月のランキングテストはすでに提出済みです（提出は月1回までです）。'
+          : '送信に失敗しました。もう一度お試しください。';
+        return;
+      }
       applyTestPhotoPointsResult(res);
       els.rankingTestFileInput.value = '';
       rankingTestSelectedTier = null;
