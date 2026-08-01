@@ -773,7 +773,7 @@
   // 二次方程式の文章題（中3）。答えとなる整数を先に決め、そこから問題文の
   // 数値を逆算して作ることで、常に綺麗な整数解になるようにしている。
   function genQuadEqWordProblem3() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 5);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       // 連続する2つの正の整数の積
@@ -804,7 +804,7 @@
         `x > ${d} なので x = ${answer}`,
       ];
       wrongs = [tate, answer + 1, answer - 1];
-    } else {
+    } else if (pat === 2) {
       // 正方形の1辺をdcm伸ばしてできる長方形
       answer = randInt(3, 12); // もとの正方形の1辺
       const d = randInt(1, 6);
@@ -818,6 +818,58 @@
         `x は正の数なので x = ${answer}`,
       ];
       wrongs = [answer + d, answer + 1, answer - 1].filter((v) => v !== answer);
+    } else if (pat === 3) {
+      // 連続する2つの自然数の2乗の和
+      const n = randInt(1, 15);
+      const s = n * n + (n + 1) * (n + 1);
+      question = `連続する2つの自然数があります。それぞれを2乗した数の和が${s}になるとき、小さい方の自然数を求めなさい。`;
+      steps = [
+        `小さい方の自然数をxとすると、大きい方は x + 1`,
+        `x² + (x + 1)² = ${s}`,
+        `2x² + 2x + 1 = ${s}`,
+        `x² + x − ${n * (n + 1)} = 0`,
+        `(x − ${n})(x + ${n + 1}) = 0`,
+        `x は正の整数なので x = ${n}`,
+      ];
+      answer = n;
+      wrongs = [n + 1, n - 1, n + 2].filter((v) => v !== answer);
+    } else if (pat === 4) {
+      // 長方形の畑に同じ幅の道(縦横)を作り、残りの面積から道幅を求める
+      const H = randInt(16, 30);
+      const W = randInt(16, 30);
+      const maxWidth = Math.max(2, Math.min(H, W) - 5);
+      answer = randInt(2, maxWidth);
+      const area = (H - answer) * (W - answer);
+      const otherRoot = H + W - answer;
+      question = `縦${H}m、横${W}mの長方形の畑があります。畑の中に、縦と横に同じ幅の道を作ります。道の幅をxmとすると、残りの畑の面積は (${H} − x)(${W} − x) と表されます。残りの畑の面積が${area}m²であるとき、道の幅を求めなさい。`;
+      steps = [
+        `(${H} − x)(${W} − x) = ${area}`,
+        `x² − ${H + W}x + ${H * W} = ${area}`,
+        `x² − ${H + W}x + ${H * W - area} = 0`,
+        `(x − ${answer})(x − ${otherRoot}) = 0`,
+        `0 < x < ${Math.min(H, W)} なので x = ${answer}`,
+      ];
+      wrongs = [otherRoot, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+    } else {
+      // 長方形の厚紙の4すみを切り取って作る、ふたのない箱の容積
+      const c = randInt(2, 5);
+      answer = randInt(2 * c + 6, 2 * c + 20); // もとの厚紙の縦の長さ
+      const D = randInt(1, 6); // 横は縦よりDcm長い
+      const yoko = answer + D;
+      const volume = c * (answer - 2 * c) * (yoko - 2 * c);
+      const otherRoot = 4 * c - D - answer;
+      const yokoOffset = D - 2 * c;
+      const yokoOffsetStr = yokoOffset === 0 ? 'x' : yokoOffset > 0 ? `x + ${yokoOffset}` : `x − ${Math.abs(yokoOffset)}`;
+      const otherRootStr = otherRoot >= 0 ? `(x − ${otherRoot})` : `(x + ${-otherRoot})`;
+      question = `縦が横より${D}cm短い長方形の厚紙があります。この厚紙の4すみから1辺が${c}cmの正方形を切り取り、ふたのない箱を作ったところ、容積が${volume}cm³になりました。もとの厚紙の縦の長さを求めなさい。`;
+      steps = [
+        `縦の長さをxcmとすると、横の長さは (x + ${D})cm`,
+        `箱の底面は縦(x − ${2 * c})cm、横(${yokoOffsetStr})cm、高さ${c}cm`,
+        `${c}(x − ${2 * c})(${yokoOffsetStr}) = ${volume}`,
+        `(x − ${answer})${otherRootStr} = 0`,
+        `x > ${2 * c} なので x = ${answer}`,
+      ];
+      wrongs = [yoko, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
     }
     return { category: 'quadEqWordProblem3', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
