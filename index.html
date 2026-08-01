@@ -282,7 +282,7 @@
       <div class="test-photo-card" id="penaTestCard" hidden>
         <h4 class="test-photo-card-title" id="penaTestCardTitle">ペナテスト</h4>
         <p class="test-photo-hint">満点のテストを撮影して送信すると、自動でMPがもらえます（1枚30MP、1日最大30MP）。写真は3週間保存されます。</p>
-        <input type="file" accept="image/*" capture="environment" id="penaTestFileInput" class="test-photo-file-input" />
+        <input type="file" accept="image/*" id="penaTestFileInput" class="test-photo-file-input" />
         <button type="button" class="primary-btn" id="penaTestSubmitBtn" disabled>送信する</button>
         <p class="test-photo-result" id="penaTestResult"></p>
       </div>
@@ -290,7 +290,7 @@
       <div class="test-photo-card" id="rankingTestCard" hidden>
         <h4 class="test-photo-card-title">📊 数学ランキングテスト</h4>
         <p class="test-photo-hint">数学のランキングテストのみ提出できます（他教科は対象外）。提出は月1回までです。写真を選んでから、点数の帯を選んでください（100点=500MP、90点台=400MP、80点台=300MP、70点台=200MP、それ未満は加算なし）。</p>
-        <input type="file" accept="image/*" capture="environment" id="rankingTestFileInput" class="test-photo-file-input" />
+        <input type="file" accept="image/*" id="rankingTestFileInput" class="test-photo-file-input" />
         <div class="test-photo-tier-row" id="rankingTierRow">
           <button type="button" class="test-photo-tier-btn" data-tier="100">100点<span class="test-photo-tier-mp">500MP</span></button>
           <button type="button" class="test-photo-tier-btn" data-tier="90s">90点台<span class="test-photo-tier-mp">400MP</span></button>
