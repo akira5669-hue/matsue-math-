@@ -691,7 +691,7 @@
       const n = randInt(1, 7), m = randInt(1, 7);
       const result = n + m;
       const otherA = a === 2 ? 3 : 2;
-      q = `${n}√${a} + ${m}√${a} = ?`;
+      q = `${sqrtStr(n, a)} + ${sqrtStr(m, a)} = ?`;
       const answerStr = sqrtStr(result, a);
       steps = [`√${a} を文字のように扱う`, `(${n} + ${m})√${a} = ${answerStr}`];
       return { category:'sqrt', question:q, answer: answerStr, choices: buildChoicesFromList(answerStr, [sqrtStr(n*m, a), sqrtStr(result+1, a), sqrtStr(Math.max(1,result-1), a), sqrtStr(result, otherA)]), steps };
@@ -722,7 +722,7 @@
       const m = randInt(1, 5), n = randInt(m+1, m+6);
       const result = n - m;
       const otherA = a === 2 ? 3 : 2;
-      q = `${n}√${a} − ${m}√${a} = ?`;
+      q = `${sqrtStr(n, a)} − ${sqrtStr(m, a)} = ?`;
       const answerStr = sqrtStr(result, a);
       steps = [`√${a} を文字のように扱う`, `(${n} − ${m})√${a} = ${answerStr}`];
       return { category:'sqrt', question:q, answer: answerStr, choices: buildChoicesFromList(answerStr, [sqrtStr(n+m, a), sqrtStr(result+1, a), sqrtStr(Math.max(1,result-1), a), sqrtStr(result, otherA)]), steps };
@@ -4737,6 +4737,21 @@
     grantOtherIds: document.getElementById('grantOtherIds'),
     grantSubmitBtn: document.getElementById('grantSubmitBtn'),
     grantResult: document.getElementById('grantResult'),
+    testPhotoToggle: document.getElementById('testPhotoToggle'),
+    testPhotoPanel: document.getElementById('testPhotoPanel'),
+    penaTestCard: document.getElementById('penaTestCard'),
+    penaTestCardTitle: document.getElementById('penaTestCardTitle'),
+    penaTestFileInput: document.getElementById('penaTestFileInput'),
+    penaTestSubmitBtn: document.getElementById('penaTestSubmitBtn'),
+    penaTestResult: document.getElementById('penaTestResult'),
+    rankingTestCard: document.getElementById('rankingTestCard'),
+    rankingTestFileInput: document.getElementById('rankingTestFileInput'),
+    rankingTierRow: document.getElementById('rankingTierRow'),
+    rankingTestConfirm: document.getElementById('rankingTestConfirm'),
+    rankingTestConfirmText: document.getElementById('rankingTestConfirmText'),
+    rankingTestConfirmYes: document.getElementById('rankingTestConfirmYes'),
+    rankingTestConfirmNo: document.getElementById('rankingTestConfirmNo'),
+    rankingTestResult: document.getElementById('rankingTestResult'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -5474,6 +5489,8 @@
     els.worldPanel.hidden = true;
     els.grantToggle.hidden = !(session && session.id === '00001');
     els.grantPanel.hidden = true;
+    els.testPhotoToggle.hidden = !!isGuest;
+    els.testPhotoPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
     drawNumberline();
     renderSettings();
@@ -5964,6 +5981,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -6059,6 +6077,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -6129,6 +6148,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -6192,6 +6212,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
@@ -6265,6 +6286,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
     renderAvatarPanel();
@@ -6443,6 +6465,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.worldPanel.removeAttribute('hidden');
     renderWorldPanel();
@@ -6460,6 +6483,8 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
     els.grantResult.className = 'grant-result';
@@ -6504,6 +6529,151 @@
       els.grantResult.textContent = '通信に失敗しました。もう一度お試しください。';
       els.grantResult.className = 'grant-result is-error';
     });
+  }
+
+  /* ---------- テスト画像提出（ペナテスト・抜き打ちテスト・ランキングテスト） ---------- */
+
+  var RANKING_TEST_TIER_LABELS_ = { '100': '100点（500MP）', '90s': '90点台（400MP）', '80s': '80点台（300MP）', '70s': '70点台（200MP）' };
+  var rankingTestSelectedTier = null;
+
+  function toggleTestPhoto() {
+    var isHidden = els.testPhotoPanel.hasAttribute('hidden');
+    if (!isHidden) { els.testPhotoPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+
+    els.testPhotoPanel.removeAttribute('hidden');
+    renderTestPhotoPanel();
+  }
+
+  // 中学生は「抜き打ちテスト」、それ以外(小学生)は「ペナテスト」として同じ仕組みを表示する。
+  // ランキングテストカードは中学生のみ表示。
+  function renderTestPhotoPanel() {
+    var session = loadSession();
+    var grade = (session && session.grade) || '';
+    var isMiddle = grade.charAt(0) === '中';
+    els.penaTestCardTitle.textContent = isMiddle ? '📝 抜き打ちテスト' : '📝 ペナテスト';
+    els.penaTestCard.hidden = false;
+    els.rankingTestCard.hidden = !isMiddle;
+    els.penaTestFileInput.value = '';
+    els.penaTestSubmitBtn.disabled = true;
+    els.penaTestResult.textContent = '';
+    els.rankingTestFileInput.value = '';
+    els.rankingTestConfirm.hidden = true;
+    els.rankingTestResult.textContent = '';
+    rankingTestSelectedTier = null;
+    renderRankingTierButtons();
+  }
+
+  // 写真をそのまま送ると通信が重くなる/GASの実行時間を圧迫するため、canvasで
+  // 長辺1280pxまで縮小してJPEG(quality 0.7)に変換してから送信する。
+  function compressImageFileToBase64(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('read failed')); };
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('decode failed')); };
+        img.onload = function () {
+          var w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx2d = canvas.getContext('2d');
+          if (!ctx2d) { reject(new Error('canvas unsupported')); return; }
+          ctx2d.drawImage(img, 0, 0, w, h);
+          var dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl.substring(dataUrl.indexOf(',') + 1));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function applyTestPhotoPointsResult(res) {
+    state.points = res.newTotalPoints;
+    saveGameState(state);
+    updateStats();
+    updateGameHud();
+  }
+
+  function submitPenaTestPhoto() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var file = els.penaTestFileInput.files && els.penaTestFileInput.files[0];
+    if (!file) { els.penaTestResult.textContent = '写真を選んでください。'; return; }
+    els.penaTestSubmitBtn.disabled = true;
+    els.penaTestResult.textContent = '送信中…';
+    compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
+      return apiPost('submitTestPhoto', { id: session.id, testType: 'pena', imageBase64: base64, mimeType: 'image/jpeg' });
+    }).then(function (res) {
+      els.penaTestSubmitBtn.disabled = false;
+      if (!res.ok) { els.penaTestResult.textContent = '送信に失敗しました。もう一度お試しください。'; return; }
+      applyTestPhotoPointsResult(res);
+      els.penaTestFileInput.value = '';
+      els.penaTestResult.textContent = res.pointsAwarded > 0
+        ? ('✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！')
+        : '✅ 送信完了しました！（本日の上限（30MP）に達しているため、MPの追加はありません）';
+    }).catch(function () {
+      els.penaTestSubmitBtn.disabled = false;
+      els.penaTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
+    });
+  }
+
+  function renderRankingTierButtons() {
+    Array.from(els.rankingTierRow.children).forEach(function (btn) {
+      btn.classList.toggle('is-selected', btn.dataset.tier === rankingTestSelectedTier);
+    });
+  }
+
+  function handleRankingTierClick(tier) {
+    var file = els.rankingTestFileInput.files && els.rankingTestFileInput.files[0];
+    if (!file) { els.rankingTestResult.textContent = '先に写真を選んでください。'; return; }
+    els.rankingTestResult.textContent = '';
+    rankingTestSelectedTier = tier;
+    renderRankingTierButtons();
+    els.rankingTestConfirmText.textContent = RANKING_TEST_TIER_LABELS_[tier] + ' で送信します。これでいいですか？';
+    els.rankingTestConfirm.hidden = false;
+  }
+
+  function submitRankingTestPhoto() {
+    var session = loadSession();
+    if (!session || !session.id || !rankingTestSelectedTier) return;
+    var file = els.rankingTestFileInput.files && els.rankingTestFileInput.files[0];
+    if (!file) { els.rankingTestResult.textContent = '写真を選んでください。'; els.rankingTestConfirm.hidden = true; return; }
+    var tier = rankingTestSelectedTier;
+    els.rankingTestConfirm.hidden = true;
+    els.rankingTestResult.textContent = '送信中…';
+    compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
+      return apiPost('submitTestPhoto', { id: session.id, testType: 'ranking', scoreTier: tier, imageBase64: base64, mimeType: 'image/jpeg' });
+    }).then(function (res) {
+      if (!res.ok) { els.rankingTestResult.textContent = '送信に失敗しました。もう一度お試しください。'; return; }
+      applyTestPhotoPointsResult(res);
+      els.rankingTestFileInput.value = '';
+      rankingTestSelectedTier = null;
+      renderRankingTierButtons();
+      els.rankingTestResult.textContent = res.pointsAwarded > 0
+        ? ('✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！')
+        : '✅ 送信完了しました！（70点未満のため、MPの加算はありません）';
+    }).catch(function () {
+      els.rankingTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
+    });
+  }
+
+  function cancelRankingTierConfirm() {
+    rankingTestSelectedTier = null;
+    renderRankingTierButtons();
+    els.rankingTestConfirm.hidden = true;
   }
 
   function handleAvatarSave() {
@@ -6563,6 +6733,16 @@
   els.grantToggle.addEventListener('click', toggleGrant);
   els.grantForm.addEventListener('submit', handleGrantSubmit);
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
+  els.testPhotoToggle.addEventListener('click', toggleTestPhoto);
+  els.penaTestFileInput.addEventListener('change', function () {
+    els.penaTestSubmitBtn.disabled = !(els.penaTestFileInput.files && els.penaTestFileInput.files[0]);
+  });
+  els.penaTestSubmitBtn.addEventListener('click', submitPenaTestPhoto);
+  Array.from(els.rankingTierRow.children).forEach(function (btn) {
+    btn.addEventListener('click', function () { handleRankingTierClick(btn.dataset.tier); });
+  });
+  els.rankingTestConfirmYes.addEventListener('click', submitRankingTestPhoto);
+  els.rankingTestConfirmNo.addEventListener('click', cancelRankingTierConfirm);
 
   var existingSession = loadSession();
   if (existingSession) {

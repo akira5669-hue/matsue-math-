@@ -71,6 +71,21 @@ var ITEMGRANTS_SHEET = 'ItemGrants';
 var ANOMALYLOG_SHEET = 'PointsAnomalyLog';
 var LOW_STOCK_THRESHOLDS = [10, 5];
 
+// テスト画像提出(ペナテスト/抜き打ちテスト/ランキングテスト)。写真はGoogleドライブへ
+// 保存し、3週間経過したものは次回の提出時に自動で削除する(定期実行トリガーを使わない
+// 簡易な遅延クリーンアップ)。
+var TESTPHOTOS_SHEET = 'TestPhotos';
+var TEST_PHOTO_DRIVE_FOLDER_NAME_ = '松江塾計算マスター_テスト画像';
+var TEST_PHOTO_RETENTION_DAYS_ = 21;
+var PENA_TEST_MP_PER_SHEET_ = 30;
+var PENA_TEST_DAILY_CAP_MP_ = 30;
+var RANKING_TEST_TIERS_ = [
+  { id: '100', label: '100点', mp: 500 },
+  { id: '90s', label: '90点台', mp: 400 },
+  { id: '80s', label: '80点台', mp: 300 },
+  { id: '70s', label: '70点台', mp: 200 },
+];
+
 // 交換受付期間: 5/1〜5/3、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
   var md = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'MM-dd');
@@ -192,7 +207,18 @@ function getOrInitSheets_() {
     anomalyLog.appendRow(['timestamp', 'id', 'name', 'submittedPoints', 'clampedPoints', 'submittedExp', 'clampedExp', 'submittedLevel', 'clampedLevel']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog };
+  // TestPhotos: ペナテスト/抜き打ちテスト/ランキングテストの提出記録。画像本体はドライブに
+  // 保存し、ここにはファイルIDと採点結果(MP)だけを残す。3週間経過後、次回提出時に
+  // まとめて削除される(expiresAtを参照)。
+  var testPhotos = ss.getSheetByName(TESTPHOTOS_SHEET);
+  if (!testPhotos) {
+    testPhotos = ss.insertSheet(TESTPHOTOS_SHEET);
+  }
+  if (testPhotos.getLastRow() === 0) {
+    testPhotos.appendRow(['timestamp', 'id', 'name', 'testType', 'scoreTier', 'pointsAwarded', 'driveFileId', 'expiresAt']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog, testPhotos: testPhotos };
 }
 
 function sha256Hex_(text) {
@@ -301,6 +327,8 @@ function doPost(e) {
     return jsonOut_(handleRedeemGift_(ctx, body));
   } else if (action === 'resetPassword') {
     return jsonOut_(handleResetPassword_(ctx, body));
+  } else if (action === 'submitTestPhoto') {
+    return jsonOut_(handleSubmitTestPhoto_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -1049,6 +1077,112 @@ function handleRedeemGift_(ctx, body) {
     }
 
     return { ok: true, remainingPoints: remaining, code: claimed.code, itemLabel: item.label };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getOrCreateTestPhotoFolder_() {
+  var folders = DriveApp.getFoldersByName(TEST_PHOTO_DRIVE_FOLDER_NAME_);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(TEST_PHOTO_DRIVE_FOLDER_NAME_);
+}
+
+function saveTestPhotoToDrive_(id, imageBase64, mimeType) {
+  var folder = getOrCreateTestPhotoFolder_();
+  var bytes = Utilities.base64Decode(imageBase64);
+  var ext = mimeType === 'image/png' ? '.png' : '.jpg';
+  var blob = Utilities.newBlob(bytes, mimeType, id + '_' + Date.now() + ext);
+  var file = folder.createFile(blob);
+  return file.getId();
+}
+
+// 本日(日本時間)にこの生徒がペナテスト/抜き打ちテストで既に獲得したMPの合計。
+// TestPhotosシートは提出のたびに1〜2行しか増えない(Recordsシートのような大量スキャンには
+// ならない)ため、毎回全件スキャンしても問題にならない。
+function sumPenaPointsToday_(ctx, id, today) {
+  var data = ctx.testPhotos.getDataRange().getValues();
+  var sum = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][1]).trim() !== id) continue;
+    if (data[i][3] !== 'pena') continue;
+    var ts = data[i][0];
+    if (!(ts instanceof Date) || dateKeyTokyo_(ts) !== today) continue;
+    sum += Number(data[i][5]) || 0;
+  }
+  return sum;
+}
+
+// 3週間(TEST_PHOTO_RETENTION_DAYS_)を過ぎた提出をドライブ・シートの両方から削除する。
+// 定期実行トリガーは設置の手間(手動認証)が要るため使わず、提出のたびに毎回チェックする
+// 遅延クリーンアップ方式にしている。提出頻度は低いため十分間に合う想定。
+function cleanupExpiredTestPhotos_(ctx) {
+  var data = ctx.testPhotos.getDataRange().getValues();
+  var now = new Date();
+  var rowsToDelete = [];
+  for (var i = 1; i < data.length; i++) {
+    var expiresAt = data[i][7];
+    if (expiresAt instanceof Date && expiresAt < now) {
+      var fileId = data[i][6];
+      if (fileId) {
+        try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) { }
+      }
+      rowsToDelete.push(i + 1);
+    }
+  }
+  for (var j = rowsToDelete.length - 1; j >= 0; j--) {
+    ctx.testPhotos.deleteRow(rowsToDelete[j]);
+  }
+}
+
+function handleSubmitTestPhoto_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var testType = String(body.testType || '').trim();
+  var scoreTier = String(body.scoreTier || '').trim();
+  var imageBase64 = body.imageBase64;
+  var mimeType = String(body.mimeType || 'image/jpeg').trim();
+  if (!id || !imageBase64 || (testType !== 'pena' && testType !== 'ranking')) {
+    return { ok: false, error: 'missing_fields' };
+  }
+  if (mimeType !== 'image/jpeg' && mimeType !== 'image/png') mimeType = 'image/jpeg';
+
+  var tier = null;
+  if (testType === 'ranking') {
+    for (var i = 0; i < RANKING_TEST_TIERS_.length; i++) {
+      if (RANKING_TEST_TIERS_[i].id === scoreTier) { tier = RANKING_TEST_TIERS_[i]; break; }
+    }
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var row = findStudentRow_(ctx.students, id);
+    if (!row) return { ok: false, error: 'not_found' };
+
+    var pointsAwarded = 0;
+    var tierUsed = '';
+    if (testType === 'ranking') {
+      if (tier) { pointsAwarded = tier.mp; tierUsed = tier.id; }
+    } else {
+      var today = dateKeyTokyo_(new Date());
+      var todayTotal = sumPenaPointsToday_(ctx, id, today);
+      pointsAwarded = Math.max(0, Math.min(PENA_TEST_MP_PER_SHEET_, PENA_TEST_DAILY_CAP_MP_ - todayTotal));
+    }
+
+    var driveFileId = saveTestPhotoToDrive_(id, imageBase64, mimeType);
+
+    var newTotalPoints = row.points + pointsAwarded;
+    if (pointsAwarded > 0) {
+      ctx.students.getRange(row.rowIndex, 7).setValue(newTotalPoints);
+    }
+
+    var now = new Date();
+    var expiresAt = new Date(now.getTime() + TEST_PHOTO_RETENTION_DAYS_ * 24 * 60 * 60 * 1000);
+    ctx.testPhotos.appendRow([now, id, row.name, testType, tierUsed, pointsAwarded, driveFileId, expiresAt]);
+
+    cleanupExpiredTestPhotos_(ctx);
+
+    return { ok: true, pointsAwarded: pointsAwarded, newTotalPoints: newTotalPoints };
   } finally {
     lock.releaseLock();
   }

@@ -186,6 +186,7 @@
         <button id="avatarToggle" class="ghost-btn" type="button">🎨アバター作成</button>
         <button id="worldToggle" class="ghost-btn" type="button" hidden>🌍世界制覇</button>
         <button id="grantToggle" class="ghost-btn" type="button" hidden>🎁アイテム付与</button>
+        <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
       </div>
     </section>
@@ -273,6 +274,38 @@
         <button type="submit" class="primary-btn" id="grantSubmitBtn">付与する</button>
       </form>
       <p class="grant-result" id="grantResult"></p>
+    </section>
+
+    <section class="test-photo-panel" id="testPhotoPanel" hidden>
+      <h3 class="history-title">📷 テスト提出</h3>
+
+      <div class="test-photo-card" id="penaTestCard" hidden>
+        <h4 class="test-photo-card-title" id="penaTestCardTitle">ペナテスト</h4>
+        <p class="test-photo-hint">満点のテストを撮影して送信すると、自動でMPがもらえます（1枚30MP、1日最大30MP）。写真は3週間保存されます。</p>
+        <input type="file" accept="image/*" capture="environment" id="penaTestFileInput" class="test-photo-file-input" />
+        <button type="button" class="primary-btn" id="penaTestSubmitBtn" disabled>送信する</button>
+        <p class="test-photo-result" id="penaTestResult"></p>
+      </div>
+
+      <div class="test-photo-card" id="rankingTestCard" hidden>
+        <h4 class="test-photo-card-title">📊 ランキングテスト</h4>
+        <p class="test-photo-hint">写真を選んでから、点数の帯を選んでください（100点=500MP、90点台=400MP、80点台=300MP、70点台=200MP、それ未満は加算なし）。</p>
+        <input type="file" accept="image/*" capture="environment" id="rankingTestFileInput" class="test-photo-file-input" />
+        <div class="test-photo-tier-row" id="rankingTierRow">
+          <button type="button" class="test-photo-tier-btn" data-tier="100">100点<span class="test-photo-tier-mp">500MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="90s">90点台<span class="test-photo-tier-mp">400MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="80s">80点台<span class="test-photo-tier-mp">300MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="70s">70点台<span class="test-photo-tier-mp">200MP</span></button>
+        </div>
+        <div class="test-photo-confirm" id="rankingTestConfirm" hidden>
+          <p id="rankingTestConfirmText"></p>
+          <div class="test-photo-confirm-actions">
+            <button type="button" class="primary-btn" id="rankingTestConfirmYes">はい</button>
+            <button type="button" class="ghost-btn" id="rankingTestConfirmNo">いいえ</button>
+          </div>
+        </div>
+        <p class="test-photo-result" id="rankingTestResult"></p>
+      </div>
     </section>
 
     <section class="avatar-panel" id="avatarPanel" hidden>

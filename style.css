@@ -1349,6 +1349,90 @@ h1 {
 .grant-result.is-error { color: var(--c-incorrect); }
 .grant-result.is-success { color: var(--c-positive); }
 
+/* テスト画像提出 */
+.test-photo-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.test-photo-card {
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.test-photo-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+.test-photo-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--c-ink-soft);
+  line-height: 1.6;
+}
+.test-photo-file-input {
+  font-size: 13px;
+}
+.test-photo-tier-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.test-photo-tier-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.test-photo-tier-btn .test-photo-tier-mp {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-ink-soft);
+}
+.test-photo-tier-btn.is-selected {
+  border-color: var(--c-accent, #4f6df5);
+  background: var(--c-positive-soft);
+  color: var(--c-accent, #4f6df5);
+}
+.test-photo-confirm {
+  border: 1px solid var(--c-accent, #4f6df5);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.test-photo-confirm p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.test-photo-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+.test-photo-result {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 1.2em;
+}
+
 /* アバター作成 */
 .avatar-panel {
   background: var(--c-surface);
