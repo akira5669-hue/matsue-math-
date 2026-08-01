@@ -267,7 +267,9 @@ function findStudentRow_(sheet, id) {
         // handleLog_側でリセットしてから加算するので、ここでは生の値をそのまま返す。
         todayStats: parseJsonCell_(data[i][19], null),
         // HP: 文章題を正解するたびに+10される新ステータス。
-        hp: Number(data[i][20]) || 0
+        hp: Number(data[i][20]) || 0,
+        // ランキングテスト(数学)を最後に提出した月(yyyy-MM)。月1回の提出制限に使う。
+        lastRankingTestMonth: data[i][21] || null
       };
     }
   }
@@ -1122,6 +1124,10 @@ function sumPenaPointsToday_(ctx, id, today) {
   return sum;
 }
 
+function monthKeyTokyo_(d) {
+  return Utilities.formatDate(new Date(d), 'Asia/Tokyo', 'yyyy-MM');
+}
+
 // 3週間(TEST_PHOTO_RETENTION_DAYS_)を過ぎた提出をドライブ・シートの両方から削除する。
 // 定期実行トリガーは設置の手間(手動認証)が要るため使わず、提出のたびに毎回チェックする
 // 遅延クリーンアップ方式にしている。提出頻度は低いため十分間に合う想定。
@@ -1168,10 +1174,19 @@ function handleSubmitTestPhoto_(ctx, body) {
     var row = findStudentRow_(ctx.students, id);
     if (!row) return { ok: false, error: 'not_found' };
 
+    var currentMonth = monthKeyTokyo_(new Date());
+    // ランキングテストは月1回まで。写真自体は3週間で自動削除されるため、TestPhotosの
+    // 履歴をスキャンするのではなく、Studentsシートに「最後に提出した月」を別途持たせて
+    // 判定する(3週間の保存期限と月1回の制限が食い違わないようにするため)。
+    if (testType === 'ranking' && row.lastRankingTestMonth === currentMonth) {
+      return { ok: false, error: 'already_submitted_this_month' };
+    }
+
     var pointsAwarded = 0;
     var tierUsed = '';
     if (testType === 'ranking') {
       if (tier) { pointsAwarded = tier.mp; tierUsed = tier.id; }
+      ctx.students.getRange(row.rowIndex, 22).setValue(currentMonth);
     } else {
       var today = dateKeyTokyo_(new Date());
       var todayTotal = sumPenaPointsToday_(ctx, id, today);

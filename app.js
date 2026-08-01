@@ -4447,6 +4447,16 @@
         miss: 'あっ、こっちの方がおおきくなってる…逃げちゃうぞ！',
       },
     },
+    // ごーまじは他のレアキャラと違い、10問連続正解ではなく20問連続正解で撃破となる
+    // 特別なレアキャラ(handleAnswer内で個別に必要ストリーク数を分岐させている)。
+    goumaji: {
+      id: 'goumaji', name: 'ごーまじ', img: 'images/goumaji.png',
+      lines: {
+        appear: 'ごーまじか…20問連続正解、できるか？1問でも間違えたら逃げるぞ！',
+        defeat: 'まじかよ…20問連続正解とは、ごーまじですごいな！',
+        miss: 'あ、ごーまじで逃げちゃうぞ…また今度な！',
+      },
+    },
     // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選(rollRareType)とは
     // 完全に独立した仕組みで、文章題の問題が出た瞬間に別枠で5%の確率で登場する。
     sutoboke: {
@@ -4560,13 +4570,13 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
-  // 不等号パックン(1/30)を追加した分、素の合計は157/300(52.33%)になったため、
-  // スケール係数も60/157に更新して合計20%を維持する。
-  const RARE_SCALE = 60 / 157; // 合計52.33%→20%
+  // ごーまじ(1/50)を追加した分、素の合計は163/300(54.33%)になったため、
+  // スケール係数も60/163に更新して合計20%を維持する。
+  const RARE_SCALE = 60 / 163; // 合計54.33%→20%
   const RARE_CHANCE_ZOMBIE = 0.08 * RARE_SCALE;
   const RARE_CHANCE_SANTA = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SMILE = (1 / 30) * RARE_SCALE;
@@ -4579,6 +4589,7 @@
   const RARE_CHANCE_SOUBUSEN = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_NATTOMAN = (1 / 50) * RARE_SCALE;
   const RARE_CHANCE_FUGOUPAKKUN = (1 / 30) * RARE_SCALE;
+  const RARE_CHANCE_GOUMAJI = (1 / 50) * RARE_SCALE;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -4587,6 +4598,11 @@
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
   const FUGOUPAKKUN_BONUS_MP = 20;
+  // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
+  // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
+  const GOUMAJI_REQUIRED_STREAK = 20;
+  const GOUMAJI_BONUS_MP = 30;
+  const GOUMAJI_ITEM_DROP_CHANCE = 1 / 5;
   // 文章題(方程式・連立方程式・二次方程式の文章題)は、他の単元と違って10問連続正解では
   // なく「1問正解でその場で勝利」という特別ルール。報酬もMP/経験値とも通常の勝利より
   // 少なめの固定値にし、その代わりに新しいステータス「HP」を稼げるようにする。
@@ -4623,6 +4639,7 @@
   const SPECIAL_ITEM_ZANTETSUKEN = 'zantetsuken';
   const SPECIAL_ITEM_NATTO_GOKORO = 'nattoGokoro';
   const SPECIAL_ITEM_SUTOBOKE_SWORD = 'sutobokeSword';
+  const SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA = 'goumajiMedamajikara';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
     { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
@@ -4630,6 +4647,7 @@
     { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
     { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
     { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）' },
+    { id: SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA, icon: '👀', name: 'ゴーマジの目力', desc: 'ごーまじを撃破して手に入れた特別なアイテム（5分の1の確率）' },
   ];
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
@@ -4652,6 +4670,7 @@
       ['soubusen', chanceSoubusen],
       ['nattoman', chanceNattoman],
       ['fugoupakkun', RARE_CHANCE_FUGOUPAKKUN],
+      ['goumaji', RARE_CHANCE_GOUMAJI],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -5257,6 +5276,7 @@
       const soubusenFled = state.rareType === 'soubusen';
       const nattomanFled = state.rareType === 'nattoman';
       const fugoupakkunFled = state.rareType === 'fugoupakkun';
+      const goumajiFled = state.rareType === 'goumaji';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -5307,6 +5327,11 @@
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
         saveGameState(state);
+      } else if (goumajiFled) {
+        missLineHtml += `<div class="enemy-quote-banner">💨 ごーまじは逃げてしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
+        saveGameState(state);
       }
     }
 
@@ -5330,13 +5355,16 @@
       : '';
 
     let winHtml = '';
-    if (isCorrect && state.streak >= 10) {
+    const requiredStreak = state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10;
+    if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
-      const basePoints = (bonusEligible ? 20 : 10) + rareMpBonus;
+      // ごーまじは20問連続正解という高いハードルの代わりに、通常の(10 or 20)+ボーナス
+      // 積み上げ方式ではなく、固定30MPを報酬とする。
+      const basePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
@@ -5372,6 +5400,9 @@
       } else if (wasRareType === 'nattoman' && !state.items.includes(SPECIAL_ITEM_NATTO_GOKORO)) {
         state.items.push(SPECIAL_ITEM_NATTO_GOKORO);
         itemGainedHtml = '<div class="item-gain-banner">🧑‍🍳 スペシャルアイテム「納豆心」を手に入れた！🧑‍🍳</div>';
+      } else if (wasRareType === 'goumaji' && !state.items.includes(SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA) && Math.random() < GOUMAJI_ITEM_DROP_CHANCE) {
+        state.items.push(SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA);
+        itemGainedHtml = '<div class="item-gain-banner">👀 スペシャルアイテム「ゴーマジの目力」を手に入れた！👀</div>';
       }
 
       let collectionGainedHtml = '';
@@ -6120,6 +6151,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
@@ -6218,6 +6250,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
@@ -6291,6 +6324,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
@@ -6353,6 +6387,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
@@ -6631,6 +6666,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
@@ -6692,6 +6728,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
 
