@@ -325,7 +325,7 @@
   // 方程式の文章題（中1）。答えとなる整数を先に決め、そこから問題文の数値を
   // 逆算して作ることで、常に綺麗な整数解になるようにしている。
   function genEqWordProblem1() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 5);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       // ある数のa倍にbを足す(引く)とresultになる
@@ -354,7 +354,7 @@
         `x = ${price * answer} ÷ ${price} = ${answer}`,
       ];
       wrongs = [answer + 1, answer - 1, Math.round(total / price)].filter((v) => v !== answer);
-    } else {
+    } else if (pat === 2) {
       // 過不足算: a個ずつ配るとb個余り、c個ずつ配るとd個不足する
       answer = randInt(5, 20); // 人数
       const a = randInt(2, 5);
@@ -371,6 +371,63 @@
         `x = ${totalDiff} ÷ ${diff} = ${answer}`,
       ];
       wrongs = [answer + 1, answer - 1, a + c];
+    } else if (pat === 3) {
+      // 追いつく問題: 弟が先に出発し、後から出発した兄が追いつく
+      const v1 = [50, 60, 80, 100, 120, 150, 200][randInt(0, 6)];
+      const diffCands = [10, 20, 25, 30, 40, 50, 60, 100];
+      const diff = diffCands[randInt(0, diffCands.length - 1)];
+      const v2 = v1 + diff;
+      const headCands = [];
+      for (let h = 2; h <= 30; h++) {
+        const x = (v1 * h) / diff;
+        if (Number.isInteger(x) && x >= 2 && x <= 60) headCands.push([h, x]);
+      }
+      if (headCands.length === 0) return genEqWordProblem1();
+      const [head, x] = headCands[randInt(0, headCands.length - 1)];
+      answer = x;
+      question = `弟が家を出発してから${head}分後に、兄が自転車で弟を追いかけました。弟の速さを分速${v1}m、兄の速さを分速${v2}mとするとき、兄が出発してから何分後に弟に追いつきますか。`;
+      steps = [
+        `兄が出発してからx分後に追いつくとすると`,
+        `弟が進んだ道のり: ${v1}(${head} + x)、兄が進んだ道のり: ${v2}x`,
+        `${v1}(${head} + x) = ${v2}x`,
+        `${v1 * head} = ${diff}x`,
+        `x = ${v1 * head} ÷ ${diff} = ${answer}`,
+      ];
+      wrongs = [head, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+    } else if (pat === 4) {
+      // 二種類の商品の代金(1次方程式版): 合計本数が決まっていて、一方をxで表す
+      const priceOptions = [50, 60, 80, 100, 120, 150];
+      const priceA = priceOptions[randInt(0, priceOptions.length - 1)];
+      const priceBCands = priceOptions.filter((v) => v !== priceA);
+      const priceB = priceBCands[randInt(0, priceBCands.length - 1)];
+      const [priceHi, priceLo] = priceA > priceB ? [priceA, priceB] : [priceB, priceA];
+      const total = randInt(10, 25);
+      answer = randInt(1, total - 1);
+      const cost = priceHi * answer + priceLo * (total - answer);
+      question = `1本${priceHi}円のボールペンと1本${priceLo}円の鉛筆を合わせて${total}本買ったところ、代金の合計は${cost}円でした。ボールペンを何本買いましたか。`;
+      steps = [
+        `ボールペンの本数をx本とすると、鉛筆の本数は (${total} − x)本`,
+        `${priceHi}x + ${priceLo}(${total} − x) = ${cost}`,
+        `${priceHi - priceLo}x + ${priceLo * total} = ${cost}`,
+        `x = ${cost - priceLo * total} ÷ ${priceHi - priceLo} = ${answer}`,
+      ];
+      wrongs = [total - answer, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+    } else {
+      // 比で分ける問題
+      const ratioPairs = [[2, 3], [3, 4], [3, 5], [4, 5], [5, 7], [2, 5], [5, 8], [8, 9]];
+      const [a, b] = ratioPairs[randInt(0, ratioPairs.length - 1)]; // a < b
+      const k = randInt(3, 40);
+      const total = (a + b) * k;
+      answer = a * k; // 少ない方(弟)の枚数
+      question = `${total}枚のカードを兄と弟の2人で分けるのに、兄と弟の枚数の比が${b}：${a}になるようにします。弟のカードは何枚ですか。`;
+      steps = [
+        `比の1にあたる枚数をx枚とすると、兄は${b}x枚、弟は${a}x枚`,
+        `${b}x + ${a}x = ${total}`,
+        `${a + b}x = ${total}`,
+        `x = ${total} ÷ ${a + b} = ${k}`,
+        `弟の枚数 = ${a} × ${k} = ${answer}`,
+      ];
+      wrongs = [b * k, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
     }
     return { category: 'eqWordProblem1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
@@ -498,7 +555,7 @@
   // 連立方程式の文章題（中2）。2つの答え(x,y)を先に決めて、そこから問題文の
   // 数値を逆算して作ることで、常に綺麗な整数解になるようにしている。
   function genSimulEqWordProblem2() {
-    const pat = randInt(0, 1);
+    const pat = randInt(0, 5);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       // 個数と代金: りんごx個・みかんy個、合計n個・合計m円
@@ -518,7 +575,7 @@
         `${askApple ? 'りんご' : 'みかん'}は ${answer} 個`,
       ];
       wrongs = [askApple ? y : x, answer + 1, answer - 1].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
-    } else {
+    } else if (pat === 1) {
       // 和差算: 2つの正の整数の和と差
       const x = randInt(10, 40), y = randInt(1, x - 1); // x > y、どちらも正の整数
       const p = x + y, q = x - y;
@@ -533,6 +590,86 @@
         `①より y = ${p} − ${x} = ${y}`,
       ];
       wrongs = [askLarger ? y : x, answer + 1, answer - 1].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
+    } else if (pat === 2) {
+      // 割合の問題: 2つの学年の人数のうち、それぞれ異なる割合の合計人数が分かっている
+      const pctList = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+      const r1 = pctList[randInt(0, pctList.length - 1)];
+      const r2Cands = pctList.filter((v) => v !== r1);
+      const r2 = r2Cands[randInt(0, r2Cands.length - 1)];
+      const x = randInt(3, 15) * 20;
+      const y = randInt(3, 15) * 20;
+      const total = x + y;
+      const sub = Math.round((r1 * x) / 100 + (r2 * y) / 100);
+      const askX = Math.random() < 0.5;
+      answer = askX ? x : y;
+      question = `ある中学校の1, 2年生${total}人のうち、1年生の${r1}%と2年生の${r2}%が自転車通学していて、その人数の合計は${sub}人です。1年生の人数をx人、2年生の人数をy人として、${askX ? '1' : '2'}年生の人数を求めなさい。`;
+      steps = [
+        `x + y = ${total} …①`,
+        `${r1}/100 x + ${r2}/100 y = ${sub} …②`,
+        `①、②を連立方程式として解くと、x = ${x}、y = ${y}`,
+        `${askX ? '1' : '2'}年生の人数は ${answer} 人`,
+      ];
+      wrongs = [askX ? y : x, answer + 20, answer - 20].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer && v > 0);
+    } else if (pat === 3) {
+      // 割合の増減の問題: 定価から割り引いた代金の合計と、定価の合計からx, yを求める
+      const discList = [10, 20, 30, 40, 50];
+      const d1 = discList[randInt(0, discList.length - 1)];
+      const d2Cands = discList.filter((v) => v !== d1);
+      const d2 = d2Cands[randInt(0, d2Cands.length - 1)];
+      const x = randInt(20, 100) * 10;
+      const y = randInt(20, 100) * 10;
+      const totalList = x + y;
+      const keep1 = 100 - d1, keep2 = 100 - d2;
+      const discountedTotal = Math.round((keep1 * x) / 100 + (keep2 * y) / 100);
+      const askX = Math.random() < 0.5;
+      answer = askX ? x : y;
+      question = `ある店で、シャツとかばんを1つずつ買いました。シャツは定価の${d1}%引き、かばんは定価の${d2}%引きだったので、実際に払った代金の合計は${discountedTotal}円でした。シャツとかばんの定価の合計は${totalList}円だったとき、シャツの定価をx円、かばんの定価をy円として、${askX ? 'シャツ' : 'かばん'}の定価を求めなさい。`;
+      steps = [
+        `x + y = ${totalList} …①`,
+        `${keep1}/100 x + ${keep2}/100 y = ${discountedTotal} …②`,
+        `①、②を連立方程式として解くと、x = ${x}、y = ${y}`,
+        `${askX ? 'シャツ' : 'かばん'}の定価は ${answer} 円`,
+      ];
+      wrongs = [askX ? y : x, answer + 100, answer - 100].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer && v > 0);
+    } else if (pat === 4) {
+      // 食塩水の問題: 濃度の異なる2種類の食塩水を混ぜる
+      const c1 = randInt(2, 15);
+      const c2Cands = [];
+      for (let v = 2; v <= 20; v++) if (v !== c1) c2Cands.push(v);
+      const c2 = c2Cands[randInt(0, c2Cands.length - 1)];
+      const x = randInt(1, 8) * 100;
+      const y = randInt(1, 8) * 100;
+      const totalWeight = x + y;
+      const saltTotal = Math.round((c1 * x) / 100 + (c2 * y) / 100);
+      const askX = Math.random() < 0.5;
+      answer = askX ? x : y;
+      question = `${c1}%の食塩水と${c2}%の食塩水を混ぜて、${totalWeight}gの食塩水を作ります。${c1}%の食塩水をxg、${c2}%の食塩水をyg混ぜるとして、含まれる食塩の重さの合計が${saltTotal}gになるとき、${c1}%の食塩水と${c2}%の食塩水を、xとyを使った連立方程式を解いて、${askX ? c1 + '%' : c2 + '%'}の食塩水は何g混ぜたか求めなさい。`;
+      steps = [
+        `x + y = ${totalWeight} …①`,
+        `${c1}/100 x + ${c2}/100 y = ${saltTotal} …②`,
+        `①、②を連立方程式として解くと、x = ${x}、y = ${y}`,
+        `${askX ? c1 + '%' : c2 + '%'}の食塩水は ${answer} g`,
+      ];
+      wrongs = [askX ? y : x, answer + 100, answer - 100].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer && v > 0);
+    } else {
+      // 速さの問題: 速さが異なる2区間の道のりを、合計の道のりとかかった時間から求める
+      const speedList = [8, 10, 12, 15, 16, 20];
+      const speed1 = speedList[randInt(0, speedList.length - 1)];
+      const speed2Cands = speedList.filter((v) => v !== speed1);
+      const speed2 = speed2Cands[randInt(0, speed2Cands.length - 1)];
+      const k1 = randInt(1, 4), k2 = randInt(1, 4);
+      const x = speed1 * k1, y = speed2 * k2;
+      const totalDistance = x + y, totalTime = k1 + k2;
+      const askX = Math.random() < 0.5;
+      answer = askX ? x : y;
+      question = `全長${totalDistance}kmの道のりをサイクリングします。前半は時速${speed1}km、後半は時速${speed2}kmで進み、全体で${totalTime}時間かかりました。前半の道のりをxkm、後半の道のりをykmとして連立方程式をつくり、${askX ? '前半' : '後半'}の道のりを求めなさい。`;
+      steps = [
+        `x + y = ${totalDistance} …①`,
+        `x/${speed1} + y/${speed2} = ${totalTime} …②`,
+        `①、②を連立方程式として解くと、x = ${x}、y = ${y}`,
+        `${askX ? '前半' : '後半'}の道のりは ${answer} km`,
+      ];
+      wrongs = [askX ? y : x, answer + speed1, answer - speed1].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer && v > 0);
     }
     return { category: 'simulEqWordProblem2', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
@@ -5981,6 +6118,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
@@ -6077,6 +6215,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
@@ -6148,6 +6287,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
@@ -6210,6 +6350,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
@@ -6484,6 +6625,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
@@ -6545,6 +6687,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
 
