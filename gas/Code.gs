@@ -269,7 +269,9 @@ function findStudentRow_(sheet, id) {
         // HP: 文章題を正解するたびに+10される新ステータス。
         hp: Number(data[i][20]) || 0,
         // ランキングテスト(数学)を最後に提出した月(yyyy-MM)。月1回の提出制限に使う。
-        lastRankingTestMonth: data[i][21] || null
+        // 万一過去に日付型として保存されてしまった行が残っていても比較できるよう、
+        // Dateならyyyy-MM文字列に変換してから返す。
+        lastRankingTestMonth: (data[i][21] instanceof Date) ? monthKeyTokyo_(data[i][21]) : (data[i][21] || null)
       };
     }
   }
@@ -1186,7 +1188,10 @@ function handleSubmitTestPhoto_(ctx, body) {
     var tierUsed = '';
     if (testType === 'ranking') {
       if (tier) { pointsAwarded = tier.mp; tierUsed = tier.id; }
-      ctx.students.getRange(row.rowIndex, 22).setValue(currentMonth);
+      // setNumberFormat('@')を付けないと、"2026-08"のような日付に見える文字列をシートが
+      // 自動的に日付型へ変換してしまい、次回の文字列比較(===currentMonth)が常にfalseになって
+      // 月1回の制限が効かなくなる不具合があった(生徒IDが数値化されてしまうのと同じ原因)。
+      ctx.students.getRange(row.rowIndex, 22).setNumberFormat('@').setValue(currentMonth);
     } else {
       var today = dateKeyTokyo_(new Date());
       var todayTotal = sumPenaPointsToday_(ctx, id, today);

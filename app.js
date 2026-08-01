@@ -6152,6 +6152,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
@@ -6251,6 +6252,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
@@ -6325,6 +6327,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
@@ -6387,6 +6390,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
@@ -6667,6 +6671,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
@@ -6731,6 +6736,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
 
     els.testPhotoPanel.removeAttribute('hidden');
     renderTestPhotoPanel();
@@ -6752,6 +6758,8 @@
     els.rankingTestConfirm.hidden = true;
     els.rankingTestResult.textContent = '';
     rankingTestSelectedTier = null;
+    rankingTestSubmitting = false;
+    setRankingTestControlsDisabled(false);
     renderRankingTierButtons();
   }
 
@@ -6814,13 +6822,26 @@
     });
   }
 
+  var rankingTestSubmitting = false;
+
   function renderRankingTierButtons() {
     Array.from(els.rankingTierRow.children).forEach(function (btn) {
       btn.classList.toggle('is-selected', btn.dataset.tier === rankingTestSelectedTier);
     });
   }
 
+  // 送信中に他のボタンを連打すると、確認ダイアログを再度開いて別リクエストを重ねて
+  // 送信できてしまう(サーバー側の月1回制限とは別に、そもそも二重送信自体を防ぐ)。
+  // 送信中は関連する操作をすべて無効化する。
+  function setRankingTestControlsDisabled(disabled) {
+    Array.from(els.rankingTierRow.children).forEach(function (btn) { btn.disabled = disabled; });
+    els.rankingTestConfirmYes.disabled = disabled;
+    els.rankingTestConfirmNo.disabled = disabled;
+    els.rankingTestFileInput.disabled = disabled;
+  }
+
   function handleRankingTierClick(tier) {
+    if (rankingTestSubmitting) return;
     var file = els.rankingTestFileInput.files && els.rankingTestFileInput.files[0];
     if (!file) { els.rankingTestResult.textContent = '先に写真を選んでください。'; return; }
     els.rankingTestResult.textContent = '';
@@ -6831,16 +6852,21 @@
   }
 
   function submitRankingTestPhoto() {
+    if (rankingTestSubmitting) return;
     var session = loadSession();
     if (!session || !session.id || !rankingTestSelectedTier) return;
     var file = els.rankingTestFileInput.files && els.rankingTestFileInput.files[0];
     if (!file) { els.rankingTestResult.textContent = '写真を選んでください。'; els.rankingTestConfirm.hidden = true; return; }
     var tier = rankingTestSelectedTier;
+    rankingTestSubmitting = true;
+    setRankingTestControlsDisabled(true);
     els.rankingTestConfirm.hidden = true;
     els.rankingTestResult.textContent = '送信中…';
     compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
       return apiPost('submitTestPhoto', { id: session.id, testType: 'ranking', scoreTier: tier, imageBase64: base64, mimeType: 'image/jpeg' });
     }).then(function (res) {
+      rankingTestSubmitting = false;
+      setRankingTestControlsDisabled(false);
       if (!res.ok) {
         els.rankingTestResult.textContent = res.error === 'already_submitted_this_month'
           ? '今月のランキングテストはすでに提出済みです（提出は月1回までです）。'
@@ -6855,11 +6881,14 @@
         ? ('✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！')
         : '✅ 送信完了しました！（70点未満のため、MPの加算はありません）';
     }).catch(function () {
+      rankingTestSubmitting = false;
+      setRankingTestControlsDisabled(false);
       els.rankingTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
     });
   }
 
   function cancelRankingTierConfirm() {
+    if (rankingTestSubmitting) return;
     rankingTestSelectedTier = null;
     renderRankingTierButtons();
     els.rankingTestConfirm.hidden = true;
