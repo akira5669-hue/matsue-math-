@@ -691,13 +691,18 @@ function handleSyncPoints_(ctx, body) {
   var bonusAwarded = 0;
   var prefectureBonusAwarded = 0;
   var continentBonusAwarded = 0;
+  // 生徒の端末からの通常同期では、今サーバーに保存されている値より後退する書き込みは
+  // 行わない(大きい方を採用する)。ログイン直後、端末とサーバーの値を揃える処理が完了する
+  // 前に1問正解してしまうと、まだ古いローカルの値が送られてきて、先生による直接修正等を
+  // 巻き戻してしまう事故が起きていたため。先生による直接修正(シートを直接書き換える別
+  // ルート)はこの制限を経由しないので、不正発覚時に値を減らす操作は引き続き可能。
   if (body.prefectureCount !== undefined) {
     var prefectureCount = Math.max(0, Math.min(47, Math.floor(Number(body.prefectureCount)) || 0));
     if (prefectureCount === 47 && row.prefectureCount < 47 && isWithinPrefectureBonusWindow_()) {
       prefectureBonusAwarded = PREFECTURE_BONUS_MP;
       bonusAwarded += prefectureBonusAwarded;
     }
-    ctx.students.getRange(row.rowIndex, 12).setValue(prefectureCount);
+    ctx.students.getRange(row.rowIndex, 12).setValue(Math.max(prefectureCount, row.prefectureCount));
   }
 
   var rawExp = null, clampedExp = null, rawLevel = null, clampedLevel = null;
@@ -708,12 +713,15 @@ function handleSyncPoints_(ctx, body) {
     clampedLevel = Math.max(1, Math.min(rawLevel, Math.floor(clampedExp / 10) + 1));
     continentBonusAwarded = continentBonusForTransition_(worldCountForLevel_(row.level), worldCountForLevel_(clampedLevel));
     bonusAwarded += continentBonusAwarded;
-    ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[clampedLevel, clampedExp]]);
+    var levelExpIsBehind = clampedLevel < row.level || (clampedLevel === row.level && clampedExp < row.exp);
+    var finalLevel = levelExpIsBehind ? row.level : clampedLevel;
+    var finalExp = levelExpIsBehind ? row.exp : clampedExp;
+    ctx.students.getRange(row.rowIndex, 9, 1, 2).setValues([[finalLevel, finalExp]]);
   }
 
   var rawPoints = Math.max(0, Math.floor(points));
   var clampedPoints = Math.min(rawPoints, ceilings.maxPoints);
-  ctx.students.getRange(row.rowIndex, 7).setValue(clampedPoints + bonusAwarded);
+  ctx.students.getRange(row.rowIndex, 7).setValue(Math.max(clampedPoints, row.points) + bonusAwarded);
 
   // 実際にクランプが発動した(=送られてきた値が現実的な上限を超えていた)場合のみ、
   // 先生がいつでも確認できるよう監査ログへ記録する。通常の同期では何も記録されない。
@@ -730,22 +738,38 @@ function handleSyncPoints_(ctx, body) {
 
   // アイテム・図鑑(rareCollected)・レアキャラ撃破回数(rareDefeats)・考えるAKRの
   // 出現状態(thinkerMilestone)もサーバーへ保存し、同じIDを複数端末で使っても
-  // 端末間で図鑑・アイテムがズレないようにする。クライアント側で既にマージ済みの
-  // 状態を送ってくる想定なので、そのままJSONで書き込む。
+  // 端末間で図鑑・アイテムがズレないようにする。points/level/expと同じ理由(端末側の
+  // 同期がまだ古い状態のまま送られてくる事故)により、こちらも今の保存値との和集合・
+  // 最大値でマージし、後退する書き込みは行わない。
   if (body.items !== undefined) {
-    ctx.students.getRange(row.rowIndex, 15).setValue(JSON.stringify(Array.isArray(body.items) ? body.items : []));
+    var submittedItems = Array.isArray(body.items) ? body.items : [];
+    var mergedItems = row.items.slice();
+    submittedItems.forEach(function (itemId) { if (mergedItems.indexOf(itemId) === -1) mergedItems.push(itemId); });
+    ctx.students.getRange(row.rowIndex, 15).setValue(JSON.stringify(mergedItems));
   }
   if (body.rareCollected !== undefined) {
-    ctx.students.getRange(row.rowIndex, 16).setValue(JSON.stringify(Array.isArray(body.rareCollected) ? body.rareCollected : []));
+    var submittedRareCollected = Array.isArray(body.rareCollected) ? body.rareCollected : [];
+    var mergedRareCollected = row.rareCollected.slice();
+    submittedRareCollected.forEach(function (rid) { if (mergedRareCollected.indexOf(rid) === -1) mergedRareCollected.push(rid); });
+    ctx.students.getRange(row.rowIndex, 16).setValue(JSON.stringify(mergedRareCollected));
   }
   if (body.rareDefeats !== undefined) {
-    ctx.students.getRange(row.rowIndex, 17).setValue(JSON.stringify((body.rareDefeats && typeof body.rareDefeats === 'object') ? body.rareDefeats : {}));
+    var submittedRareDefeats = (body.rareDefeats && typeof body.rareDefeats === 'object') ? body.rareDefeats : {};
+    var mergedRareDefeats = Object.assign({}, row.rareDefeats);
+    Object.keys(submittedRareDefeats).forEach(function (k) {
+      var sv = Number(submittedRareDefeats[k]) || 0;
+      if (sv > (Number(mergedRareDefeats[k]) || 0)) mergedRareDefeats[k] = sv;
+    });
+    ctx.students.getRange(row.rowIndex, 17).setValue(JSON.stringify(mergedRareDefeats));
   }
   if (body.thinkerMilestone !== undefined) {
-    ctx.students.getRange(row.rowIndex, 18).setValue(body.thinkerMilestone || '');
+    var thinkerRank_ = function (v) { return v === 1000 ? 2 : v === 100 ? 1 : 0; };
+    var finalThinkerMilestone = thinkerRank_(body.thinkerMilestone) > thinkerRank_(row.thinkerMilestone) ? body.thinkerMilestone : row.thinkerMilestone;
+    ctx.students.getRange(row.rowIndex, 18).setValue(finalThinkerMilestone || '');
   }
   if (body.hp !== undefined) {
-    ctx.students.getRange(row.rowIndex, 21).setValue(Math.max(0, Math.floor(Number(body.hp)) || 0));
+    var submittedHp = Math.max(0, Math.floor(Number(body.hp)) || 0);
+    ctx.students.getRange(row.rowIndex, 21).setValue(Math.max(submittedHp, row.hp));
   }
 
   return { ok: true, bonusAwarded: bonusAwarded, prefectureBonusAwarded: prefectureBonusAwarded, continentBonusAwarded: continentBonusAwarded };
