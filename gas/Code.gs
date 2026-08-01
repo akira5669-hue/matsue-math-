@@ -1082,6 +1082,15 @@ function handleRedeemGift_(ctx, body) {
   }
 }
 
+// Apps Scriptエディタの関数選択ドロップダウンから「authorizeDriveAccessOnce」を選んで
+// 「実行」ボタンを押すと、ドライブへの書き込み許可を求めるダイアログが表示される。
+// 一度承認すれば、以降はこの関数を呼ぶ必要はない（この関数自体はテスト提出機能からは
+// 呼ばれない、手動承認専用のヘルパー）。
+function authorizeDriveAccessOnce() {
+  var folder = getOrCreateTestPhotoFolder_();
+  Logger.log('OK: ' + folder.getName() + ' (' + folder.getUrl() + ')');
+}
+
 function getOrCreateTestPhotoFolder_() {
   var folders = DriveApp.getFoldersByName(TEST_PHOTO_DRIVE_FOLDER_NAME_);
   if (folders.hasNext()) return folders.next();
