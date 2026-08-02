@@ -6344,6 +6344,9 @@
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
     worldBossActiveStage: null,
+    // ステージ4のように複数体を順番に倒すステージでの進行度(ステージID→次に戦う
+    // ボスのインデックス、0始まり)。worldBossActiveStageと同様に端末セッション限定。
+    worldBossSubIndex: {},
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -6630,6 +6633,21 @@
     if (pool.length === 0) return null;
     return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
   }
+  // ステージ4のボス戦は「間違えた問題が多く出る」仕様。出題範囲(自分の学年以上・
+  // ON中)の間違えた問題の中からランダムに1つ選ぶ。無ければnull。
+  const WORLD_BOSS_STAGE4_WRONG_BIAS = 0.5;
+  function pickWorldBossWrongQuestion() {
+    const session = loadSession();
+    const ownGrade = session && session.grade;
+    const pool = [];
+    CATEGORIES.forEach(c => {
+      if (!state.enabled.has(c.id) || !isAtOrAboveOwnGrade(c.id, ownGrade)) return;
+      const bank = state.wrongBank[c.id];
+      if (bank && bank.length > 0) bank.forEach(snap => pool.push(snap));
+    });
+    if (pool.length === 0) return null;
+    return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
+  }
 
   /* ---------- 計算メモ（手書き） ---------- */
 
@@ -6709,7 +6727,10 @@
 
   function nextQuestion() {
     clearMemoCanvas();
-    const mistakeQ = state.rareType === 'mistakeking' ? pickMistakeKingQuestion() : null;
+    let mistakeQ = state.rareType === 'mistakeking' ? pickMistakeKingQuestion() : null;
+    if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
+      mistakeQ = pickWorldBossWrongQuestion();
+    }
     const q = mistakeQ || (function () { const cat = pickGenerator(); return cat.gen(); })();
     state.current = q;
     state.answered = false;
@@ -6750,9 +6771,10 @@
 
   function updateGameHud() {
     const isBossFight = !!state.worldBossActiveStage;
-    const requiredStreak = isBossFight ? WORLD_BOSS_STREAK_REQUIRED : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+    const bossSubIndex = isBossFight ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
+    const requiredStreak = isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
     const hp = Math.max(0, requiredStreak - state.streak);
-    const enemy = isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage) : currentEnemyDisplay(state);
+    const enemy = isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
     const isRare = !isBossFight && !!state.rareType;
     if (enemy.img) {
       els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
@@ -7004,22 +7026,36 @@
       : '';
 
     let winHtml = '';
-    const requiredStreak = state.worldBossActiveStage ? WORLD_BOSS_STREAK_REQUIRED : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
-    if (isCorrect && state.worldBossActiveStage && state.streak >= WORLD_BOSS_STREAK_REQUIRED) {
+    const bossSubIndexForWin = state.worldBossActiveStage ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
+    const requiredStreak = state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+    if (isCorrect && state.worldBossActiveStage && state.streak >= requiredStreak) {
       // 世界一周のボス撃破：MP/経験値の通常報酬ではなく、ボスが仲間になる特別演出。
+      // ステージ4のように複数体を順番に倒すステージでは、途中のボスを倒しても
+      // ステージ自体はまだクリアにならず、そのまま次のボスへ続く。
       const stageId = state.worldBossActiveStage;
-      const country = worldBossCountryForStage(stageId);
-      state.worldBossDefeated[stageId] = true;
-      if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
-      state.worldBossActiveStage = null;
-      state.streak = 0;
-      saveGameState(state);
-      if (session && session.id) {
-        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-      }
-      const bossDisplay = worldBossEnemyDisplay(stageId);
+      const subIndex = bossSubIndexForWin;
+      const sequence = worldBossSequenceForStage(stageId);
+      const bossDisplay = worldBossEnemyDisplay(stageId, subIndex);
       const bossDefeatQuoteHtml = (bossDisplay.lines && bossDisplay.lines.defeat) ? `<div class="enemy-quote-banner">${bossDisplay.lines.defeat}</div>` : '';
-      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}`;
+      state.streak = 0;
+      const nextSubIndex = subIndex + 1;
+      if (nextSubIndex >= sequence.length) {
+        const country = worldBossCountryForStage(stageId);
+        state.worldBossDefeated[stageId] = true;
+        if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
+        state.worldBossSubIndex[stageId] = 0;
+        state.worldBossActiveStage = null;
+        saveGameState(state);
+        if (session && session.id) {
+          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        }
+        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}`;
+      } else {
+        state.worldBossSubIndex[stageId] = nextSubIndex;
+        saveGameState(state);
+        const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
+        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
+      }
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
@@ -8192,16 +8228,30 @@
     var chars = iso.toUpperCase().split('').map(function (ch) { return 0x1F1E6 + (ch.charCodeAt(0) - 65); });
     return String.fromCodePoint(chars[0], chars[1]);
   }
-  // ステージごとの専用ボスキャラ。用意が無いステージは、その国名から汎用の
+  // ステージごとの専用ボスキャラ(連続撃破シーケンス)。通常は1体(30問連続正解)だが、
+  // ステージ4のように複数体を順番に倒す形式もある。streakはそのボスに必要な
+  // 連続正解数。用意が無いステージ/シーケンス外は、その国名から汎用の
   // 「(国名)の守護者」表示にフォールバックする。
-  const WORLD_BOSS_TYPES = {
-    1: { name: 'ベビーAKR', img: 'images/baby_akr.png', lines: { appear: '君が来るのをあくびをしながら、待っていたバブー！', defeat: '君にも、赤ちゃんの時があったよね。だから、僕らは仲間だ！' } },
-    2: { name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: 'この先には進ませない！俺を倒してから行け！君に、蛇の攻撃がかわせるかな！？' } },
-    3: { name: '水上バイクAKR', img: 'images/suijobike_akr.png', lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' } },
+  const WORLD_BOSS_SEQUENCES = {
+    1: [{ streak: 30, name: 'ベビーAKR', img: 'images/baby_akr.png', lines: { appear: '君が来るのをあくびをしながら、待っていたバブー！', defeat: '君にも、赤ちゃんの時があったよね。だから、僕らは仲間だ！' } }],
+    2: [{ streak: 30, name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: 'この先には進ませない！俺を倒してから行け！君に、蛇の攻撃がかわせるかな！？' } }],
+    3: [{ streak: 30, name: '水上バイクAKR', img: 'images/suijobike_akr.png', lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' } }],
+    4: [
+      { streak: 10, name: 'フルスイングAKR', img: 'images/fullswing_akr.png', lines: { appear: '人生のバッターボックスに立ったら、見逃し三振だけはするな！' } },
+      { streak: 20, name: null },
+      { streak: 30, name: null },
+    ],
   };
-  function worldBossEnemyDisplay(stageId) {
-    const custom = WORLD_BOSS_TYPES[stageId];
-    if (custom) return { name: custom.name, img: custom.img, lines: custom.lines };
+  function worldBossSequenceForStage(stageId) {
+    return WORLD_BOSS_SEQUENCES[stageId] || [{ streak: WORLD_BOSS_STREAK_REQUIRED, name: null }];
+  }
+  function worldBossCurrentSubBoss(stageId, subIndex) {
+    const seq = worldBossSequenceForStage(stageId);
+    return seq[Math.min(subIndex || 0, seq.length - 1)];
+  }
+  function worldBossEnemyDisplay(stageId, subIndex) {
+    const sub = worldBossCurrentSubBoss(stageId, subIndex);
+    if (sub && sub.name) return { name: sub.name, img: sub.img, lines: sub.lines };
     var country = worldBossCountryForStage(stageId);
     if (!country) return { emoji: '👑', name: 'ボス' };
     return { emoji: isoToFlagEmoji(country.iso), name: country.name + 'の守護者' };
@@ -8344,12 +8394,17 @@
   // 既に挑戦中ならキャンセルボタンを表示する。
   function renderWorldBossSection() {
     if (state.worldBossActiveStage) {
-      const bossDisplay = worldBossEnemyDisplay(state.worldBossActiveStage);
+      const stageId = state.worldBossActiveStage;
+      const subIndex = state.worldBossSubIndex[stageId] || 0;
+      const sequence = worldBossSequenceForStage(stageId);
+      const bossDisplay = worldBossEnemyDisplay(stageId, subIndex);
+      const requiredStreak = worldBossCurrentSubBoss(stageId, subIndex).streak;
+      const seqLabel = sequence.length > 1 ? '（' + (subIndex + 1) + '/' + sequence.length + '体目）' : '';
       els.worldBossSection.hidden = false;
       els.worldBossSection.innerHTML =
         '<div class="world-boss-card is-fighting">'
-        + '<p class="world-boss-title">👑 ボス「' + bossDisplay.name + '」に挑戦中！</p>'
-        + '<p class="world-boss-desc">画面上のクイズで30問連続正解するとクリア。不正解になるとHPが' + worldBossHpPenalty(state.worldBossActiveStage) + '減る。</p>'
+        + '<p class="world-boss-title">👑 ボス「' + bossDisplay.name + '」' + seqLabel + 'に挑戦中！</p>'
+        + '<p class="world-boss-desc">画面上のクイズで' + requiredStreak + '問連続正解するとクリア。不正解になるとHPが' + worldBossHpPenalty(stageId) + '減る。</p>'
         + '<button type="button" class="ghost-btn" id="worldBossCancelBtn">挑戦をやめる</button>'
         + '</div>';
       const cancelBtn = document.getElementById('worldBossCancelBtn');
@@ -8364,15 +8419,19 @@
     }
     const stage = currentChallengeableBossStage();
     if (!stage) { els.worldBossSection.hidden = true; els.worldBossSection.innerHTML = ''; return; }
-    const bossDisplay = worldBossEnemyDisplay(stage.id);
+    const subIndex = state.worldBossSubIndex[stage.id] || 0;
+    const sequence = worldBossSequenceForStage(stage.id);
+    const bossDisplay = worldBossEnemyDisplay(stage.id, subIndex);
+    const requiredStreak = worldBossCurrentSubBoss(stage.id, subIndex).streak;
+    const seqLabel = sequence.length > 1 ? '（' + (subIndex + 1) + '/' + sequence.length + '体目）' : '';
     const elig = worldBossEligibility();
     const penalty = worldBossHpPenalty(stage.id);
     const condHtml = '<p class="world-boss-cond' + (elig.ok ? ' is-ok' : '') + '">出題条件: 自分の学年以上の単元を' + elig.required + '個以上ON（現在' + elig.count + '個）、うち文章題を1つ以上含む（' + (elig.hasWordProblem ? '✅OK' : '❌不足') + '）</p>';
     els.worldBossSection.hidden = false;
     els.worldBossSection.innerHTML =
       '<div class="world-boss-card">'
-      + '<p class="world-boss-title">👑 ボス出現！「' + bossDisplay.name + '」</p>'
-      + '<p class="world-boss-desc">30問連続正解でクリア。不正解になるとHPが' + penalty + '減り、HPが0になると最初(0/30)からやり直しになる。倒すと仲間になる！</p>'
+      + '<p class="world-boss-title">👑 ボス出現！「' + bossDisplay.name + '」' + seqLabel + '</p>'
+      + '<p class="world-boss-desc">' + requiredStreak + '問連続正解でクリア。不正解になるとHPが' + penalty + '減り、HPが0になると最初(0/' + requiredStreak + ')からやり直しになる。倒すと仲間になる！</p>'
       + condHtml
       + '<button type="button" class="primary-btn" id="worldBossChallengeBtn"' + (elig.ok ? '' : ' disabled') + '>挑戦する（現在HP: ' + (Number(state.hp) || 0) + '）</button>'
       + '</div>';
