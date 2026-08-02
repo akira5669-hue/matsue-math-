@@ -598,15 +598,17 @@ h1 {
 }
 .login-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   background: var(--c-bg);
   border: 1px solid var(--c-line);
-  border-radius: 999px;
+  border-radius: 16px;
   padding: 4px;
   margin-bottom: 16px;
 }
 .login-tab {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 88px;
   background: transparent;
   border: none;
   border-radius: 999px;

@@ -5624,6 +5624,7 @@
     rankingTabToday: document.getElementById('rankingTabToday'),
     rankingTabPoints: document.getElementById('rankingTabPoints'),
     rankingTabGrade: document.getElementById('rankingTabGrade'),
+    rankingTabHp: document.getElementById('rankingTabHp'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
     rankingNearby: document.getElementById('rankingNearby'),
@@ -6444,6 +6445,7 @@
     els.testPhotoToggle.hidden = !!isGuest;
     els.testPhotoPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
+    els.rankingTabHp.hidden = !!isGuest;
     drawNumberline();
     renderSettings();
     updateStats();
@@ -6932,11 +6934,6 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
@@ -6967,19 +6964,19 @@
     var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
     var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
     var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
-    var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : mode === 'points' ? `${r.points}MP` : `Lv.${r.level}（経験値 ${r.exp}）`;
+    var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : mode === 'points' ? `${r.points}MP` : mode === 'hp' ? `HP ${r.hp}` : `Lv.${r.level}（経験値 ${r.exp}）`;
     return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
   }
 
   function renderRanking(res, mode) {
     els.rankingTitle.textContent = mode === 'grade' ? `ランキング（学年内 上位30位）${res.grade ? '【' + res.grade + '】' : ''}` : 'ランキング（上位50位）';
     if (res.ranking.length === 0) {
-      els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : mode === 'grade' ? 'まだ同学年のランキングデータがありません。' : 'まだランキングデータがありません。';
+      els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : mode === 'grade' ? 'まだ同学年のランキングデータがありません。' : mode === 'hp' ? 'まだHPランキングデータがありません。' : 'まだランキングデータがありません。';
       els.rankingList.innerHTML = '';
       els.rankingNearby.hidden = true;
       return;
     }
-    els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : mode === 'grade' ? `同学年 経験値上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
+    els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : mode === 'grade' ? `同学年 経験値上位 ${res.ranking.length} 名` : mode === 'hp' ? `HP上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
     els.rankingList.innerHTML = res.ranking.map(function (r) { return rankingRowHtml(r, mode); }).join('');
 
     if (Array.isArray(res.nearby) && res.nearby.length > 0) {
@@ -7000,6 +6997,8 @@
     els.rankingTabPoints.setAttribute('aria-selected', String(mode === 'points'));
     els.rankingTabGrade.classList.toggle('is-active', mode === 'grade');
     els.rankingTabGrade.setAttribute('aria-selected', String(mode === 'grade'));
+    els.rankingTabHp.classList.toggle('is-active', mode === 'hp');
+    els.rankingTabHp.setAttribute('aria-selected', String(mode === 'hp'));
   }
 
   function loadRanking(mode) {
@@ -7008,7 +7007,7 @@
 
     var session = loadSession();
     if (!session || !session.id) return;
-    var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : 'ranking';
+    var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : mode === 'hp' ? 'rankingHp' : 'ranking';
     apiPost(action, { id: session.id }).then(function (res) {
       if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
       renderRanking(res, mode);
@@ -7031,11 +7030,6 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
@@ -7107,11 +7101,6 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
@@ -7174,11 +7163,6 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
@@ -7451,11 +7435,6 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
@@ -7517,9 +7496,6 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
-    els.grantPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
 
     els.testPhotoPanel.removeAttribute('hidden');
@@ -7728,6 +7704,7 @@
   els.rankingTabToday.addEventListener('click', function () { selectRankingMode('today'); });
   els.rankingTabPoints.addEventListener('click', function () { selectRankingMode('points'); });
   els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
+  els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.giftToggle.addEventListener('click', toggleGift);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);

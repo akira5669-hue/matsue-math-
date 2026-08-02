@@ -321,6 +321,8 @@ function doPost(e) {
     return jsonOut_(handleRankingPoints_(ctx, body));
   } else if (action === 'rankingGrade') {
     return jsonOut_(handleRankingGrade_(ctx, body));
+  } else if (action === 'rankingHp') {
+    return jsonOut_(handleRankingHp_(ctx, body));
   } else if (action === 'grantItems') {
     return jsonOut_(handleGrantItems_(ctx, body));
   } else if (action === 'registerGuardian') {
@@ -968,6 +970,27 @@ function handleRankingPoints_(ctx, body) {
   rows.sort(function (a, b) { return b.points - a.points; });
   var mapFn = function (r, idx) {
     return { rank: idx + 1, nickname: nicknameForId_(r.id), points: r.points, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
+  };
+  var top = rows.slice(0, 50).map(mapFn);
+  var nearby = buildNearbyRanking_(rows, myId, mapFn);
+  return { ok: true, ranking: top, nearby: nearby };
+}
+
+// HPランキング。全員が閲覧可能。
+function handleRankingHp_(ctx, body) {
+  var myId = String(body.id || '').trim();
+  var data = ctx.students.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var id = String(data[i][0]).trim();
+    if (!id) continue;
+    var hp = Number(data[i][20]) || 0;
+    var grade = data[i][5] || '';
+    rows.push({ id: id, hp: hp, grade: grade });
+  }
+  rows.sort(function (a, b) { return b.hp - a.hp; });
+  var mapFn = function (r, idx) {
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), hp: r.hp, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
   };
   var top = rows.slice(0, 50).map(mapFn);
   var nearby = buildNearbyRanking_(rows, myId, mapFn);
