@@ -2980,10 +2980,37 @@
     return [a, b, c].sort((x, y) => x - y);
   }
 
+  // 公約数の問題(2個)で「公約数が1個しかない(=互いに素)」を避けるため、共通の約数
+  // (2〜5のいずれか)を持つ2つの数を選ぶ。小さい順に並べて返す。
+  function pick2NonCoprime_(min, max) {
+    const factors = [2, 3, 4, 5];
+    const k = factors[randInt(0, factors.length - 1)];
+    const multiples = [];
+    for (let v = min; v <= max; v++) if (v % k === 0) multiples.push(v);
+    const a = multiples[randInt(0, multiples.length - 1)];
+    const bCands = multiples.filter(v => v !== a);
+    const b = bCands[randInt(0, bCands.length - 1)];
+    return [a, b].sort((x, y) => x - y);
+  }
+
+  // 公約数の問題(3個)で同様に、共通の約数(2〜5のいずれか)を持つ3つの数を小さい順に選ぶ。
+  function pick3DistinctNonCoprime_(min, max) {
+    const factors = [2, 3, 4, 5];
+    const k = factors[randInt(0, factors.length - 1)];
+    const multiples = [];
+    for (let v = min; v <= max; v++) if (v % k === 0) multiples.push(v);
+    const a = multiples[randInt(0, multiples.length - 1)];
+    const bCands = multiples.filter(v => v !== a);
+    const b = bCands[randInt(0, bCands.length - 1)];
+    const cCands = multiples.filter(v => v !== a && v !== b);
+    const c = cCands[randInt(0, cCands.length - 1)];
+    return [a, b, c].sort((x, y) => x - y);
+  }
+
   // 倍数と約数（小5）
   function genMultiples5() {
     const pat = randInt(0, 4);
-    const a = randInt(2, 12), b = randInt(2, 12);
+    const [a, b] = pick2NonCoprime_(2, 12);
     let question, answer, wrongs, steps;
     if (pat === 3) {
       // 3つの数の最小公倍数
@@ -2996,7 +3023,7 @@
       return { category: 'multiples5', question, answer, choices: buildChoices(answer, wrongs), steps };
     } else if (pat === 4) {
       // 3つの数の最大公約数
-      const nums = pick3Distinct_(6, 40);
+      const nums = pick3DistinctNonCoprime_(6, 40);
       const g = gcdFrac(gcdFrac(nums[0], nums[1]), nums[2]);
       question = `${nums[0]}、${nums[1]}、${nums[2]} の最大公約数は？`;
       answer = g;
