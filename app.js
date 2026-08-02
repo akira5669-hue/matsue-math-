@@ -6763,7 +6763,7 @@
     });
   }
 
-  function handleLogout() {
+  function finishLogout() {
     clearSession();
     clearGameState();
     // 同じ端末で別のIDに切り替えた際に、前の生徒のポイント・レベル・
@@ -6771,6 +6771,22 @@
     // 引き継がれてしまわないよう、ページごと再読み込みして完全に
     // まっさらな状態にする。
     window.location.reload();
+  }
+
+  function handleLogout() {
+    // ログアウト時にlocalStorageを消してからreloadするため、直前の正解が何らかの
+    // 理由(通信が遅い・一時的な回線不調等)でまだサーバーへ同期し切れていないと、
+    // その分の進捗が端末側にしか存在しない状態のままログアウトで失われてしまう
+    // (レベル・MPが古いサーバー値まで巻き戻って見える不具合の原因になっていた)。
+    // ログアウト直前に一度だけ同期を試み、その結果を待ってから消去する。オフライン等
+    // で同期できない場合に画面が固まらないよう、一定時間で待つのをあきらめて進める。
+    var session = loadSession();
+    if (!session || !session.id) { finishLogout(); return; }
+    els.logoutBtn.disabled = true;
+    var timeout = new Promise(function (resolve) { window.setTimeout(resolve, 4000); });
+    Promise.race([apiPost('syncPoints', buildProgressSyncPayload(session.id)), timeout])
+      .catch(function () { })
+      .then(finishLogout);
   }
 
   /* ---------- 学習記録 ---------- */
