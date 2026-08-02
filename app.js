@@ -754,10 +754,55 @@
   function genFactor() {
     function ff(n) { return n >= 0 ? `(x+${n})` : `(x${n})`; }
 
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 6);
     let question, answer, choices, steps;
 
-    if (pat === 0) {
+    if (pat === 3) {
+      // 共通因数をくくり出す：cax² + cbx の形
+      const c = randInt(2, 9);
+      const a = randNonZero(1, 8);
+      let b; do { b = randNonZero(-8, 8); } while (b === 0);
+      const coefA = c * a, coefB = c * b;
+      const bTerm = b > 0 ? `+ ${coefB}x` : `− ${Math.abs(coefB)}x`;
+      question = `${coefA}x² ${bTerm} を因数分解せよ。`;
+      const inner = a === 1 ? 'x' : `${a}x`;
+      const innerB = b > 0 ? `+${b}` : `${b}`;
+      answer = `${c}x(${inner}${innerB})`;
+      steps = [`共通因数 ${c}x をくくり出す`, `${coefA}x² ${bTerm} = ${c}x × (${inner}${innerB})`, `= ${answer}`];
+      choices = shuffle([answer, `${c}(${inner}${innerB})`, `x(${a}x${innerB})`, `${c}x(${a + 1}x${innerB})`]);
+    } else if (pat === 4) {
+      // 2変数の完全平方：x² + 2axy + a²y²
+      const a = randInt(1, 8);
+      const p = 2 * a, qc = a * a;
+      const qcTerm = qc === 1 ? 'y²' : `${qc}y²`;
+      question = `x² + ${p}xy + ${qcTerm} を因数分解せよ。`;
+      answer = `(x+${a}y)²`;
+      steps = [`x² + 2axy + a²y² = (x+ay)² の公式を使う`, `a² = ${qc} → a = ${a}、2a = ${p} ✓`, `= ${answer}`];
+      choices = shuffle([answer, `(x-${a}y)²`, `(x+${a}y)(x-${a}y)`, `(x+${a + 1}y)²`]);
+    } else if (pat === 5) {
+      // 置き換え型：(x+k)² + p(x+k) + q の形
+      const k = randNonZero(-6, 6);
+      let r1, r2; do { r1 = randNonZero(-7, 7); r2 = randNonZero(-7, 7); } while (r1 === r2);
+      const coefMid = -(r1 + r2), coefConst = r1 * r2;
+      const kStr = k >= 0 ? `+${k}` : `${k}`;
+      const midSign = coefMid >= 0 ? '+' : '−';
+      const midAbs = Math.abs(coefMid);
+      const midTermStr = midAbs === 1 ? `(x${kStr})` : `${midAbs}(x${kStr})`;
+      const constTermStr = coefConst >= 0 ? `+ ${coefConst}` : `− ${Math.abs(coefConst)}`;
+      question = `(x${kStr})² ${midSign} ${midTermStr} ${constTermStr} を因数分解せよ。`;
+      const f1 = k - r1, f2 = k - r2;
+      answer = `${ff(f1)}${ff(f2)}`;
+      steps = [`x${kStr} をXとおくと、X² ${midSign} ${midAbs}X ${constTermStr} の形`, `X = ${r1}、${r2} で因数分解できる`, `Xをx${kStr}にもどす`, `= ${answer}`];
+      choices = shuffle([answer, `${ff(-f1)}${ff(f2)}`, `${ff(f1)}${ff(-f2)}`, `${ff(r1)}${ff(r2)}`].filter((v, i, arr) => arr.indexOf(v) === i));
+      if (choices.length < 4) choices.push(`${ff(f1 + 1)}${ff(f2)}`);
+    } else if (pat === 6) {
+      // (x+y)² − n² の形
+      const n = randInt(2, 9);
+      question = `(x+y)² − ${n * n} を因数分解せよ。`;
+      answer = `(x+y+${n})(x+y-${n})`;
+      steps = [`(x+y)² − n² = {(x+y)+n}{(x+y)−n} の公式を使う`, `n² = ${n * n} → n = ${n}`, `= ${answer}`];
+      choices = shuffle([answer, `(x+y+${n})(x+y+${n})`, `(x+y-${n})(x+y-${n})`, `(x+y+${n + 1})(x+y-${n + 1})`]);
+    } else if (pat === 0) {
       const a = randNonZero(-7, 7);
       let b; do { b = randNonZero(-7, 7); } while (b === a || a+b === 0);
       const p = a+b, qc = a*b;
@@ -868,12 +913,54 @@
   }
 
   function genQuadratic() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 5);
     let q, answer, choices, steps;
     function fr(n) { return n < 0 ? `−${Math.abs(n)}` : `${n}`; }
     function roots(r1, r2) { return `x = ${fr(r1)}, ${fr(r2)}`; }
 
-    if (pat === 0) {
+    if (pat === 3) {
+      // ax² = b の形（平方根を使う）
+      const x0 = randInt(2, 9);
+      const a = randInt(2, 6);
+      const b = a * x0 * x0;
+      q = `${a}x² = ${b} を解け。`;
+      answer = `x = ±${x0}`;
+      steps = [`x² = ${b} ÷ ${a} = ${x0 * x0}`, `x = ±√${x0 * x0} = ±${x0}`];
+      choices = shuffle([answer, `x = ${x0}`, `x = ±${x0 + 1}`, `x = ±${x0 > 1 ? x0 - 1 : x0 + 2}`]);
+    } else if (pat === 4) {
+      // 展開してから整理して解く：(x+p)(x+q) = rx + s の形
+      const r1 = randNonZero(-8, 8);
+      let r2; do { r2 = randNonZero(-8, 8); } while (r2 === r1);
+      const p = randNonZero(-6, 6);
+      let qq; do { qq = randNonZero(-6, 6); } while (qq === p);
+      const rCoef = p + qq + r1 + r2;
+      const sConst = p * qq - r1 * r2;
+      const pS = p >= 0 ? `+ ${p}` : `− ${Math.abs(p)}`;
+      const qS = qq >= 0 ? `+ ${qq}` : `− ${Math.abs(qq)}`;
+      const rS = rCoef >= 0 ? `${rCoef}x` : `−${Math.abs(rCoef)}x`;
+      const sS = sConst >= 0 ? `+ ${sConst}` : `− ${Math.abs(sConst)}`;
+      q = `(x ${pS})(x ${qS}) = ${rS} ${sS} を解け。`;
+      const rlo = Math.min(r1, r2), rhi = Math.max(r1, r2);
+      answer = roots(rlo, rhi);
+      steps = [`左辺を展開して整理する`, `x² + ${fr(-(r1 + r2))}x + ${fr(r1 * r2)} = 0`, `因数分解して x = ${fr(r1)}, ${fr(r2)}`];
+      choices = shuffle([answer, roots(-rlo, -rhi), roots(rlo - 1, rhi), roots(rlo, rhi + 1)]);
+    } else if (pat === 5) {
+      // 置き換え型：(x+k)² + p(x+k) + q = 0
+      const k = randNonZero(-6, 6);
+      let m1, m2; do { m1 = randNonZero(-7, 7); m2 = randNonZero(-7, 7); } while (m1 === m2);
+      const coefMid = -(m1 + m2), coefConst = m1 * m2;
+      const kStr = k >= 0 ? `+${k}` : `${k}`;
+      const midSign = coefMid >= 0 ? '+' : '−';
+      const midAbs = Math.abs(coefMid);
+      const midTermStr = midAbs === 1 ? `(x${kStr})` : `${midAbs}(x${kStr})`;
+      const constTermStr = coefConst >= 0 ? `+ ${coefConst}` : `− ${Math.abs(coefConst)}`;
+      q = `(x${kStr})² ${midSign} ${midTermStr} ${constTermStr} = 0 を解け。`;
+      const x1 = m1 - k, x2 = m2 - k;
+      const xlo = Math.min(x1, x2), xhi = Math.max(x1, x2);
+      answer = roots(xlo, xhi);
+      steps = [`x${kStr} をXとおくと、X² ${midSign} ${midAbs}X ${constTermStr} = 0`, `X = ${m1}, ${m2}`, `x${kStr} = ${m1} または x${kStr} = ${m2}`, `= ${answer}`];
+      choices = shuffle([answer, roots(-xlo, -xhi), roots(xlo - 1, xhi), roots(xlo, xhi + 1)]);
+    } else if (pat === 0) {
       // (x − a)(x − b) = 0
       const a = randNonZero(-7, 7);
       let b; do { b = randNonZero(-7, 7); } while (b === a);
@@ -1097,9 +1184,40 @@
   function genLinear() {
     const a = randNonZero(-5, 5);
     const aD = a===1?'':a===-1?'−':`${a}`;
-    const pat = randInt(0, 7);
+    const pat = randInt(0, 9);
     let question, answer, steps, wrongs;
-    if (pat === 0) {
+    if (pat === 8) {
+      // xの増加量・yの増加量を求める
+      const b = randNonZero(-8, 8), bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
+      const x1 = randInt(-8, 3), x2 = x1 + randInt(2, 8);
+      const askDx = Math.random() < 0.5;
+      const dx = x2 - x1, dy = a * dx;
+      question = `一次関数 y = ${aD}x ${bS} で、xの値が${x1}から${x2}まで増加したときの、${askDx ? 'xの増加量' : 'yの増加量'}を求めなさい。`;
+      answer = askDx ? dx : dy;
+      wrongs = [askDx ? dy : dx, answer + 1, Math.max(1, answer - 1)].filter(v => v !== answer);
+      steps = askDx ? [`xの増加量 = ${x2} − ${fmtNum(x1)} = ${dx}`] : [`xの増加量 = ${x2} − ${fmtNum(x1)} = ${dx}`, `yの増加量 = 傾き × xの増加量 = ${aD || 1} × ${dx} = ${dy}`];
+      return { category: 'linear', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 9) {
+      // 平行な直線の式を求める
+      const mb = randNonZero(-8, 8);
+      const x1 = randNonZero(-5, 5), y1 = randNonZero(-8, 8);
+      const b = y1 - a * x1;
+      const answerStr = linearEqStr(a, b);
+      question = `グラフが直線 ${linearEqStr(a, mb)} に平行で、点 (${x1}, ${y1}) を通る一次関数の式は？`;
+      steps = [
+        `平行な直線は傾きが等しいので a = ${a}`,
+        `y = ${aD}x + b に (${x1}, ${y1}) を代入`,
+        `b = ${y1} − ${fmtNum(a * x1)} = ${b}`,
+        `${answerStr}`,
+      ];
+      const candidates = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category: 'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates), steps };
+    } else if (pat === 0) {
       const b = randNonZero(-8, 8), x = randNonZero(-6, 6), y = a*x+b;
       const bS = b<0?`− ${Math.abs(b)}`:`+ ${b}`;
       const axVal = a*x, axStr = a===1?`${x}`:`${a}×${fmtNum(x)}`;
@@ -1387,6 +1505,7 @@
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
+    { id: 'polyCalc2',  label: '式の計算（中2）',                  gen: genPolyCalc2 },
 
     // ---------- 中3 ----------
     { id: 'expand2',    label: '式の展開・基本（中3）',           gen: genExpand2 },
@@ -1417,6 +1536,9 @@
     { id: 'div3by3_4',      label: '3桁÷3桁のわり算（小4）',             gen: genDiv3by3_4,      defaultOff: true },
     { id: 'rectArea4',      label: '長方形・正方形の面積（小4）',        gen: genRectArea4,      defaultOff: true },
     { id: 'largeNum4',      label: '億・兆の大きな数（小4）',             gen: genLargeNum4,      defaultOff: true },
+    { id: 'decAddSubMixed4', label: '小数のたし算・ひき算：発展（小4）',  gen: genDecAddSubMixed4, defaultOff: true },
+    { id: 'setSquareAngle4', label: '三角じょうぎの角度（小4）',           gen: genSetSquareAngle4, defaultOff: true },
+    { id: 'timesWordProblem4', label: '倍の見方の文章題（小4）',           gen: genTimesWordProblem4, defaultOff: true },
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true },
@@ -1440,6 +1562,9 @@
 
     // ---------- 小6 ----------
     { id: 'fracMulDiv6',     label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6,     defaultOff: true },
+    { id: 'fracDecIntMulDiv6', label: '分数、小数、整数のまじったかけ算・わり算（小6）', gen: genFracDecIntMulDiv6, defaultOff: true },
+    { id: 'fracWordProblem6', label: '分数のかけ算・わり算の文章題（小6）', gen: genFracWordProblem6, defaultOff: true },
+    { id: 'ratioWordProblem6', label: '比の文章題（小6）',                  gen: genRatioWordProblem6, defaultOff: true },
     { id: 'ratio6',          label: '比（小6）',                           gen: genRatio6,          defaultOff: true },
     { id: 'scale6',          label: '拡大図と縮図（小6）',                 gen: genScale6,          defaultOff: true },
     { id: 'dataValues6',     label: 'データの調べ方（小6）',               gen: genDataValues6,     defaultOff: true },
@@ -1450,6 +1575,8 @@
     { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
     { id: 'largeNum3',       label: '大きな数（小3）',                     gen: genLargeNum3,       defaultOff: true },
     { id: 'clockTime3',      label: '時こくと時間（小3）',                 gen: genClockTime3,      defaultOff: true },
+    { id: 'addSub3Digit3',   label: 'たし算とひき算：3けた以上（小3）',    gen: genAddSub3Digit3,   defaultOff: true },
+    { id: 'units3',          label: '単位の関係（小3）',                   gen: genUnits3,          defaultOff: true },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -1586,9 +1713,56 @@
     return groups.reverse().join(',');
   }
   function genLargeNum4() {
-    const pat = randInt(0, 1);
+    const pat = randInt(0, 3);
     let question, answer, wrongs, steps;
-    if (pat === 0) {
+    if (pat === 2) {
+      // 大きな数の10倍・100倍・1000倍、10分の1
+      const bases = [
+        { label: '億', mult: 100000000 }, { label: '兆', mult: 1000000000000 },
+      ];
+      const b = bases[randInt(0, 1)];
+      const count = randInt(2, 90);
+      const baseStr = `${count}${b.label}`;
+      const way = randInt(0, 1);
+      if (way === 0) {
+        const k = [10, 100, 1000][randInt(0, 2)];
+        const resultCount = count * k;
+        question = `${baseStr} を ${k}倍すると？`;
+        answer = `${resultCount}${b.label}`;
+        const candidates = [`${resultCount / 10}${b.label}`, `${resultCount * 10}${b.label}`, `${resultCount + k}${b.label}`];
+        steps = [`${count} × ${k} = ${resultCount}`, `= ${answer}`];
+      } else {
+        const bigCount = count * 10;
+        question = `${bigCount}${b.label} を 10分の1にすると？`;
+        answer = `${count}${b.label}`;
+        const candidates = [`${count * 10}${b.label}`, `${count + 1}${b.label}`, `${Math.max(1, count - 1)}${b.label}`];
+        steps = [`${bigCount} ÷ 10 = ${count}`, `= ${answer}`];
+      }
+      return { category: 'largeNum4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 3) {
+      // 与えられた数字を1回ずつ使って作れる、いちばん大きい数・いちばん小さい数
+      const k = randInt(4, 7);
+      const allDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const digits = shuffle(allDigits.slice()).slice(0, k);
+      const askMax = Math.random() < 0.5;
+      let answerDigits;
+      if (askMax) {
+        answerDigits = digits.slice().sort((a, b) => b - a);
+      } else {
+        const asc = digits.slice().sort((a, b) => a - b);
+        if (asc[0] === 0) {
+          const firstNonZeroIdx = asc.findIndex(d => d !== 0);
+          [asc[0], asc[firstNonZeroIdx]] = [asc[firstNonZeroIdx], asc[0]];
+        }
+        answerDigits = asc;
+      }
+      question = `${digits.join('、')} の数字を1回ずつ使って${kanjiDigit(k)}けたの数をつくります。${askMax ? 'いちばん大きい数' : 'いちばん小さい数'}を答えましょう。`;
+      answer = answerDigits.join('');
+      const otherWay = askMax ? digits.slice().sort((a, b) => a - b).join('') : digits.slice().sort((a, b) => b - a).join('');
+      const candidates = [otherWay, answer.slice(0, -1) + (answer[answer.length - 1] === '9' ? '8' : String(Number(answer[answer.length - 1]) + 1)), answer.slice(1) + answer[0]];
+      steps = [askMax ? `大きい位から順に大きい数字を並べる` : `大きい位から順に小さい数字を並べる（先頭は0にできない）`, `= ${answer}`];
+      return { category: 'largeNum4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 0) {
       // 億・兆の位の数字
       let numStr = String(randInt(1, 9));
       for (let i = 1; i < 16; i++) numStr += String(randInt(0, 9));
@@ -1628,6 +1802,80 @@
       }
     }
     return { category: 'largeNum4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 三角じょうぎの角度（小4）：30-60-90と45-45-90の三角じょうぎの角を求める
+  function genSetSquareAngle4() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const knownIsThirty = Math.random() < 0.5;
+      const known = knownIsThirty ? 30 : 60;
+      answer = 180 - 90 - known;
+      question = `三角じょうぎの1つの角が${known}°で、直角(90°)の角もあります。残りの角は何度ですか。`;
+      wrongs = [known, 90, answer + 10].filter(v => v !== answer);
+      steps = [`三角形の内角の和は180°`, `180 − 90 − ${known} = ${answer}`];
+    } else if (pat === 1) {
+      question = `直角二等辺三角形の三角じょうぎがあります。直角(90°)以外の2つの角は、それぞれ何度ですか。`;
+      answer = '45°と45°';
+      wrongs = ['30°と60°', '60°と60°', '30°と30°'];
+      steps = [`直角二等辺三角形の内角の和は180°`, `(180 − 90) ÷ 2 = 45`, `45°と45°`];
+      return { category: 'setSquareAngle4', question, answer, choices: shuffle([answer, ...wrongs]), steps };
+    } else {
+      // 2枚の三角じょうぎの角をとなり合わせに置いたときにできる角（和・差）
+      const setA = [30, 60, 90];
+      const setB = [45, 45, 90];
+      const a = setA[randInt(0, 2)];
+      const b = setB[randInt(0, 1)];
+      const isSum = Math.random() < 0.5;
+      answer = isSum ? a + b : Math.abs(a - b);
+      question = isSum
+        ? `${a}°の角と${b}°の角をとなり合わせに置くと、合わせた角は何度になりますか。`
+        : `${Math.max(a, b)}°の角に${Math.min(a, b)}°の角を重ねて置くと、残りの角は何度になりますか。`;
+      wrongs = [a, b, answer + 10].filter(v => v !== answer);
+      steps = isSum ? [`${a} + ${b} = ${answer}`] : [`${Math.max(a, b)} − ${Math.min(a, b)} = ${answer}`];
+    }
+    return { category: 'setSquareAngle4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 倍の見方の文章題（小4）：何倍かを求める・何倍かにあたる大きさを求める
+  function genTimesWordProblem4() {
+    const pat = randInt(0, 2);
+    const contexts = [
+      { a: '風船', tpl: (base, cmp) => `赤い風船が${base}こ、青い風船が${cmp}こあります。青い風船の数は、赤い風船の数の何倍ですか。` },
+      { a: 'お金', tpl: (base, cmp) => `ゆうまさんは${base}円、ほのかさんは${cmp}円持っています。ほのかさんの持っているお金は、ゆうまさんの持っているお金の何倍ですか。` },
+      { a: '生徒数', tpl: (base, cmp) => `たくみさんのクラスの人数は${base}人で、全校生徒数は${cmp}人です。全校生徒数は、クラスの人数の何倍ですか。` },
+    ];
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const ctx = contexts[randInt(0, contexts.length - 1)];
+      const base = randInt(2, 20);
+      const times = randInt(2, 9);
+      const cmp = base * times;
+      question = ctx.tpl(base, cmp);
+      answer = times;
+      wrongs = [times + 1, Math.max(1, times - 1), base].filter(v => v !== answer);
+      steps = [`何倍 = くらべる量 ÷ もとにする量`, `${cmp} ÷ ${base} = ${times}`];
+    } else if (pat === 1) {
+      // 何倍にあたる大きさを求める（もとにする量×倍）
+      const base = randInt(2, 300);
+      const times = randInt(2, 9);
+      const result = base * times;
+      question = `メロンのねだんは${base}円で、りんごのねだんは、メロンのねだんの${times}倍です。りんごのねだんはいくらですか。`;
+      answer = result;
+      wrongs = [result + base, Math.max(1, result - base), base + times].filter(v => v !== answer);
+      steps = [`○倍にあたる大きさ = もとにする大きさ × 倍`, `${base} × ${times} = ${result}`];
+    } else {
+      // もとにする大きさを求める（くらべる量÷倍）
+      const base = randInt(2, 300);
+      const times = randInt(2, 9);
+      const result = base * times;
+      question = `キャベツ1この重さは、ナス1この重さの${times}倍で、${result}gあります。ナス1この重さは何gですか。`;
+      answer = base;
+      wrongs = [base + times, Math.max(1, base - times), result].filter(v => v !== answer);
+      steps = [`もとにする大きさ = くらべる量 ÷ 倍`, `${result} ÷ ${times} = ${base}`];
+    }
+    return { category: 'timesWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 大きな数（小3）：万の位までの理解、10倍・100倍・1000倍、10でわる
@@ -1676,7 +1924,7 @@
 
   // 時こくと時間（小3）：時刻の何分後、単位換算、時刻の差
   function genClockTime3() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 3);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       const startHour = randInt(1, 9);
@@ -1716,7 +1964,7 @@
       wrongs = wrongs.filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
       steps = [`= ${answer}`];
       return { category: 'clockTime3', question, answer, choices: buildChoices(answer, wrongs), steps };
-    } else {
+    } else if (pat === 2) {
       const startHour = randInt(1, 6);
       const startMin = randInt(0, 11) * 5;
       const durationMin = randInt(1, 8) * 10;
@@ -1728,7 +1976,111 @@
       wrongs = [durationMin + 10, Math.max(1, durationMin - 10), durationMin + 60].filter(v => v !== durationMin);
       steps = [`${startHour}時${startMin}分 から ${endHour}時${endMin}分 まで`, `= ${durationMin}分間`];
       return { category: 'clockTime3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // アナログ時計を読む・○分前の時こく・○時までの残り時間
+      function clockSvg(hour, minute) {
+        const hourAngle = (hour % 12) * 30 + minute * 0.5 - 90;
+        const minAngle = minute * 6 - 90;
+        const hx = 60 + 30 * Math.cos(hourAngle * Math.PI / 180);
+        const hy = 60 + 30 * Math.sin(hourAngle * Math.PI / 180);
+        const mx = 60 + 42 * Math.cos(minAngle * Math.PI / 180);
+        const my = 60 + 42 * Math.sin(minAngle * Math.PI / 180);
+        let nums = '';
+        for (let n = 1; n <= 12; n++) {
+          const a = n * 30 - 90;
+          const nx = 60 + 47 * Math.cos(a * Math.PI / 180);
+          const ny = 60 + 47 * Math.sin(a * Math.PI / 180);
+          nums += `<text x="${nx.toFixed(1)}" y="${(ny + 4).toFixed(1)}" font-size="10" text-anchor="middle" fill="#1c2127">${n}</text>`;
+        }
+        return `<svg width="120" height="120" viewBox="0 0 120 120" style="display:block;margin:0 auto 8px"><circle cx="60" cy="60" r="55" fill="none" stroke="#1c2127" stroke-width="1.5"/>${nums}<line x1="60" y1="60" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="#1c2127" stroke-width="3" stroke-linecap="round"/><line x1="60" y1="60" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#1c2127" stroke-width="2" stroke-linecap="round"/><circle cx="60" cy="60" r="2.5" fill="#1c2127"/></svg>`;
+      }
+      const hour = randInt(1, 12);
+      const minute = randInt(0, 11) * 5;
+      const timeStr = `${hour}時${minute === 0 ? '' : minute + '分'}`.trim();
+      const timeStrFull = `${hour}時${minute}分`;
+      const kind = randInt(0, 2);
+      if (kind === 0) {
+        question = `右の時計を見て、何時何分か答えましょう。`;
+        answer = timeStrFull;
+        const wrongCands = [`${hour}時${(minute + 10) % 60}分`, `${hour % 12 === 0 ? 1 : hour % 12 + 1}時${minute}分`, `${hour}時${Math.max(0, minute - 5)}分`];
+        steps = [`長い針（分針）は ${minute}分`, `短い針（時針）は ${hour}時`, `= ${answer}`];
+        return { category: 'clockTime3', question, questionHtml: clockSvg(hour, minute) + `<span style="display:block">${question}</span>`, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+      } else if (kind === 1) {
+        const before = [10, 15, 20, 30][randInt(0, 3)];
+        const totalBefore = (hour % 12) * 60 + minute - before;
+        const wrapped = ((totalBefore % 720) + 720) % 720;
+        let beforeHour = Math.floor(wrapped / 60);
+        const beforeMin = wrapped % 60;
+        if (beforeHour === 0) beforeHour = 12;
+        question = `右の時計が示す時こくの ${before}分前は何時何分ですか。`;
+        answer = `${beforeHour}時${beforeMin}分`;
+        const wrongCands = [`${beforeHour}時${(beforeMin + 5) % 60}分`, `${hour}時${minute}分`, `${beforeHour}時${Math.max(0, beforeMin - 5)}分`];
+        steps = [`${timeStrFull} の ${before}分前を求める`, `= ${answer}`];
+        return { category: 'clockTime3', question, questionHtml: clockSvg(hour, minute) + `<span style="display:block">${question}</span>`, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+      } else {
+        // 時計が示す時こくから、次の「◯時ちょうど」までの残り時間
+        const targetHour = ((hour % 12) + 1 === 0 ? 12 : (hour % 12) + 1) === 13 ? 1 : (hour % 12) + 1;
+        const remaining = 60 - minute;
+        if (remaining === 60) { question = null; }
+        const dispTargetHour = targetHour === 0 ? 12 : targetHour;
+        question = `右の時計が示す時こくから、${dispTargetHour}時までは何分ありますか。`;
+        answer = remaining === 60 ? 0 : remaining;
+        const wrongs = [answer + 5, Math.max(1, answer - 5), answer + 10].filter(v => v !== answer);
+        steps = [`${timeStrFull} から ${dispTargetHour}時 まで`, `= ${answer}分`];
+        return { category: 'clockTime3', question, questionHtml: clockSvg(hour, minute) + `<span style="display:block">${question}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
+      }
     }
+  }
+
+  // たし算とひき算：3けた以上（小3）
+  function genAddSub3Digit3() {
+    const digits = randInt(3, 4);
+    const min = digits === 3 ? 100 : 1000;
+    const max = digits === 3 ? 999 : 9999;
+    const isAdd = Math.random() < 0.5;
+    let question, answer, wrongs, steps;
+    if (isAdd) {
+      const a = randInt(min, max), b = randInt(min, max);
+      answer = a + b;
+      question = `${a} + ${b} = ?`;
+      wrongs = [answer + 10, Math.max(1, answer - 10), a - b, answer + 100].filter(v => v !== answer && v > 0);
+      steps = [`${a} + ${b} = ${answer}`];
+    } else {
+      let a = randInt(min, max), b = randInt(min, max);
+      if (a < b) { const t = a; a = b; b = t; }
+      answer = a - b;
+      question = `${a} − ${b} = ?`;
+      wrongs = [answer + 10, Math.max(1, answer - 10), a + b, answer + 100].filter(v => v !== answer && v >= 0);
+      steps = [`${a} − ${b} = ${answer}`];
+    }
+    return { category: 'addSub3Digit3', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 単位の関係（小3）：L↔dL、kg↔g、km↔m、分↔秒
+  function genUnits3() {
+    const units = [
+      { big: 'L', small: 'dL', factor: 10 },
+      { big: 'kg', small: 'g', factor: 1000 },
+      { big: 'km', small: 'm', factor: 1000 },
+      { big: '分', small: '秒', factor: 60 },
+    ];
+    const u = units[randInt(0, units.length - 1)];
+    const toSmall = Math.random() < 0.5;
+    const count = randInt(2, 9);
+    let question, answer, wrongs, steps;
+    if (toSmall) {
+      question = `${count}${u.big} は何${u.small}ですか。`;
+      answer = count * u.factor;
+      wrongs = [answer + u.factor, Math.max(1, answer - u.factor), count * (u.factor / 10 || 1)].filter(v => v !== answer && v > 0);
+      steps = [`1${u.big} = ${u.factor}${u.small}`, `${count} × ${u.factor} = ${answer}`];
+    } else {
+      const smallVal = count * u.factor;
+      question = `${smallVal}${u.small} は何${u.big}ですか。`;
+      answer = count;
+      wrongs = [count + 1, Math.max(1, count - 1), smallVal].filter(v => v !== answer && v > 0);
+      steps = [`1${u.big} = ${u.factor}${u.small}`, `${smallVal} ÷ ${u.factor} = ${answer}`];
+    }
+    return { category: 'units3', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
@@ -2533,35 +2885,240 @@
   }
 
   // 分数のかけ算・わり算（小6）
+  // 真分数、または(50%の確率で)仮分数になる帯分数相当の分数を返す
+  function randFracOrMixed6_(maxDen) {
+    let d, properN;
+    do { d = randInt(2, maxDen); properN = randInt(1, d - 1); } while (gcdFrac(properN, d) !== 1);
+    if (Math.random() < 0.5) return [properN, d];
+    const whole = randInt(1, 3);
+    return [whole * d + properN, d];
+  }
+  // 分数を、仮分数なら帯分数の見た目(「2 1/3」のように)で表示する
+  function fracDisplayStr6_(num, den) {
+    const [rn, rd] = reduceFrac(num, den);
+    if (rd === 1) return `${rn}`;
+    if (rn > rd) {
+      const whole = Math.floor(rn / rd), rem = rn % rd;
+      return rem === 0 ? `${whole}` : `${whole} ${rem}/${rd}`;
+    }
+    return `${rn}/${rd}`;
+  }
+
   function genFracMulDiv6() {
-    const [n1, d1] = randFrac(9);
-    const [n2, d2] = randFrac(9);
-    const isMul = Math.random() < 0.5;
+    const pat = randInt(0, 3);
+    let question, answer, candidates, steps;
+    if (pat === 0) {
+      // 分数どうしのかけ算・わり算（帯分数になるものを含む）
+      const [n1, d1] = randFracOrMixed6_(9);
+      const [n2, d2] = randFracOrMixed6_(9);
+      const isMul = Math.random() < 0.5;
+      const numAns = isMul ? n1 * n2 : n1 * d2;
+      const denAns = isMul ? d1 * d2 : d1 * n2;
+      answer = fracDisplayStr6_(numAns, denAns);
+      const opSym = isMul ? '×' : '÷';
+      question = `${fracDisplayStr6_(n1, d1)} ${opSym} ${fracDisplayStr6_(n2, d2)} = ?`;
+      candidates = [
+        fracDisplayStr6_(isMul ? n1 * d2 : n1 * n2, isMul ? d1 * n2 : d1 * d2),
+        fracDisplayStr6_(numAns + denAns, denAns),
+        fracDisplayStr6_(Math.max(1, numAns - denAns), denAns),
+      ];
+      steps = isMul
+        ? [`分子どうし・分母どうしをかける`, `= ${answer}`]
+        : [`÷ は、わる数をひっくり返してかけ算にする`, `= ${answer}`];
+    } else if (pat === 1) {
+      // 整数と分数のかけ算・わり算（順序はランダム）
+      const whole = randInt(2, 20);
+      const [n, d] = randFracOrMixed6_(9);
+      const isMul = Math.random() < 0.5;
+      const wholeFirst = Math.random() < 0.5;
+      let numAns, denAns;
+      if (isMul) { numAns = whole * n; denAns = d; }
+      else if (wholeFirst) { numAns = whole * d; denAns = n; }
+      else { numAns = n; denAns = whole * d; }
+      answer = fracDisplayStr6_(numAns, denAns);
+      const opSym = isMul ? '×' : '÷';
+      question = wholeFirst ? `${whole} ${opSym} ${fracDisplayStr6_(n, d)} = ?` : `${fracDisplayStr6_(n, d)} ${opSym} ${whole} = ?`;
+      candidates = [
+        fracDisplayStr6_(numAns + denAns, denAns),
+        fracDisplayStr6_(Math.max(1, numAns - denAns), denAns),
+        fracDisplayStr6_(numAns, denAns + 1),
+      ];
+      steps = [`整数は分母が1の分数として計算する`, `= ${answer}`];
+    } else if (pat === 2) {
+      // 3口の連続したかけ算（整数・帯分数を含むこともある）
+      const parts = [randFracOrMixed6_(9), randFracOrMixed6_(9), randFracOrMixed6_(9)];
+      if (Math.random() < 0.4) parts[randInt(0, 2)] = [randInt(2, 12), 1];
+      let numAns = 1, denAns = 1;
+      parts.forEach(([n, d]) => { numAns *= n; denAns *= d; });
+      answer = fracDisplayStr6_(numAns, denAns);
+      question = `${parts.map(([n, d]) => fracDisplayStr6_(n, d)).join(' × ')} = ?`;
+      candidates = [
+        fracDisplayStr6_(numAns + denAns, denAns),
+        fracDisplayStr6_(Math.max(1, numAns - denAns), denAns),
+        fracDisplayStr6_(numAns, denAns + 1),
+      ];
+      steps = [`分子どうし・分母どうしをすべてかける`, `= ${answer}`];
+    } else {
+      // かけ算とわり算の混じった3口の計算
+      const [n1, d1] = randFracOrMixed6_(9);
+      const [n2, d2] = randFracOrMixed6_(9);
+      const [n3, d3] = randFracOrMixed6_(9);
+      const mulFirst = Math.random() < 0.5;
+      // A × B ÷ C = (n1×n2×d3)/(d1×d2×n3)、A ÷ B × C = (n1×d2×n3)/(d1×n2×d3)
+      const numAns = mulFirst ? n1 * n2 * d3 : n1 * d2 * n3;
+      const realDen = mulFirst ? d1 * d2 * n3 : d1 * n2 * d3;
+      answer = fracDisplayStr6_(numAns, realDen);
+      question = mulFirst
+        ? `${fracDisplayStr6_(n1, d1)} × ${fracDisplayStr6_(n2, d2)} ÷ ${fracDisplayStr6_(n3, d3)} = ?`
+        : `${fracDisplayStr6_(n1, d1)} ÷ ${fracDisplayStr6_(n2, d2)} × ${fracDisplayStr6_(n3, d3)} = ?`;
+      candidates = [
+        fracDisplayStr6_(numAns + realDen, realDen),
+        fracDisplayStr6_(Math.max(1, numAns - realDen), realDen),
+        fracDisplayStr6_(numAns, realDen + 1),
+      ];
+      steps = [`わり算は、わる数をひっくり返してかけ算にしてから、まとめて計算する`, `= ${answer}`];
+    }
+    return { category: 'fracMulDiv6', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
 
-    const numAns = isMul ? n1 * n2 : n1 * d2;
-    const denAns = isMul ? d1 * d2 : d1 * n2;
-    const answer = fracToStr(numAns, denAns);
-    const opSym = isMul ? '×' : '÷';
-    const question = `${n1}/${d1} ${opSym} ${n2}/${d2} = ?`;
+  // 分数、小数、整数のまじったかけ算・わり算（小6）
+  function genFracDecIntMulDiv6() {
+    function decOperand6_() {
+      let tenths; do { tenths = randInt(1, 99); } while (tenths % 10 === 0);
+      return { num: tenths, den: 10, display: (tenths / 10).toString() };
+    }
+    function fracOperand6_() {
+      const [n, d] = randFracOrMixed6_(9);
+      return { num: n, den: d, display: fracDisplayStr6_(n, d) };
+    }
+    function intOperand6_() {
+      const v = randInt(2, 20);
+      return { num: v, den: 1, display: `${v}` };
+    }
+    const pat = randInt(0, 1);
+    let operands, ops;
+    if (pat === 0) {
+      const decFirst = Math.random() < 0.5;
+      const dec = decOperand6_(), frac = fracOperand6_();
+      operands = decFirst ? [dec, frac] : [frac, dec];
+      ops = [Math.random() < 0.5 ? '×' : '÷'];
+    } else {
+      const kinds = shuffle([decOperand6_, fracOperand6_, intOperand6_]);
+      operands = kinds.map(fn => fn());
+      ops = [Math.random() < 0.5 ? '×' : '÷', Math.random() < 0.5 ? '×' : '÷'];
+    }
+    let numAns = operands[0].num, denAns = operands[0].den;
+    for (let i = 0; i < ops.length; i++) {
+      const op = operands[i + 1];
+      if (ops[i] === '×') { numAns *= op.num; denAns *= op.den; }
+      else { numAns *= op.den; denAns *= op.num; }
+    }
+    const answer = fracDisplayStr6_(numAns, denAns);
+    const questionSimple = operands.map((o, i) => i === 0 ? o.display : `${ops[i - 1]} ${o.display}`).join(' ') + ' = ?';
+    const candidates = [
+      fracDisplayStr6_(numAns + denAns, denAns),
+      fracDisplayStr6_(Math.max(1, numAns - denAns), denAns),
+      fracDisplayStr6_(numAns, denAns + 1),
+    ];
+    const steps = [`小数は分数になおしてから計算する`, `わり算は、わる数をひっくり返してかけ算にする`, `= ${answer}`];
+    return { category: 'fracDecIntMulDiv6', question: questionSimple, questionHtml: stepToHtml(questionSimple), answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
 
-    const [, rd] = reduceFrac(numAns, denAns);
-    const wrongUnreduced = denAns === rd ? null : `${numAns}/${denAns}`;
-    const wrongFlippedOp = isMul ? `${n1 * d2}/${d1 * n2}` : `${n1 * n2}/${d1 * d2}`;
-    const wrongAddInstead = `${n1 * d2 + n2 * d1}/${d1 * d2}`;
-    const candidates = [wrongUnreduced, wrongFlippedOp, wrongAddInstead].filter(Boolean);
+  // 分数のかけ算・わり算の文章題（小6）
+  function genFracWordProblem6() {
+    const pat = randInt(0, 4);
+    let question, answer, candidates, steps;
+    if (pat === 0) {
+      // 分数÷整数の文章題
+      const contexts = [
+        { unit: 'L', tpl: (a, b) => `牛にゅうが${a}Lあります。これを${b}人で同じ量ずつ分けると、1人分は何Lになりますか。` },
+        { unit: 'm', tpl: (a, b) => `テープが${a}mあります。これを${b}人で同じ長さずつ分けると、1人分は何mになりますか。` },
+      ];
+      const ctx = contexts[randInt(0, contexts.length - 1)];
+      const [an, ad] = randFracOrMixed6_(9);
+      const b = randInt(2, 9);
+      question = ctx.tpl(fracDisplayStr6_(an, ad), b);
+      answer = fracDisplayStr6_(an, ad * b);
+      candidates = [fracDisplayStr6_(an * b, ad), fracDisplayStr6_(an, ad), fracDisplayStr6_(an + 1, ad * b)];
+      steps = [`1人分 = 全体 ÷ 人数`, `${fracDisplayStr6_(an, ad)} ÷ ${b} = ${answer}`];
+    } else if (pat === 1) {
+      // 単位量あたり（ガソリン、速さ）: 1Lで進める距離から、他の量での距離を求める
+      const [rn, rd] = randFracOrMixed6_(9);
+      const [ln, ld] = randFracOrMixed6_(9);
+      question = `1Lのガソリンで、${fracDisplayStr6_(rn, rd)}km走れる車があります。この車は${fracDisplayStr6_(ln, ld)}Lのガソリンでは何km走れますか。`;
+      const numAns = rn * ln, denAns = rd * ld;
+      answer = fracDisplayStr6_(numAns, denAns);
+      candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
+      steps = [`道のり = 1Lで進む距離 × 使う量`, `${fracDisplayStr6_(rn, rd)} × ${fracDisplayStr6_(ln, ld)} = ${answer}`];
+    } else if (pat === 2) {
+      // 長方形の面積（縦×横）
+      const [tn, td] = randFracOrMixed6_(9);
+      const [yn, yd] = randFracOrMixed6_(9);
+      question = `縦が${fracDisplayStr6_(tn, td)}m、横が${fracDisplayStr6_(yn, yd)}mの長方形の面積は何m²ですか。`;
+      const numAns = tn * yn, denAns = td * yd;
+      answer = fracDisplayStr6_(numAns, denAns);
+      candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
+      steps = [`面積 = 縦 × 横`, `${fracDisplayStr6_(tn, td)} × ${fracDisplayStr6_(yn, yd)} = ${answer}`];
+    } else if (pat === 3) {
+      // 単位量あたり重さ：○Lで○kgから、1Lの重さを求める
+      const [wn, wd] = randFrac(9);
+      const [vn, vd] = randFrac(9);
+      question = `${fracDisplayStr6_(vn, vd)}Lの重さが${fracDisplayStr6_(wn, wd)}kgの油があります。この油1Lの重さは何kgですか。`;
+      const numAns = wn * vd, denAns = wd * vn;
+      answer = fracDisplayStr6_(numAns, denAns);
+      candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
+      steps = [`1Lの重さ = 全体の重さ ÷ 全体の量`, `${fracDisplayStr6_(wn, wd)} ÷ ${fracDisplayStr6_(vn, vd)} = ${answer}`];
+    } else {
+      // 長方形の面積から辺の長さを求める（逆算）
+      const [tn, td] = randFracOrMixed6_(9);
+      const areaWhole = randInt(2, 12);
+      question = `面積が${areaWhole}m²、縦の長さが${fracDisplayStr6_(tn, td)}mの長方形の鉄板があります。この鉄板の横の長さは何mですか。`;
+      const numAns = areaWhole * td, denAns = tn;
+      answer = fracDisplayStr6_(numAns, denAns);
+      candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
+      steps = [`横の長さ = 面積 ÷ 縦の長さ`, `${areaWhole} ÷ ${fracDisplayStr6_(tn, td)} = ${answer}`];
+    }
+    return { category: 'fracWordProblem6', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
 
-    const steps = isMul
-      ? [
-          `分子どうし・分母どうしをかける`,
-          `${n1}/${d1} × ${n2}/${d2} = ${numAns}/${denAns}`,
-          `= ${answer}`,
-        ]
-      : [
-          `÷ は、わる数の分数をひっくり返してかけ算にする`,
-          `${n1}/${d1} × ${d2}/${n2} = ${numAns}/${denAns}`,
-          `= ${answer}`,
-        ];
-    return { category: 'fracMulDiv6', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+  // 比の文章題（小6）
+  function genRatioWordProblem6() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 全体を比で分ける文章題
+      let p, q; do { p = randInt(1, 9); q = randInt(1, 9); } while (gcdFrac(p, q) !== 1 || p === q);
+      const k = randInt(2, 15);
+      const total = k * (p + q);
+      const smaller = k * Math.min(p, q);
+      const bigger = k * Math.max(p, q);
+      const askSmaller = Math.random() < 0.5;
+      question = `${total}cmのリボンを、妹と姉が${p}:${q}の比で分けます。${askSmaller ? '少ない方' : '多い方'}は何cmもらいますか。`;
+      answer = askSmaller ? smaller : bigger;
+      wrongs = [askSmaller ? bigger : smaller, answer + k, Math.max(1, answer - k)].filter(v => v !== answer);
+      steps = [`${p} + ${q} = ${p + q}等分にする`, `1あたり ${total} ÷ ${p + q} = ${k}`, `${askSmaller ? '少ない方' : '多い方'} = ${k} × ${askSmaller ? Math.min(p, q) : Math.max(p, q)} = ${answer}`];
+    } else if (pat === 1) {
+      // 混合の文章題：2つのものを比で混ぜて全体量を作る
+      let p, q; do { p = randInt(1, 9); q = randInt(1, 9); } while (gcdFrac(p, q) !== 1 || p === q);
+      const k = randInt(2, 12);
+      const total = k * (p + q);
+      const partP = k * p;
+      question = `ミルクとコーヒーを${p}:${q}の割合で混ぜて、カフェオレを作ります。カフェオレを${total}mL作るとき、ミルクは何mL必要ですか。`;
+      answer = partP;
+      wrongs = [k * q, partP + k, Math.max(1, partP - k)].filter(v => v !== answer);
+      steps = [`${p} + ${q} = ${p + q}等分にする`, `1あたり ${total} ÷ ${p + q} = ${k}`, `ミルク = ${k} × ${p} = ${answer}`];
+    } else {
+      // 整数比に直す文章題
+      const g = randInt(2, 8);
+      let b1, b2; do { b1 = randInt(1, 12); b2 = randInt(1, 12); } while (gcdFrac(b1, b2) !== 1 || b1 === b2);
+      const a = g * b1, b = g * b2;
+      question = `赤いペンキを${a}dL、白いペンキを${b}dL混ぜて、ピンク色のペンキを作りました。混ぜた赤と白のペンキの量の割合を、最も簡単な整数の比で表しましょう。`;
+      answer = `${b1}:${b2}`;
+      const wrongCands = [`${a}:${b}`, `${b2}:${b1}`, `${b1 + 1}:${b2}`];
+      steps = [`最大公約数 ${g} で両方を割る`, `${a} ÷ ${g} : ${b} ÷ ${g} = ${answer}`];
+      return { category: 'ratioWordProblem6', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    }
+    return { category: 'ratioWordProblem6', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   function buildChoicesFromList(answerStr, wrongCandidates) {
@@ -3462,6 +4019,68 @@
     return { category: 'decAddSub4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
+  // 小数のたし算・ひき算（小4）：小数点の位置がそろっていない・整数との混合・3口の計算
+  function genDecAddSubMixed4() {
+    const pat = randInt(0, 1);
+    if (pat === 0) {
+      // 小数のけた数がそろっていない2口の計算（整数を含むこともある）
+      let decA = randInt(0, 3), decB = randInt(0, 3);
+      if (decA === decB) decB = (decB + 1) % 4;
+      const aInt = randInt(1, 999), bInt = randInt(1, 999);
+      const maxD = Math.max(decA, decB);
+      const aScaled = aInt * Math.pow(10, maxD - decA);
+      const bScaled = bInt * Math.pow(10, maxD - decB);
+      const isAdd = Math.random() < 0.5;
+      let aFinalInt = aInt, aFinalDec = decA, bFinalInt = bInt, bFinalDec = decB;
+      let x = aScaled, y = bScaled;
+      if (!isAdd && x < y) {
+        [x, y] = [y, x];
+        aFinalInt = bInt; aFinalDec = decB; bFinalInt = aInt; bFinalDec = decA;
+      }
+      const A = formatScaledDecimal_(aFinalInt, aFinalDec);
+      const B = formatScaledDecimal_(bFinalInt, bFinalDec);
+      const resultScaled = isAdd ? (aScaled + bScaled) : (x - y);
+      const answer = formatScaledDecimal_(resultScaled, maxD);
+      const question = `${A} ${isAdd ? '+' : '−'} ${B} = ?`;
+      const candidates = [
+        formatScaledDecimal_(resultScaled + Math.pow(10, maxD > 0 ? maxD - 1 : 0), maxD),
+        formatScaledDecimal_(Math.max(0, resultScaled - Math.pow(10, maxD > 0 ? maxD - 1 : 0)), maxD),
+        formatScaledDecimal_(resultScaled + Math.pow(10, maxD), maxD),
+      ];
+      const steps = [`小数点の位置をそろえて計算する`, `${A} ${isAdd ? '+' : '−'} ${B} = ${answer}`];
+      return { category: 'decAddSubMixed4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else {
+      // 3口の計算（A op1 B op2 C、答えが負にならないように調整）
+      const ops = [['+', '−'], ['−', '+'], ['−', '−']][randInt(0, 2)];
+      let A, B, C, decA, decB, decC, maxD, result;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        decA = randInt(0, 2); decB = randInt(0, 2); decC = randInt(0, 2);
+        maxD = Math.max(decA, decB, decC);
+        const aInt = randInt(10, 999), bInt = randInt(10, 999), cInt = randInt(10, 999);
+        const aS = aInt * Math.pow(10, maxD - decA);
+        const bS = bInt * Math.pow(10, maxD - decB);
+        const cS = cInt * Math.pow(10, maxD - decC);
+        const r = (ops[0] === '+' ? aS + bS : aS - bS);
+        const r2 = (ops[1] === '+' ? r + cS : r - cS);
+        if (r >= 0 && r2 >= 0) {
+          A = formatScaledDecimal_(aInt, decA); B = formatScaledDecimal_(bInt, decB); C = formatScaledDecimal_(cInt, decC);
+          result = r2;
+          break;
+        }
+      }
+      if (result === undefined) { A = '10'; B = '3.5'; C = '2.1'; decA = 0; decB = 1; decC = 1; maxD = 1; result = ops[0] === '+' ? (ops[1] === '+' ? 155 : 115) : 45; }
+      const answer = formatScaledDecimal_(result, maxD);
+      const question = `${A} ${ops[0]} ${B} ${ops[1]} ${C} = ?`;
+      const candidates = [
+        formatScaledDecimal_(result + Math.pow(10, maxD > 0 ? maxD - 1 : 0), maxD),
+        formatScaledDecimal_(Math.max(0, result - Math.pow(10, maxD > 0 ? maxD - 1 : 0)), maxD),
+        formatScaledDecimal_(result + Math.pow(10, maxD), maxD),
+      ];
+      const steps = [`前から順に計算する`, `${A} ${ops[0]} ${B} = ${formatScaledDecimal_((ops[0] === '+' ? (parseFloat(A) + parseFloat(B)) : (parseFloat(A) - parseFloat(B))) * Math.pow(10, maxD), maxD)}`, `${ops[1]} ${C} = ${answer}`];
+      return { category: 'decAddSubMixed4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    }
+  }
+
   // 分数のたし算・ひき算（同分母、小4）
   function genFrac4() {
     const pat = randInt(0, 3);
@@ -4321,6 +4940,109 @@
     return `<svg width="185" height="80" viewBox="0 0 185 80" style="display:block;margin:0 auto 8px"><path d="M38,14 L8,64 L68,64 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><text x="31" y="12" font-size="11" font-weight="bold" fill="#1c2127">${a}</text><text x="1" y="75" font-size="11" font-weight="bold" fill="#1c2127">${b}</text><text x="61" y="75" font-size="11" font-weight="bold" fill="#1c2127">${c}</text><text x="82" y="44" font-size="15" fill="#555">≡</text><path d="M138,14 L108,64 L168,64 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><text x="131" y="12" font-size="11" font-weight="bold" fill="#1c2127">${d}</text><text x="101" y="75" font-size="11" font-weight="bold" fill="#1c2127">${e}</text><text x="161" y="75" font-size="11" font-weight="bold" fill="#1c2127">${f}</text></svg>`;
   }
 
+  /* ---------- 式の計算（中2） ---------- */
+
+  function termStr2_(coef, letter) {
+    if (coef === 0) return '';
+    const abs = Math.abs(coef);
+    const core = abs === 1 ? letter : `${abs}${letter}`;
+    return coef > 0 ? `+ ${core}` : `− ${core}`;
+  }
+  function constStr2_(c) {
+    if (c === 0) return '';
+    return c > 0 ? `+ ${c}` : `− ${Math.abs(c)}`;
+  }
+
+  function genPolyCalc2() {
+    const pat = randInt(0, 4);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      // 同類項の整理：ax + by + cx + dy の形
+      const a = randNonZero(-9, 9), b = randNonZero(-9, 9);
+      let c = randNonZero(-9, 9), d = randNonZero(-9, 9);
+      const sx = a + c, sy = b + d;
+      const cTerm = c > 0 ? `+ ${c}x` : `− ${Math.abs(c)}x`;
+      const dTerm = d > 0 ? `+ ${d}y` : `− ${Math.abs(d)}y`;
+      question = `${a}x ${b > 0 ? '+' : '−'} ${Math.abs(b)}y ${cTerm} ${dTerm} を計算しなさい。`;
+      answer = `${termStr2_(sx, 'x').replace(/^\+ /, '')} ${termStr2_(sy, 'y')}`.trim();
+      if (sx === 0) answer = termStr2_(sy, 'y').replace(/^\+ /, '');
+      steps = [`xの項どうし、yの項どうしをまとめる`, `${a}x + ${c}x = ${sx}x`, `${b}y + ${d}y = ${sy}y`, `= ${answer}`];
+      const wrongAns1 = `${termStr2_(a - c, 'x').replace(/^\+ /, '')} ${termStr2_(b - d, 'y')}`.trim();
+      const wrongAns2 = `${termStr2_(sx, 'x').replace(/^\+ /, '')} ${termStr2_(d, 'y')}`.trim();
+      choices = buildChoicesFromList(answer, [wrongAns1, wrongAns2]);
+    } else if (pat === 1) {
+      // 分配法則による展開：k(ax + by) の形
+      const k = randNonZero(-9, 9);
+      const a = randNonZero(-9, 9), b = randNonZero(-9, 9);
+      question = `${k}(${a}x ${b > 0 ? '+' : '−'} ${Math.abs(b)}y) を計算しなさい。`;
+      const ra = k * a, rb = k * b;
+      answer = `${termStr2_(ra, 'x').replace(/^\+ /, '')} ${termStr2_(rb, 'y')}`.trim();
+      steps = [`かっこの中の各項に${k}をかける`, `${k}×${a}x=${ra}x、${k}×${b}y=${rb}y`, `= ${answer}`];
+      const wrongAns1 = `${termStr2_(k * a, 'x').replace(/^\+ /, '')} ${termStr2_(b, 'y')}`.trim();
+      const wrongAns2 = `${termStr2_(a, 'x').replace(/^\+ /, '')} ${termStr2_(rb, 'y')}`.trim();
+      choices = buildChoicesFromList(answer, [wrongAns1, wrongAns2]);
+    } else if (pat === 2) {
+      // かっこを含む同類項の整理：p(ax+b) + q(cx+d)
+      const p = randNonZero(-6, 6), q = randNonZero(-6, 6);
+      const a = randNonZero(-6, 6), b = randNonZero(-9, 9);
+      const c = randNonZero(-6, 6), d = randNonZero(-9, 9);
+      question = `${p}(${a}x ${b >= 0 ? '+' : '−'} ${Math.abs(b)}) ${q >= 0 ? '+' : '−'} ${Math.abs(q)}(${c}x ${d >= 0 ? '+' : '−'} ${Math.abs(d)}) を計算しなさい。`;
+      const sx = p * a + q * c, sc = p * b + q * d;
+      answer = `${termStr2_(sx, 'x').replace(/^\+ /, '')} ${constStr2_(sc)}`.trim();
+      steps = [`かっこを展開する`, `${p}×${a}x + ${p}×${b} ${q >= 0 ? '+' : '−'} ${Math.abs(q)}×(${c}x) ${q >= 0 ? '+' : '−'} ${Math.abs(q)}×(${d})`, `同類項をまとめる`, `= ${answer}`];
+      const wrongAns1 = `${termStr2_(p * a - q * c, 'x').replace(/^\+ /, '')} ${constStr2_(p * b - q * d)}`.trim();
+      const wrongAns2 = `${termStr2_(sx, 'x').replace(/^\+ /, '')} ${constStr2_(p * b)}`.trim();
+      choices = buildChoicesFromList(answer, [wrongAns1, wrongAns2]);
+    } else if (pat === 3) {
+      // 単項式の乗除（累乗・負の数を含む）
+      const sub = randInt(0, 2);
+      if (sub === 0) {
+        const a = randNonZero(-9, 9), b = randNonZero(-9, 9);
+        question = `${a}a × ${b}a を計算しなさい。`;
+        const coef = a * b;
+        answer = `${coef}a²`;
+        steps = [`係数どうし、文字どうしをかける`, `${a}×${b}=${coef}、a×a=a²`, `= ${answer}`];
+        choices = shuffle([answer, `${coef}a`, `${a + b}a²`, `${Math.abs(coef)}a²`].filter((v, i, arr) => arr.indexOf(v) === i));
+        if (choices.length < 4) choices.push(`${coef + 1}a²`);
+      } else if (sub === 1) {
+        let a, b; do { a = randNonZero(-9, 9); b = randNonZero(-9, 9); } while (a % b !== 0);
+        question = `${a}ab ÷ ${b}b を計算しなさい。`;
+        const coef = a / b;
+        answer = coef === 1 ? 'a' : coef === -1 ? '−a' : `${coef}a`;
+        steps = [`${a} ÷ ${b} = ${coef}`, `b ÷ b = 1`, `= ${answer}`];
+        choices = shuffle([answer, `${coef}ab`, `${coef + 1}a`, `${-coef}a`].filter((v, i, arr) => arr.indexOf(v) === i));
+        if (choices.length < 4) choices.push(`${coef}b`);
+      } else {
+        const a = randNonZero(-9, 9), b = randNonZero(2, 9);
+        const c = randNonZero(-9, 9);
+        // a×b÷c の3口の単項式計算（係数がcで割り切れるように調整）
+        const productForC = a * b;
+        let cAdj = c;
+        while (productForC % cAdj !== 0) cAdj += cAdj > 0 ? 1 : -1;
+        if (cAdj === 0) cAdj = 1;
+        question = `${a}x × ${b}x ÷ ${cAdj} を計算しなさい。`;
+        const coef = (a * b) / cAdj;
+        answer = `${coef}x²`;
+        steps = [`${a} × ${b} ÷ ${cAdj} = ${coef}`, `x × x = x²`, `= ${answer}`];
+        choices = shuffle([answer, `${coef}x`, `${coef + b}x²`, `${-coef}x²`].filter((v, i, arr) => arr.indexOf(v) === i));
+        if (choices.length < 4) choices.push(`${coef - 1}x²`);
+      }
+    } else {
+      // 式の値：代入
+      const a = randNonZero(-6, 6);
+      let b; do { b = randNonZero(-6, 6); } while (b === a);
+      const p = randNonZero(-5, 5), q = randNonZero(-5, 5);
+      question = `a = ${a}、b = ${b} のとき、${p}(2a + b) ${q >= 0 ? '+' : '−'} ${Math.abs(q)}(a − b) の値を求めなさい。`;
+      // p(2a+b) + q(a-b) = (2p+q)a + (p-q)b
+      const coefA = 2 * p + q, coefB = p - q;
+      const value = coefA * a + coefB * b;
+      answer = `${value}`;
+      steps = [`式を展開して整理する`, `= ${termStr2_(coefA, 'a').replace(/^\+ /, '')} ${termStr2_(coefB, 'b')}`.trim(), `a=${a}、b=${b} を代入`, `= ${answer}`];
+      choices = buildChoices(value, [value + 1, value - 1, -value].filter(v => v !== value));
+    }
+    return { category: 'polyCalc2', question, answer, choices, steps };
+  }
+
   /* ---------- 三角形の合同（穴埋め） ---------- */
 
   function genCongruence() {
@@ -4385,8 +5107,29 @@
           s: ['①AM=DM（仮定）', '②BM=CM（仮定）', '③∠AMB=∠DMC（対頂角）', '①②③より2組の辺とその間の角がそれぞれ等しいから △ABM≡△DCM'],
           svg: '<svg width="118" height="94" viewBox="0 0 118 94" style="display:block;margin:0 auto 8px"><path d="M12,12 L82,12 L102,80 L32,80 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="12" y1="12" x2="102" y2="80" stroke="#1c2127" stroke-width="1.5"/><line x1="82" y1="12" x2="32" y2="80" stroke="#1c2127" stroke-width="1.5"/><circle cx="57" cy="46" r="2.5" fill="#1c2127"/><text x="3" y="11" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="84" y="11" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="104" y="91" font-size="11" font-weight="bold" fill="#1c2127">D</text><text x="22" y="91" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="60" y="43" font-size="10" font-weight="bold" fill="#1c2127">M</text></svg>',
         },
+        {
+          q: '△ABD ≡ △CBD の証明。AB=CB、BDは∠ABCの二等分線であることが仮定から分かる。∠ABD=∠CBDであることに加えて、証明に使える図から分かることは何か？',
+          a: 'BD は共通',
+          w: ['AD=CD', 'AB=BD', '∠ADB=∠CDB'],
+          s: ['①AB=CB（仮定）', '②∠ABD=∠CBD（角の二等分線）', '③BD は共通', '①②③より2組の辺とその間の角がそれぞれ等しいから △ABD≡△CBD'],
+          svg: '<svg width="118" height="94" viewBox="0 0 118 94" style="display:block;margin:0 auto 8px"><path d="M59,10 L14,80 L104,80 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="59" y1="10" x2="59" y2="80" stroke="#1c2127" stroke-width="1.5" stroke-dasharray="5,3"/><text x="53" y="9" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="4" y="91" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="106" y="91" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="53" y="91" font-size="11" font-weight="bold" fill="#1c2127">D</text></svg>',
+        },
+        {
+          q: '△ABC ≡ △DCB の証明。AB=DC、AC=DBが仮定から分かる。図から分かるのは何か？',
+          a: 'BC は共通',
+          w: ['∠ABC=∠DCB', 'AB=BC', '∠BAC=∠CDB'],
+          s: ['①AB=DC（仮定）', '②AC=DB（仮定）', '③BC は共通', '①②③より3組の辺がそれぞれ等しいから △ABC≡△DCB'],
+          svg: '<svg width="118" height="90" viewBox="0 0 118 90" style="display:block;margin:0 auto 8px"><path d="M14,14 L104,14 L104,76 L14,76 Z" fill="none" stroke="#1c2127" stroke-width="1.5" stroke-opacity="0"/><line x1="14" y1="14" x2="104" y2="76" stroke="#1c2127" stroke-width="1.5"/><line x1="104" y1="14" x2="14" y2="76" stroke="#1c2127" stroke-width="1.5"/><line x1="14" y1="14" x2="14" y2="76" stroke="#1c2127" stroke-width="1.5"/><line x1="104" y1="14" x2="104" y2="76" stroke="#1c2127" stroke-width="1.5"/><text x="6" y="12" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="6" y="86" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="106" y="86" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="106" y="12" font-size="11" font-weight="bold" fill="#1c2127">D</text></svg>',
+        },
+        {
+          q: '△ACM ≡ △BDM の証明。線分ABの中点をM、∠CAM=∠DBMが仮定から分かる。AM=BM（中点）であることに加えて、証明に使える図から分かることは何か？',
+          a: '∠AMC=∠BMD（対頂角）',
+          w: ['∠ACM=∠BDM', 'CM=DM', 'AC=BD'],
+          s: ['①∠CAM=∠DBM（仮定）', '②AM=BM（中点）', '③∠AMC=∠BMD（対頂角）', '①②③より1組の辺とその両端の角がそれぞれ等しいから △ACM≡△BDM'],
+          svg: '<svg width="118" height="94" viewBox="0 0 118 94" style="display:block;margin:0 auto 8px"><path d="M14,50 L104,44 L82,84 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><path d="M14,50 L104,44 L36,10 Z" fill="none" stroke="#1c2127" stroke-width="1.5" stroke-opacity="0"/><line x1="36" y1="10" x2="82" y2="84" stroke="#1c2127" stroke-width="1.5"/><circle cx="59" cy="47" r="2.5" fill="#1c2127"/><text x="6" y="49" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="106" y="43" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="30" y="9" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="84" y="91" font-size="11" font-weight="bold" fill="#1c2127">D</text><text x="62" y="44" font-size="10" font-weight="bold" fill="#1c2127">M</text></svg>',
+        },
       ];
-      const sc = scenarios[randInt(0, 2)];
+      const sc = scenarios[randInt(0, scenarios.length - 1)];
       question = sc.q; answer = sc.a;
       choices = shuffle([answer, ...sc.w]);
       steps = sc.s;
@@ -5068,13 +5811,41 @@
   /* ---------- 三平方の定理（中3） ---------- */
 
   function genPythagoras() {
-    const pat = randInt(0, 3);
+    const pat = randInt(0, 6);
     let question, questionHtml, answer, choices, steps;
     function triSvg(bot, left, hyp, xpos) {
       const bc = xpos==='bot'?'#c23b2e':'#1c2127', lc = xpos==='left'?'#c23b2e':'#1c2127', hc = xpos==='hyp'?'#c23b2e':'#1c2127';
       return `<svg width="108" height="100" viewBox="0 0 108 100" style="display:block;margin:0 auto 8px"><path d="M14,86 L94,86 L14,14 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><path d="M14,76 L24,76 L24,86" fill="none" stroke="#1c2127" stroke-width="1.2"/><text x="54" y="96" font-size="12" fill="${bc}" text-anchor="middle">${bot}</text><text x="6" y="52" font-size="12" fill="${lc}" text-anchor="middle">${left}</text><text x="63" y="42" font-size="12" fill="${hc}" text-anchor="middle">${hyp}</text></svg>`;
     }
-    if (pat === 0) {
+    if (pat === 4) {
+      // 直方体の対角線（各辺の長さの2乗の和が完全平方数になる組を使う）
+      const boxes = [[1,2,2,3],[2,3,6,7],[2,6,9,11],[3,4,12,13],[4,4,7,9],[6,6,7,11],[1,4,8,9]];
+      const [a,b,c,diag] = boxes[randInt(0, boxes.length-1)];
+      question = `縦${a}cm、横${b}cm、高さ${c}cmの直方体の対角線の長さは？`;
+      answer = diag;
+      choices = buildChoices(diag, [a+b+c, diag+1, diag-1]);
+      steps = [`対角線² = ${a}² + ${b}² + ${c}² = ${a*a+b*b+c*c}`, `対角線 = ${diag} cm`];
+    } else if (pat === 5) {
+      // 正三角形の高さ（1辺は偶数、30-60-90の比1:√3:2を使う）
+      const halfSides = [3,4,5,6,7];
+      const half = halfSides[randInt(0, halfSides.length-1)];
+      const side = half * 2;
+      question = `1辺が${side}cmの正三角形の高さは？`;
+      answer = `${half}√3`;
+      choices = shuffle([answer, `${half+1}√3`, `${half}√2`, `${side}`]);
+      steps = [`正三角形を半分にすると、30°,60°,90°の直角三角形になる`, `高さ² = ${side}² − ${half}² = ${side*side-half*half}`, `高さ = √${side*side-half*half} = ${half}√3 cm`];
+    } else if (pat === 6) {
+      // 30°,60°,90°の直角三角形の辺の比（1:√3:2）
+      const k = randInt(2, 9);
+      const hyp = 2 * k;
+      const askLong = Math.random() < 0.5;
+      question = askLong
+        ? `30°、60°、90°の直角三角形で、斜辺が${hyp}cmのとき、60°の角に向かい合う辺の長さは？`
+        : `30°、60°、90°の直角三角形で、斜辺が${hyp}cmのとき、30°の角に向かい合う辺の長さは？`;
+      answer = askLong ? `${k}√3` : `${k}`;
+      choices = askLong ? shuffle([answer, `${k+1}√3`, `${k}√2`, `${k}`]) : buildChoices(k, [k+1, Math.max(1,k-1), hyp]);
+      steps = [`30°,60°,90°の直角三角形の辺の比は 1:√3:2`, `斜辺 ${hyp} に対して、30°側 = ${k}、60°側 = ${k}√3`];
+    } else if (pat === 0) {
       const ts = [[3,4,5],[5,12,13],[8,15,17],[6,8,10],[9,12,15]];
       const [a,b,c] = ts[randInt(0, ts.length-1)];
       question = `直角三角形の2辺が ${a} cm と ${b} cm。斜辺 x は？`;
@@ -5394,6 +6165,10 @@
   const WORD_PROBLEM_MP = 50;
   const WORD_PROBLEM_EXP = 1;
   const WORD_PROBLEM_HP_GAIN = 10;
+  // 上記の「文章題」カテゴリ(1問正解で即勝利)とは別に、通常どおり10問連続正解で敵を
+  // 倒す形式のまま、勝利時のおまけとしてHPも稼げる単元。
+  const HP_BONUS_CATEGORY_IDS = ['fracWordProblem6', 'timesWordProblem4'];
+  const HP_BONUS_ON_STREAK_WIN = 10;
   // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選とは独立して、文章題の
   // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でスットボケの剣を
   // ゲットできる(斬鉄剣と同様、確実ではなく確率ドロップ)。
@@ -6169,6 +6944,12 @@
       state.streak = 0;
       state.streakAboveGrade = true;
 
+      let hpBonusHtml = '';
+      if (HP_BONUS_CATEGORY_IDS.indexOf(catId) !== -1) {
+        state.hp = (Number(state.hp) || 0) + HP_BONUS_ON_STREAK_WIN;
+        hpBonusHtml = ` +${HP_BONUS_ON_STREAK_WIN}HP`;
+      }
+
       let itemGainedHtml = '';
       if (wasRareType === 'santa' && !state.items.includes(SPECIAL_ITEM_FLAME_SWORD)) {
         state.items.push(SPECIAL_ITEM_FLAME_SWORD);
@@ -6268,7 +7049,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
     } else if (isCorrect && isWordProblem) {
       // 文章題は10連続正解を待たず、1問正解したその場で「勝利」扱いにする専用ルート。
       // 報酬もMP/経験値とも通常より控えめな固定値にし、代わりに新ステータスHPを稼げる。
