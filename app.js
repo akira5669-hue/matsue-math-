@@ -7018,7 +7018,8 @@
         apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       }
       const bossDisplay = worldBossEnemyDisplay(stageId);
-      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>`;
+      const bossDefeatQuoteHtml = (bossDisplay.lines && bossDisplay.lines.defeat) ? `<div class="enemy-quote-banner">${bossDisplay.lines.defeat}</div>` : '';
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}`;
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
@@ -8194,6 +8195,7 @@
   // ステージごとの専用ボスキャラ。用意が無いステージは、その国名から汎用の
   // 「(国名)の守護者」表示にフォールバックする。
   const WORLD_BOSS_TYPES = {
+    1: { name: 'ベビーAKR', img: 'images/baby_akr.png', lines: { appear: '君が来るのをあくびをしながら、待っていたバブー！', defeat: '君にも、赤ちゃんの時があったよね。だから、僕らは仲間だ！' } },
     2: { name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: 'この先には進ませない！俺を倒してから行け！君に、蛇の攻撃がかわせるかな！？' } },
     3: { name: '水上バイクAKR', img: 'images/suijobike_akr.png', lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' } },
   };
