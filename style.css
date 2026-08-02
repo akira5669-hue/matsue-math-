@@ -1311,6 +1311,81 @@ h1 {
   opacity: 0.5;
 }
 
+.world-boss-card {
+  background: #fef2f2;
+  border: 1.5px solid #f87171;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.world-boss-card.is-fighting {
+  background: #fff7ed;
+  border-color: #fb923c;
+}
+.world-boss-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #b91c1c;
+}
+.world-boss-card.is-fighting .world-boss-title { color: #c2410c; }
+.world-boss-desc {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--c-ink-soft);
+}
+.world-boss-cond {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b91c1c;
+}
+.world-boss-cond.is-ok { color: var(--c-positive); }
+
+.world-ally-section {
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+.world-ally-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 900;
+}
+.world-ally-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.world-ally-chip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--c-positive-soft);
+  border: 1px solid var(--c-positive);
+  color: var(--c-positive);
+}
+
+.world-lap-card {
+  background: var(--c-positive-soft);
+  border: 1.5px solid var(--c-positive);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.world-lap-question {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--c-positive);
+}
+
 /* アイテム付与（管理用、admin-only） */
 .grant-panel {
   background: var(--c-surface);

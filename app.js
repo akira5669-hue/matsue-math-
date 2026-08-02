@@ -125,6 +125,8 @@
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
+        worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -137,6 +139,8 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
+        worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
       });
     }
   }
@@ -1591,6 +1595,14 @@
     const catRank = GRADE_RANK[categoryGrade[catId]];
     if (!ownRank || !catRank) return false;
     return catRank > ownRank;
+  }
+  // 世界一周のボス戦の出題範囲チェック用。isAboveOwnGradeと違い、自分の学年と同じ
+  // 単元も対象に含める(「学年以上」)。
+  function isAtOrAboveOwnGrade(catId, ownGrade) {
+    const ownRank = GRADE_RANK[ownGrade];
+    const catRank = GRADE_RANK[categoryGrade[catId]];
+    if (!ownRank || !catRank) return false;
+    return catRank >= ownRank;
   }
   // 学年が分かっている場合は「自分の学年以下」の単元だけを初期状態でON。
   // 学年不明（ゲスト等）の場合は、これまで通り小4〜6の復習系だけOFFにする。
@@ -6318,9 +6330,20 @@
     // ensureCategoryDailyReset()でリセットされる。
     categoryDailyCounts: (savedProgress && savedProgress.categoryDailyCounts && typeof savedProgress.categoryDailyCounts === 'object') ? Object.assign({}, savedProgress.categoryDailyCounts) : ((savedGame && savedGame.categoryDailyCounts && typeof savedGame.categoryDailyCounts === 'object') ? Object.assign({}, savedGame.categoryDailyCounts) : {}),
     categoryDailyDate: (savedProgress && savedProgress.categoryDailyDate) || (savedGame && savedGame.categoryDailyDate) || null,
-    // HP: 文章題を正解するたびに+10される新ステータス。MP/経験値と同様、失われることのない
-    // 一方向に増えるだけの累積値。
+    // HP: 文章題を正解するたびに+10される新ステータス。MP/経験値と同様に増えていくが、
+    // 世界一周のボス戦で不正解になるとステージに応じた量だけ減ることもある。
     hp: (savedProgress && Number(savedProgress.hp)) || (savedGame && Number(savedGame.hp)) || 0,
+    // 世界一周2周目以降の開始レベル(1周目は100)。worldCountForLevelはこの値を基準に
+    // 「今の周」の制覇済みヵ国数を計算する(レベル自体は下げない)。
+    worldLapStartLevel: (savedProgress && Number(savedProgress.worldLapStartLevel)) || (savedGame && Number(savedGame.worldLapStartLevel)) || 100,
+    worldLap: (savedProgress && Number(savedProgress.worldLap)) || (savedGame && Number(savedGame.worldLap)) || 1,
+    // ステージID→撃破済みかどうか。周が変わるとリセットされる。
+    worldBossDefeated: (savedProgress && savedProgress.worldBossDefeated && typeof savedProgress.worldBossDefeated === 'object') ? Object.assign({}, savedProgress.worldBossDefeated) : ((savedGame && savedGame.worldBossDefeated && typeof savedGame.worldBossDefeated === 'object') ? Object.assign({}, savedGame.worldBossDefeated) : {}),
+    // 撃破したボス(国コード)のリスト。周をまたいでも記録として残す。
+    worldAllies: (savedProgress && Array.isArray(savedProgress.worldAllies)) ? savedProgress.worldAllies.slice() : ((savedGame && Array.isArray(savedGame.worldAllies)) ? savedGame.worldAllies.slice() : []),
+    // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
+    // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
+    worldBossActiveStage: null,
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -6465,6 +6488,9 @@
     worldZoomTabs: document.getElementById('worldZoomTabs'),
     worldMapZoomWrap: document.getElementById('worldMapZoomWrap'),
     worldStageList: document.getElementById('worldStageList'),
+    worldBossSection: document.getElementById('worldBossSection'),
+    worldAllySection: document.getElementById('worldAllySection'),
+    worldLapRestart: document.getElementById('worldLapRestart'),
     grantToggle: document.getElementById('grantToggle'),
     grantPanel: document.getElementById('grantPanel'),
     grantForm: document.getElementById('grantForm'),
@@ -6549,11 +6575,27 @@
   }
 
   function pickGenerator() {
+    if (state.worldBossActiveStage) {
+      const session = loadSession();
+      const ownGrade = session && session.grade;
+      const eligible = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
+    }
     const notComplete = c => !isCategoryCompleteToday(state, c.id);
     const pool = CATEGORIES.filter(c => state.enabled.has(c.id) && notComplete(c));
     const src = pool.length > 0 ? pool : CATEGORIES.filter(notComplete);
     const finalSrc = src.length > 0 ? src : CATEGORIES;
     return finalSrc[randInt(0, finalSrc.length - 1)];
+  }
+  // ボス戦に挑戦できるか判定。自分の学年以上の単元を10個以上ONにしていて、かつ
+  // そのうち文章題(WORD_PROBLEM_CATEGORY_IDS)を最低1つ含む必要がある。
+  function worldBossEligibility() {
+    const session = loadSession();
+    const ownGrade = session && session.grade;
+    const eligibleEnabled = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
+    const hasWordProblem = eligibleEnabled.some(c => WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1);
+    const ok = eligibleEnabled.length >= WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES && hasWordProblem;
+    return { ok, count: eligibleEnabled.length, hasWordProblem, required: WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES };
   }
 
   /* ---------- 間違い大魔王：間違えた問題の保存庫 ---------- */
@@ -6707,16 +6749,18 @@
   }
 
   function updateGameHud() {
-    const hp = Math.max(0, 10 - state.streak);
-    const enemy = currentEnemyDisplay(state);
-    const isRare = !!state.rareType;
+    const isBossFight = !!state.worldBossActiveStage;
+    const requiredStreak = isBossFight ? WORLD_BOSS_STREAK_REQUIRED : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+    const hp = Math.max(0, requiredStreak - state.streak);
+    const enemy = isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage) : currentEnemyDisplay(state);
+    const isRare = !isBossFight && !!state.rareType;
     if (enemy.img) {
       els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
     } else {
       els.enemyEmoji.textContent = enemy.emoji;
     }
     els.enemyEmoji.classList.toggle('is-rare', isRare);
-    els.enemyName.textContent = (isRare ? '✨ ' : '') + enemy.name + (isRare ? ' ✨' : '');
+    els.enemyName.textContent = (isBossFight ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + (isBossFight ? ' 👑' : isRare ? ' ✨' : '');
     els.enemyName.classList.toggle('is-rare-name', isRare);
     if (isRare && enemy.lines && enemy.lines.appear) {
       els.enemySpeech.textContent = enemy.lines.appear;
@@ -6724,10 +6768,10 @@
     } else {
       els.enemySpeech.hidden = true;
     }
-    const hpPct = hp * 10;
+    const hpPct = Math.round((hp / requiredStreak) * 100);
     els.hpBarInner.style.width = `${hpPct}%`;
-    els.hpBarInner.style.background = hp <= 3 ? '#ef4444' : hp <= 6 ? '#f59e0b' : '#22c55e';
-    els.hpText.textContent = `${hp}/10`;
+    els.hpBarInner.style.background = hp <= requiredStreak * 0.3 ? '#ef4444' : hp <= requiredStreak * 0.6 ? '#f59e0b' : '#22c55e';
+    els.hpText.textContent = `${hp}/${requiredStreak}`;
     els.statPoints.textContent = state.points;
     els.statHp.textContent = Number(state.hp) || 0;
     els.statExpSub.textContent = `経験値 ${state.exp}（Lv.${state.level}）`;
@@ -6925,6 +6969,19 @@
         state.rareType = assignRareType(state);
         saveGameState(state);
       }
+      // ボス戦中の不正解は、ステージに応じた量だけHPが減る。HPが0になったら
+      // ボス戦は最初(0/30)からやり直しになる。
+      if (state.worldBossActiveStage) {
+        const penalty = worldBossHpPenalty(state.worldBossActiveStage);
+        state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
+        if (state.hp <= 0) {
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
+          state.worldBossActiveStage = null;
+        } else {
+          missLineHtml += `<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
+        }
+        saveGameState(state);
+      }
     }
 
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
@@ -6947,8 +7004,22 @@
       : '';
 
     let winHtml = '';
-    const requiredStreak = state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10;
-    if (isCorrect && state.streak >= requiredStreak) {
+    const requiredStreak = state.worldBossActiveStage ? WORLD_BOSS_STREAK_REQUIRED : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+    if (isCorrect && state.worldBossActiveStage && state.streak >= WORLD_BOSS_STREAK_REQUIRED) {
+      // 世界一周のボス撃破：MP/経験値の通常報酬ではなく、ボスが仲間になる特別演出。
+      const stageId = state.worldBossActiveStage;
+      const country = worldBossCountryForStage(stageId);
+      state.worldBossDefeated[stageId] = true;
+      if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
+      state.worldBossActiveStage = null;
+      state.streak = 0;
+      saveGameState(state);
+      if (session && session.id) {
+        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      const stageName = country ? country.name : 'ボス';
+      winHtml = `<div class="win-banner">🎉 ボス「${stageName}」を倒した！${stageName}が仲間になった！🎉</div>`;
+    } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
@@ -7115,6 +7186,7 @@
     updateGameHud();
     renderMissionBanner();
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
+    if (!els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
   }
 
   function resetStats() {
@@ -7280,6 +7352,10 @@
         state.categoryDailyCounts = (progress.categoryDailyCounts && typeof progress.categoryDailyCounts === 'object') ? Object.assign({}, progress.categoryDailyCounts) : state.categoryDailyCounts;
         state.categoryDailyDate = progress.categoryDailyDate || state.categoryDailyDate;
         state.hp = Number(progress.hp) || state.hp;
+        state.worldLap = Number(progress.worldLap) || state.worldLap;
+        state.worldLapStartLevel = Number(progress.worldLapStartLevel) || state.worldLapStartLevel;
+        state.worldBossDefeated = (progress.worldBossDefeated && typeof progress.worldBossDefeated === 'object') ? Object.assign({}, progress.worldBossDefeated) : state.worldBossDefeated;
+        state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -7321,6 +7397,8 @@
       id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount,
       items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
       hp: state.hp,
+      worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel,
+      worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
     };
   }
 
@@ -7340,6 +7418,10 @@
     var sRareDefeats = (server.rareDefeats && typeof server.rareDefeats === 'object') ? server.rareDefeats : {};
     var sThinkerMilestone = server.thinkerMilestone || null;
     var sHp = Number(server.hp) || 0;
+    var sWorldLap = Number(server.worldLap) || 1;
+    var sWorldLapStartLevel = Number(server.worldLapStartLevel) || 100;
+    var sWorldBossDefeated = (server.worldBossDefeated && typeof server.worldBossDefeated === 'object') ? server.worldBossDefeated : {};
+    var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -7361,6 +7443,22 @@
     if (thinkerMilestoneRank(sThinkerMilestone) > thinkerMilestoneRank(state.thinkerMilestone)) {
       state.thinkerMilestone = sThinkerMilestone; changed = true;
     }
+    // 世界一周の周(worldLap)が進んでいる方に揃える。周が違うとボス撃破状況
+    // (worldBossDefeated)の意味が変わるので、周が同じ場合だけ和集合でマージする。
+    var localWorldLap = Number(state.worldLap) || 1;
+    if (sWorldLap > localWorldLap) {
+      state.worldLap = sWorldLap;
+      state.worldLapStartLevel = sWorldLapStartLevel;
+      state.worldBossDefeated = Object.assign({}, sWorldBossDefeated);
+      changed = true;
+    } else if (sWorldLap === localWorldLap) {
+      Object.keys(sWorldBossDefeated).forEach(function (k) {
+        if (sWorldBossDefeated[k] && !state.worldBossDefeated[k]) { state.worldBossDefeated[k] = true; changed = true; }
+      });
+    }
+    sWorldAllies.forEach(function (code) {
+      if (state.worldAllies.indexOf(code) === -1) { state.worldAllies.push(code); changed = true; }
+    });
 
     if (changed) {
       saveGameState(state);
@@ -7372,7 +7470,10 @@
       || state.rareCollected.some(function (x) { return sRareCollected.indexOf(x) === -1; })
       || Object.keys(state.rareDefeats).some(function (k) { return (Number(state.rareDefeats[k]) || 0) > (Number(sRareDefeats[k]) || 0); })
       || thinkerMilestoneRank(state.thinkerMilestone) > thinkerMilestoneRank(sThinkerMilestone)
-      || (Number(state.hp) || 0) > sHp;
+      || (Number(state.hp) || 0) > sHp
+      || localWorldLap > sWorldLap
+      || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
+      || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; });
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -8063,11 +8164,71 @@
     syncWorldMapZoomClone();
   }
 
+  // 世界一周のステージ(大陸)ボス戦のルール。
+  // ・各ステージの最後の国にはボスがいて、30問連続正解で撃破。
+  // ・撃破するまでは、そのステージの最後の国(および以降の国)は制覇できない。
+  // ・不正解のたびにHPが減る(ステージが進むごとに100ずつ増える: 100/200/300/400...)。
+  // ・HPが0になると、そのボス戦は最初から(0/30)やり直しになる。
+  // ・撃破するとその国の守護者が仲間になる(worldAllies)。
+  const WORLD_BOSS_STREAK_REQUIRED = 30;
+  const WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES = 10;
+  function worldBossHpPenalty(stageId) {
+    return stageId * 100;
+  }
+  // 指定ステージの最後の国(=ボスの国)の国コードを返す。
+  function worldBossCountryCodeForStage(stageId) {
+    if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA)) return 0;
+    var maxCode = 0;
+    WORLD_DATA.forEach(function (c) { if (c.stage === stageId && c.code > maxCode) maxCode = c.code; });
+    return maxCode;
+  }
+  function worldBossCountryForStage(stageId) {
+    var code = worldBossCountryCodeForStage(stageId);
+    return (typeof WORLD_DATA !== 'undefined' && Array.isArray(WORLD_DATA)) ? WORLD_DATA.find(function (c) { return c.code === code; }) : null;
+  }
+  function isoToFlagEmoji(iso) {
+    if (!iso || iso.length !== 2) return '👑';
+    var chars = iso.toUpperCase().split('').map(function (ch) { return 0x1F1E6 + (ch.charCodeAt(0) - 65); });
+    return String.fromCodePoint(chars[0], chars[1]);
+  }
+  function worldBossEnemyDisplay(stageId) {
+    var country = worldBossCountryForStage(stageId);
+    if (!country) return { emoji: '👑', name: 'ボス' };
+    return { emoji: isoToFlagEmoji(country.iso), name: country.name + 'の守護者' };
+  }
+
   // 世界旅行編：レベル100から開始し、10レベルごとに1ヵ国ずつ制覇していく。
+  // 2周目以降はworldLapStartLevelがその周の開始レベルになる(レベル自体はリセットしない)。
+  // また各ステージの最後の国(ボス)は、ボスを撃破する(worldBossDefeated)までは
+  // 制覇できないようキャップする。
   function worldCountForLevel(level) {
     if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) return 0;
-    if (level < 100) return 0;
-    return Math.min(WORLD_DATA.length, Math.floor((level - 100) / 10) + 1);
+    var lapStart = (state && Number(state.worldLapStartLevel)) || 100;
+    if (level < lapStart) return 0;
+    var raw = Math.min(WORLD_DATA.length, Math.floor((level - lapStart) / 10) + 1);
+    var defeated = (state && state.worldBossDefeated) || {};
+    for (var i = 0; i < WORLD_STAGES.length; i++) {
+      var stage = WORLD_STAGES[i];
+      var bossCode = worldBossCountryCodeForStage(stage.id);
+      if (bossCode > 0 && raw >= bossCode && !defeated[stage.id]) {
+        return bossCode - 1;
+      }
+    }
+    return raw;
+  }
+  // 現在、挑戦可能な(まだ倒していない)ボスのステージを返す。無ければnull。
+  function currentChallengeableBossStage() {
+    if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) return null;
+    var count = worldCountForLevel(state.level);
+    var defeated = state.worldBossDefeated || {};
+    for (var i = 0; i < WORLD_STAGES.length; i++) {
+      var stage = WORLD_STAGES[i];
+      var bossCode = worldBossCountryCodeForStage(stage.id);
+      if (bossCode > 0 && count === bossCode - 1 && !defeated[stage.id]) {
+        return stage;
+      }
+    }
+    return null;
   }
 
   // 国ごとの専用ネタ(funnyMoment)が無い場合の、AKRの旅先ハプニング汎用ネタ。
@@ -8169,6 +8330,96 @@
     }
   }
 
+  // ボス出現セクション：挑戦可能なボスがいれば出題条件のチェック結果と挑戦ボタンを、
+  // 既に挑戦中ならキャンセルボタンを表示する。
+  function renderWorldBossSection() {
+    if (state.worldBossActiveStage) {
+      const country = worldBossCountryForStage(state.worldBossActiveStage);
+      els.worldBossSection.hidden = false;
+      els.worldBossSection.innerHTML =
+        '<div class="world-boss-card is-fighting">'
+        + '<p class="world-boss-title">👑 ボス「' + (country ? country.name : '') + '」に挑戦中！</p>'
+        + '<p class="world-boss-desc">画面上のクイズで30問連続正解するとクリア。不正解になるとHPが' + worldBossHpPenalty(state.worldBossActiveStage) + '減る。</p>'
+        + '<button type="button" class="ghost-btn" id="worldBossCancelBtn">挑戦をやめる</button>'
+        + '</div>';
+      const cancelBtn = document.getElementById('worldBossCancelBtn');
+      if (cancelBtn) cancelBtn.addEventListener('click', function () {
+        state.worldBossActiveStage = null;
+        state.streak = 0;
+        saveGameState(state);
+        renderWorldPanel();
+        updateGameHud();
+      });
+      return;
+    }
+    const stage = currentChallengeableBossStage();
+    if (!stage) { els.worldBossSection.hidden = true; els.worldBossSection.innerHTML = ''; return; }
+    const country = worldBossCountryForStage(stage.id);
+    const elig = worldBossEligibility();
+    const penalty = worldBossHpPenalty(stage.id);
+    const condHtml = '<p class="world-boss-cond' + (elig.ok ? ' is-ok' : '') + '">出題条件: 自分の学年以上の単元を' + elig.required + '個以上ON（現在' + elig.count + '個）、うち文章題を1つ以上含む（' + (elig.hasWordProblem ? '✅OK' : '❌不足') + '）</p>';
+    els.worldBossSection.hidden = false;
+    els.worldBossSection.innerHTML =
+      '<div class="world-boss-card">'
+      + '<p class="world-boss-title">👑 ボス出現！「' + (country ? country.name : '') + '」</p>'
+      + '<p class="world-boss-desc">30問連続正解でクリア。不正解になるとHPが' + penalty + '減り、HPが0になると最初(0/30)からやり直しになる。倒すと仲間になる！</p>'
+      + condHtml
+      + '<button type="button" class="primary-btn" id="worldBossChallengeBtn"' + (elig.ok ? '' : ' disabled') + '>挑戦する（現在HP: ' + (Number(state.hp) || 0) + '）</button>'
+      + '</div>';
+    const challengeBtn = document.getElementById('worldBossChallengeBtn');
+    if (challengeBtn) challengeBtn.addEventListener('click', function () {
+      state.worldBossActiveStage = stage.id;
+      state.streak = 0;
+      saveGameState(state);
+      renderWorldPanel();
+      updateGameHud();
+      nextQuestion();
+    });
+  }
+
+  // 撃破済みボス(仲間)一覧。
+  function renderWorldAllySection() {
+    const allies = state.worldAllies || [];
+    if (allies.length === 0) { els.worldAllySection.hidden = true; els.worldAllySection.innerHTML = ''; return; }
+    els.worldAllySection.hidden = false;
+    const chips = allies.map(function (code) {
+      const country = WORLD_DATA.find(function (c) { return c.code === code; });
+      if (!country) return '';
+      return '<span class="world-ally-chip">' + isoToFlagEmoji(country.iso) + ' ' + country.name + '</span>';
+    }).join('');
+    els.worldAllySection.innerHTML = '<p class="world-ally-title">🤝 仲間になったボス</p><div class="world-ally-list">' + chips + '</div>';
+  }
+
+  // 100ヵ国制覇済みなら、2周目スタートの確認(はい/いいえ)を表示する。
+  function renderWorldLapRestart(count, total) {
+    if (count < total) { els.worldLapRestart.hidden = true; els.worldLapRestart.innerHTML = ''; return; }
+    els.worldLapRestart.hidden = false;
+    els.worldLapRestart.innerHTML =
+      '<div class="world-lap-card">'
+      + '<p class="world-lap-question">🌍 ' + (Number(state.worldLap) || 1) + '周目を制覇しました！2周目をスタートしますか？</p>'
+      + '<button type="button" class="primary-btn" id="worldLapYesBtn">はい</button>'
+      + '<button type="button" class="ghost-btn" id="worldLapNoBtn">いいえ</button>'
+      + '</div>';
+    const yesBtn = document.getElementById('worldLapYesBtn');
+    const noBtn = document.getElementById('worldLapNoBtn');
+    if (yesBtn) yesBtn.addEventListener('click', function () {
+      state.worldLap = (Number(state.worldLap) || 1) + 1;
+      state.worldLapStartLevel = state.level;
+      state.worldBossDefeated = {};
+      state.worldBossActiveStage = null;
+      saveGameState(state);
+      if (typeof window !== 'undefined') {
+        const session = loadSession();
+        if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      renderWorldPanel();
+    });
+    if (noBtn) noBtn.addEventListener('click', function () {
+      els.worldLapRestart.hidden = true;
+      els.worldLapRestart.innerHTML = '';
+    });
+  }
+
   function renderWorldPanel() {
     if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) {
       els.worldProgress.textContent = '国データの読み込みに失敗しました。ページを再読み込みしてください。';
@@ -8176,12 +8427,16 @@
     }
     var total = WORLD_DATA.length;
     var count = worldCountForLevel(state.level);
+    var lapLabel = (Number(state.worldLap) || 1) + '周目：';
     els.worldProgress.textContent = count >= total
-      ? '🎉 ' + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
-      : count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + (100 + count * 10) + 'で制覇）';
+      ? '🎉 ' + lapLabel + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
+      : lapLabel + count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + (state.worldLapStartLevel + count * 10) + 'で制覇）';
     ensureWorldMapLoaded(count);
     applyWorldMapColors(count);
     renderWorldZoomTabs();
+    renderWorldBossSection(count, total);
+    renderWorldAllySection();
+    renderWorldLapRestart(count, total);
     els.worldStageList.innerHTML = WORLD_STAGES.map(function (stage) {
       var countries = WORLD_DATA.filter(function (c) { return c.stage === stage.id; });
       var chips = countries.map(function (c) {

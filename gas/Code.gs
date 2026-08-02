@@ -2,6 +2,12 @@
  * 正負の数トレーニング - 生徒ログイン・学習記録API
  *
  * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount | avatar | apologyBonusGrantedAt
+ * | items | rareCollected | rareDefeats | thinkerMilestone | loggedCorrectCount | todayStats | hp | lastRankingTestMonth
+ * | worldLap | worldLapStartLevel | worldBossDefeated | worldAllies
+ *
+ * worldLap/worldLapStartLevel/worldBossDefeated/worldAllies: 世界一周(ボス戦付き)。
+ * 各ステージ(大陸)最後の国はボスで、30問連続正解で撃破するまで先へ進めない。
+ * 2周目以降はworldLapStartLevelがその周の開始レベルになる(レベル自体はリセットしない)。
  *
  * prefectureCount: 「47都道府県制覇」特別企画。10問正解（敵を倒す）ごとに
  * 北海道(1)から沖縄(47)の順で1県ずつ達成数が増える。既存の生徒は列が
@@ -271,7 +277,13 @@ function findStudentRow_(sheet, id) {
         // ランキングテスト(数学)を最後に提出した月(yyyy-MM)。月1回の提出制限に使う。
         // 万一過去に日付型として保存されてしまった行が残っていても比較できるよう、
         // Dateならyyyy-MM文字列に変換してから返す。
-        lastRankingTestMonth: (data[i][21] instanceof Date) ? monthKeyTokyo_(data[i][21]) : (data[i][21] || null)
+        lastRankingTestMonth: (data[i][21] instanceof Date) ? monthKeyTokyo_(data[i][21]) : (data[i][21] || null),
+        // 世界一周: 現在の周(1周目=1)・その周の開始レベル・ステージ別ボス撃破状況・
+        // 撃破済みボス(仲間)一覧。
+        worldLap: Number(data[i][22]) || 1,
+        worldLapStartLevel: Number(data[i][23]) || 100,
+        worldBossDefeated: parseJsonCell_(data[i][24], {}),
+        worldAllies: parseJsonCell_(data[i][25], [])
       };
     }
   }
@@ -437,7 +449,8 @@ function handleLogin_(ctx, body) {
   return {
     ok: true, name: row.name, points: points, pointsReset: pointsReset, level: row.level, exp: row.exp, grade: row.grade,
     prefectureCount: row.prefectureCount, avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded,
-    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp
+    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp,
+    worldLap: row.worldLap, worldLapStartLevel: row.worldLapStartLevel, worldBossDefeated: row.worldBossDefeated, worldAllies: row.worldAllies
   };
 }
 
@@ -530,7 +543,8 @@ function handleGetPoints_(ctx, body) {
   return {
     ok: true, points: row.points, level: row.level, exp: row.exp, grade: row.grade, prefectureCount: row.prefectureCount,
     avatar: row.avatar, pendingItems: pendingItems, apologyBonusAwarded: apologyBonusAwarded,
-    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp
+    items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp,
+    worldLap: row.worldLap, worldLapStartLevel: row.worldLapStartLevel, worldBossDefeated: row.worldBossDefeated, worldAllies: row.worldAllies
   };
 }
 
@@ -802,8 +816,37 @@ function handleSyncPoints_(ctx, body) {
     ctx.students.getRange(row.rowIndex, 18).setValue(finalThinkerMilestone || '');
   }
   if (body.hp !== undefined) {
+    // HPは文章題の正解で増える一方、世界一周のボス戦で不正解になると減ることもある
+    // ため、他の項目と違って「大きい方を採用」ではなく送られてきた値をそのまま
+    // 採用する(最後に同期した端末の値が正)。
     var submittedHp = Math.max(0, Math.floor(Number(body.hp)) || 0);
-    ctx.students.getRange(row.rowIndex, 21).setValue(Math.max(submittedHp, row.hp));
+    ctx.students.getRange(row.rowIndex, 21).setValue(submittedHp);
+  }
+  if (body.worldLap !== undefined && body.worldLapStartLevel !== undefined) {
+    var submittedWorldLap = Math.max(1, Math.floor(Number(body.worldLap)) || 1);
+    var submittedWorldLapStartLevel = Math.max(100, Math.floor(Number(body.worldLapStartLevel)) || 100);
+    var currentWorldLap = Number(row.worldLap) || 1;
+    if (submittedWorldLap > currentWorldLap) {
+      // 周が進んだ(2周目突入等): 新しい周の情報を採用し、ボス撃破状況もリセットする。
+      ctx.students.getRange(row.rowIndex, 23).setValue(submittedWorldLap);
+      ctx.students.getRange(row.rowIndex, 24).setValue(submittedWorldLapStartLevel);
+      if (body.worldBossDefeated !== undefined) {
+        ctx.students.getRange(row.rowIndex, 25).setValue(JSON.stringify((body.worldBossDefeated && typeof body.worldBossDefeated === 'object') ? body.worldBossDefeated : {}));
+      }
+    } else if (submittedWorldLap === currentWorldLap && body.worldBossDefeated !== undefined) {
+      var submittedWorldBossDefeated = (body.worldBossDefeated && typeof body.worldBossDefeated === 'object') ? body.worldBossDefeated : {};
+      var mergedWorldBossDefeated = Object.assign({}, row.worldBossDefeated);
+      Object.keys(submittedWorldBossDefeated).forEach(function (k) {
+        if (submittedWorldBossDefeated[k]) mergedWorldBossDefeated[k] = true;
+      });
+      ctx.students.getRange(row.rowIndex, 25).setValue(JSON.stringify(mergedWorldBossDefeated));
+    }
+  }
+  if (body.worldAllies !== undefined) {
+    var submittedWorldAllies = Array.isArray(body.worldAllies) ? body.worldAllies : [];
+    var mergedWorldAllies = row.worldAllies.slice();
+    submittedWorldAllies.forEach(function (code) { if (mergedWorldAllies.indexOf(code) === -1) mergedWorldAllies.push(code); });
+    ctx.students.getRange(row.rowIndex, 26).setValue(JSON.stringify(mergedWorldAllies));
   }
 
   return { ok: true, bonusAwarded: bonusAwarded, prefectureBonusAwarded: prefectureBonusAwarded, continentBonusAwarded: continentBonusAwarded };
