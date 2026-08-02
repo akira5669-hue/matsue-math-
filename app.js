@@ -6183,17 +6183,13 @@
   const GOUMAJI_REQUIRED_STREAK = 20;
   const GOUMAJI_BONUS_MP = 30;
   const GOUMAJI_ITEM_DROP_CHANCE = 1 / 5;
-  // 文章題(方程式・連立方程式・二次方程式の文章題)は、他の単元と違って10問連続正解では
-  // なく「1問正解でその場で勝利」という特別ルール。報酬もMP/経験値とも通常の勝利より
-  // 少なめの固定値にし、その代わりに新しいステータス「HP」を稼げるようにする。
-  const WORD_PROBLEM_CATEGORY_IDS = ['eqWordProblem1', 'simulEqWordProblem2', 'quadEqWordProblem3'];
-  const WORD_PROBLEM_MP = 50;
-  const WORD_PROBLEM_EXP = 1;
+  // 文章題(小数・分数・時間・方程式・連立方程式・二次方程式の文章題)は、他の単元と
+  // 同じく10問連続正解で敵を倒す通常ルールのままだが、勝利時の報酬だけ特別扱いにする
+  // 単元グループ。MPは学年に関わらず固定50、経験値は通常どおり+10、さらにおまけで
+  // 新ステータス「HP」も+10稼げる。
+  const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'simulEqWordProblem2', 'quadEqWordProblem3'];
+  const WORD_PROBLEM_FIXED_MP = 50;
   const WORD_PROBLEM_HP_GAIN = 10;
-  // 上記の「文章題」カテゴリ(1問正解で即勝利)とは別に、通常どおり10問連続正解で敵を
-  // 倒す形式のまま、勝利時のおまけとしてHPも稼げる単元。
-  const HP_BONUS_CATEGORY_IDS = ['fracWordProblem6', 'timesWordProblem4'];
-  const HP_BONUS_ON_STREAK_WIN = 10;
   // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選とは独立して、文章題の
   // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でスットボケの剣を
   // ゲットできる(斬鉄剣と同様、確実ではなく確率ドロップ)。
@@ -6522,7 +6518,7 @@
         : '';
       const complete = isCategoryCompleteToday(state, c.id);
       const completeBadge = complete ? `<span class="cat-complete-badge">🌟コンプリート</span>` : '';
-      const hpBadge = HP_BONUS_CATEGORY_IDS.indexOf(c.id) !== -1
+      const hpBadge = WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1
         ? `<span class="cat-hp-badge" title="10問連続正解でHPが増える単元">❤️HP UP</span>`
         : '';
       return `
@@ -6838,15 +6834,22 @@
     const ownGrade = session && session.grade;
     const isWordProblem = WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1;
     let missLineHtml = '';
+    let sutobokeHtml = '';
     if (isCorrect) {
       state.correct++;
       clearWrongQuestion(state.current);
-      // 文章題は「1問正解でその場で勝利」という独自ルールのため、他の単元と共有している
-      // 連続正解数(streak)には加算しない(下の専用の勝利処理で別途報酬を計算する)。
-      if (!isWordProblem) {
-        if (state.streak === 0) state.streakAboveGrade = true;
-        state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
-        state.streak++;
+      if (state.streak === 0) state.streakAboveGrade = true;
+      state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
+      state.streak++;
+      // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
+      if (state.current.sutobokeActive) {
+        const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
+        if (!state.items.includes(SPECIAL_ITEM_SUTOBOKE_SWORD) && Math.random() < SUTOBOKE_ITEM_DROP_CHANCE) {
+          state.items.push(SPECIAL_ITEM_SUTOBOKE_SWORD);
+          sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">⚔️ スペシャルアイテム「スットボケの剣」を手に入れた！⚔️</div>`;
+        } else {
+          sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div>`;
+        }
       }
       saveGameState(state);
     } else {
@@ -6952,8 +6955,9 @@
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(10 or 20)+ボーナス
-      // 積み上げ方式ではなく、固定30MPを報酬とする。
-      const basePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : (bonusEligible ? 20 : 10) + rareMpBonus;
+      // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
+      // 固定50MP。
+      const basePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : (bonusEligible ? 20 : 10) + rareMpBonus;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
@@ -6974,9 +6978,9 @@
       state.streakAboveGrade = true;
 
       let hpBonusHtml = '';
-      if (HP_BONUS_CATEGORY_IDS.indexOf(catId) !== -1) {
-        state.hp = (Number(state.hp) || 0) + HP_BONUS_ON_STREAK_WIN;
-        hpBonusHtml = ` +${HP_BONUS_ON_STREAK_WIN}HP`;
+      if (isWordProblem) {
+        state.hp = (Number(state.hp) || 0) + WORD_PROBLEM_HP_GAIN;
+        hpBonusHtml = ` +${WORD_PROBLEM_HP_GAIN}HP`;
       }
 
       let itemGainedHtml = '';
@@ -7079,38 +7083,6 @@
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
       winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
-    } else if (isCorrect && isWordProblem) {
-      // 文章題は10連続正解を待たず、1問正解したその場で「勝利」扱いにする専用ルート。
-      // 報酬もMP/経験値とも通常より控えめな固定値にし、代わりに新ステータスHPを稼げる。
-      const today = todayKey();
-      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
-      const pointsToAdd = Math.max(0, Math.min(WORD_PROBLEM_MP, POINTS_DAILY_CAP - state.pointsToday));
-      state.points += pointsToAdd;
-      state.pointsToday += pointsToAdd;
-      state.exp += WORD_PROBLEM_EXP;
-      state.hp = (Number(state.hp) || 0) + WORD_PROBLEM_HP_GAIN;
-      const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
-      const leveledUp = newLevel > state.level;
-      state.level = newLevel;
-
-      const sutobokeActive = !!q.sutobokeActive;
-      let sutobokeHtml = '';
-      if (sutobokeActive) {
-        if (!state.items.includes(SPECIAL_ITEM_SUTOBOKE_SWORD) && Math.random() < SUTOBOKE_ITEM_DROP_CHANCE) {
-          state.items.push(SPECIAL_ITEM_SUTOBOKE_SWORD);
-          sutobokeHtml = `<div class="enemy-quote-banner">${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">⚔️ スペシャルアイテム「スットボケの剣」を手に入れた！⚔️</div>`;
-        } else {
-          sutobokeHtml = `<div class="enemy-quote-banner">${RARE_TYPES.sutoboke.lines.defeat}</div>`;
-        }
-      }
-      saveGameState(state);
-      if (session && session.id) {
-        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-      }
-      const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP ` : '(本日のMP上限に到達) ';
-      const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
-      const sutobokeTag = sutobokeActive ? `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>` : '';
-      winHtml = `<div class="win-banner">${lvlMsg}${sutobokeTag}文章題クリア！ ${ptText}+${WORD_PROBLEM_EXP}exp +${WORD_PROBLEM_HP_GAIN}HP</div>${sutobokeHtml}`;
     }
 
     let missionHtml = '';
@@ -7135,7 +7107,7 @@
       (isCorrect
         ? `<span class="fb-result">正解！${streakHtml}</span>`
         : `<span class="fb-result">不正解。正解は <strong>${stepToHtml(correctStr)}</strong> です。</span>`)
-      + missLineHtml + winHtml + missionHtml + stepsHtml;
+      + missLineHtml + sutobokeHtml + winHtml + missionHtml + stepsHtml;
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
 
     els.nextBtn.disabled = false;
