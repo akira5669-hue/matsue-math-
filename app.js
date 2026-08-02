@@ -8238,7 +8238,7 @@
     3: [{ streak: 30, name: '水上バイクAKR', img: 'images/suijobike_akr.png', lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' } }],
     4: [
       { streak: 10, name: 'フルスイングAKR', img: 'images/fullswing_akr.png', lines: { appear: '人生のバッターボックスに立ったら、見逃し三振だけはするな！' } },
-      { streak: 20, name: null },
+      { streak: 20, name: '中2病AKR', img: 'images/chuni_akr.png', lines: { appear: '戦うのを諦めてもいいんだぜ！逃げるなら、今だ！僕も逃げるから笑' } },
       { streak: 30, name: null },
     ],
   };
