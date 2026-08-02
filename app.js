@@ -1419,11 +1419,15 @@
     { id: 'largeNum4',      label: '億・兆の大きな数（小4）',             gen: genLargeNum4,      defaultOff: true },
 
     // ---------- 小5 ----------
+    { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true },
+    { id: 'evenOdd5',        label: '偶数と奇数（小5）',                   gen: genEvenOdd5,        defaultOff: true },
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
     { id: 'decFracAddSub5',  label: '小数と分数のたし算・ひき算（小5）',   gen: genDecFracAddSub5,  defaultOff: true },
     { id: 'fracReduceConvert5', label: '約分・通分（小5）',                gen: genFracReduceConvert5, defaultOff: true },
     { id: 'decMul5',         label: '小数のかけ算（小5）',                 gen: genDecMul5,         defaultOff: true },
     { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
+    { id: 'decDivRemainder5', label: '小数のわり算：あまり・がい数（小5）', gen: genDecDivRemainder5, defaultOff: true },
+    { id: 'decWordProblem5', label: '小数の文章題（小5）',                 gen: genDecWordProblem5, defaultOff: true },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
     { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
@@ -1945,44 +1949,586 @@
 
   // 小数のかけ算（小5、小数×小数）
   function genDecMul5() {
-    let aTenths, bTenths;
-    do { aTenths = randInt(11, 99); } while (aTenths % 10 === 0);
-    do { bTenths = randInt(11, 99); } while (bTenths % 10 === 0);
-    const productHundredths = aTenths * bTenths;
-    const a = (aTenths / 10).toFixed(1);
-    const b = (bTenths / 10).toFixed(1);
-    const answer = (productHundredths / 100).toString();
-    const question = `${a} × ${b} = ?`;
-    const candidates = [
-      ((productHundredths + 10) / 100).toString(),
-      (Math.max(1, productHundredths - 10) / 100).toString(),
-      ((productHundredths + 100) / 100).toString(),
-      (Math.round(productHundredths / 10) / 10).toString(),
-    ];
-    const steps = [
-      `${aTenths} × ${bTenths} = ${productHundredths}（0.01のまとまりが${productHundredths}個）`,
-      `= ${answer}`,
-    ];
+    const pat = randInt(0, 4);
+    let question, answer, candidates, steps;
+    if (pat === 0) {
+      // 1桁小数×1桁小数（どちらも10未満）
+      let aTenths, bTenths;
+      do { aTenths = randInt(11, 99); } while (aTenths % 10 === 0);
+      do { bTenths = randInt(11, 99); } while (bTenths % 10 === 0);
+      const productHundredths = aTenths * bTenths;
+      const a = (aTenths / 10).toFixed(1);
+      const b = (bTenths / 10).toFixed(1);
+      answer = (productHundredths / 100).toString();
+      question = `${a} × ${b} = ?`;
+      candidates = [
+        ((productHundredths + 10) / 100).toString(),
+        (Math.max(1, productHundredths - 10) / 100).toString(),
+        ((productHundredths + 100) / 100).toString(),
+        (Math.round(productHundredths / 10) / 10).toString(),
+      ];
+      steps = [
+        `${aTenths} × ${bTenths} = ${productHundredths}（0.01のまとまりが${productHundredths}個）`,
+        `= ${answer}`,
+      ];
+    } else if (pat === 1) {
+      // 1桁小数×1桁小数（10以上の数を含む、例: 19.6×20.3）
+      let aTenths, bTenths;
+      do { aTenths = randInt(101, 299); } while (aTenths % 10 === 0);
+      do { bTenths = randInt(101, 299); } while (bTenths % 10 === 0);
+      const productHundredths = aTenths * bTenths;
+      const a = (aTenths / 10).toFixed(1);
+      const b = (bTenths / 10).toFixed(1);
+      answer = (productHundredths / 100).toString();
+      question = `${a} × ${b} = ?`;
+      candidates = [
+        ((productHundredths + 10) / 100).toString(),
+        (Math.max(1, productHundredths - 10) / 100).toString(),
+        ((productHundredths + 100) / 100).toString(),
+        (Math.round(productHundredths / 10) / 10).toString(),
+      ];
+      steps = [
+        `${aTenths} × ${bTenths} = ${productHundredths}（0.01のまとまりが${productHundredths}個）`,
+        `= ${answer}`,
+      ];
+    } else if (pat === 2) {
+      // 2桁小数×1桁小数（順序はランダム、例: 3.28×4.5, 0.13×2.4）
+      let aHundredths, bTenths;
+      do { aHundredths = randInt(1, 999); } while (aHundredths % 10 === 0);
+      do { bTenths = randInt(11, 99); } while (bTenths % 10 === 0);
+      const productThousandths = aHundredths * bTenths;
+      const aStr = (aHundredths / 100).toFixed(2);
+      const bStr = (bTenths / 10).toFixed(1);
+      answer = (productThousandths / 1000).toString();
+      question = Math.random() < 0.5 ? `${bStr} × ${aStr} = ?` : `${aStr} × ${bStr} = ?`;
+      candidates = [
+        ((productThousandths + 100) / 1000).toString(),
+        (Math.max(1, productThousandths - 100) / 1000).toString(),
+        ((productThousandths + 1000) / 1000).toString(),
+        (Math.round(productThousandths / 100) / 100).toString(),
+      ];
+      steps = [
+        `${aHundredths} × ${bTenths} = ${productThousandths}（0.001のまとまりが${productThousandths}個）`,
+        `= ${answer}`,
+      ];
+    } else if (pat === 3) {
+      // 整数×1桁小数（順序はランダム、例: 587×2.1, 135×3.6）
+      const whole = randInt(2, 999);
+      let decTenths;
+      do { decTenths = randInt(11, 99); } while (decTenths % 10 === 0);
+      const productTenths = whole * decTenths;
+      const decStr = (decTenths / 10).toFixed(1);
+      answer = (productTenths / 10).toString();
+      question = Math.random() < 0.5 ? `${decStr} × ${whole} = ?` : `${whole} × ${decStr} = ?`;
+      candidates = [
+        ((productTenths + 1) / 10).toString(),
+        (Math.max(1, productTenths - 1) / 10).toString(),
+        ((productTenths + 10) / 10).toString(),
+        String(whole * Math.round(decTenths / 10)),
+      ];
+      steps = [
+        `${whole} × ${decTenths} = ${productTenths}（0.1のまとまりが${productTenths}個）`,
+        `= ${answer}`,
+      ];
+    } else if (Math.random() < 0.5) {
+      // 1未満の2桁小数×1未満の1桁小数（例: 0.44×0.3）
+      let aHundredths, bTenths;
+      aHundredths = randInt(1, 99);
+      bTenths = randInt(1, 9);
+      const productThousandths = aHundredths * bTenths;
+      const aStr = '0.' + String(aHundredths).padStart(2, '0');
+      const bStr = '0.' + String(bTenths);
+      answer = (productThousandths / 1000).toString();
+      question = `${aStr} × ${bStr} = ?`;
+      candidates = [
+        ((productThousandths + 10) / 1000).toString(),
+        (Math.max(1, productThousandths - 10) / 1000).toString(),
+        ((productThousandths + 100) / 1000).toString(),
+        (Math.round(productThousandths / 10) / 100).toString(),
+      ];
+      steps = [
+        `${aHundredths} × ${bTenths} = ${productThousandths}（0.001のまとまりが${productThousandths}個）`,
+        `= ${answer}`,
+      ];
+    } else {
+      // 1未満の1桁小数どうし（例: 0.2×0.4）
+      const aTenths = randInt(1, 9);
+      const bTenths = randInt(1, 9);
+      const productHundredths = aTenths * bTenths;
+      const aStr = '0.' + String(aTenths);
+      const bStr = '0.' + String(bTenths);
+      answer = (productHundredths / 100).toString();
+      question = `${aStr} × ${bStr} = ?`;
+      candidates = [
+        ((productHundredths + 1) / 100).toString(),
+        (Math.max(1, productHundredths - 1) / 100).toString(),
+        ((productHundredths + 10) / 100).toString(),
+        (aTenths * bTenths / 10).toString(),
+      ];
+      steps = [
+        `${aTenths} × ${bTenths} = ${productHundredths}（0.01のまとまりが${productHundredths}個）`,
+        `= ${answer}`,
+      ];
+    }
     return { category: 'decMul5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   // 小数のわり算（小5、商は整数になる）
   function genDecDiv5() {
-    let divisorTenths;
-    do { divisorTenths = randInt(2, 98); } while (divisorTenths % 10 === 0);
-    const divisor = (divisorTenths / 10).toFixed(1);
-    const quotient = randInt(2, 12);
-    const dividend = ((divisorTenths * quotient) / 10).toFixed(1);
-    const answer = quotient;
-    const question = `${dividend} ÷ ${divisor} = ?`;
-    const wrongs = [quotient + 1, quotient - 1, quotient * 10, Math.max(1, quotient - 2)];
-    const dividendX10 = divisorTenths * quotient;
-    const steps = [
-      `わる数・わられる数の小数点を右に1つずつ移して整数にする`,
-      `${dividend} ÷ ${divisor} = ${dividendX10} ÷ ${divisorTenths}`,
-      `= ${answer}`,
-    ];
-    return { category: 'decDiv5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    const pat = randInt(0, 4);
+    let question, answer, wrongs, candidates, steps;
+    if (pat === 0) {
+      // 小数÷小数、商は整数（2〜12）
+      let divisorTenths;
+      do { divisorTenths = randInt(2, 98); } while (divisorTenths % 10 === 0);
+      const divisor = (divisorTenths / 10).toFixed(1);
+      const quotient = randInt(2, 12);
+      const dividend = ((divisorTenths * quotient) / 10).toFixed(1);
+      answer = quotient;
+      question = `${dividend} ÷ ${divisor} = ?`;
+      wrongs = [quotient + 1, quotient - 1, quotient * 10, Math.max(1, quotient - 2)];
+      const dividendX10 = divisorTenths * quotient;
+      steps = [
+        `わる数・わられる数の小数点を右に1つずつ移して整数にする`,
+        `${dividend} ÷ ${divisor} = ${dividendX10} ÷ ${divisorTenths}`,
+        `= ${answer}`,
+      ];
+    } else if (pat === 1) {
+      // 商が1より小さいわり算（例: 1.5÷2.5=0.6）
+      const divisorTenths = randInt(15, 99);
+      const quotientTenths = randInt(1, 9);
+      const productHundredths = divisorTenths * quotientTenths;
+      const divisor = (divisorTenths / 10).toFixed(1);
+      const dividend = (productHundredths / 100).toString();
+      answer = (quotientTenths / 10).toString();
+      question = `${dividend} ÷ ${divisor} = ?`;
+      candidates = [
+        ((quotientTenths + 1) / 10).toString(),
+        (Math.max(1, quotientTenths - 1) / 10).toString(),
+        quotientTenths.toString(),
+        ((quotientTenths + 10) / 10).toString(),
+      ];
+      steps = [
+        `わる数・わられる数の小数点を右に1つずつ移して計算する`,
+        `${dividend} ÷ ${divisor} = ${productHundredths} ÷ ${divisorTenths}`,
+        `= ${answer}`,
+      ];
+    } else if (pat === 2) {
+      // 整数÷小数（商は小数になることもある、例: 4÷2.5=1.6, 18÷2.4=7.5）
+      let divisorTenths, quotientTenths, dividend;
+      for (let attempt = 0; attempt < 50; attempt++) {
+        divisorTenths = randInt(12, 96);
+        quotientTenths = randInt(11, 99);
+        const productHundredths = divisorTenths * quotientTenths;
+        if (productHundredths % 100 === 0) { dividend = productHundredths / 100; break; }
+      }
+      if (dividend === undefined) { divisorTenths = 25; quotientTenths = 16; dividend = 4; }
+      const divisor = (divisorTenths / 10).toFixed(1);
+      answer = (quotientTenths / 10).toString();
+      question = `${dividend} ÷ ${divisor} = ?`;
+      candidates = [
+        ((quotientTenths + 1) / 10).toString(),
+        (Math.max(1, quotientTenths - 1) / 10).toString(),
+        ((quotientTenths + 10) / 10).toString(),
+        Math.round(quotientTenths / 10).toString(),
+      ];
+      steps = [
+        `わる数・わられる数の小数点を右に1つずつ移して計算する`,
+        `${dividend} ÷ ${divisor} = ${dividend * 10} ÷ ${divisorTenths}`,
+        `= ${answer}`,
+      ];
+    } else if (pat === 3) {
+      // 1より小さい数でわる計算（例: 4.4÷0.8=5.5）
+      let divisorTenths, quotientTenths, dividend;
+      for (let attempt = 0; attempt < 50; attempt++) {
+        divisorTenths = randInt(1, 9);
+        quotientTenths = randInt(11, 99);
+        const productHundredths = divisorTenths * quotientTenths;
+        if (productHundredths % 10 === 0) { dividend = productHundredths / 100; break; }
+      }
+      if (dividend === undefined) { divisorTenths = 8; quotientTenths = 55; dividend = 4.4; }
+      const divisor = '0.' + divisorTenths;
+      answer = (quotientTenths / 10).toString();
+      question = `${dividend} ÷ ${divisor} = ?`;
+      candidates = [
+        ((quotientTenths + 1) / 10).toString(),
+        (Math.max(1, quotientTenths - 1) / 10).toString(),
+        (Math.round(quotientTenths / 10) * 10).toString(),
+        ((quotientTenths + 10) / 10).toString(),
+      ];
+      steps = [
+        `わる数・わられる数の小数点を右に1つずつ移して計算する`,
+        `= ${answer}`,
+      ];
+    } else {
+      // 小数第二位までを含む商のわり算（例: 8.58÷7.8=1.1）
+      const divisorTenths = randInt(11, 99);
+      const quotientHundredths = randInt(11, 199);
+      const productThousandths = divisorTenths * quotientHundredths;
+      const divisor = (divisorTenths / 10).toFixed(1);
+      const dividend = (productThousandths / 1000).toString();
+      answer = (quotientHundredths / 100).toString();
+      question = `${dividend} ÷ ${divisor} = ?`;
+      candidates = [
+        ((quotientHundredths + 1) / 100).toString(),
+        (Math.max(1, quotientHundredths - 1) / 100).toString(),
+        ((quotientHundredths + 10) / 100).toString(),
+        (Math.round(quotientHundredths / 10) / 10).toString(),
+      ];
+      steps = [
+        `わる数・わられる数の小数点を右に1つずつ移して計算する`,
+        `${dividend} ÷ ${divisor} = ${productThousandths} ÷ ${divisorTenths * 100}`,
+        `= ${answer}`,
+      ];
+    }
+    return { category: 'decDiv5', question, answer, choices: candidates ? buildChoicesFromList(String(answer), candidates.map(String)) : buildChoices(answer, wrongs), steps };
+  }
+
+  function roundToSigFigs_(num, sig) {
+    if (num === 0) return 0;
+    const d = Math.ceil(Math.log10(Math.abs(num)));
+    const power = sig - d;
+    const magnitude = Math.pow(10, power);
+    return Math.round(num * magnitude) / magnitude;
+  }
+
+  // 小数のわり算：あまりのあるわり算・がい数で求める商（小5）
+  function genDecDivRemainder5() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 商を四捨五入して、上から2けたのがい数で求める
+      let divisorTenths, dividendTenths;
+      do { divisorTenths = randInt(11, 99); } while (divisorTenths % 10 === 0);
+      do { dividendTenths = randInt(divisorTenths, 999); } while (dividendTenths % 10 === 0);
+      const divisor = (divisorTenths / 10).toFixed(1);
+      const dividend = (dividendTenths / 10).toFixed(1);
+      const trueQuotient = dividendTenths / divisorTenths;
+      const rounded = roundToSigFigs_(trueQuotient, 2);
+      answer = rounded.toString();
+      question = `${dividend} ÷ ${divisor} の商を四捨五入して、上から2けたのがい数で求めなさい。`;
+      const step = rounded < 10 ? 0.1 : 1;
+      wrongs = [
+        (Math.round((rounded + step) * 100) / 100).toString(),
+        (Math.round((rounded - step) * 100) / 100).toString(),
+        (Math.round(trueQuotient * 10) / 10).toString(),
+      ].filter((v) => v !== answer);
+      steps = [
+        `${dividend} ÷ ${divisor} を計算すると ${Math.round(trueQuotient * 1000) / 1000}…`,
+        `上から2けたのがい数にすると ${answer}`,
+      ];
+      return { category: 'decDivRemainder5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 商を一の位まで求めて、あまりも出す
+      const divisorTenths = randInt(11, 40);
+      const quotient = randInt(2, 9);
+      const remainderTenths = randInt(1, divisorTenths - 1);
+      const dividendTenths = quotient * divisorTenths + remainderTenths;
+      const divisor = (divisorTenths / 10).toFixed(1);
+      const dividend = (dividendTenths / 10).toFixed(1);
+      const remainder = (remainderTenths / 10).toFixed(1);
+      const askQuotient = Math.random() < 0.5;
+      let choiceList;
+      if (askQuotient) {
+        question = `${dividend} ÷ ${divisor} の商を一の位まで求めなさい。（あまりも出る）`;
+        answer = String(quotient);
+        choiceList = [String(quotient + 1), String(Math.max(1, quotient - 1)), String(quotient * 10)];
+      } else {
+        question = `${dividend} ÷ ${divisor} の商を一の位まで求めたときの、あまりは？`;
+        answer = remainder;
+        choiceList = [((remainderTenths + 1) / 10).toFixed(1), (Math.max(1, remainderTenths - 1) / 10).toFixed(1), divisor];
+      }
+      steps = [`${divisor} × ${quotient} = ${(divisorTenths * quotient / 10).toFixed(1)}`, `${dividend} − ${(divisorTenths * quotient / 10).toFixed(1)} = ${remainder}`, `商 ${quotient}、あまり ${remainder}`];
+      return { category: 'decDivRemainder5', question, answer, choices: buildChoicesFromList(answer, choiceList), steps };
+    } else if (pat === 2) {
+      // 商を10分の1の位まで求めて、あまりも出す
+      const divisorTenths = randInt(11, 60);
+      const quotientTenths = randInt(2, 50);
+      const remainderHundredths = randInt(1, divisorTenths * 10 - 1);
+      const dividendHundredths = quotientTenths * divisorTenths + remainderHundredths;
+      const divisor = (divisorTenths / 10).toFixed(1);
+      const dividend = (dividendHundredths / 100).toString();
+      const quotientStr = (quotientTenths / 10).toString();
+      const remainderStr = (remainderHundredths / 100).toString();
+      const askQuotient = Math.random() < 0.5;
+      let wrongsList;
+      if (askQuotient) {
+        question = `${dividend} ÷ ${divisor} の商を10分の1の位（小数第一位）まで求めなさい。（あまりも出る）`;
+        answer = quotientStr;
+        wrongsList = [
+          ((quotientTenths + 1) / 10).toString(),
+          (Math.max(1, quotientTenths - 1) / 10).toString(),
+          ((quotientTenths + 10) / 10).toString(),
+        ];
+      } else {
+        question = `${dividend} ÷ ${divisor} の商を10分の1の位まで求めたときの、あまりは？`;
+        answer = remainderStr;
+        wrongsList = [
+          ((remainderHundredths + 1) / 100).toString(),
+          (Math.max(1, remainderHundredths - 1) / 100).toString(),
+          divisor,
+        ];
+      }
+      steps = [`${divisor} × ${quotientStr} = ${(divisorTenths * quotientTenths / 100).toString()}`, `${dividend} − ${(divisorTenths * quotientTenths / 100).toString()} = ${remainderStr}`, `商 ${quotientStr}、あまり ${remainderStr}`];
+      return { category: 'decDivRemainder5', question, answer, choices: buildChoicesFromList(answer, wrongsList), steps };
+    } else {
+      // 文章題：ひもを配る（あまりが出る場面）
+      const perPersonTenths = randInt(2, 20);
+      const people = randInt(3, 15);
+      const remainderTenths = randInt(1, perPersonTenths - 1);
+      const totalTenths = people * perPersonTenths + remainderTenths;
+      const perPerson = (perPersonTenths / 10).toFixed(1);
+      const total = (totalTenths / 10).toFixed(1);
+      const remainder = (remainderTenths / 10).toFixed(1);
+      const askPeople = Math.random() < 0.5;
+      let choiceList2;
+      if (askPeople) {
+        question = `${total}mのひもを、1人に${perPerson}mずつ配ります。何人に配ることができますか。`;
+        answer = String(people);
+        choiceList2 = [String(people + 1), String(Math.max(1, people - 1)), String(people * 10)];
+      } else {
+        question = `${total}mのひもを、1人に${perPerson}mずつ配ります。何人かに配ったとき、何mあまりますか。`;
+        answer = remainder;
+        choiceList2 = [((remainderTenths + 1) / 10).toFixed(1), (Math.max(1, remainderTenths - 1) / 10).toFixed(1), perPerson];
+      }
+      steps = [
+        `${perPerson} × ${people} = ${(perPersonTenths * people / 10).toFixed(1)}`,
+        `${total} − ${(perPersonTenths * people / 10).toFixed(1)} = ${remainder}`,
+        `${people}人に配れて、${remainder}mあまる`,
+      ];
+      return { category: 'decDivRemainder5', question, answer, choices: buildChoicesFromList(answer, choiceList2), steps };
+    }
+  }
+
+  // decimals as an integer numerator over 10^decimals; shifting the decimal point
+  // (×10^k / ÷10^k) is then just reinterpreting the same digits at a new `decimals`
+  // count, so this stays exact with no floating-point error.
+  function formatScaledDecimal_(intVal, decimals) {
+    if (decimals <= 0) return String(intVal * Math.pow(10, -decimals));
+    const s = String(Math.abs(intVal)).padStart(decimals + 1, '0');
+    const intPart = s.slice(0, s.length - decimals) || '0';
+    const fracPart = s.slice(s.length - decimals).replace(/0+$/, '');
+    const sign = intVal < 0 ? '-' : '';
+    return sign + intPart + (fracPart ? '.' + fracPart : '');
+  }
+
+  // 整数と小数のしくみ（小5）
+  function genDecStructure5() {
+    const pat = randInt(0, 4);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 10×a+1×b+0.1×c（または 0.1×d+0.01×e+0.001×f）の形に表したときの、指定した位の数字
+      const styleA = Math.random() < 0.5;
+      let numStr, parts, labels;
+      if (styleA) {
+        const t = randInt(1, 9), o = randInt(0, 9), n = randInt(1, 9);
+        numStr = `${t}${o}.${n}`;
+        parts = [String(t), String(o), String(n)];
+        labels = ['10×', '1×', '0.1×'];
+      } else {
+        const d = randInt(1, 9), e = randInt(0, 9), f = randInt(1, 9);
+        numStr = `0.${d}${e}${f}`;
+        parts = [String(d), String(e), String(f)];
+        labels = ['0.1×', '0.01×', '0.001×'];
+      }
+      const target = randInt(0, 2);
+      const eq = parts.map((v, i) => `${labels[i]}${i === target ? '□' : v}`).join(' + ');
+      question = `${numStr} = ${eq} の□にあてはまる数は？`;
+      answer = parts[target];
+      wrongs = parts.filter((v, i) => i !== target);
+      wrongs.push(String((parseInt(parts[target], 10) + 1) % 10));
+      steps = [`小数点の位置を基準に、各位の数字を読み取る`, `= ${answer}`];
+      return { category: 'decStructure5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    }
+    const decimals = randInt(1, 3);
+    const intVal = decimals === 1 ? randInt(11, 2999) : randInt(11, 999);
+    const base = formatScaledDecimal_(intVal, decimals);
+    if (pat === 1) {
+      // ×10, ×100, ×1000
+      const k = randInt(1, 3);
+      const label = ['10倍', '100倍', '1000倍'][k - 1];
+      const result = formatScaledDecimal_(intVal, decimals - k);
+      question = `${base} を ${label} した数は？`;
+      answer = result;
+      wrongs = [
+        formatScaledDecimal_(intVal, decimals - k + 1),
+        formatScaledDecimal_(intVal, decimals - k - 1),
+        formatScaledDecimal_(intVal, decimals - (k === 3 ? 2 : k + 1)),
+      ];
+      steps = [`小数点を右に${k}つ移す`, `= ${answer}`];
+      return { category: 'decStructure5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    } else if (pat === 2) {
+      // 何倍したか
+      const k = randInt(1, 3);
+      const result = formatScaledDecimal_(intVal, decimals - k);
+      question = `${result} は、${base} を何倍した数ですか。`;
+      answer = String(Math.pow(10, k));
+      wrongs = [String(Math.pow(10, k === 3 ? 2 : k + 1)), String(Math.pow(10, k === 1 ? 2 : k - 1)), String(k)];
+      steps = [`小数点が右に何個分移動したかを数える`, `= ${answer}`];
+      return { category: 'decStructure5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    } else if (pat === 3) {
+      // 10分の1, 100分の1, 1000分の1
+      const k = randInt(1, 3);
+      const label = ['1/10', '1/100', '1/1000'][k - 1];
+      const result = formatScaledDecimal_(intVal, decimals + k);
+      question = `${base} を ${label} にした数は？`;
+      answer = result;
+      wrongs = [
+        formatScaledDecimal_(intVal, decimals + k - 1),
+        formatScaledDecimal_(intVal, decimals + k + 1),
+        formatScaledDecimal_(intVal, decimals + (k === 3 ? 2 : k + 1)),
+      ];
+      steps = [`小数点を左に${k}つ移す`, `= ${answer}`];
+      return { category: 'decStructure5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    } else {
+      // 何分の一にしたか
+      const k = randInt(1, 3);
+      const result = formatScaledDecimal_(intVal, decimals + k);
+      question = `${result} は、${base} を何分の一にした数ですか。`;
+      answer = String(Math.pow(10, k));
+      wrongs = [String(Math.pow(10, k === 3 ? 2 : k + 1)), String(Math.pow(10, k === 1 ? 2 : k - 1)), String(k)];
+      steps = [`小数点が左に何個分移動したかを数える`, `= ${answer}`];
+      return { category: 'decStructure5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    }
+  }
+
+  // 小数の文章題（小5）
+  function genDecWordProblem5() {
+    const pat = randInt(0, 4);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // がい数で求める文章題（面積を四捨五入して上から2けたのがい数で求める）
+      const tateTenths = randInt(20, 99);
+      const yokoTenths = randInt(20, 99);
+      const tate = (tateTenths / 10).toFixed(1);
+      const yoko = (yokoTenths / 10).toFixed(1);
+      const trueArea = (tateTenths * yokoTenths) / 100;
+      const rounded = roundToSigFigs_(trueArea, 2);
+      answer = rounded.toString();
+      question = `縦${tate}m、横${yoko}mの長方形の花だんがあります。面積を四捨五入して、上から2けたのがい数で求めなさい。`;
+      const step = rounded < 10 ? 0.1 : 1;
+      wrongs = [
+        (Math.round((rounded + step) * 100) / 100).toString(),
+        (Math.round((rounded - step) * 100) / 100).toString(),
+        (Math.round(trueArea * 10) / 10).toString(),
+      ];
+      steps = [`面積 = ${tate} × ${yoko} = ${Math.round(trueArea * 1000) / 1000}…`, `上から2けたのがい数にすると ${answer}`];
+    } else if (pat === 1) {
+      // 単位量あたりの大きさ（油の重さ）：与える・逆算どちらもランダム
+      const perLiterTenths = randInt(5, 50);
+      const liters = randInt(2, 15);
+      const totalTenths = perLiterTenths * liters;
+      const perLiter = (perLiterTenths / 10).toFixed(1);
+      const total = (totalTenths / 10).toFixed(1);
+      const sub = randInt(0, 2);
+      if (sub === 0) {
+        question = `1Lの重さが${perLiter}kgの油があります。この油${liters}Lの重さは何kgですか。`;
+        answer = total;
+        wrongs = [
+          ((totalTenths + 10) / 10).toFixed(1),
+          (Math.max(1, totalTenths - 10) / 10).toFixed(1),
+          ((totalTenths + 1) / 10).toFixed(1),
+        ];
+        steps = [`重さ = 1Lあたりの重さ × 量`, `${perLiter} × ${liters} = ${total}`];
+      } else if (sub === 1) {
+        question = `${total}kgの油が${liters}Lあります。この油1Lの重さは何kgですか。`;
+        answer = perLiter;
+        wrongs = [
+          ((perLiterTenths + 1) / 10).toFixed(1),
+          (Math.max(1, perLiterTenths - 1) / 10).toFixed(1),
+          ((perLiterTenths + 10) / 10).toFixed(1),
+        ];
+        steps = [`1Lあたりの重さ = 全体の重さ ÷ 量`, `${total} ÷ ${liters} = ${perLiter}`];
+      } else {
+        question = `1Lの重さが${perLiter}kgの油が${total}kgあります。この油は何Lありますか。`;
+        answer = String(liters);
+        wrongs = [String(liters + 1), String(Math.max(1, liters - 1)), String(liters * 10)];
+        steps = [`量 = 全体の重さ ÷ 1Lあたりの重さ`, `${total} ÷ ${perLiter} = ${liters}`];
+      }
+    } else if (pat === 2) {
+      // 何倍ですか（割合を求める）
+      const aTenths = randInt(10, 99);
+      const xTenths = randInt(5, 50);
+      const productHundredths = aTenths * xTenths;
+      const a = (aTenths / 10).toFixed(1);
+      const b = trimTrailingZeros((productHundredths / 100).toFixed(2));
+      const x = trimTrailingZeros((xTenths / 10).toFixed(1));
+      question = `${a}Lのジュースと${b}Lのジュースがあります。${b}Lは${a}Lの何倍ですか。`;
+      answer = x;
+      wrongs = [
+        trimTrailingZeros(((xTenths + 5) / 10).toFixed(1)),
+        trimTrailingZeros((Math.max(1, xTenths - 5) / 10).toFixed(1)),
+        b,
+      ];
+      steps = [`何倍 = くらべる量 ÷ もとにする量`, `${b} ÷ ${a} = ${x}`];
+    } else {
+      // ○倍にあたる大きさ／もとにする大きさ、どちらもランダム
+      const baseTenths = randInt(10, 99);
+      const xTenths = randInt(5, 50);
+      const resultHundredths = baseTenths * xTenths;
+      const base = (baseTenths / 10).toFixed(1);
+      const result = trimTrailingZeros((resultHundredths / 100).toFixed(2));
+      const x = trimTrailingZeros((xTenths / 10).toFixed(1));
+      if (Math.random() < 0.5) {
+        question = `もとにする長さが${base}mのテープがあります。その${x}倍にあたる長さは何mですか。`;
+        answer = result;
+        wrongs = [
+          trimTrailingZeros(((resultHundredths + 10) / 100).toFixed(2)),
+          trimTrailingZeros((Math.max(1, resultHundredths - 10) / 100).toFixed(2)),
+          base,
+        ];
+        steps = [`○倍にあたる大きさ = もとにする大きさ × 割合`, `${base} × ${x} = ${result}`];
+      } else {
+        question = `${result}mのテープは、もとにする長さの${x}倍にあたります。もとにする長さは何mですか。`;
+        answer = base;
+        wrongs = [
+          trimTrailingZeros(((baseTenths + 5) / 10).toFixed(1)),
+          trimTrailingZeros((Math.max(1, baseTenths - 5) / 10).toFixed(1)),
+          result,
+        ];
+        steps = [`もとにする大きさ = くらべる量 ÷ 割合`, `${result} ÷ ${x} = ${base}`];
+      }
+    }
+    return { category: 'decWordProblem5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+  }
+
+  // 偶数と奇数（小5）
+  function genEvenOdd5() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const n = randInt(11, 999);
+      const isEven = n % 2 === 0;
+      question = `${n} は偶数と奇数のどちらですか。`;
+      answer = isEven ? '偶数' : '奇数';
+      steps = [`${n} ÷ 2 = ${Math.floor(n / 2)}${isEven ? ' あまりなし' : ' あまり1'}`, `= ${answer}`];
+      return { category: 'evenOdd5', question, answer, choices: shuffle([isEven ? '偶数' : '奇数', isEven ? '奇数' : '偶数']), steps };
+    } else if (pat === 1) {
+      // 範囲内の偶数・奇数の個数
+      const start = randInt(1, 50);
+      const end = start + randInt(9, 30) * 2 - 1;
+      const askEven = Math.random() < 0.5;
+      const evenCount = Math.floor(end / 2) - Math.floor((start - 1) / 2);
+      const total = end - start + 1;
+      const oddCount = total - evenCount;
+      question = `${start}から${end}までの整数の中に、${askEven ? '偶数' : '奇数'}はいくつありますか。`;
+      answer = String(askEven ? evenCount : oddCount);
+      wrongs = [String((askEven ? evenCount : oddCount) + 1), String(Math.max(1, (askEven ? evenCount : oddCount) - 1)), String(total)];
+      steps = [`${start}から${end}までの整数は全部で${total}個`, `${askEven ? '偶数' : '奇数'}は${answer}個`];
+    } else {
+      // ○に一番近い偶数／奇数
+      const n = randInt(12, 998);
+      const findEven = Math.random() < 0.5;
+      const nIsEven = n % 2 === 0;
+      let nearest;
+      if (findEven === nIsEven) nearest = n;
+      else nearest = Math.random() < 0.5 ? n - 1 : n + 1;
+      question = `${n} に一番近い${findEven ? '偶数' : '奇数'}は？（${n}自身も含む）`;
+      answer = String(nearest);
+      wrongs = [String(nearest + 2), String(nearest - 2), String(n)];
+      steps = [`${n} は${nIsEven ? '偶数' : '奇数'}なので、一番近い${findEven ? '偶数' : '奇数'}は ${nearest}`];
+    }
+    return { category: 'evenOdd5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 分数のかけ算・わり算（小6）
@@ -2424,10 +2970,28 @@
 
   // 倍数と約数（小5）
   function genMultiples5() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 4);
     const a = randInt(2, 12), b = randInt(2, 12);
     let question, answer, wrongs, steps;
-    if (pat === 0) {
+    if (pat === 3) {
+      // 3つの数の最小公倍数
+      const nums = [randInt(2, 15), randInt(2, 15), randInt(2, 15)];
+      const l = lcmFrac(lcmFrac(nums[0], nums[1]), nums[2]);
+      question = `${nums[0]}、${nums[1]}、${nums[2]} の最小公倍数は？`;
+      answer = l;
+      wrongs = [nums[0] * nums[1] * nums[2], lcmFrac(nums[0], nums[1]), l + Math.min(...nums)].filter(v => v !== l);
+      steps = [`3つの数の倍数を並べて共通のものを探す`, `最小公倍数 = ${l}`];
+      return { category: 'multiples5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 4) {
+      // 3つの数の最大公約数
+      const nums = [randInt(6, 40), randInt(6, 40), randInt(6, 40)];
+      const g = gcdFrac(gcdFrac(nums[0], nums[1]), nums[2]);
+      question = `${nums[0]}、${nums[1]}、${nums[2]} の最大公約数は？`;
+      answer = g;
+      wrongs = [gcdFrac(nums[0], nums[1]), Math.min(...nums), g + 1].filter(v => v !== g);
+      steps = [`3つの数をともに割り切れる数のうち、一番大きい数を探す`, `最大公約数 = ${g}`];
+      return { category: 'multiples5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 0) {
       const l = lcmFrac(a, b);
       question = `${a} と ${b} の最小公倍数は？`;
       answer = l;
@@ -2453,7 +3017,7 @@
 
   // 図形の角：内角の和（小5）
   function genPolygonAngle5() {
-    const pat = randInt(0, 2);
+    const pat = randInt(0, 6);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       const aa = randInt(20, 80), bb = randInt(20, 80);
@@ -2469,7 +3033,7 @@
       answer = x;
       wrongs = [aa, 360 - aa - bb, x + 10];
       steps = [`四角形の内角の和は360°`, `x = 360 − ${aa} − ${bb} − ${cc} = ${x}`];
-    } else {
+    } else if (pat === 2) {
       const ns = [5, 6, 7, 8, 9, 10, 12];
       const n = ns[randInt(0, ns.length - 1)];
       const sum = 180 * (n - 2);
@@ -2477,6 +3041,74 @@
       answer = sum;
       wrongs = [180 * n, sum + 180, Math.max(180, sum - 180)];
       steps = [`多角形の内角の和 = 180° × (n−2)`, `= 180 × (${n}−2) = ${sum}°`];
+    } else if (pat === 3) {
+      // 二等辺三角形：底角から頂角、または頂角から底角を求める
+      const askApex = Math.random() < 0.5;
+      if (askApex) {
+        const base = randInt(20, 79);
+        const apex = 180 - base * 2;
+        question = `二等辺三角形があります。等しい2つの辺にはさまれていない角（底角）が2つとも ${base}° のとき、頂角 x は？`;
+        answer = apex;
+        wrongs = [base, 180 - base, apex + 10].filter(v => v !== apex);
+        steps = [`二等辺三角形は底角が等しい`, `x = 180 − ${base} × 2 = ${apex}`];
+      } else {
+        let apexAngle;
+        do { apexAngle = randInt(20, 140); } while ((180 - apexAngle) % 2 !== 0);
+        const base = (180 - apexAngle) / 2;
+        question = `二等辺三角形があります。頂角が ${apexAngle}° のとき、底角 x は？（底角は2つとも等しい）`;
+        answer = base;
+        wrongs = [apexAngle, base + 10, Math.max(1, base - 10)].filter(v => v !== base);
+        steps = [`底角はどちらも等しい`, `x = (180 − ${apexAngle}) ÷ 2 = ${base}`];
+      }
+    } else if (pat === 4) {
+      // 外角の定理：三角形の1つの角と、別の頂点の外角（延長線上の角）から残りの角を求める
+      const aa = randInt(20, 80);
+      const ext = randInt(aa + 30, 170);
+      const x = ext - aa;
+      question = `三角形の1つの角が ${aa}°。もう1つの頂点で辺を延長すると、その外側の角（外角）が ${ext}° でした。残りの角 x は？`;
+      answer = x;
+      wrongs = [ext - aa + 10, Math.max(1, ext - aa - 10), 180 - ext].filter(v => v !== x);
+      steps = [`外角は、となり合わない2つの内角の和に等しい`, `x = ${ext} − ${aa} = ${x}`];
+    } else if (pat === 5) {
+      // 五角形など、1つを除く角がすべて分かっているときの残りの角
+      const ns = [5, 6];
+      const n = ns[randInt(0, ns.length - 1)];
+      const sum = 180 * (n - 2);
+      let angles, x;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        angles = [];
+        let remaining = sum;
+        for (let i = 0; i < n - 1; i++) {
+          const unassignedAfter = n - i - 1; // remaining explicit angles after this one, plus the final x
+          const maxForThis = Math.min(160, remaining - 60 * unassignedAfter);
+          if (maxForThis < 60) { angles = null; break; }
+          const a = randInt(60, maxForThis);
+          angles.push(a);
+          remaining -= a;
+        }
+        if (angles && remaining >= 60 && remaining <= 170) { x = remaining; break; }
+      }
+      if (!angles || x === undefined) {
+        angles = n === 5 ? [120, 110, 105, 115] : [130, 120, 125, 115, 110];
+        x = sum - angles.reduce((s, v) => s + v, 0);
+      }
+      question = `${kanjiDigit(n)}角形の${n - 1}つの角が ${angles.join('°、')}°。残りの角 x は？`;
+      answer = x;
+      wrongs = [angles[angles.length - 1], x + 10, Math.max(1, x - 10)].filter(v => v !== x);
+      steps = [`${kanjiDigit(n)}角形の内角の和は 180 × (${n}−2) = ${sum}°`, `x = ${sum} − (${angles.join(' + ')}) = ${x}`];
+    } else {
+      // ひし形・平行四辺形：対角は等しい、となり合う角は180°
+      const aa = randInt(30, 150);
+      const opposite = Math.random() < 0.5;
+      question = opposite
+        ? `4つの辺の長さがすべて等しい四角形（ひし形）があります。ある角が ${aa}° のとき、その向かい合う角 x は？`
+        : `4つの辺の長さがすべて等しい四角形（ひし形）があります。ある角が ${aa}° のとき、そのとなり合う角 x は？`;
+      answer = opposite ? aa : 180 - aa;
+      wrongs = opposite ? [180 - aa, aa + 10, Math.max(1, aa - 10)] : [aa, 180 - aa + 10, Math.max(1, 180 - aa - 10)];
+      wrongs = wrongs.filter(v => v !== answer);
+      steps = opposite
+        ? [`ひし形は向かい合う角が等しい`, `x = ${aa}`]
+        : [`ひし形はとなり合う角の和が180°`, `x = 180 − ${aa} = ${180 - aa}`];
     }
     return { category: 'polygonAngle5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
