@@ -759,9 +759,11 @@
 
     if (pat === 3) {
       // 共通因数をくくり出す：cax² + cbx の形
+      // (a, bは互いに素でなければならない。そうでないと、cが本当の最大公約数に
+      // ならず「答えの選択肢に正しい共通因数が出てこない」不具合になる)
       const c = randInt(2, 9);
       const a = randNonZero(1, 8);
-      let b; do { b = randNonZero(-8, 8); } while (b === 0);
+      let b; do { b = randNonZero(-8, 8); } while (b === 0 || gcdFrac(a, Math.abs(b)) !== 1);
       const coefA = c * a, coefB = c * b;
       const bTerm = b > 0 ? `+ ${coefB}x` : `− ${Math.abs(coefB)}x`;
       question = `${coefA}x² ${bTerm} を因数分解せよ。`;
