@@ -127,6 +127,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
+        mathGodTitleEarned: s.mathGodTitleEarned,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -141,6 +142,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
+        mathGodTitleEarned: s.mathGodTitleEarned,
       });
     }
   }
@@ -6150,7 +6152,43 @@
         defeat: '関ヶ原の戦場のど真ん中を敵陣突破して薩摩に帰った、あの「島津の退き口」の主が儂じゃ。鬼島津と恐れられたわい。',
       },
     },
+    // 世界一周のステージボス。倒すとレアキャラコレクションに追加される(通常のレア
+    // キャラと違い、1回倒すだけでコレクション入り。WORLD_BOSS_COLLECTIBLE_IDS参照)。
+    wboss_baby: {
+      id: 'wboss_baby', name: 'ベビーAKR', img: 'images/baby_akr.png',
+      lines: {
+        appear: '君が来るのをあくびをしながら、待っていたバブー！',
+        defeat: '君にも、赤ちゃんの時があったよね。だから、僕らは仲間だ！',
+      },
+    },
+    wboss_hebitsukai: {
+      id: 'wboss_hebitsukai', name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png',
+      lines: { appear: 'この先には進ませない！俺を倒してから行け！君に、蛇の攻撃がかわせるかな！？' },
+    },
+    wboss_suijobike: {
+      id: 'wboss_suijobike', name: '水上バイクAKR', img: 'images/suijobike_akr.png',
+      lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' },
+    },
+    wboss_fullswing: {
+      id: 'wboss_fullswing', name: 'フルスイングAKR', img: 'images/fullswing_akr.png',
+      lines: { appear: '人生のバッターボックスに立ったら、見逃し三振だけはするな！' },
+    },
+    wboss_chuni: {
+      id: 'wboss_chuni', name: '中2病AKR', img: 'images/chuni_akr.png',
+      lines: { appear: '戦うのを諦めてもいいんだぜ！逃げるなら、今だ！僕も逃げるから笑' },
+    },
+    wboss_sensei: {
+      id: 'wboss_sensei', name: '先生AKR', img: 'images/sensei_akr.png',
+      lines: {
+        appear: '仮に君が先生に負けても、先生を恨まないでくれ。先生は、いつでも君の味方だよ。',
+        miss: '数学の問題と女の子（男の子）は、見た目じゃなくて中身が大事！しっかり問題文（中身）を見てね！君の挑戦を待っているぞ！',
+        defeat: '君の勝利だ！これは、ただの勝利ではない！君は、これまでに10000題以上の問題に正解してきた！努力したからこそ、ここまで来れた！自信を持っていい！今後は、【数学の神】の称号をさずけよう！是非、今の気持ちを先生にLINEで聞かせてくれ！',
+      },
+    },
   };
+  // 世界一周のボスは通常のレアキャラ(5回撃破でコレクション入り)と違い、1回倒すだけで
+  // コレクション入りする特別枠。
+  const WORLD_BOSS_COLLECTIBLE_IDS = ['wboss_baby', 'wboss_hebitsukai', 'wboss_suijobike', 'wboss_fullswing', 'wboss_chuni', 'wboss_sensei'];
 
   const WARLORD_IDS = [
     'warlord_nobunaga', 'warlord_hideyoshi', 'warlord_ieyasu', 'warlord_shingen',
@@ -6347,6 +6385,9 @@
     // ステージ4のように複数体を順番に倒すステージでの進行度(ステージID→次に戦う
     // ボスのインデックス、0始まり)。worldBossActiveStageと同様に端末セッション限定。
     worldBossSubIndex: {},
+    // 世界一周の最終ボス(ステージ4)を初めて倒すと永続的にtrueになる称号フラグ。
+    // 2周目以降にworldBossDefeatedがリセットされても、この称号は失われない。
+    mathGodTitleEarned: !!((savedProgress && savedProgress.mathGodTitleEarned) || (savedGame && savedGame.mathGodTitleEarned)),
   };
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
@@ -6994,13 +7035,15 @@
       // ボス戦中の不正解は、ステージに応じた量だけHPが減る。HPが0になったら
       // ボス戦は最初(0/30)からやり直しになる。
       if (state.worldBossActiveStage) {
+        const bossMissDisplay = worldBossEnemyDisplay(state.worldBossActiveStage, state.worldBossSubIndex[state.worldBossActiveStage] || 0);
+        const bossMissQuoteHtml = (bossMissDisplay.lines && bossMissDisplay.lines.miss) ? `<div class="enemy-quote-banner">${bossMissDisplay.lines.miss}</div>` : '';
         const penalty = worldBossHpPenalty(state.worldBossActiveStage);
         state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
         if (state.hp <= 0) {
-          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
+          missLineHtml += `${bossMissQuoteHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
         } else {
-          missLineHtml += `<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
+          missLineHtml += `${bossMissQuoteHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
         saveGameState(state);
       }
@@ -7037,6 +7080,19 @@
       const sequence = worldBossSequenceForStage(stageId);
       const bossDisplay = worldBossEnemyDisplay(stageId, subIndex);
       const bossDefeatQuoteHtml = (bossDisplay.lines && bossDisplay.lines.defeat) ? `<div class="enemy-quote-banner">${bossDisplay.lines.defeat}</div>` : '';
+      // ボスは1回でも実際に倒すとレアキャラコレクションに追加される(通常のレア
+      // キャラのような5回撃破の閾値は無い)。移行処理で自動撃破扱いにした分では
+      // 加算されないので、既に世界一周済みの生徒は2周目で初めて実際に戦った時に
+      // 手に入る。
+      const defeatedSub = worldBossCurrentSubBoss(stageId, subIndex);
+      let collectionGainedHtml = '';
+      if (defeatedSub && defeatedSub.id) {
+        state.rareDefeats[defeatedSub.id] = (state.rareDefeats[defeatedSub.id] || 0) + 1;
+        if (state.rareCollected.indexOf(defeatedSub.id) === -1) {
+          state.rareCollected.push(defeatedSub.id);
+          collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${bossDisplay.name}」をコレクションにゲットした！🎖️</div>`;
+        }
+      }
       state.streak = 0;
       const nextSubIndex = subIndex + 1;
       if (nextSubIndex >= sequence.length) {
@@ -7045,16 +7101,27 @@
         if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
         state.worldBossSubIndex[stageId] = 0;
         state.worldBossActiveStage = null;
+        // ステージ4(最終ステージ)のボスをすべて倒すと、世界一周達成の証として
+        // 称号【数学の神】を獲得する(周をまたいでも失われない)。
+        let titleGainedHtml = '';
+        if (stageId === 4 && !state.mathGodTitleEarned) {
+          state.mathGodTitleEarned = true;
+          if (session && session.name) renderUserGreeting(session.name);
+          titleGainedHtml = `<div class="item-gain-banner">🏆 称号【数学の神】を獲得した！🏆</div>`;
+        }
         saveGameState(state);
         if (session && session.id) {
           apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
         }
-        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}`;
+        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${titleGainedHtml}`;
       } else {
         state.worldBossSubIndex[stageId] = nextSubIndex;
         saveGameState(state);
+        if (session && session.id) {
+          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        }
         const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
-        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
+        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
       }
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
@@ -7318,10 +7385,16 @@
     switchTab('login');
   }
 
+  // 世界一周の最終ボスを倒すと称号【数学の神】が名前の前に付く(一度手に入れたら
+  // 2周目以降も失われない)。
+  function renderUserGreeting(name) {
+    els.userName.textContent = (state.mathGodTitleEarned ? '【数学の神】' : '') + name;
+  }
+
   function showApp(name, isGuest) {
     els.loginCard.hidden = true;
     els.appMain.hidden = false;
-    els.userName.textContent = name;
+    renderUserGreeting(name);
     els.historyToggle.hidden = !!isGuest;
     els.historyPanel.hidden = true;
     els.rankingToggle.hidden = !!isGuest;
@@ -7436,6 +7509,7 @@
       hp: state.hp,
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
+      mathGodTitleEarned: state.mathGodTitleEarned,
     };
   }
 
@@ -7459,6 +7533,7 @@
     var sWorldLapStartLevel = Number(server.worldLapStartLevel) || 100;
     var sWorldBossDefeated = (server.worldBossDefeated && typeof server.worldBossDefeated === 'object') ? server.worldBossDefeated : {};
     var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
+    var sMathGodTitleEarned = !!server.mathGodTitleEarned;
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -7808,7 +7883,7 @@
     return '';
   }
   function renderRareCollection() {
-    const ids = RARE_COLLECTIBLE_IDS.concat(['thinker']);
+    const ids = RARE_COLLECTIBLE_IDS.concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
     els.historyRareCollection.innerHTML = ids.map(function (id) {
       const rt = RARE_TYPES[id];
       const collected = state.rareCollected.indexOf(id) !== -1;
@@ -7825,6 +7900,8 @@
         else if (tierCls === 'badge-tier-bronze') title += `（ブロンズ・${defeatCount}回撃破）`;
       } else if (id === 'thinker') {
         title = 'レベル1000で登場する考えるAKRを倒すとゲット';
+      } else if (WORLD_BOSS_COLLECTIBLE_IDS.indexOf(id) !== -1) {
+        title = '世界一周のボスを倒すとゲット';
       } else {
         title = `あと${Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount)}回撃破でゲット`;
       }
@@ -8233,17 +8310,17 @@
   // 連続正解数。用意が無いステージ/シーケンス外は、その国名から汎用の
   // 「(国名)の守護者」表示にフォールバックする。
   const WORLD_BOSS_SEQUENCES = {
-    1: [{ streak: 30, name: 'ベビーAKR', img: 'images/baby_akr.png', lines: { appear: '君が来るのをあくびをしながら、待っていたバブー！', defeat: '君にも、赤ちゃんの時があったよね。だから、僕らは仲間だ！' } }],
-    2: [{ streak: 30, name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: 'この先には進ませない！俺を倒してから行け！君に、蛇の攻撃がかわせるかな！？' } }],
-    3: [{ streak: 30, name: '水上バイクAKR', img: 'images/suijobike_akr.png', lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' } }],
+    1: [{ streak: 30, id: 'wboss_baby' }],
+    2: [{ streak: 30, id: 'wboss_hebitsukai' }],
+    3: [{ streak: 30, id: 'wboss_suijobike' }],
     4: [
-      { streak: 10, name: 'フルスイングAKR', img: 'images/fullswing_akr.png', lines: { appear: '人生のバッターボックスに立ったら、見逃し三振だけはするな！' } },
-      { streak: 20, name: '中2病AKR', img: 'images/chuni_akr.png', lines: { appear: '戦うのを諦めてもいいんだぜ！逃げるなら、今だ！僕も逃げるから笑' } },
-      { streak: 30, name: null },
+      { streak: 10, id: 'wboss_fullswing' },
+      { streak: 20, id: 'wboss_chuni' },
+      { streak: 30, id: 'wboss_sensei' },
     ],
   };
   function worldBossSequenceForStage(stageId) {
-    return WORLD_BOSS_SEQUENCES[stageId] || [{ streak: WORLD_BOSS_STREAK_REQUIRED, name: null }];
+    return WORLD_BOSS_SEQUENCES[stageId] || [{ streak: WORLD_BOSS_STREAK_REQUIRED, id: null }];
   }
   function worldBossCurrentSubBoss(stageId, subIndex) {
     const seq = worldBossSequenceForStage(stageId);
@@ -8251,7 +8328,8 @@
   }
   function worldBossEnemyDisplay(stageId, subIndex) {
     const sub = worldBossCurrentSubBoss(stageId, subIndex);
-    if (sub && sub.name) return { name: sub.name, img: sub.img, lines: sub.lines };
+    const rt = sub && sub.id ? RARE_TYPES[sub.id] : null;
+    if (rt) return { name: rt.name, img: rt.img, lines: rt.lines };
     var country = worldBossCountryForStage(stageId);
     if (!country) return { emoji: '👑', name: 'ボス' };
     return { emoji: isoToFlagEmoji(country.iso), name: country.name + 'の守護者' };
