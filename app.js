@@ -3999,6 +3999,22 @@
     return `${whole} ${rem}/${den}`;
   }
 
+  // "1 2/3" 、"4/3" 、"1" のような文字列を数値に変換する（同じ値の別表記を
+  // 見分けて重複選択肢を除くために使う）
+  function fracTextValue4_(s) {
+    const parts = String(s).trim().split(' ');
+    if (parts.length === 2) {
+      const whole = parseInt(parts[0], 10);
+      const [n, dd] = parts[1].split('/').map(Number);
+      return whole + n / dd;
+    }
+    if (String(s).includes('/')) {
+      const [n, dd] = String(s).split('/').map(Number);
+      return n / dd;
+    }
+    return parseInt(s, 10);
+  }
+
   // 小数のたし算・ひき算（小4）
   function genDecAddSub4() {
     const isAdd = Math.random() < 0.5;
@@ -4127,7 +4143,12 @@
       ];
     }
     const steps = [`分母${d}のまま、分子どうしで計算する`, `= ${answer}`];
-    return { category: 'frac4', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    // candidatesの中に、表記は違うが答えと同じ値になるもの(例: 答え「1 1/3」に対して
+    // 「4/3」)が紛れることがあり、その場合「正解が2つある」状態になってしまう。
+    // 数値としても答えと異なるものだけを選択肢の候補として残す。
+    const answerVal = fracTextValue4_(answer);
+    const filteredCandidates = candidates.filter(c => Math.abs(fracTextValue4_(c) - answerVal) > 1e-9);
+    return { category: 'frac4', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, filteredCandidates), steps };
   }
 
   // 単位の変換（小4）
