@@ -1434,6 +1434,7 @@
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
     { id: 'polygonAngle5',   label: '図形の角（小5）',                     gen: genPolygonAngle5,   defaultOff: true },
     { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',       gen: genFracDecConvert5, defaultOff: true },
+    { id: 'fracDecimal5',    label: '分数と小数（小5）',                   gen: genFracDecimal5,    defaultOff: true },
     { id: 'average5',        label: '平均（小5）',                         gen: genAverage5,        defaultOff: true },
     { id: 'circumference5',  label: '円周（小5）',                         gen: genCircumference5,  defaultOff: true },
 
@@ -3145,6 +3146,119 @@
       steps = [`${decStr} = ${n}/${d}`];
     }
     return { category: 'fracDecConvert5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
+  function terminatesAsDecimal_(d) {
+    let x = d;
+    while (x % 2 === 0) x /= 2;
+    while (x % 5 === 0) x /= 5;
+    return x === 1;
+  }
+
+  // 分数と小数（小5）：わり算を分数で表す、分数の倍、分数と小数の大小
+  function genFracDecimal5() {
+    const pat = randInt(0, 6);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // わり算を分数で表す文章題
+      const contexts = [
+        { unit: 'm', tpl: (a, b) => `${a}mのリボンを${b}人で同じ長さずつ分けます。1人分は何mになりますか。` },
+        { unit: 'L', tpl: (a, b) => `${a}Lのジュースを${b}個のコップに同じかさずつ分けます。コップ1個分は何Lになりますか。` },
+        { unit: 'kg', tpl: (a, b) => `${a}kgの砂糖を${b}人で同じ重さずつ分けます。1人分は何kgになりますか。` },
+      ];
+      const ctx = contexts[randInt(0, contexts.length - 1)];
+      let a, b;
+      do { a = randInt(2, 20); b = randInt(2, 9); } while (a === b);
+      question = ctx.tpl(a, b);
+      answer = `${a}/${b}`;
+      wrongs = [`${b}/${a}`, `${a + 1}/${b}`, `${a}/${b + 1}`].filter(v => v !== answer);
+      steps = [`1人分 = 全体 ÷ 人数 を分数で表す`, `${a} ÷ ${b} = ${a}/${b}`];
+    } else if (pat === 1) {
+      // わり算をそのまま分数で表す
+      let a, b;
+      do { a = randInt(1, 20); b = randInt(2, 12); } while (a === b);
+      question = `${a} ÷ ${b} を分数で表すと？`;
+      answer = `${a}/${b}`;
+      wrongs = [`${b}/${a}`, `${a + 1}/${b}`, `${Math.max(1, a - 1)}/${b}`].filter(v => v !== answer);
+      steps = [`わり算の商は、わられる数を分子、わる数を分母にした分数で表せる`, `${a} ÷ ${b} = ${answer}`];
+    } else if (pat === 2) {
+      // □にあてはまる数を求める（分数とわり算の関係）
+      const d = randInt(2, 12);
+      const n = randInt(1, d - 1);
+      const askDenominator = Math.random() < 0.5;
+      if (askDenominator) {
+        question = `${n}/${d} = ${n} ÷ □ の□にあてはまる数は？`;
+        answer = d;
+      } else {
+        question = `${n}/${d} = □ ÷ ${d} の□にあてはまる数は？`;
+        answer = n;
+      }
+      wrongs = [answer + 1, Math.max(1, answer - 1), askDenominator ? n : d].filter(v => v !== answer);
+      steps = [`分数は、分子 ÷ 分母 で表せる`, `= ${answer}`];
+      return { category: 'fracDecimal5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      // 分数の倍（年齢などの文章題）
+      const baseAge = randInt(6, 12);
+      let compareAge;
+      do { compareAge = randInt(4, 20); } while (compareAge === baseAge);
+      const people = ['姉', '兄', '妹', 'はるきさん'];
+      const person = people[randInt(0, people.length - 1)];
+      question = `弟の年れいは${baseAge}才、${person}の年れいは${compareAge}才です。弟の年れいをもとにすると、${person}の年れいは何倍にあたりますか。`;
+      answer = fracToStr(compareAge, baseAge);
+      wrongs = [fracToStr(baseAge, compareAge), fracToStr(compareAge + 1, baseAge), fracToStr(Math.max(1, compareAge - 1), baseAge)].filter(v => v !== answer);
+      steps = [`何倍 = くらべる量 ÷ もとにする量`, `${compareAge} ÷ ${baseAge} = ${compareAge}/${baseAge}`, `= ${answer}`];
+      return { category: 'fracDecimal5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
+    } else if (pat === 4) {
+      // 分数と小数の大小
+      const d = [2, 4, 5, 8, 10, 20, 25][randInt(0, 6)];
+      let n;
+      do { n = randInt(1, d * 2); } while (n === d);
+      const fracVal = n / d;
+      const tieBreak = Math.random() < 0.3;
+      const decVal = tieBreak ? fracVal : Math.max(0.01, Math.round((fracVal + (Math.random() < 0.5 ? 1 : -1) * (randInt(1, 20) / 100)) * 100) / 100);
+      const decStr = decVal.toFixed(2).replace(/0$/, '').replace(/0$/, '').replace(/\.$/, '');
+      const fracStr = fracToStr(n, d);
+      question = `${fracStr} と ${decStr} では、どちらが大きいですか。（同じ場合は「同じ」）`;
+      if (Math.abs(fracVal - decVal) < 0.0001) answer = '同じ';
+      else answer = fracVal > decVal ? fracStr : decStr;
+      steps = [`${fracStr} を小数に直すと ${fracVal}`, `${fracVal} と ${decStr} を比べる`, `= ${answer}`];
+      return { category: 'fracDecimal5', question, answer, choices: shuffle([fracStr, decStr, '同じ']), steps };
+    } else if (pat === 5) {
+      // 整数で表すことができる分数を選ぶ
+      const wholeD = randInt(2, 9);
+      const wholeN = wholeD * randInt(2, 6);
+      const others = [];
+      while (others.length < 3) {
+        const dd = randInt(2, 9);
+        let nn;
+        do { nn = randInt(2, dd * 5); } while (nn % dd === 0);
+        const cand = `${nn}/${dd}`;
+        if (!others.includes(cand)) others.push(cand);
+      }
+      answer = `${wholeN}/${wholeD}`;
+      question = `次のうち、整数で表すことができる分数はどれですか。`;
+      return { category: 'fracDecimal5', question, answer, choices: shuffle([answer, ...others]), steps: [`分子が分母の倍数になっている分数は、整数で表せる`, `${answer} = ${wholeN / wholeD}`] };
+    } else {
+      // 小数で正確に表すことができる分数を選ぶ
+      const termDenoms = [2, 4, 5, 8, 10, 16, 20, 25];
+      const nonTermDenoms = [3, 6, 7, 9, 11, 12, 13];
+      const td = termDenoms[randInt(0, termDenoms.length - 1)];
+      let tn;
+      do { tn = randInt(1, td - 1); } while (gcdFrac(tn, td) !== 1);
+      const termFrac = fracToStr(tn, td);
+      const others = [];
+      while (others.length < 3) {
+        const dd = nonTermDenoms[randInt(0, nonTermDenoms.length - 1)];
+        let nn;
+        do { nn = randInt(1, dd - 1); } while (gcdFrac(nn, dd) !== 1 || terminatesAsDecimal_(dd));
+        const cand = fracToStr(nn, dd);
+        if (!others.includes(cand) && cand !== termFrac) others.push(cand);
+      }
+      answer = termFrac;
+      question = `次のうち、小数で正確に表すことができる分数はどれですか。`;
+      return { category: 'fracDecimal5', question, answer, choices: shuffle([answer, ...others]), steps: [`分母を約分したときに2と5だけの積で表せる分数は、小数で正確に表せる`, `${answer} の分母は ${td}`] };
+    }
+    return { category: 'fracDecimal5', question, answer, choices: buildChoicesFromList(answer, wrongs), steps };
   }
 
   // 平均（小5）
