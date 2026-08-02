@@ -5168,11 +5168,13 @@
       const ki = randInt(0, 2);
       const known = angles[ki];
       const rest = angles.filter((_, i) => i !== ki);
+      // rest の2つはどちらも「2組の角がそれぞれ等しい」を示すのに十分な、同格に正しい
+      // 答え。両方を選択肢に入れると正解が2つ存在してしまうため、片方だけを正解にし、
+      // もう片方は選択肢に含めない(代わりに辺に関する誤答を使う)。
       const missing = rest[randInt(0, 1)];
-      const other = rest.find(a => a !== missing);
       question = `△ABCと△DEFで${known}が分かっている。2組の角がそれぞれ等しいことを示すのにあと1つは？`;
       answer = missing;
-      choices = shuffle([missing, other, 'AB:DE=BC:EF', 'AB=DE']);
+      choices = shuffle([missing, 'AB:DE=BC:EF', 'AB=DE', 'BC:EF=CA:FD']);
       steps = [`2組の角がそれぞれ等しい: 2つの角が必要`, `既知: ${known}`, `不足: ${missing}`];
       questionHtml = mkTriSvg(['A','B','C'], ['D','E','F'], '∽') + `<span style="display:block">${question}</span>`;
     } else if (pat === 2) {
