@@ -3033,8 +3033,8 @@
     if (pat === 0) {
       // 分数÷整数の文章題
       const contexts = [
-        { unit: 'L', tpl: (a, b) => `牛にゅうが${a}Lあります。これを${b}人で同じ量ずつ分けると、1人分は何Lになりますか。` },
-        { unit: 'm', tpl: (a, b) => `テープが${a}mあります。これを${b}人で同じ長さずつ分けると、1人分は何mになりますか。` },
+        { unit: 'L', tpl: (a, b) => `牛にゅうが${a} Lあります。これを${b}人で同じ量ずつ分けると、1人分は何Lになりますか。` },
+        { unit: 'm', tpl: (a, b) => `テープが${a} mあります。これを${b}人で同じ長さずつ分けると、1人分は何mになりますか。` },
       ];
       const ctx = contexts[randInt(0, contexts.length - 1)];
       const [an, ad] = randFracOrMixed6_(9);
@@ -3047,7 +3047,7 @@
       // 単位量あたり（ガソリン、速さ）: 1Lで進める距離から、他の量での距離を求める
       const [rn, rd] = randFracOrMixed6_(9);
       const [ln, ld] = randFracOrMixed6_(9);
-      question = `1Lのガソリンで、${fracDisplayStr6_(rn, rd)}km走れる車があります。この車は${fracDisplayStr6_(ln, ld)}Lのガソリンでは何km走れますか。`;
+      question = `1Lのガソリンで、${fracDisplayStr6_(rn, rd)} km走れる車があります。この車は${fracDisplayStr6_(ln, ld)} Lのガソリンでは何km走れますか。`;
       const numAns = rn * ln, denAns = rd * ld;
       answer = fracDisplayStr6_(numAns, denAns);
       candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
@@ -3056,7 +3056,7 @@
       // 長方形の面積（縦×横）
       const [tn, td] = randFracOrMixed6_(9);
       const [yn, yd] = randFracOrMixed6_(9);
-      question = `縦が${fracDisplayStr6_(tn, td)}m、横が${fracDisplayStr6_(yn, yd)}mの長方形の面積は何m²ですか。`;
+      question = `縦が${fracDisplayStr6_(tn, td)} m、横が${fracDisplayStr6_(yn, yd)} mの長方形の面積は何m²ですか。`;
       const numAns = tn * yn, denAns = td * yd;
       answer = fracDisplayStr6_(numAns, denAns);
       candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
@@ -3065,7 +3065,7 @@
       // 単位量あたり重さ：○Lで○kgから、1Lの重さを求める
       const [wn, wd] = randFrac(9);
       const [vn, vd] = randFrac(9);
-      question = `${fracDisplayStr6_(vn, vd)}Lの重さが${fracDisplayStr6_(wn, wd)}kgの油があります。この油1Lの重さは何kgですか。`;
+      question = `${fracDisplayStr6_(vn, vd)} Lの重さが${fracDisplayStr6_(wn, wd)} kgの油があります。この油1Lの重さは何kgですか。`;
       const numAns = wn * vd, denAns = wd * vn;
       answer = fracDisplayStr6_(numAns, denAns);
       candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
@@ -3074,7 +3074,7 @@
       // 長方形の面積から辺の長さを求める（逆算）
       const [tn, td] = randFracOrMixed6_(9);
       const areaWhole = randInt(2, 12);
-      question = `面積が${areaWhole}m²、縦の長さが${fracDisplayStr6_(tn, td)}mの長方形の鉄板があります。この鉄板の横の長さは何mですか。`;
+      question = `面積が${areaWhole}m²、縦の長さが${fracDisplayStr6_(tn, td)} mの長方形の鉄板があります。この鉄板の横の長さは何mですか。`;
       const numAns = areaWhole * td, denAns = tn;
       answer = fracDisplayStr6_(numAns, denAns);
       candidates = [fracDisplayStr6_(numAns + denAns, denAns), fracDisplayStr6_(Math.max(1, numAns - denAns), denAns), fracDisplayStr6_(numAns, denAns + 1)];
@@ -6425,6 +6425,7 @@
     rankingTabPoints: document.getElementById('rankingTabPoints'),
     rankingTabGrade: document.getElementById('rankingTabGrade'),
     rankingTabHp: document.getElementById('rankingTabHp'),
+    rankingHpHint: document.getElementById('rankingHpHint'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
     rankingNearby: document.getElementById('rankingNearby'),
@@ -6521,10 +6522,13 @@
         : '';
       const complete = isCategoryCompleteToday(state, c.id);
       const completeBadge = complete ? `<span class="cat-complete-badge">🌟コンプリート</span>` : '';
+      const hpBadge = HP_BONUS_CATEGORY_IDS.indexOf(c.id) !== -1
+        ? `<span class="cat-hp-badge" title="10問連続正解でHPが増える単元">❤️HP UP</span>`
+        : '';
       return `
         <label class="settings-item${complete ? ' is-daily-complete' : ''}">
           <input type="checkbox" data-cat="${c.id}" ${(state.enabled.has(c.id) && !complete) ? 'checked' : ''} ${complete ? 'disabled' : ''} />
-          <span class="cat-label">${c.label}</span>${acc}${completeBadge}
+          <span class="cat-label">${c.label}</span>${hpBadge}${acc}${completeBadge}
         </label>
       `;
     }).join('');
@@ -7821,6 +7825,7 @@
     els.rankingTabGrade.setAttribute('aria-selected', String(mode === 'grade'));
     els.rankingTabHp.classList.toggle('is-active', mode === 'hp');
     els.rankingTabHp.setAttribute('aria-selected', String(mode === 'hp'));
+    els.rankingHpHint.hidden = mode !== 'hp';
   }
 
   function loadRanking(mode) {

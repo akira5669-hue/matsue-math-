@@ -568,6 +568,16 @@ h1 {
   padding: 1px 7px;
   white-space: nowrap;
 }
+.cat-hp-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9d174d;
+  background: #fce7f3;
+  border: 1px solid #f9a8d4;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
 
 .streak-badge {
   display: inline-block;
@@ -768,6 +778,15 @@ h1 {
   margin: 0 0 14px;
   font-size: 12px;
   color: var(--c-ink-soft);
+}
+.ranking-hp-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #9d174d;
+  background: #fce7f3;
+  border: 1px solid #f9a8d4;
+  border-radius: 8px;
+  padding: 8px 10px;
 }
 .gift-code-result {
   background: #fff8e1;
