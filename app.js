@@ -6762,7 +6762,7 @@
     els.enemyEmoji.classList.toggle('is-rare', isRare);
     els.enemyName.textContent = (isBossFight ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + (isBossFight ? ' 👑' : isRare ? ' ✨' : '');
     els.enemyName.classList.toggle('is-rare-name', isRare);
-    if (isRare && enemy.lines && enemy.lines.appear) {
+    if ((isRare || isBossFight) && enemy.lines && enemy.lines.appear) {
       els.enemySpeech.textContent = enemy.lines.appear;
       els.enemySpeech.hidden = false;
     } else {
@@ -7017,8 +7017,8 @@
       if (session && session.id) {
         apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       }
-      const stageName = country ? country.name : 'ボス';
-      winHtml = `<div class="win-banner">🎉 ボス「${stageName}」を倒した！${stageName}が仲間になった！🎉</div>`;
+      const bossDisplay = worldBossEnemyDisplay(stageId);
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>`;
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
@@ -8191,7 +8191,14 @@
     var chars = iso.toUpperCase().split('').map(function (ch) { return 0x1F1E6 + (ch.charCodeAt(0) - 65); });
     return String.fromCodePoint(chars[0], chars[1]);
   }
+  // ステージごとの専用ボスキャラ。用意が無いステージは、その国名から汎用の
+  // 「(国名)の守護者」表示にフォールバックする。
+  const WORLD_BOSS_TYPES = {
+    1: { name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: '俺を倒してから行け！' } },
+  };
   function worldBossEnemyDisplay(stageId) {
+    const custom = WORLD_BOSS_TYPES[stageId];
+    if (custom) return { name: custom.name, img: custom.img, lines: custom.lines };
     var country = worldBossCountryForStage(stageId);
     if (!country) return { emoji: '👑', name: 'ボス' };
     return { emoji: isoToFlagEmoji(country.iso), name: country.name + 'の守護者' };
@@ -8334,11 +8341,11 @@
   // 既に挑戦中ならキャンセルボタンを表示する。
   function renderWorldBossSection() {
     if (state.worldBossActiveStage) {
-      const country = worldBossCountryForStage(state.worldBossActiveStage);
+      const bossDisplay = worldBossEnemyDisplay(state.worldBossActiveStage);
       els.worldBossSection.hidden = false;
       els.worldBossSection.innerHTML =
         '<div class="world-boss-card is-fighting">'
-        + '<p class="world-boss-title">👑 ボス「' + (country ? country.name : '') + '」に挑戦中！</p>'
+        + '<p class="world-boss-title">👑 ボス「' + bossDisplay.name + '」に挑戦中！</p>'
         + '<p class="world-boss-desc">画面上のクイズで30問連続正解するとクリア。不正解になるとHPが' + worldBossHpPenalty(state.worldBossActiveStage) + '減る。</p>'
         + '<button type="button" class="ghost-btn" id="worldBossCancelBtn">挑戦をやめる</button>'
         + '</div>';
@@ -8354,14 +8361,14 @@
     }
     const stage = currentChallengeableBossStage();
     if (!stage) { els.worldBossSection.hidden = true; els.worldBossSection.innerHTML = ''; return; }
-    const country = worldBossCountryForStage(stage.id);
+    const bossDisplay = worldBossEnemyDisplay(stage.id);
     const elig = worldBossEligibility();
     const penalty = worldBossHpPenalty(stage.id);
     const condHtml = '<p class="world-boss-cond' + (elig.ok ? ' is-ok' : '') + '">出題条件: 自分の学年以上の単元を' + elig.required + '個以上ON（現在' + elig.count + '個）、うち文章題を1つ以上含む（' + (elig.hasWordProblem ? '✅OK' : '❌不足') + '）</p>';
     els.worldBossSection.hidden = false;
     els.worldBossSection.innerHTML =
       '<div class="world-boss-card">'
-      + '<p class="world-boss-title">👑 ボス出現！「' + (country ? country.name : '') + '」</p>'
+      + '<p class="world-boss-title">👑 ボス出現！「' + bossDisplay.name + '」</p>'
       + '<p class="world-boss-desc">30問連続正解でクリア。不正解になるとHPが' + penalty + '減り、HPが0になると最初(0/30)からやり直しになる。倒すと仲間になる！</p>'
       + condHtml
       + '<button type="button" class="primary-btn" id="worldBossChallengeBtn"' + (elig.ok ? '' : ' disabled') + '>挑戦する（現在HP: ' + (Number(state.hp) || 0) + '）</button>'
