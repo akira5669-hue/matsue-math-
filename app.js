@@ -2969,6 +2969,17 @@
     return { category: 'percentConvert5', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
+  function pick3Distinct_(min, max) {
+    const a = randInt(min, max);
+    const bCands = [];
+    for (let v = min; v <= max; v++) if (v !== a) bCands.push(v);
+    const b = bCands[randInt(0, bCands.length - 1)];
+    const cCands = [];
+    for (let v = min; v <= max; v++) if (v !== a && v !== b) cCands.push(v);
+    const c = cCands[randInt(0, cCands.length - 1)];
+    return [a, b, c].sort((x, y) => x - y);
+  }
+
   // 倍数と約数（小5）
   function genMultiples5() {
     const pat = randInt(0, 4);
@@ -2976,7 +2987,7 @@
     let question, answer, wrongs, steps;
     if (pat === 3) {
       // 3つの数の最小公倍数
-      const nums = [randInt(2, 15), randInt(2, 15), randInt(2, 15)];
+      const nums = pick3Distinct_(2, 15);
       const l = lcmFrac(lcmFrac(nums[0], nums[1]), nums[2]);
       question = `${nums[0]}、${nums[1]}、${nums[2]} の最小公倍数は？`;
       answer = l;
@@ -2985,7 +2996,7 @@
       return { category: 'multiples5', question, answer, choices: buildChoices(answer, wrongs), steps };
     } else if (pat === 4) {
       // 3つの数の最大公約数
-      const nums = [randInt(6, 40), randInt(6, 40), randInt(6, 40)];
+      const nums = pick3Distinct_(6, 40);
       const g = gcdFrac(gcdFrac(nums[0], nums[1]), nums[2]);
       question = `${nums[0]}、${nums[1]}、${nums[2]} の最大公約数は？`;
       answer = g;
