@@ -8194,7 +8194,7 @@
   // ステージごとの専用ボスキャラ。用意が無いステージは、その国名から汎用の
   // 「(国名)の守護者」表示にフォールバックする。
   const WORLD_BOSS_TYPES = {
-    2: { name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: '俺を倒してから行け！' } },
+    2: { name: 'ヘビ使いAKR', img: 'images/hebitsukai_akr.png', lines: { appear: 'この先には進ませない！俺を倒してから行け！君に、蛇の攻撃がかわせるかな！？' } },
     3: { name: '水上バイクAKR', img: 'images/suijobike_akr.png', lines: { appear: '俺に助けてもらおうなんて思うなよ！自分の人生の波は、自分で乗り越えろ！' } },
   };
   function worldBossEnemyDisplay(stageId) {
