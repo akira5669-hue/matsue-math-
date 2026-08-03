@@ -6321,8 +6321,13 @@
     if (t === 'doubleorhalf') state.doubleOrHalfSnapshot = state.pointsToday;
     return t;
   }
+  // 通常キャラ「分数くん」：分数を扱う単元を解いている時だけ、通常の敵の代わりに
+  // 表示される(enemyIdxの進行自体には影響しない、見た目だけの差し替え)。
+  const FRACTION_CATEGORY_IDS = ['frac4', 'fracAddSub5', 'decFracAddSub5', 'fracReduceConvert5', 'fracDecConvert5', 'fracDecimal5', 'fracMulDiv6', 'fracDecIntMulDiv6', 'fracWordProblem6'];
+  const FRACTION_KUN = { name: '分数くん', img: 'images/bunsukun.png' };
   function currentEnemyDisplay(st) {
     if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
+    if (st.current && FRACTION_CATEGORY_IDS.indexOf(st.current.category) !== -1) return FRACTION_KUN;
     return ENEMIES[st.enemyIdx];
   }
 
