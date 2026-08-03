@@ -91,6 +91,9 @@ var RANKING_TEST_TIERS_ = [
   { id: '80s', label: '80点台', mp: 300 },
   { id: '70s', label: '70点台', mp: 200 },
 ];
+// 数学ランキングテストは、まだ小学生向けには実施しないため小3〜小6は提出不可
+// (中1以上のみ)。
+var RANKING_TEST_BLOCKED_GRADES_ = ['小3', '小4', '小5', '小6'];
 
 // 交換受付期間: 5/1〜5/3、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
@@ -1241,6 +1244,10 @@ function handleSubmitTestPhoto_(ctx, body) {
   try {
     var row = findStudentRow_(ctx.students, id);
     if (!row) return { ok: false, error: 'not_found' };
+
+    if (testType === 'ranking' && RANKING_TEST_BLOCKED_GRADES_.indexOf(row.grade) !== -1) {
+      return { ok: false, error: 'elementary_not_allowed' };
+    }
 
     var currentMonth = monthKeyTokyo_(new Date());
     // ランキングテストは月1回まで。写真自体は3週間で自動削除されるため、TestPhotosの

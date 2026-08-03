@@ -1740,18 +1740,19 @@
       const count = randInt(2, 90);
       const baseStr = `${count}${b.label}`;
       const way = randInt(0, 1);
+      let candidates;
       if (way === 0) {
         const k = [10, 100, 1000][randInt(0, 2)];
         const resultCount = count * k;
         question = `${baseStr} を ${k}倍すると？`;
         answer = `${resultCount}${b.label}`;
-        const candidates = [`${resultCount / 10}${b.label}`, `${resultCount * 10}${b.label}`, `${resultCount + k}${b.label}`];
+        candidates = [`${resultCount / 10}${b.label}`, `${resultCount * 10}${b.label}`, `${resultCount + k}${b.label}`];
         steps = [`${count} × ${k} = ${resultCount}`, `= ${answer}`];
       } else {
         const bigCount = count * 10;
         question = `${bigCount}${b.label} を 10分の1にすると？`;
         answer = `${count}${b.label}`;
-        const candidates = [`${count * 10}${b.label}`, `${count + 1}${b.label}`, `${Math.max(1, count - 1)}${b.label}`];
+        candidates = [`${count * 10}${b.label}`, `${count + 1}${b.label}`, `${Math.max(1, count - 1)}${b.label}`];
         steps = [`${bigCount} ÷ 10 = ${count}`, `= ${answer}`];
       }
       return { category: 'largeNum4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
@@ -2886,16 +2887,20 @@
       steps = [`${start}から${end}までの整数は全部で${total}個`, `${askEven ? '偶数' : '奇数'}は${answer}個`];
     } else {
       // ○に一番近い偶数／奇数
+      // nの偶奇と求める偶奇が違う場合、n-1とn+1が同じ距離(1)になり答えが2つに
+      // なってしまうため、その場合は「同じ距離なら大きい方」というルールを明示して
+      // 一意に定める。
       const n = randInt(12, 998);
       const findEven = Math.random() < 0.5;
       const nIsEven = n % 2 === 0;
-      let nearest;
-      if (findEven === nIsEven) nearest = n;
-      else nearest = Math.random() < 0.5 ? n - 1 : n + 1;
-      question = `${n} に一番近い${findEven ? '偶数' : '奇数'}は？（${n}自身も含む）`;
+      const isTie = findEven !== nIsEven;
+      const nearest = isTie ? n + 1 : n;
+      question = `${n} に一番近い${findEven ? '偶数' : '奇数'}は？（${n}自身も含む${isTie ? '。同じ差の場合は大きい方' : ''}）`;
       answer = String(nearest);
-      wrongs = [String(nearest + 2), String(nearest - 2), String(n)];
-      steps = [`${n} は${nIsEven ? '偶数' : '奇数'}なので、一番近い${findEven ? '偶数' : '奇数'}は ${nearest}`];
+      wrongs = isTie ? [String(n - 1), String(nearest + 2), String(n)] : [String(nearest + 2), String(nearest - 2), String(nearest + 1)];
+      steps = isTie
+        ? [`${n} は${nIsEven ? '偶数' : '奇数'}で、${n - 1}と${n + 1}はどちらも同じ距離(1)なので、大きい方の ${nearest}`]
+        : [`${n} はすでに${findEven ? '偶数' : '奇数'}なので、一番近い${findEven ? '偶数' : '奇数'}は ${nearest}（自分自身）`];
     }
     return { category: 'evenOdd5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
@@ -8831,6 +8836,8 @@
       if (!res.ok) {
         els.rankingTestResult.textContent = res.error === 'already_submitted_this_month'
           ? '今月のランキングテストはすでに提出済みです（提出は月1回までです）。'
+          : res.error === 'elementary_not_allowed'
+          ? '数学ランキングテストは、まだ小学生の提出には対応していません。'
           : '送信に失敗しました。もう一度お試しください。';
         return;
       }
