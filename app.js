@@ -7143,8 +7143,12 @@
       state.pointsToday += pointsToAdd;
       let doubleGainedHtml = '';
       if (wasRareType === 'doubleorhalf') {
+        // 「本日のMPが2倍」というボーナスの性質上、通常の1日の上限(POINTS_DAILY_CAP)で
+        // 頭打ちにしてしまうと、既に上限に達している時は+0になり「2倍」が成立しなく
+        // なってしまう(ハーフ側の減算は上限を経由せず無条件に効くのと非対称だった)。
+        // そのため、このボーナスだけは1日の上限を経由せず、そのまま加算する。
         const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
-        const doubleBonusToAdd = Math.max(0, Math.min(snapshot, POINTS_DAILY_CAP - state.pointsToday));
+        const doubleBonusToAdd = Math.max(0, snapshot);
         state.points += doubleBonusToAdd;
         state.pointsToday += doubleBonusToAdd;
         doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${doubleBonusToAdd}MP）💰</div>`;
