@@ -6639,9 +6639,17 @@
   // 表示される(enemyIdxの進行自体には影響しない、見た目だけの差し替え)。
   const FRACTION_CATEGORY_IDS = ['frac4', 'fracAddSub5', 'decFracAddSub5', 'fracReduceConvert5', 'fracDecConvert5', 'fracDecimal5', 'fracMulDiv6', 'fracDecIntMulDiv6', 'fracWordProblem6'];
   const FRACTION_KUN = { name: '分数くん', img: 'images/bunsukun.png' };
+  // 通常キャラ「かけちゃん」：かけ算だけを扱う単元を解いている時だけ表示される。
+  const KAKE_CATEGORY_IDS = ['mul2', 'decMul4', 'mul3x2_4', 'decMul5', 'mulWritten3'];
+  const KAKE_CHAN = { name: 'かけちゃん', img: 'images/kakechan.png' };
+  // 通常キャラ「わるくん」：わり算だけを扱う単元を解いている時だけ表示される。
+  const WARU_CATEGORY_IDS = ['div2', 'divRemainder4', 'div2by1_4', 'div2by2_4', 'div3by1_4', 'div3by2_4', 'div3by3_4', 'decDiv5', 'decDivRemainder5'];
+  const WARU_KUN = { name: 'わるくん', img: 'images/warukun.png' };
   function currentEnemyDisplay(st) {
     if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
     if (st.current && FRACTION_CATEGORY_IDS.indexOf(st.current.category) !== -1) return FRACTION_KUN;
+    if (st.current && KAKE_CATEGORY_IDS.indexOf(st.current.category) !== -1) return KAKE_CHAN;
+    if (st.current && WARU_CATEGORY_IDS.indexOf(st.current.category) !== -1) return WARU_KUN;
     return ENEMIES[st.enemyIdx];
   }
 
