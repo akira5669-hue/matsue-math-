@@ -262,9 +262,36 @@
 
   function genEquation() {
     let ans = randNonZero(-9, 9);
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 7);
     let q, questionHtml, steps;
-    if (pat === 0) {
+    if (pat === 6) {
+      // 分数係数の方程式（両辺に分数）: (n1/d1)x + b1 = (n2/d2)x + b2
+      const fracs = [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 5], [2, 5], [1, 6], [5, 6]];
+      let f1, f2;
+      do { f1 = fracs[randInt(0, fracs.length - 1)]; f2 = fracs[randInt(0, fracs.length - 1)]; } while (f1[0] / f1[1] === f2[0] / f2[1]);
+      const [n1, d1] = f1, [n2, d2] = f2;
+      const L = lcmFrac(d1, d2);
+      ans = randNonZero(-3, 3) * L; // Lの倍数にして、係数×xが必ず整数になるようにする
+      const b1 = randNonZero(-9, 9);
+      const b2 = (n1 * ans) / d1 + b1 - (n2 * ans) / d2;
+      const b1S = b1 < 0 ? `− ${Math.abs(b1)}` : `+ ${b1}`;
+      const b2S = b2 < 0 ? `− ${Math.abs(b2)}` : `+ ${b2}`;
+      q = `${n1}/${d1}x ${b1S} = ${n2}/${d2}x ${b2S} を解け。x = ?`;
+      questionHtml = `<span class="frac"><span class="num">${n1}</span><span class="den">${d1}</span></span>x ${b1S} = <span class="frac"><span class="num">${n2}</span><span class="den">${d2}</span></span>x ${b2S} を解け。x = ?`;
+      steps = [`両辺に分母の最小公倍数 ${L} をかけて分数を消す`, `移項して整理する`, `x = ${ans}`];
+    } else if (pat === 7) {
+      // 分配のある方程式: ax = b(x+c) の形（速さ・追いつきの文章題によく出る形）
+      const bOptions = [10, 15, 20, 30, 40, 50, 60, 70, 90, 100, 150];
+      const b = bOptions[randInt(0, bOptions.length - 1)];
+      const m = randNonZero(-6, 6);
+      ans = b * m;
+      let a;
+      do { a = bOptions[randInt(0, bOptions.length - 1)]; } while (a === b);
+      const c = (a - b) * m;
+      const cS = c < 0 ? `− ${Math.abs(c)}` : `+ ${c}`;
+      q = `${a}x = ${b}(x ${cS}) を解け。x = ?`;
+      steps = [`右辺を展開する: ${a}x = ${b}x ${c >= 0 ? '+' : '−'} ${Math.abs(b * c)}`, `移項: ${a - b}x = ${b * c}`, `x = ${b * c} ÷ ${a - b} = ${ans}`];
+    } else if (pat === 0) {
       const a = randNonZero(-5, 5);
       const b = a * ans;
       const aD = a===1?'':a===-1?'−':`${a}`;
@@ -1503,6 +1530,7 @@
     { id: 'polyMul',     label: '多項式×÷数（中1）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）',             gen: genLinearAddSub },
     { id: 'planeFigure', label: '平面図形（中1）',                gen: genPlaneFigure },
+    { id: 'planeFigureComposite1', label: '平面図形の複合図形（中1）', gen: genPlaneFigureComposite1, defaultOff: true },
     { id: 'solidFigure', label: '空間図形（中1）',                gen: genSolidFigure },
     { id: 'construction', label: '作図（中1）',                    gen: genConstruction },
 
@@ -1559,6 +1587,8 @@
     { id: 'decDivRemainder5', label: '小数のわり算：あまり・がい数（小5）', gen: genDecDivRemainder5, defaultOff: true },
     { id: 'decWordProblem5', label: '小数の文章題（小5）',                 gen: genDecWordProblem5, defaultOff: true },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
+    { id: 'unitRateWordProblem5', label: '単位量あたりの大きさの文章題（小5）', gen: genUnitRateWordProblem5, defaultOff: true },
+    { id: 'timeFraction5',   label: '時間と分数（小5）',                   gen: genTimeFraction5,   defaultOff: true },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
     { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
@@ -2199,6 +2229,7 @@
 
   // 分数のたし算・ひき算（通分・約分あり、小5）
   function genFracAddSub5() {
+    if (randInt(0, 1) === 1) return genMixedFracAddSub5_();
     let [n1, d1] = randFrac(9);
     let [n2, d2] = randFrac(9);
     while (d2 === d1) { [n2, d2] = randFrac(9); }
@@ -2230,6 +2261,59 @@
       `通分する: 分母を最小公倍数 ${L} にそろえる`,
       `${n1}/${d1} = ${N1}/${L}、${n2}/${d2} = ${N2}/${L}`,
       `${N1}/${L} ${opSym} ${N2}/${L} = ${numAns}/${denAns}`,
+      `= ${answer}`,
+    ];
+    return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+  }
+
+  // 帯分数どうしのたし算・ひき算（分母が異なる、繰り上がり・繰り下がりあり、小5）
+  function mixedFracStr_(whole, n, d) {
+    if (n === 0) return `${whole}`;
+    return whole === 0 ? `${n}/${d}` : `${whole} ${n}/${d}`;
+  }
+  function genMixedFracAddSub5_() {
+    let d1, n1, w1 = randInt(1, 4);
+    do { d1 = randInt(2, 9); n1 = randInt(1, d1 - 1); } while (gcdFrac(n1, d1) !== 1);
+    let d2, n2, w2 = randInt(1, 4);
+    do { d2 = randInt(2, 9); } while (d2 === d1);
+    do { n2 = randInt(1, d2 - 1); } while (gcdFrac(n2, d2) !== 1);
+
+    const isAdd = Math.random() < 0.5;
+    const L = lcmFrac(d1, d2);
+    let N1 = n1 * (L / d1), N2 = n2 * (L / d2);
+
+    // ひき算は大きい方から小さい方を引く(答えが負にならないようにする)。
+    if (!isAdd && (w1 * L + N1) < (w2 * L + N2)) {
+      [w1, w2] = [w2, w1]; [n1, n2] = [n2, n1]; [d1, d2] = [d2, d1];
+      N1 = n1 * (L / d1); N2 = n2 * (L / d2);
+    }
+
+    const opSym = isAdd ? '+' : '−';
+    const question = `${mixedFracStr_(w1, n1, d1)} ${opSym} ${mixedFracStr_(w2, n2, d2)} = ?`;
+
+    let wholeAns, numAns;
+    if (isAdd) {
+      wholeAns = w1 + w2;
+      numAns = N1 + N2;
+      if (numAns >= L) { numAns -= L; wholeAns += 1; }
+    } else {
+      wholeAns = w1 - w2;
+      numAns = N1 - N2;
+      if (numAns < 0) { numAns += L; wholeAns -= 1; }
+    }
+    const [rn, rd] = reduceFrac(numAns, L);
+    const answer = mixedFracStr_(wholeAns, rn, rd);
+
+    // 誤答候補: 繰り上がり/繰り下がりを忘れた場合、約分し忘れた場合、通分せず分母をそのまま足した場合
+    const wrongNoCarry = mixedFracStr_(isAdd ? w1 + w2 : w1 - w2, isAdd ? N1 + N2 : Math.abs(N1 - N2), L);
+    const wrongUnreduced = (rn === numAns && rd === L) ? null : mixedFracStr_(wholeAns, numAns, L);
+    const wrongWrongDenom = mixedFracStr_(isAdd ? w1 + w2 : Math.abs(w1 - w2), n1 + n2, d1 + d2);
+    const candidates = [wrongNoCarry, wrongUnreduced, wrongWrongDenom].filter(v => v && v !== answer);
+
+    const steps = [
+      `通分する: 分母を最小公倍数 ${L} にそろえる`,
+      `${mixedFracStr_(w1, n1, d1)} = ${w1}と${N1}/${L}、${mixedFracStr_(w2, n2, d2)} = ${w2}と${N2}/${L}`,
+      isAdd ? `整数部分どうし、分数部分どうしをたす（繰り上がりに注意）` : `整数部分どうし、分数部分どうしをひく（繰り下がりに注意）`,
       `= ${answer}`,
     ];
     return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
@@ -3731,6 +3815,105 @@
   }
 
   // 分数と小数、整数の関係（小5）
+  // 時間と分数（小5）：分は時間の何分の1か、秒は分の何分の1か
+  function genTimeFraction5() {
+    const pat = randInt(0, 1);
+    let question, answer, steps;
+    if (pat === 0) {
+      const n = randInt(1, 150);
+      const [rn, rd] = reduceFrac(n, 60);
+      question = `${n}分は何時間ですか。分数で答えなさい。`;
+      answer = fracToStr(n, 60);
+      steps = [`${n}分 = ${n}/60 時間`, `約分すると ${rn}/${rd} 時間`];
+    } else {
+      const n = randInt(1, 150);
+      const [rn, rd] = reduceFrac(n, 60);
+      question = `${n}秒は何分ですか。分数で答えなさい。`;
+      answer = fracToStr(n, 60);
+      steps = [`${n}秒 = ${n}/60 分`, `約分すると ${rn}/${rd} 分`];
+    }
+    return { category: 'timeFraction5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, timeFractionWrongs_(answer)), steps };
+  }
+  function timeFractionWrongs_(answerStr) {
+    const m = answerStr.match(/^(-?\d+)\/(\d+)$/);
+    if (!m) return [];
+    const n = parseInt(m[1], 10), d = parseInt(m[2], 10);
+    return [
+      `${n}/60`,
+      fracToStr(n + 1, d),
+      fracToStr(Math.max(1, n - 1), d),
+    ];
+  }
+
+  // 単位量あたりの大きさの文章題（小5）：直接計算・こみぐあい/値段/燃費の比較
+  function genUnitRateWordProblem5() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 直接計算：1(単位)あたりの個数・人数を求める
+      const contexts = [
+        { unit: 'm²', tpl: (a, b) => `面積${a}m²の花だんに、球根が${b}個植えられています。1m²あたり何個の球根が植えられていますか。` },
+        { unit: 'km²', tpl: (a, b) => `面積${a}km²の町に、${b}人が住んでいます。1km²あたり何人住んでいますか。` },
+        { unit: 'L', tpl: (a, b) => `水そうに水が${a}L入っていて、メダカが${b}匹います。水1Lあたり何匹のメダカがいますか。` },
+      ];
+      const ctx = contexts[randInt(0, contexts.length - 1)];
+      const rate = randInt(2, 9);
+      const total = randInt(2, 12);
+      const count = rate * total;
+      question = ctx.tpl(total, count);
+      answer = String(rate);
+      wrongs = [String(rate + 1), String(Math.max(1, rate - 1)), String(total)];
+      steps = [`1${ctx.unit}あたりの数 = 全体の数 ÷ ${ctx.unit === 'm²' || ctx.unit === 'km²' ? '面積' : '量'}`, `${count} ÷ ${total} = ${rate}`];
+    } else if (pat === 1) {
+      // こみぐあい・人口密度の比較：どちらが混んでいるか
+      const contexts = [
+        { subject: '花だん', unit: 'm²', tpl: (label, a, b) => `${label}の花だんは、面積${a}m²に球根が${b}個植えられています。` },
+        { subject: '町', unit: 'km²', tpl: (label, a, b) => `${label}町は、面積${a}km²に人口${b}人が住んでいます。` },
+        { subject: '水そう', unit: 'L', tpl: (label, a, b) => `${label}の水そうは、水${a}Lにメダカが${b}匹います。` },
+      ];
+      const ctx = contexts[randInt(0, contexts.length - 1)];
+      let rateA, rateB;
+      do { rateA = randInt(2, 9); rateB = randInt(2, 9); } while (rateA === rateB);
+      const totalA = randInt(2, 10), totalB = randInt(2, 10);
+      const countA = rateA * totalA, countB = rateB * totalB;
+      const aWins = rateA > rateB;
+      question = `${ctx.tpl('A', totalA, countA)}${ctx.tpl('B', totalB, countB)}どちらが混んでいますか。`;
+      answer = aWins ? 'A' : 'B';
+      wrongs = ['どちらも同じ', aWins ? 'B' : 'A'];
+      steps = [`Aの1${ctx.unit}あたり = ${countA} ÷ ${totalA} = ${rateA}`, `Bの1${ctx.unit}あたり = ${countB} ÷ ${totalB} = ${rateB}`, `数が大きい方が混んでいる → ${answer}`];
+      return { category: 'unitRateWordProblem5', question, answer, choices: buildChoicesFromSet(answer, wrongs), steps };
+    } else if (pat === 2) {
+      // 値段の比較：どちらが安いか
+      const items = [
+        { name: 'りんご', unit: '個' }, { name: 'みかんジュース', unit: '缶' }, { name: 'バラの花', unit: '本' }, { name: 'ノート', unit: '冊' },
+      ];
+      const item = items[randInt(0, items.length - 1)];
+      let priceA, priceB;
+      do { priceA = randInt(20, 200); priceB = randInt(20, 200); } while (priceA === priceB);
+      const qtyA = randInt(2, 9), qtyB = randInt(2, 9);
+      const totalA = priceA * qtyA, totalB = priceB * qtyB;
+      const aCheaper = priceA < priceB;
+      question = `${qtyA}${item.unit}で${totalA}円の${item.name}と、${qtyB}${item.unit}で${totalB}円の${item.name}があります。1${item.unit}あたりの値段が安いのはどちらですか。`;
+      answer = aCheaper ? '1つ目' : '2つ目';
+      wrongs = ['どちらも同じ', aCheaper ? '2つ目' : '1つ目'];
+      steps = [`1つ目: ${totalA} ÷ ${qtyA} = ${priceA}円`, `2つ目: ${totalB} ÷ ${qtyB} = ${priceB}円`, `値段が安い方 → ${answer}`];
+      return { category: 'unitRateWordProblem5', question, answer, choices: buildChoicesFromSet(answer, wrongs), steps };
+    } else {
+      // 燃費の比較：どちらがよく走るか
+      let rateA, rateB;
+      do { rateA = randInt(5, 15); rateB = randInt(5, 15); } while (rateA === rateB);
+      const literA = randInt(2, 9), literB = randInt(2, 9);
+      const distA = rateA * literA, distB = rateB * literB;
+      const aWins = rateA > rateB;
+      question = `自動車Aは、${literA}Lのガソリンで${distA}km走り、自動車Bは、${literB}Lのガソリンで${distB}km走りました。1Lあたりで、よく走るのはどちらの自動車ですか。`;
+      answer = aWins ? '自動車A' : '自動車B';
+      wrongs = ['どちらも同じ', aWins ? '自動車B' : '自動車A'];
+      steps = [`Aは1Lあたり ${distA} ÷ ${literA} = ${rateA}km`, `Bは1Lあたり ${distB} ÷ ${literB} = ${rateB}km`, `距離が長い方がよく走る → ${answer}`];
+      return { category: 'unitRateWordProblem5', question, answer, choices: buildChoicesFromSet(answer, wrongs), steps };
+    }
+    return { category: 'unitRateWordProblem5', question, answer, choices: buildChoices(Number(answer), wrongs.map(Number)), steps };
+  }
+
   function genFracDecConvert5() {
     const denomInfo = [{ d: 2, p: 1 }, { d: 4, p: 2 }, { d: 5, p: 1 }, { d: 8, p: 3 }, { d: 10, p: 1 }, { d: 20, p: 2 }, { d: 25, p: 2 }, { d: 50, p: 2 }];
     const info = denomInfo[randInt(0, denomInfo.length - 1)];
@@ -3943,27 +4126,59 @@
 
   // 円の面積（小6、円周率は3.14）
   function genCircleArea6() {
-    const givenDiameter = Math.random() < 0.5;
-    const r = randInt(2, 15);
-    const areaX100 = r * r * 314;
-    const a = (areaX100 / 100).toFixed(2);
-    let question;
-    if (givenDiameter) {
-      question = `直径 ${r * 2} cm の円の面積は？（円周率は3.14）`;
+    const pat = randInt(0, 2);
+    if (pat === 0) {
+      const givenDiameter = Math.random() < 0.5;
+      const r = randInt(2, 15);
+      const areaX100 = r * r * 314;
+      const a = (areaX100 / 100).toFixed(2);
+      let question;
+      if (givenDiameter) {
+        question = `直径 ${r * 2} cm の円の面積は？（円周率は3.14）`;
+      } else {
+        question = `半径 ${r} cm の円の面積は？（円周率は3.14）`;
+      }
+      const answer = a;
+      const candidates = [
+        ((r * 2 * 314) / 100).toFixed(2),
+        (r * r * 3).toFixed(2),
+        (((r + 1) * (r + 1) * 314) / 100).toFixed(2),
+        ((areaX100 + 100) / 100).toFixed(2),
+      ];
+      const steps = givenDiameter
+        ? [`半径 = 直径 ÷ 2 = ${r * 2} ÷ 2 = ${r}`, `面積 = ${r} × ${r} × 3.14 = ${a} cm²`]
+        : [`面積 = 半径 × 半径 × 3.14`, `= ${r} × ${r} × 3.14 = ${a} cm²`];
+      return { category: 'circleArea6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 1) {
+      // 半径×半径の4分の1の四分円の面積
+      const r = randInt(2, 16);
+      const areaX100 = r * r * 314;
+      const a = (areaX100 / 400).toFixed(2);
+      const question = `半径 ${r} cm の四分円（円の4分の1のおうぎ形）の面積は？（円周率は3.14）`;
+      const answer = a;
+      const candidates = [
+        (areaX100 / 100).toFixed(2),
+        (areaX100 / 200).toFixed(2),
+        (((r + 1) * (r + 1) * 314) / 400).toFixed(2),
+      ];
+      const steps = [`円の面積 = ${r} × ${r} × 3.14 = ${(areaX100 / 100).toFixed(2)} cm²`, `四分円の面積 = 円の面積 ÷ 4 = ${a} cm²`];
+      return { category: 'circleArea6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
     } else {
-      question = `半径 ${r} cm の円の面積は？（円周率は3.14）`;
+      // 大小2つの円がつくる輪(ドーナツ型)の面積
+      const inner = randInt(2, 10);
+      const outer = inner + randInt(2, 8);
+      const areaX100 = (outer * outer - inner * inner) * 314;
+      const a = (areaX100 / 100).toFixed(2);
+      const question = `半径 ${outer} cm の円から、半径 ${inner} cm の円をくりぬいた、輪の形をした図形の面積は？（円周率は3.14）`;
+      const answer = a;
+      const candidates = [
+        (((outer * outer) - (inner * inner) * 2) * 314 / 100).toFixed(2),
+        ((outer * outer * 314) / 100).toFixed(2),
+        (((outer + 1) * (outer + 1) - inner * inner) * 314 / 100).toFixed(2),
+      ];
+      const steps = [`外側の円の面積 = ${outer} × ${outer} × 3.14 = ${((outer * outer * 314) / 100).toFixed(2)} cm²`, `内側の円の面積 = ${inner} × ${inner} × 3.14 = ${((inner * inner * 314) / 100).toFixed(2)} cm²`, `輪の面積 = 外側 − 内側 = ${a} cm²`];
+      return { category: 'circleArea6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
     }
-    const answer = a;
-    const candidates = [
-      ((r * 2 * 314) / 100).toFixed(2),
-      (r * r * 3).toFixed(2),
-      (((r + 1) * (r + 1) * 314) / 100).toFixed(2),
-      ((areaX100 + 100) / 100).toFixed(2),
-    ];
-    const steps = givenDiameter
-      ? [`半径 = 直径 ÷ 2 = ${r * 2} ÷ 2 = ${r}`, `面積 = ${r} × ${r} × 3.14 = ${a} cm²`]
-      : [`面積 = 半径 × 半径 × 3.14`, `= ${r} × ${r} × 3.14 = ${a} cm²`];
-    return { category: 'circleArea6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
   // 角柱と円柱の体積（小6、円周率は3.14）
@@ -5638,6 +5853,44 @@
     return { category: 'planeFigure', question, questionHtml, answer, choices, steps };
   }
 
+  /* ---------- 平面図形の複合図形（円の応用、中1） ---------- */
+  // 大・中・小3つの円が同じ直線上で内接する「三日月型」の複合図形。
+  // 大円の半径R = 中円の半径r2 + 小円の半径r1 になるようにすることで、
+  // 周の長さ・面積のどちらも綺麗な整数×πになる。
+  // 周の長さ = 2π(R+r1+r2) = 2π(2R) = 4πR
+  // 面積 = πR² − πr2² + πr1²
+  function genPlaneFigureComposite1() {
+    const askPerimeter = Math.random() < 0.5;
+    const r1 = randInt(1, 5);
+    const r2 = randInt(r1 + 1, r1 + 8);
+    const R = r1 + r2;
+    const scale = 60 / R;
+    const scaledR2 = r2 * scale, scaledR1 = r1 * scale;
+    const leftX = 70 - 60;
+    const medCenterX = leftX + scaledR2;
+    const smallCenterX = leftX + 2 * scaledR2 + scaledR1;
+    const questionHtml = `<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto 8px">`
+      + `<circle cx="70" cy="70" r="60" fill="#f2b84b" stroke="#1c2127" stroke-width="1.5"/>`
+      + `<circle cx="${medCenterX.toFixed(1)}" cy="70" r="${scaledR2.toFixed(1)}" fill="#e8f4f8" stroke="#1c2127" stroke-width="1.2"/>`
+      + `<circle cx="${smallCenterX.toFixed(1)}" cy="70" r="${scaledR1.toFixed(1)}" fill="#f2b84b" stroke="#1c2127" stroke-width="1.2"/>`
+      + `</svg>`;
+    if (askPerimeter) {
+      const perim = 4 * R;
+      const question = `右の図のように、半径${R}cmの大きい円の中に、半径${r2}cmと半径${r1}cmの円がぴったり並んで入っています（3つの円は同じ直線上で接しています）。色がついた部分の周の長さを求めなさい。`;
+      const answer = `${perim}π`;
+      const choices = piCh(perim);
+      const steps = [`大円の周 = 2π×${R} = ${2 * R}π`, `中円の周 = 2π×${r2} = ${2 * r2}π`, `小円の周 = 2π×${r1} = ${2 * r1}π`, `合計 = ${2 * R}π+${2 * r2}π+${2 * r1}π = ${perim}π cm`];
+      return { category: 'planeFigureComposite1', question, questionHtml, answer, choices, steps };
+    } else {
+      const area = R * R - r2 * r2 + r1 * r1;
+      const question = `右の図のように、半径${R}cmの大きい円の中に、半径${r2}cmと半径${r1}cmの円がぴったり並んで入っています（3つの円は同じ直線上で接しています）。色がついた部分の面積を求めなさい。`;
+      const answer = `${area}π`;
+      const choices = piCh(area);
+      const steps = [`大円の面積 = ${R}×${R}×π = ${R * R}π`, `中円の面積 = ${r2}×${r2}×π = ${r2 * r2}π`, `小円の面積 = ${r1}×${r1}×π = ${r1 * r1}π`, `色がついた部分 = 大円 − 中円 + 小円 = ${R * R}π−${r2 * r2}π+${r1 * r1}π = ${area}π cm²`];
+      return { category: 'planeFigureComposite1', question, questionHtml, answer, choices, steps };
+    }
+  }
+
   /* ---------- 作図（中1） ---------- */
 
   function genConstruction() {
@@ -5700,9 +5953,65 @@
   /* ---------- 空間図形（中1） ---------- */
 
   function genSolidFigure() {
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 9);
     let question, answer, choices, steps;
-    if (pat === 0) {
+    if (pat === 6) {
+      // 立体の名前あてクイズ
+      const solids = [
+        { name: '円錐', desc: '底面が円で、側面が曲面になっていて、頂点が1つある立体' },
+        { name: '直方体', desc: '6つの長方形（または正方形）の面でできた、箱の形をした立体' },
+        { name: '四角錐', desc: '底面が四角形で、側面がすべて三角形になっていて、頂点が1つある立体' },
+        { name: '球', desc: 'どの方向から見ても円に見える、ボールの形をした立体' },
+        { name: '三角錐', desc: '底面が三角形で、側面もすべて三角形になっていて、頂点が1つある立体' },
+        { name: '円柱', desc: '底面が2つの合同な円で、側面が曲面になっている立体' },
+      ];
+      const s = solids[randInt(0, solids.length - 1)];
+      question = `${s.desc}の立体の名前は？`;
+      answer = s.name;
+      choices = shuffle([s.name].concat(solids.filter(x => x.name !== s.name).map(x => x.name).sort(() => Math.random() - 0.5).slice(0, 3)));
+      steps = [`${s.desc} → ${s.name}`];
+    } else if (pat === 7) {
+      // 立体の各部分の名称
+      const terms = [
+        { q: '円錐の頂点から、底面の円周上の点までを結ぶ線分を何といいますか。', a: '母線' },
+        { q: '角錐や円錐で、底面ではない、まわりの面を何といいますか。', a: '側面' },
+        { q: '角柱や円柱で、上下に向かい合う2つの合同な面を何といいますか。', a: '底面' },
+        { q: '角柱や円柱で、底面に垂直な方向の長さを何といいますか。', a: '高さ' },
+        { q: '角錐や円錐で、底面と側面が交わってできる点を何といいますか。', a: '頂点' },
+      ];
+      const t = terms[randInt(0, terms.length - 1)];
+      question = t.q;
+      answer = t.a;
+      choices = shuffle([t.a].concat(terms.filter(x => x.a !== t.a).map(x => x.a).sort(() => Math.random() - 0.5).slice(0, 3)));
+      steps = [`${t.q} → ${t.a}`];
+    } else if (pat === 8) {
+      // 球の表面積 S = 4πr²
+      const r = randInt(2, 15);
+      const v = r * r * 4;
+      question = `半径 ${r} cm の球の表面積は？`;
+      answer = `${v}π`;
+      choices = piCh(v);
+      steps = [`表面積 = 4πr² = 4 × π × ${r}² = ${v}π cm²`];
+    } else if (pat === 9) {
+      // 半球の体積・表面積
+      const askVolume = Math.random() < 0.5;
+      if (askVolume) {
+        const rs = [3, 6, 9, 12];
+        const r = rs[randInt(0, rs.length - 1)];
+        const v = (4 * r * r * r / 3) / 2;
+        question = `半径 ${r} cm の半球の体積は？`;
+        answer = `${v}π`;
+        choices = piCh(v);
+        steps = [`球の体積 = (4/3)πr³ = (4/3) × π × ${r}³ = ${2 * v}π cm³`, `半球の体積 = 球の体積 ÷ 2 = ${v}π cm³`];
+      } else {
+        const r = randInt(2, 15);
+        const v = r * r * 3;
+        question = `半径 ${r} cm の半球の表面積は？（球の曲面部分＋平らな円の部分）`;
+        answer = `${v}π`;
+        choices = piCh(v);
+        steps = [`球の曲面部分 = 4πr² ÷ 2 = 2πr² = 2 × π × ${r}² = ${2 * r * r}π cm²`, `平らな円の部分 = πr² = ${r * r}π cm²`, `合計 = ${2 * r * r}π+${r * r}π = ${v}π cm²`];
+      }
+    } else if (pat === 0) {
       const l = randInt(2, 8), w = randInt(2, 8), h = randInt(2, 8);
       const v = l*w*h;
       question = `縦 ${l} cm、横 ${w} cm、高さ ${h} cm の直方体の体積は？`;
@@ -6245,6 +6554,11 @@
   const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'simulEqWordProblem2', 'quadEqWordProblem3'];
   const WORD_PROBLEM_FIXED_MP = 50;
   const WORD_PROBLEM_HP_GAIN = 10;
+  // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5'];
+  function isHpEarningCategory_(catId) {
+    return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
+  }
   // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選とは独立して、文章題の
   // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でスットボケの剣を
   // ゲットできる(斬鉄剣と同様、確実ではなく確率ドロップ)。
@@ -6598,7 +6912,7 @@
         : '';
       const complete = isCategoryCompleteToday(state, c.id);
       const completeBadge = complete ? `<span class="cat-complete-badge">🌟コンプリート</span>` : '';
-      const hpBadge = WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1
+      const hpBadge = isHpEarningCategory_(c.id)
         ? `<span class="cat-hp-badge" title="10問連続正解でHPが増える単元">❤️HP UP</span>`
         : '';
       return `
@@ -7167,7 +7481,7 @@
       state.streakAboveGrade = true;
 
       let hpBonusHtml = '';
-      if (isWordProblem) {
+      if (isHpEarningCategory_(catId)) {
         state.hp = (Number(state.hp) || 0) + WORD_PROBLEM_HP_GAIN;
         hpBonusHtml = ` +${WORD_PROBLEM_HP_GAIN}HP`;
       }
