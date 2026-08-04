@@ -6254,6 +6254,7 @@
     { name: 'キラキラアキラ',  emoji: '⭐' },
     { name: 'ナットウスライム', emoji: '🟫' },
     { name: 'ハナマルオ',      emoji: '⭕' },
+    { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
   ];
 
   const RARE_TYPES = {
