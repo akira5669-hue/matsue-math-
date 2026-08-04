@@ -250,47 +250,108 @@ function parseJsonCell_(raw, fallback) {
   }
 }
 
-function findStudentRow_(sheet, id) {
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim() === String(id).trim()) {
-      return {
-        rowIndex: i + 1, id: data[i][0], name: data[i][1], passwordHash: data[i][2], salt: data[i][3],
-        createdAt: data[i][4] || null,
-        grade: data[i][5] || '', points: Number(data[i][6]) || 0, guardian: data[i][7] || '',
-        level: Number(data[i][8]) || 1, exp: Number(data[i][9]) || 0, lastLogin: data[i][10] || null,
-        prefectureCount: Number(data[i][11]) || 0, avatar: data[i][12] || null,
-        apologyBonusGrantedAt: data[i][13] || null,
-        // items/rareCollected/rareDefeats/thinkerMilestoneは、以前はクライアント側の
-        // localStorageのみで管理していたため、同じIDを複数端末で使うと図鑑・アイテムの
-        // 状態が端末ごとにズレてしまう不具合があった。サーバー側にも保存・同期する。
-        items: parseJsonCell_(data[i][14], []),
-        rareCollected: parseJsonCell_(data[i][15], []),
-        rareDefeats: parseJsonCell_(data[i][16], {}),
-        thinkerMilestone: data[i][17] || null,
-        // 累計の正解数。handleLog_で正解のたびに1ずつ加算しておくことで、Recordsシート
-        // 全体を毎回スキャンしなくても「この生徒が実際に解いた問題数」を安く参照できる
-        // (syncPointsの妥当性チェックで、EXPが実際の正解数に見合っているかの検証に使う)。
-        loggedCorrectCount: Number(data[i][18]) || 0,
-        // 本日(日本時間)の正解数/出題数。{date, correct, total}。日付が変わった分は
-        // handleLog_側でリセットしてから加算するので、ここでは生の値をそのまま返す。
-        todayStats: parseJsonCell_(data[i][19], null),
-        // HP: 文章題を正解するたびに+10される新ステータス。
-        hp: Number(data[i][20]) || 0,
-        // ランキングテスト(数学)を最後に提出した月(yyyy-MM)。月1回の提出制限に使う。
-        // 万一過去に日付型として保存されてしまった行が残っていても比較できるよう、
-        // Dateならyyyy-MM文字列に変換してから返す。
-        lastRankingTestMonth: (data[i][21] instanceof Date) ? monthKeyTokyo_(data[i][21]) : (data[i][21] || null),
-        // 世界一周: 現在の周(1周目=1)・その周の開始レベル・ステージ別ボス撃破状況・
-        // 撃破済みボス(仲間)一覧。
-        worldLap: Number(data[i][22]) || 1,
-        worldLapStartLevel: Number(data[i][23]) || 100,
-        worldBossDefeated: parseJsonCell_(data[i][24], {}),
-        worldAllies: parseJsonCell_(data[i][25], [])
-      };
+// 生徒IDが増えるにつれ、毎リクエストごとにStudentsシート全体を読んで先頭から線形
+// 探索するコスト(getDataRange)が無視できなくなってきたため、「ID→行番号」の索引を
+// CacheServiceにキャッシュし、通常は該当行だけをピンポイントで読むようにしている。
+// 索引が古くなっていても(行の削除等で行番号がずれていても)、読んだ行のID列が
+// 期待と一致するか必ず検証し、不一致なら索引を作り直して1回だけ再試行するため、
+// 誤った生徒のデータを返すことはない(自己修復する)。
+var STUDENT_ID_INDEX_CACHE_KEY_ = 'studentIdIndex_v1';
+var STUDENT_ID_INDEX_CACHE_TTL_ = 21600; // CacheServiceの最大値(6時間)
+var STUDENT_ROW_COLUMNS_ = 26; // id 〜 worldAllies
+
+function rebuildStudentIdIndex_(sheet) {
+  var lastRow = sheet.getLastRow();
+  var index = {};
+  if (lastRow >= 2) {
+    var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < ids.length; i++) {
+      var id = String(ids[i][0]).trim();
+      if (id) index[id] = i + 2;
     }
   }
-  return null;
+  CacheService.getScriptCache().put(STUDENT_ID_INDEX_CACHE_KEY_, JSON.stringify(index), STUDENT_ID_INDEX_CACHE_TTL_);
+  return index;
+}
+
+function getStudentIdIndex_(sheet) {
+  var cached = CacheService.getScriptCache().get(STUDENT_ID_INDEX_CACHE_KEY_);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (e) { /* 壊れていたら作り直す */ }
+  }
+  return rebuildStudentIdIndex_(sheet);
+}
+
+// 新規登録でシートに1行appendした直後に呼び、索引全体を作り直さずに1件だけ追記する。
+function addToStudentIdIndex_(id, rowIndex) {
+  var cached = CacheService.getScriptCache().get(STUDENT_ID_INDEX_CACHE_KEY_);
+  var index = {};
+  if (cached) { try { index = JSON.parse(cached); } catch (e) { index = {}; } }
+  index[id] = rowIndex;
+  CacheService.getScriptCache().put(STUDENT_ID_INDEX_CACHE_KEY_, JSON.stringify(index), STUDENT_ID_INDEX_CACHE_TTL_);
+}
+
+function buildStudentRowObject_(rowIndex, d) {
+  return {
+    rowIndex: rowIndex, id: d[0], name: d[1], passwordHash: d[2], salt: d[3],
+    createdAt: d[4] || null,
+    grade: d[5] || '', points: Number(d[6]) || 0, guardian: d[7] || '',
+    level: Number(d[8]) || 1, exp: Number(d[9]) || 0, lastLogin: d[10] || null,
+    prefectureCount: Number(d[11]) || 0, avatar: d[12] || null,
+    apologyBonusGrantedAt: d[13] || null,
+    // items/rareCollected/rareDefeats/thinkerMilestoneは、以前はクライアント側の
+    // localStorageのみで管理していたため、同じIDを複数端末で使うと図鑑・アイテムの
+    // 状態が端末ごとにズレてしまう不具合があった。サーバー側にも保存・同期する。
+    items: parseJsonCell_(d[14], []),
+    rareCollected: parseJsonCell_(d[15], []),
+    rareDefeats: parseJsonCell_(d[16], {}),
+    thinkerMilestone: d[17] || null,
+    // 累計の正解数。handleLog_で正解のたびに1ずつ加算しておくことで、Recordsシート
+    // 全体を毎回スキャンしなくても「この生徒が実際に解いた問題数」を安く参照できる
+    // (syncPointsの妥当性チェックで、EXPが実際の正解数に見合っているかの検証に使う)。
+    loggedCorrectCount: Number(d[18]) || 0,
+    // 本日(日本時間)の正解数/出題数。{date, correct, total}。日付が変わった分は
+    // handleLog_側でリセットしてから加算するので、ここでは生の値をそのまま返す。
+    todayStats: parseJsonCell_(d[19], null),
+    // HP: 文章題を正解するたびに+10される新ステータス。
+    hp: Number(d[20]) || 0,
+    // ランキングテスト(数学)を最後に提出した月(yyyy-MM)。月1回の提出制限に使う。
+    // 万一過去に日付型として保存されてしまった行が残っていても比較できるよう、
+    // Dateならyyyy-MM文字列に変換してから返す。
+    lastRankingTestMonth: (d[21] instanceof Date) ? monthKeyTokyo_(d[21]) : (d[21] || null),
+    // 世界一周: 現在の周(1周目=1)・その周の開始レベル・ステージ別ボス撃破状況・
+    // 撃破済みボス(仲間)一覧。
+    worldLap: Number(d[22]) || 1,
+    worldLapStartLevel: Number(d[23]) || 100,
+    worldBossDefeated: parseJsonCell_(d[24], {}),
+    worldAllies: parseJsonCell_(d[25], [])
+  };
+}
+
+function readStudentRowAt_(sheet, rowIndex) {
+  if (!rowIndex || rowIndex < 2 || rowIndex > sheet.getLastRow()) return null;
+  return sheet.getRange(rowIndex, 1, 1, STUDENT_ROW_COLUMNS_).getValues()[0];
+}
+
+function findStudentRow_(sheet, id) {
+  id = String(id).trim();
+  if (!id) return null;
+
+  var index = getStudentIdIndex_(sheet);
+  var rowIndex = index[id];
+  if (rowIndex) {
+    var d = readStudentRowAt_(sheet, rowIndex);
+    if (d && String(d[0]).trim() === id) return buildStudentRowObject_(rowIndex, d);
+  }
+
+  // 索引に無い、または行がずれている(削除等で古くなった)場合は索引を作り直して1回だけ
+  // 再試行する。ここで一致しなければ本当に存在しないIDとして扱う。
+  index = rebuildStudentIdIndex_(sheet);
+  rowIndex = index[id];
+  if (!rowIndex) return null;
+  var d2 = readStudentRowAt_(sheet, rowIndex);
+  if (!d2 || String(d2[0]).trim() !== id) return null;
+  return buildStudentRowObject_(rowIndex, d2);
 }
 
 function jsonOut_(obj) {
@@ -362,11 +423,14 @@ function handleCheckId_(ctx, body) {
   return { ok: true, found: true, hasPassword: !!row.passwordHash, name: row.name };
 }
 
+// 以前はシート全体を毎回読んで最大IDを走査していたが、これはregister中ずっと
+// (他の全生徒の操作をブロックする)グローバルロックを持ったまま行っていたため、
+// 登録が混雑する時間帯にロック待ちが連鎖して重くなる一因になっていた。ID索引の
+// キャッシュ(getStudentIdIndex_)を使えばシートを読まずに済む。
 function nextStudentId_(sheet) {
-  var data = sheet.getDataRange().getValues();
+  var index = getStudentIdIndex_(sheet);
   var max = 0;
-  for (var i = 1; i < data.length; i++) {
-    var idStr = String(data[i][0]).trim();
+  for (var idStr in index) {
     if (/^\d{5}$/.test(idStr)) {
       var n = parseInt(idStr, 10);
       if (n > max) max = n;
@@ -394,6 +458,7 @@ function handleRegister_(ctx, body) {
     ctx.students.getRange(rowIndex, 1).setNumberFormat('@').setValue(id);
     var now = new Date();
     ctx.students.getRange(rowIndex, 2, 1, 10).setValues([[name, hash, salt, now, grade, 0, guardian, 1, 0, now]]);
+    addToStudentIdIndex_(id, rowIndex);
     return { ok: true, id: id, name: name };
   } finally {
     lock.releaseLock();
@@ -1239,53 +1304,65 @@ function handleSubmitTestPhoto_(ctx, body) {
     }
   }
 
+  // 事前チェック(ロック不要)：失敗しやすい経路を先に弾いておき、後段のDriveアップロード
+  // (ネットワークI/Oで数百ms〜数秒かかる)を無駄にロックの中で待たせないようにする。
+  var precheckRow = findStudentRow_(ctx.students, id);
+  if (!precheckRow) return { ok: false, error: 'not_found' };
+  if (testType === 'ranking' && RANKING_TEST_BLOCKED_GRADES_.indexOf(precheckRow.grade) !== -1) {
+    return { ok: false, error: 'elementary_not_allowed' };
+  }
+  var currentMonth = monthKeyTokyo_(new Date());
+  // ランキングテストは月1回まで。写真自体は3週間で自動削除されるため、TestPhotosの
+  // 履歴をスキャンするのではなく、Studentsシートに「最後に提出した月」を別途持たせて
+  // 判定する(3週間の保存期限と月1回の制限が食い違わないようにするため)。
+  if (testType === 'ranking' && precheckRow.lastRankingTestMonth === currentMonth) {
+    return { ok: false, error: 'already_submitted_this_month' };
+  }
+
+  // Driveへの画像アップロードはシートの読み書きと違って時間がかかるため、グローバル
+  // ロックを取る前に行う(他の生徒の同時リクエストをここで待たせないため)。
+  var driveFileId = saveTestPhotoToDrive_(id, imageBase64, mimeType);
+
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
+  var result;
   try {
+    // ロック外で読んだprecheckRowは古い可能性があるため、ロック内で再取得して確定する
     var row = findStudentRow_(ctx.students, id);
-    if (!row) return { ok: false, error: 'not_found' };
-
-    if (testType === 'ranking' && RANKING_TEST_BLOCKED_GRADES_.indexOf(row.grade) !== -1) {
-      return { ok: false, error: 'elementary_not_allowed' };
-    }
-
-    var currentMonth = monthKeyTokyo_(new Date());
-    // ランキングテストは月1回まで。写真自体は3週間で自動削除されるため、TestPhotosの
-    // 履歴をスキャンするのではなく、Studentsシートに「最後に提出した月」を別途持たせて
-    // 判定する(3週間の保存期限と月1回の制限が食い違わないようにするため)。
-    if (testType === 'ranking' && row.lastRankingTestMonth === currentMonth) {
-      return { ok: false, error: 'already_submitted_this_month' };
-    }
-
-    var pointsAwarded = 0;
-    var tierUsed = '';
-    if (testType === 'ranking') {
-      if (tier) { pointsAwarded = tier.mp; tierUsed = tier.id; }
-      // setNumberFormat('@')を付けないと、"2026-08"のような日付に見える文字列をシートが
-      // 自動的に日付型へ変換してしまい、次回の文字列比較(===currentMonth)が常にfalseになって
-      // 月1回の制限が効かなくなる不具合があった(生徒IDが数値化されてしまうのと同じ原因)。
-      ctx.students.getRange(row.rowIndex, 22).setNumberFormat('@').setValue(currentMonth);
+    if (!row) {
+      result = { ok: false, error: 'not_found' };
+    } else if (testType === 'ranking' && row.lastRankingTestMonth === currentMonth) {
+      result = { ok: false, error: 'already_submitted_this_month' };
     } else {
-      var today = dateKeyTokyo_(new Date());
-      var todayTotal = sumPenaPointsToday_(ctx, id, today);
-      pointsAwarded = Math.max(0, Math.min(PENA_TEST_MP_PER_SHEET_, PENA_TEST_DAILY_CAP_MP_ - todayTotal));
+      var pointsAwarded = 0;
+      var tierUsed = '';
+      if (testType === 'ranking') {
+        if (tier) { pointsAwarded = tier.mp; tierUsed = tier.id; }
+        // setNumberFormat('@')を付けないと、"2026-08"のような日付に見える文字列をシートが
+        // 自動的に日付型へ変換してしまい、次回の文字列比較(===currentMonth)が常にfalseになって
+        // 月1回の制限が効かなくなる不具合があった(生徒IDが数値化されてしまうのと同じ原因)。
+        ctx.students.getRange(row.rowIndex, 22).setNumberFormat('@').setValue(currentMonth);
+      } else {
+        var today = dateKeyTokyo_(new Date());
+        var todayTotal = sumPenaPointsToday_(ctx, id, today);
+        pointsAwarded = Math.max(0, Math.min(PENA_TEST_MP_PER_SHEET_, PENA_TEST_DAILY_CAP_MP_ - todayTotal));
+      }
+
+      var newTotalPoints = row.points + pointsAwarded;
+      if (pointsAwarded > 0) {
+        ctx.students.getRange(row.rowIndex, 7).setValue(newTotalPoints);
+      }
+
+      var now = new Date();
+      var expiresAt = new Date(now.getTime() + TEST_PHOTO_RETENTION_DAYS_ * 24 * 60 * 60 * 1000);
+      ctx.testPhotos.appendRow([now, id, row.name, testType, tierUsed, pointsAwarded, driveFileId, expiresAt]);
+
+      result = { ok: true, pointsAwarded: pointsAwarded, newTotalPoints: newTotalPoints };
     }
-
-    var driveFileId = saveTestPhotoToDrive_(id, imageBase64, mimeType);
-
-    var newTotalPoints = row.points + pointsAwarded;
-    if (pointsAwarded > 0) {
-      ctx.students.getRange(row.rowIndex, 7).setValue(newTotalPoints);
-    }
-
-    var now = new Date();
-    var expiresAt = new Date(now.getTime() + TEST_PHOTO_RETENTION_DAYS_ * 24 * 60 * 60 * 1000);
-    ctx.testPhotos.appendRow([now, id, row.name, testType, tierUsed, pointsAwarded, driveFileId, expiresAt]);
-
-    cleanupExpiredTestPhotos_(ctx);
-
-    return { ok: true, pointsAwarded: pointsAwarded, newTotalPoints: newTotalPoints };
   } finally {
     lock.releaseLock();
   }
+  // Driveの掲示掃除(期限切れ写真の削除)もネットワークI/Oを伴うため、ロックの外で行う。
+  cleanupExpiredTestPhotos_(ctx);
+  return result;
 }
