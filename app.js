@@ -5869,14 +5869,18 @@
     const leftX = 70 - 60;
     const medCenterX = leftX + scaledR2;
     const smallCenterX = leftX + 2 * scaledR2 + scaledR1;
-    const questionHtml = `<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto 8px">`
+    const diagramSvg = `<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto 8px">`
       + `<circle cx="70" cy="70" r="60" fill="#f2b84b" stroke="#1c2127" stroke-width="1.5"/>`
       + `<circle cx="${medCenterX.toFixed(1)}" cy="70" r="${scaledR2.toFixed(1)}" fill="#e8f4f8" stroke="#1c2127" stroke-width="1.2"/>`
       + `<circle cx="${smallCenterX.toFixed(1)}" cy="70" r="${scaledR1.toFixed(1)}" fill="#f2b84b" stroke="#1c2127" stroke-width="1.2"/>`
+      + `<text x="70" y="20" font-size="11" text-anchor="middle">半径${R}cm</text>`
+      + `<text x="${medCenterX.toFixed(1)}" y="${(70 - scaledR2 - 6).toFixed(1)}" font-size="10" text-anchor="middle">${r2}cm</text>`
+      + `<text x="${smallCenterX.toFixed(1)}" y="${(70 - scaledR1 - 6).toFixed(1)}" font-size="10" text-anchor="middle">${r1}cm</text>`
       + `</svg>`;
     if (askPerimeter) {
       const perim = 4 * R;
       const question = `右の図のように、半径${R}cmの大きい円の中に、半径${r2}cmと半径${r1}cmの円がぴったり並んで入っています（3つの円は同じ直線上で接しています）。色がついた部分の周の長さを求めなさい。`;
+      const questionHtml = diagramSvg + `<span style="display:block">${question}</span>`;
       const answer = `${perim}π`;
       const choices = piCh(perim);
       const steps = [`大円の周 = 2π×${R} = ${2 * R}π`, `中円の周 = 2π×${r2} = ${2 * r2}π`, `小円の周 = 2π×${r1} = ${2 * r1}π`, `合計 = ${2 * R}π+${2 * r2}π+${2 * r1}π = ${perim}π cm`];
@@ -5884,6 +5888,7 @@
     } else {
       const area = R * R - r2 * r2 + r1 * r1;
       const question = `右の図のように、半径${R}cmの大きい円の中に、半径${r2}cmと半径${r1}cmの円がぴったり並んで入っています（3つの円は同じ直線上で接しています）。色がついた部分の面積を求めなさい。`;
+      const questionHtml = diagramSvg + `<span style="display:block">${question}</span>`;
       const answer = `${area}π`;
       const choices = piCh(area);
       const steps = [`大円の面積 = ${R}×${R}×π = ${R * R}π`, `中円の面積 = ${r2}×${r2}×π = ${r2 * r2}π`, `小円の面積 = ${r1}×${r1}×π = ${r1 * r1}π`, `色がついた部分 = 大円 − 中円 + 小円 = ${R * R}π−${r2 * r2}π+${r1 * r1}π = ${area}π cm²`];
