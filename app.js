@@ -6534,7 +6534,9 @@
   const RARE_CHANCE_WARISU = (1 / 50) * RARE_SCALE;
   const RARE_CHANCE_MISTAKEKING = (1 / 10) * RARE_SCALE;
   const RARE_CHANCE_INUDA = (1 / 20) * RARE_SCALE;
-  const RARE_CHANCE_DOUBLEORHALF = (1 / 50) * RARE_SCALE;
+  // ダブルorハーフだけは他のレアキャラと違い、RARE_SCALEによる相対スケールを使わず
+  // 最終的な出現率を直接0.5%に固定する。
+  const RARE_CHANCE_DOUBLEORHALF = 0.005;
   const RARE_CHANCE_IINE = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SOUBUSEN = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_NATTOMAN = (1 / 50) * RARE_SCALE;
