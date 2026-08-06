@@ -39,6 +39,60 @@
     }).then(function (res) { return res.json(); });
   }
 
+  // 「log」送信(正解数の記録)は、通信が不安定な端末だと失敗しても再送されず、
+  // その分だけサーバー側の記録正解数が実際より少なくなる不具合があった。経験値は
+  // 通信の成否に関係なく端末側で加算され続けるため、記録との差が開き、不正検知の
+  // 妥当性チェックで正当な経験値まで削られてしまうことがあった。失敗したlog送信を
+  // localStorageにキューイングし、後で自動的に再送する。
+  var LOG_QUEUE_KEY_ = 'pendingLogQueue';
+  var LOG_QUEUE_MAX_ = 500;
+  var logQueueFlushing = false;
+
+  function loadLogQueue_() {
+    try {
+      var raw = localStorage.getItem(LOG_QUEUE_KEY_);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
+  }
+  function saveLogQueue_(queue) {
+    try { localStorage.setItem(LOG_QUEUE_KEY_, JSON.stringify(queue)); } catch (e) { }
+  }
+  function enqueueLog_(entry) {
+    var queue = loadLogQueue_();
+    queue.push(entry);
+    if (queue.length > LOG_QUEUE_MAX_) queue = queue.slice(queue.length - LOG_QUEUE_MAX_);
+    saveLogQueue_(queue);
+  }
+  // キューを先頭から1件ずつ順番に再送する(並列で大量送信してサーバーに負荷をかけない
+  // ため)。成功した分だけキューから取り除き、失敗したら打ち切って次回の呼び出しに
+  // 委ねる(以後の項目の並び順は保つ)。
+  function flushLogQueue_() {
+    if (logQueueFlushing) return;
+    var queue = loadLogQueue_();
+    if (queue.length === 0) return;
+    logQueueFlushing = true;
+    var next = queue[0];
+    apiPost('log', next).then(function (res) {
+      logQueueFlushing = false;
+      if (res && res.ok) {
+        var remaining = loadLogQueue_();
+        remaining.shift();
+        saveLogQueue_(remaining);
+        flushLogQueue_();
+      }
+    }).catch(function () {
+      logQueueFlushing = false;
+    });
+  }
+  function logAnswer_(entry) {
+    apiPost('log', entry).then(function (res) {
+      if (!res || !res.ok) enqueueLog_(entry);
+    }).catch(function () {
+      enqueueLog_(entry);
+    });
+  }
+
   function loadSession() {
     try {
       var raw = localStorage.getItem(SESSION_KEY);
@@ -7437,7 +7491,7 @@
     });
 
     if (session && session.id) {
-      apiPost('log', { id: session.id, category: catId, correct: isCorrect }).catch(function () { });
+      logAnswer_({ id: session.id, category: catId, correct: isCorrect });
     }
 
     const q = state.current;
@@ -9630,6 +9684,11 @@
   els.weeklyQuizToggle.addEventListener('click', toggleWeeklyQuiz);
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
+
+  // 未送信のlogキューを、起動時・オンライン復帰時・定期的(2分ごと)に再送を試みる。
+  flushLogQueue_();
+  window.addEventListener('online', flushLogQueue_);
+  setInterval(flushLogQueue_, 2 * 60 * 1000);
 
   var existingSession = loadSession();
   if (existingSession) {
