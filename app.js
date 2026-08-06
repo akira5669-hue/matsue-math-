@@ -6260,6 +6260,7 @@
     { name: 'ナットウスライム', emoji: '🟫' },
     { name: 'ハナマルオ',      emoji: '⭕' },
     { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
+    { name: 'かっこっこ',      emoji: '🐤', img: 'images/kakkokko.jpg' },
   ];
 
   const RARE_TYPES = {
