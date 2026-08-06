@@ -140,6 +140,36 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
+  // 追加してから何日以内かどうか(NEW🌟バッジの表示判定用)。dateStrは'YYYY-MM-DD'。
+  var NEW_BADGE_DAYS_ = 10;
+  function isRecentlyAdded(dateStr) {
+    if (!dateStr) return false;
+    var added = new Date(dateStr + 'T00:00:00');
+    if (isNaN(added.getTime())) return false;
+    var diffDays = (new Date(todayKey() + 'T00:00:00') - added) / (24 * 60 * 60 * 1000);
+    return diffDays >= 0 && diffDays < NEW_BADGE_DAYS_;
+  }
+
+  // メニューのボタン・カード見出しにNEW🌟バッジを付ける。追加日から1週間経つと
+  // 自動的に表示されなくなる。
+  var NEW_MENU_ITEMS_ = [
+    { el: 'weeklyQuizToggle', addedDate: '2026-08-06' },
+    { el: 'hyakuMasuCardTitle', addedDate: '2026-08-06' },
+    { el: 'challengeTestCardTitle', addedDate: '2026-08-06' },
+    { el: 'rankingTabChallenge', addedDate: '2026-08-06' },
+  ];
+  function applyMenuNewBadges() {
+    NEW_MENU_ITEMS_.forEach(function (item) {
+      var node = els[item.el];
+      if (!node || !isRecentlyAdded(item.addedDate)) return;
+      var badge = document.createElement('span');
+      badge.className = 'menu-new-badge';
+      badge.textContent = 'NEW🌟';
+      node.appendChild(document.createTextNode(' '));
+      node.appendChild(badge);
+    });
+  }
+
   // 本日の獲得MP上限(pointsToday/pointsDate)・アイテム・レアキャラ図鑑(rareDefeats/
   // rareCollected)・考えるAKRの出現状態(thinkerMilestone)は、ログアウト時にmatsue-math-game
   // ごと消去されると「ログアウトしてまたログインするだけで今日の上限がリセットされてMPが
@@ -1578,24 +1608,24 @@
     { id: 'subst',      label: '代入の計算（中1）',               gen: genSubst },
     { id: 'maxof4',     label: '大小関係（中1）',                 gen: genMaxOf4 },
     { id: 'equation',   label: '一次方程式（中1）',               gen: genEquation },
-    { id: 'eqWordProblem1', label: '方程式の文章題（中1）',        gen: genEqWordProblem1 },
+    { id: 'eqWordProblem1', label: '方程式の文章題（中1）',        gen: genEqWordProblem1 , addedDate: '2026-08-01' },
     { id: 'proportion', label: '比例・反比例（中1）',             gen: genProportion },
     { id: 'linearMul',   label: '1次式×÷数（中1）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）',             gen: genLinearAddSub },
     { id: 'planeFigure', label: '平面図形（中1）',                gen: genPlaneFigure },
-    { id: 'planeFigureComposite1', label: '平面図形の複合図形（中1）', gen: genPlaneFigureComposite1, defaultOff: true },
+    { id: 'planeFigureComposite1', label: '平面図形の複合図形（中1）', gen: genPlaneFigureComposite1, defaultOff: true , addedDate: '2026-08-03' },
     { id: 'solidFigure', label: '空間図形（中1）',                gen: genSolidFigure },
     { id: 'construction', label: '作図（中1）',                    gen: genConstruction },
 
     // ---------- 中2 ----------
     { id: 'simul',      label: '連立方程式（中2）',               gen: genSimul },
-    { id: 'simulEqWordProblem2', label: '連立方程式の文章題（中2）', gen: genSimulEqWordProblem2 },
+    { id: 'simulEqWordProblem2', label: '連立方程式の文章題（中2）', gen: genSimulEqWordProblem2 , addedDate: '2026-08-01' },
     { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
-    { id: 'polyCalc2',  label: '式の計算（中2）',                  gen: genPolyCalc2 },
+    { id: 'polyCalc2',  label: '式の計算（中2）',                  gen: genPolyCalc2 , addedDate: '2026-08-02' },
 
     // ---------- 中3 ----------
     { id: 'expand2',    label: '式の展開・基本（中3）',           gen: genExpand2 },
@@ -1604,7 +1634,7 @@
     { id: 'sqrt',       label: '平方根の計算（中3）',             gen: genSqrt },
     { id: 'sqrtmd',     label: '√のかけ算・割り算（中3）',       gen: genSqrtMulDiv },
     { id: 'quadratic',  label: '二次方程式（中3）',               gen: genQuadratic },
-    { id: 'quadEqWordProblem3', label: '二次方程式の文章題（中3）', gen: genQuadEqWordProblem3 },
+    { id: 'quadEqWordProblem3', label: '二次方程式の文章題（中3）', gen: genQuadEqWordProblem3 , addedDate: '2026-08-01' },
     { id: 'quadfunc',   label: '二次関数（中3）',                 gen: genQuadFunc },
     { id: 'similarity',   label: '三角形の相似（中3）',            gen: genSimilarity },
     { id: 'circleAngle', label: '円周角（中3）',                   gen: genCircleAngle },
@@ -1626,37 +1656,37 @@
     { id: 'div3by3_4',      label: '3桁÷3桁のわり算（小4）',             gen: genDiv3by3_4,      defaultOff: true },
     { id: 'rectArea4',      label: '長方形・正方形の面積（小4）',        gen: genRectArea4,      defaultOff: true },
     { id: 'largeNum4',      label: '億・兆の大きな数（小4）',             gen: genLargeNum4,      defaultOff: true },
-    { id: 'decAddSubMixed4', label: '小数のたし算・ひき算：発展（小4）',  gen: genDecAddSubMixed4, defaultOff: true },
-    { id: 'setSquareAngle4', label: '三角じょうぎの角度（小4）',           gen: genSetSquareAngle4, defaultOff: true },
-    { id: 'timesWordProblem4', label: '倍の見方の文章題（小4）',           gen: genTimesWordProblem4, defaultOff: true },
+    { id: 'decAddSubMixed4', label: '小数のたし算・ひき算：発展（小4）',  gen: genDecAddSubMixed4, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'setSquareAngle4', label: '三角じょうぎの角度（小4）',           gen: genSetSquareAngle4, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'timesWordProblem4', label: '倍の見方の文章題（小4）',           gen: genTimesWordProblem4, defaultOff: true , addedDate: '2026-08-02' },
 
     // ---------- 小5 ----------
-    { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true },
-    { id: 'evenOdd5',        label: '偶数と奇数（小5）',                   gen: genEvenOdd5,        defaultOff: true },
+    { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'evenOdd5',        label: '偶数と奇数（小5）',                   gen: genEvenOdd5,        defaultOff: true , addedDate: '2026-08-02' },
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
-    { id: 'decFracAddSub5',  label: '小数と分数のたし算・ひき算（小5）',   gen: genDecFracAddSub5,  defaultOff: true },
+    { id: 'decFracAddSub5',  label: '小数と分数のたし算・ひき算（小5）',   gen: genDecFracAddSub5,  defaultOff: true , addedDate: '2026-08-01' },
     { id: 'fracReduceConvert5', label: '約分・通分（小5）',                gen: genFracReduceConvert5, defaultOff: true },
     { id: 'decMul5',         label: '小数のかけ算（小5）',                 gen: genDecMul5,         defaultOff: true },
     { id: 'decDiv5',         label: '小数のわり算（小5）',                 gen: genDecDiv5,         defaultOff: true },
-    { id: 'decDivRemainder5', label: '小数のわり算：あまり・がい数（小5）', gen: genDecDivRemainder5, defaultOff: true },
-    { id: 'decWordProblem5', label: '小数の文章題（小5）',                 gen: genDecWordProblem5, defaultOff: true },
+    { id: 'decDivRemainder5', label: '小数のわり算：あまり・がい数（小5）', gen: genDecDivRemainder5, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'decWordProblem5', label: '小数の文章題（小5）',                 gen: genDecWordProblem5, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
-    { id: 'unitRateWordProblem5', label: '単位量あたりの大きさの文章題（小5）', gen: genUnitRateWordProblem5, defaultOff: true },
-    { id: 'timeFraction5',   label: '時間と分数（小5）',                   gen: genTimeFraction5,   defaultOff: true },
+    { id: 'unitRateWordProblem5', label: '単位量あたりの大きさの文章題（小5）', gen: genUnitRateWordProblem5, defaultOff: true , addedDate: '2026-08-03' },
+    { id: 'timeFraction5',   label: '時間と分数（小5）',                   gen: genTimeFraction5,   defaultOff: true , addedDate: '2026-08-03' },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
     { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
     { id: 'polygonAngle5',   label: '図形の角（小5）',                     gen: genPolygonAngle5,   defaultOff: true },
     { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',       gen: genFracDecConvert5, defaultOff: true },
-    { id: 'fracDecimal5',    label: '分数と小数（小5）',                   gen: genFracDecimal5,    defaultOff: true },
+    { id: 'fracDecimal5',    label: '分数と小数（小5）',                   gen: genFracDecimal5,    defaultOff: true , addedDate: '2026-08-02' },
     { id: 'average5',        label: '平均（小5）',                         gen: genAverage5,        defaultOff: true },
     { id: 'circumference5',  label: '円周（小5）',                         gen: genCircumference5,  defaultOff: true },
 
     // ---------- 小6 ----------
     { id: 'fracMulDiv6',     label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6,     defaultOff: true },
-    { id: 'fracDecIntMulDiv6', label: '分数、小数、整数のまじったかけ算・わり算（小6）', gen: genFracDecIntMulDiv6, defaultOff: true },
-    { id: 'fracWordProblem6', label: '分数のかけ算・わり算の文章題（小6）', gen: genFracWordProblem6, defaultOff: true },
-    { id: 'ratioWordProblem6', label: '比の文章題（小6）',                  gen: genRatioWordProblem6, defaultOff: true },
+    { id: 'fracDecIntMulDiv6', label: '分数、小数、整数のまじったかけ算・わり算（小6）', gen: genFracDecIntMulDiv6, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'fracWordProblem6', label: '分数のかけ算・わり算の文章題（小6）', gen: genFracWordProblem6, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'ratioWordProblem6', label: '比の文章題（小6）',                  gen: genRatioWordProblem6, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'ratio6',          label: '比（小6）',                           gen: genRatio6,          defaultOff: true },
     { id: 'scale6',          label: '拡大図と縮図（小6）',                 gen: genScale6,          defaultOff: true },
     { id: 'dataValues6',     label: 'データの調べ方（小6）',               gen: genDataValues6,     defaultOff: true },
@@ -1667,8 +1697,8 @@
     { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
     { id: 'largeNum3',       label: '大きな数（小3）',                     gen: genLargeNum3,       defaultOff: true },
     { id: 'clockTime3',      label: '時こくと時間（小3）',                 gen: genClockTime3,      defaultOff: true },
-    { id: 'addSub3Digit3',   label: 'たし算とひき算：3けた以上（小3）',    gen: genAddSub3Digit3,   defaultOff: true },
-    { id: 'units3',          label: '単位の関係（小3）',                   gen: genUnits3,          defaultOff: true },
+    { id: 'addSub3Digit3',   label: 'たし算とひき算：3けた以上（小3）',    gen: genAddSub3Digit3,   defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'units3',          label: '単位の関係（小3）',                   gen: genUnits3,          defaultOff: true , addedDate: '2026-08-02' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -6965,12 +6995,14 @@
     rankingTestConfirmNo: document.getElementById('rankingTestConfirmNo'),
     rankingTestResult: document.getElementById('rankingTestResult'),
     hyakuMasuCard: document.getElementById('hyakuMasuCard'),
+    hyakuMasuCardTitle: document.getElementById('hyakuMasuCardTitle'),
     hyakuMasuHint: document.getElementById('hyakuMasuHint'),
     hyakuMasuConfirmCheckbox: document.getElementById('hyakuMasuConfirmCheckbox'),
     hyakuMasuFileInput: document.getElementById('hyakuMasuFileInput'),
     hyakuMasuSubmitBtn: document.getElementById('hyakuMasuSubmitBtn'),
     hyakuMasuResult: document.getElementById('hyakuMasuResult'),
     challengeTestCard: document.getElementById('challengeTestCard'),
+    challengeTestCardTitle: document.getElementById('challengeTestCardTitle'),
     challengeTestHint: document.getElementById('challengeTestHint'),
     challengeTestFileInput: document.getElementById('challengeTestFileInput'),
     challengeTierRow: document.getElementById('challengeTierRow'),
@@ -7022,10 +7054,11 @@
       const hpBadge = isHpEarningCategory_(c.id)
         ? `<span class="cat-hp-badge" title="10問連続正解でHPが増える単元">❤️HP UP</span>`
         : '';
+      const newBadge = isRecentlyAdded(c.addedDate) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
       return `
         <label class="settings-item${complete ? ' is-daily-complete' : ''}">
           <input type="checkbox" data-cat="${c.id}" ${(state.enabled.has(c.id) && !complete) ? 'checked' : ''} ${complete ? 'disabled' : ''} />
-          <span class="cat-label">${c.label}</span>${hpBadge}${acc}${completeBadge}
+          <span class="cat-label">${c.label}</span>${newBadge}${hpBadge}${acc}${completeBadge}
         </label>
       `;
     }).join('');
@@ -9684,6 +9717,8 @@
   els.weeklyQuizToggle.addEventListener('click', toggleWeeklyQuiz);
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
+
+  applyMenuNewBadges();
 
   // 未送信のlogキューを、起動時・オンライン復帰時・定期的(2分ごと)に再送を試みる。
   flushLogQueue_();
