@@ -187,6 +187,7 @@
         <button id="worldToggle" class="ghost-btn" type="button" hidden>🌍世界制覇</button>
         <button id="grantToggle" class="ghost-btn" type="button" hidden>🎁アイテム付与</button>
         <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
+        <button id="weeklyQuizToggle" class="ghost-btn" type="button">🧠週替わり重要ワード</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
       </div>
     </section>
@@ -225,6 +226,7 @@
         <button type="button" class="login-tab" id="rankingTabPoints" role="tab" aria-selected="false" hidden>MPランキング</button>
         <button type="button" class="login-tab" id="rankingTabGrade" role="tab" aria-selected="false">学年別ランキング</button>
         <button type="button" class="login-tab" id="rankingTabHp" role="tab" aria-selected="false">HPランキング</button>
+        <button type="button" class="login-tab" id="rankingTabChallenge" role="tab" aria-selected="false">チャレンジ問題正解ランキング</button>
       </div>
       <p class="ranking-hp-hint" id="rankingHpHint" hidden>❤️ HPは、文章題（❤️HP UPマークのついた単元）を10問連続正解するごとに貯まります。今後、世界一周を進めるときにも使う予定です。</p>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
@@ -233,6 +235,23 @@
       <div class="ranking-nearby" id="rankingNearby" hidden>
         <p class="ranking-nearby-title">🔎 あなたの順位（前後3位）</p>
         <div class="ranking-list" id="rankingNearbyList"></div>
+      </div>
+
+      <div class="ranking-division" id="rankingChallengeElementary" hidden>
+        <p class="ranking-division-title">🏫 小学部</p>
+        <div class="ranking-list" id="rankingChallengeElementaryList"></div>
+        <div class="ranking-nearby" id="rankingChallengeElementaryNearby" hidden>
+          <p class="ranking-nearby-title">🔎 あなたの順位（前後3位）</p>
+          <div class="ranking-list" id="rankingChallengeElementaryNearbyList"></div>
+        </div>
+      </div>
+      <div class="ranking-division" id="rankingChallengeMiddle" hidden>
+        <p class="ranking-division-title">🎒 中学部</p>
+        <div class="ranking-list" id="rankingChallengeMiddleList"></div>
+        <div class="ranking-nearby" id="rankingChallengeMiddleNearby" hidden>
+          <p class="ranking-nearby-title">🔎 あなたの順位（前後3位）</p>
+          <div class="ranking-list" id="rankingChallengeMiddleNearbyList"></div>
+        </div>
       </div>
     </section>
 
@@ -311,6 +330,57 @@
         </div>
         <p class="test-photo-result" id="rankingTestResult"></p>
       </div>
+
+      <div class="test-photo-card" id="hyakuMasuCard" hidden>
+        <h4 class="test-photo-card-title">💯 100マス計算チャレンジ</h4>
+        <p class="test-photo-hint" id="hyakuMasuHint">100マス計算（50問）を目標タイム内に解いて、その写真を提出すると20MPもらえます。提出は週1回（月〜日）までです。</p>
+        <label class="test-photo-checkbox-label">
+          <input type="checkbox" id="hyakuMasuConfirmCheckbox" />
+          目標タイム内にできました
+        </label>
+        <input type="file" accept="image/*" id="hyakuMasuFileInput" class="test-photo-file-input" />
+        <button type="button" class="primary-btn" id="hyakuMasuSubmitBtn" disabled>送信する</button>
+        <p class="test-photo-result" id="hyakuMasuResult"></p>
+      </div>
+
+      <div class="test-photo-card" id="challengeTestCard" hidden>
+        <h4 class="test-photo-card-title">🏆 チャレンジ問題</h4>
+        <p class="test-photo-hint" id="challengeTestHint">チャレンジ問題の写真を提出すると、正解数に応じてMPがもらえます（1問正解=10MP、2問正解=20MP、3問以上正解=30MP）。写真を選んでから、正解数を選んでください。</p>
+        <input type="file" accept="image/*" id="challengeTestFileInput" class="test-photo-file-input" />
+        <div class="test-photo-tier-row" id="challengeTierRow">
+          <button type="button" class="test-photo-tier-btn" data-tier="3plus">3問以上正解<span class="test-photo-tier-mp">30MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="2">2問正解<span class="test-photo-tier-mp">20MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="1">1問正解<span class="test-photo-tier-mp">10MP</span></button>
+        </div>
+        <div class="test-photo-confirm" id="challengeTestConfirm" hidden>
+          <p id="challengeTestConfirmText"></p>
+          <div class="test-photo-confirm-actions">
+            <button type="button" class="primary-btn" id="challengeTestConfirmYes">はい</button>
+            <button type="button" class="ghost-btn" id="challengeTestConfirmNo">いいえ</button>
+          </div>
+        </div>
+        <p class="test-photo-result" id="challengeTestResult"></p>
+      </div>
+    </section>
+
+    <section class="weekly-quiz-panel" id="weeklyQuizPanel" hidden>
+      <h3 class="history-title">🧠 週替わり重要ワード</h3>
+      <p class="test-photo-hint">授業の大切なワードを4択で出題します。週1回だけ挑戦できます。正解で+30MP、不正解で-100MPです。</p>
+      <div id="weeklyQuizUnavailable" hidden>
+        <p class="test-photo-hint" id="weeklyQuizUnavailableText"></p>
+      </div>
+      <div id="weeklyQuizBody" hidden>
+        <p class="weekly-quiz-question" id="weeklyQuizQuestion"></p>
+        <div class="test-photo-tier-row" id="weeklyQuizChoiceRow"></div>
+      </div>
+      <div class="test-photo-confirm" id="weeklyQuizConfirm" hidden>
+        <p id="weeklyQuizConfirmText"></p>
+        <div class="test-photo-confirm-actions">
+          <button type="button" class="primary-btn" id="weeklyQuizConfirmYes">はい</button>
+          <button type="button" class="ghost-btn" id="weeklyQuizConfirmNo">いいえ</button>
+        </div>
+      </div>
+      <p class="test-photo-result" id="weeklyQuizResult"></p>
     </section>
 
     <section class="avatar-panel" id="avatarPanel" hidden>

@@ -3,7 +3,7 @@
  *
  * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount | avatar | apologyBonusGrantedAt
  * | items | rareCollected | rareDefeats | thinkerMilestone | loggedCorrectCount | todayStats | hp | lastRankingTestMonth
- * | worldLap | worldLapStartLevel | worldBossDefeated | worldAllies
+ * | worldLap | worldLapStartLevel | worldBossDefeated | worldAllies | challengeCorrectTotal
  *
  * worldLap/worldLapStartLevel/worldBossDefeated/worldAllies: 世界一周(ボス戦付き)。
  * 各ステージ(大陸)最後の国はボスで、30問連続正解で撃破するまで先へ進めない。
@@ -75,7 +75,20 @@ var GIFT_CATALOG = [
 var GIFTCODES_SHEET = 'GiftCodes';
 var ITEMGRANTS_SHEET = 'ItemGrants';
 var ANOMALYLOG_SHEET = 'PointsAnomalyLog';
+var WEEKLYQUIZ_SHEET = 'WeeklyQuiz';
 var LOW_STOCK_THRESHOLDS = [10, 5];
+
+// 週替わり4択クイズ(各学年、授業の大切なワードを問う)。weekKeyがその週の月曜日
+// (mondayKeyTokyo_の結果)と一致する学年だけ出題される。毎週の問題・正解・選択肢は
+// 先生からチャットで伝えられる内容をここへ直接書き換えてデプロイする運用。
+var WEEKLY_QUIZ_CORRECT_MP_ = 30;
+var WEEKLY_QUIZ_WRONG_MP_ = -100;
+var WEEKLY_QUIZ_ = {
+  weekKey: null, // 例: '2026-08-03'（対象週の月曜日）。nullの間は全学年「今週の問題は準備中」表示になる。
+  byGrade: {
+    // '小4': { question: '...', choices: ['...', '...', '...', '...'], correctIndex: 0 },
+  }
+};
 
 // テスト画像提出(ペナテスト/抜き打ちテスト/ランキングテスト)。写真はGoogleドライブへ
 // 保存し、3週間経過したものは次回の提出時に自動で削除する(定期実行トリガーを使わない
@@ -94,6 +107,36 @@ var RANKING_TEST_TIERS_ = [
 // 数学ランキングテストは、まだ小学生向けには実施しないため小3〜小6は提出不可
 // (中1以上のみ)。
 var RANKING_TEST_BLOCKED_GRADES_ = ['小3', '小4', '小5', '小6'];
+
+// 100マス計算チャレンジ(実際は50問)。小4〜小6限定、週1回(月〜日)まで提出可能。
+// 目標タイム内にできたかはサーバー側では検証できないため、生徒の自己申告に委ねる
+// (クライアント側でチェックを入れないと送信できないようにする)。達成できれば
+// 一律20MP。
+var HYAKUMASU_MP_ = 20;
+var HYAKUMASU_ALLOWED_GRADES_ = ['小4', '小5', '小6'];
+var HYAKUMASU_TARGET_TIME_LABELS_ = { '小4': '1分30秒', '小5': '1分', '小6': '45秒' };
+
+// チャレンジ問題(小4〜中3対象)。正解数に応じて自己申告のうえ提出してもらう
+// (1問=10MP、2問=20MP、3問以上=30MP)。週あたりの提出可能回数は小学生1回・中学生3回。
+// countはチャレンジ問題正解数ランキング(累計)に積み上げる値。
+var CHALLENGE_TEST_TIERS_ = [
+  { id: '3plus', label: '3問以上正解', mp: 30, count: 3 },
+  { id: '2', label: '2問正解', mp: 20, count: 2 },
+  { id: '1', label: '1問正解', mp: 10, count: 1 },
+];
+var CHALLENGE_WEEKLY_LIMIT_ELEMENTARY_ = 1;
+var CHALLENGE_WEEKLY_LIMIT_MIDDLE_ = 3;
+var HYAKUMASU_WEEKLY_LIMIT_ = 1;
+
+// testType/学年ごとの週あたり提出上限。hyakuMasuは学年問わず1回、challengeは
+// 中学生(学年が「中」始まり)のみ3回、それ以外(小学生)は1回。
+function weeklySubmitLimitForTestType_(testType, grade) {
+  if (testType === 'hyakuMasu') return HYAKUMASU_WEEKLY_LIMIT_;
+  if (testType === 'challenge') {
+    return (String(grade || '').charAt(0) === '中') ? CHALLENGE_WEEKLY_LIMIT_MIDDLE_ : CHALLENGE_WEEKLY_LIMIT_ELEMENTARY_;
+  }
+  return 0;
+}
 
 // 交換受付期間: 5/1〜5/3、12/30〜12/31、1/1（日本時間）
 function isInExchangeWindow_() {
@@ -227,7 +270,17 @@ function getOrInitSheets_() {
     testPhotos.appendRow(['timestamp', 'id', 'name', 'testType', 'scoreTier', 'pointsAwarded', 'driveFileId', 'expiresAt']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog, testPhotos: testPhotos };
+  // WeeklyQuiz: 週替わり4択クイズ(各学年、授業の大切なワードを問う)の回答履歴。
+  // 生徒1人につき週1回まで(weekKeyで判定)。不正解の場合pointsDeltaは負の値になる。
+  var weeklyQuiz = ss.getSheetByName(WEEKLYQUIZ_SHEET);
+  if (!weeklyQuiz) {
+    weeklyQuiz = ss.insertSheet(WEEKLYQUIZ_SHEET);
+  }
+  if (weeklyQuiz.getLastRow() === 0) {
+    weeklyQuiz.appendRow(['timestamp', 'id', 'name', 'grade', 'weekKey', 'correct', 'pointsDelta']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog, testPhotos: testPhotos, weeklyQuiz: weeklyQuiz };
 }
 
 function sha256Hex_(text) {
@@ -258,7 +311,7 @@ function parseJsonCell_(raw, fallback) {
 // 誤った生徒のデータを返すことはない(自己修復する)。
 var STUDENT_ID_INDEX_CACHE_KEY_ = 'studentIdIndex_v1';
 var STUDENT_ID_INDEX_CACHE_TTL_ = 21600; // CacheServiceの最大値(6時間)
-var STUDENT_ROW_COLUMNS_ = 26; // id 〜 worldAllies
+var STUDENT_ROW_COLUMNS_ = 27; // id 〜 challengeCorrectTotal
 
 function rebuildStudentIdIndex_(sheet) {
   var lastRow = sheet.getLastRow();
@@ -324,7 +377,10 @@ function buildStudentRowObject_(rowIndex, d) {
     worldLap: Number(d[22]) || 1,
     worldLapStartLevel: Number(d[23]) || 100,
     worldBossDefeated: parseJsonCell_(d[24], {}),
-    worldAllies: parseJsonCell_(d[25], [])
+    worldAllies: parseJsonCell_(d[25], []),
+    // チャレンジ問題ランキング用。提出のたびに自己申告の正解数(1/2/3)を積み上げた累計値。
+    // 既存の生徒は列が空欄のままなので0として扱う。
+    challengeCorrectTotal: Number(d[26]) || 0
   };
 }
 
@@ -399,6 +455,8 @@ function doPost(e) {
     return jsonOut_(handleRankingGrade_(ctx, body));
   } else if (action === 'rankingHp') {
     return jsonOut_(handleRankingHp_(ctx, body));
+  } else if (action === 'challengeRanking') {
+    return jsonOut_(handleChallengeRanking_(ctx, body));
   } else if (action === 'grantItems') {
     return jsonOut_(handleGrantItems_(ctx, body));
   } else if (action === 'registerGuardian') {
@@ -411,6 +469,10 @@ function doPost(e) {
     return jsonOut_(handleResetPassword_(ctx, body));
   } else if (action === 'submitTestPhoto') {
     return jsonOut_(handleSubmitTestPhoto_(ctx, body));
+  } else if (action === 'weeklyQuizGet') {
+    return jsonOut_(handleWeeklyQuizGet_(ctx, body));
+  } else if (action === 'weeklyQuizAnswer') {
+    return jsonOut_(handleWeeklyQuizAnswer_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -1108,6 +1170,36 @@ function handleRankingHp_(ctx, body) {
   return { ok: true, ranking: top, nearby: nearby };
 }
 
+// チャレンジ問題正解数ランキング(累計、小学部/中学部を分けて集計)。0件(未提出)の
+// 生徒はランキングに含めない。
+function handleChallengeRanking_(ctx, body) {
+  var myId = String(body.id || '').trim();
+  var data = ctx.students.getDataRange().getValues();
+  var elementary = [], middle = [];
+  for (var i = 1; i < data.length; i++) {
+    var id = String(data[i][0]).trim();
+    if (!id) continue;
+    var total = Number(data[i][26]) || 0;
+    if (total <= 0) continue;
+    var grade = data[i][5] || '';
+    var entry = { id: id, total: total, grade: grade };
+    if (String(grade).charAt(0) === '中') middle.push(entry);
+    else if (String(grade).charAt(0) === '小') elementary.push(entry);
+  }
+  elementary.sort(function (a, b) { return b.total - a.total; });
+  middle.sort(function (a, b) { return b.total - a.total; });
+  var mapFn = function (r, idx) {
+    return { rank: idx + 1, nickname: nicknameForId_(r.id), total: r.total, grade: displayGradeForId_(r.id, r.grade), isYou: r.id === myId };
+  };
+  return {
+    ok: true,
+    elementary: elementary.slice(0, 30).map(mapFn),
+    elementaryNearby: buildNearbyRanking_(elementary, myId, mapFn),
+    middle: middle.slice(0, 30).map(mapFn),
+    middleNearby: buildNearbyRanking_(middle, myId, mapFn)
+  };
+}
+
 function handleRegisterGuardian_(ctx, body) {
   var guardianName = String(body.guardianName || '').trim();
   var children = Array.isArray(body.children) ? body.children : [];
@@ -1264,6 +1356,45 @@ function monthKeyTokyo_(d) {
   return Utilities.formatDate(new Date(d), 'Asia/Tokyo', 'yyyy-MM');
 }
 
+// その週(月曜始まり、日本時間)の月曜日をyyyy-MM-dd形式で返す。スクリプトのタイムゾーンは
+// Asia/Tokyo(appsscript.json)に設定済みのため、Dateのローカルメソッドはそのまま日本時間
+// として扱える。
+function mondayKeyTokyo_(d) {
+  var date = new Date(d);
+  var day = date.getDay(); // 0=日,1=月,...,6=土
+  var diff = (day === 0) ? -6 : (1 - day);
+  var monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + diff);
+  return Utilities.formatDate(monday, 'Asia/Tokyo', 'yyyy-MM-dd');
+}
+
+// 100マス計算チャレンジ/チャレンジ問題の、その週(weekKey)の提出回数。TestPhotosシートは
+// 提出頻度が低く件数も少ないため(sumPenaPointsToday_と同様)、毎回全件スキャンしても
+// 問題にならない。
+function countSubmittedTestPhotoThisWeek_(ctx, id, testType, weekKey) {
+  var data = ctx.testPhotos.getDataRange().getValues();
+  var count = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][1]).trim() !== id) continue;
+    if (data[i][3] !== testType) continue;
+    var ts = data[i][0];
+    if (!(ts instanceof Date)) continue;
+    if (mondayKeyTokyo_(ts) === weekKey) count++;
+  }
+  return count;
+}
+
+// 週替わりクイズにこの生徒が既にその週回答済みかどうか。WeeklyQuizシートも提出頻度が
+// 低いため全件スキャンで問題ない。
+function hasAnsweredWeeklyQuiz_(ctx, id, weekKey) {
+  var data = ctx.weeklyQuiz.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][1]).trim() !== id) continue;
+    if (String(data[i][4]) !== weekKey) continue;
+    return true;
+  }
+  return false;
+}
+
 // 3週間(TEST_PHOTO_RETENTION_DAYS_)を過ぎた提出をドライブ・シートの両方から削除する。
 // 定期実行トリガーは設置の手間(手動認証)が要るため使わず、提出のたびに毎回チェックする
 // 遅延クリーンアップ方式にしている。提出頻度は低いため十分間に合う想定。
@@ -1286,13 +1417,17 @@ function cleanupExpiredTestPhotos_(ctx) {
   }
 }
 
+var TEST_PHOTO_TYPES_ = ['pena', 'ranking', 'hyakuMasu', 'challenge'];
+// hyakuMasu/challengeは週1回まで(月〜日、日本時間)。
+var WEEKLY_LIMITED_TEST_TYPES_ = ['hyakuMasu', 'challenge'];
+
 function handleSubmitTestPhoto_(ctx, body) {
   var id = String(body.id || '').trim();
   var testType = String(body.testType || '').trim();
   var scoreTier = String(body.scoreTier || '').trim();
   var imageBase64 = body.imageBase64;
   var mimeType = String(body.mimeType || 'image/jpeg').trim();
-  if (!id || !imageBase64 || (testType !== 'pena' && testType !== 'ranking')) {
+  if (!id || !imageBase64 || TEST_PHOTO_TYPES_.indexOf(testType) === -1) {
     return { ok: false, error: 'missing_fields' };
   }
   if (mimeType !== 'image/jpeg' && mimeType !== 'image/png') mimeType = 'image/jpeg';
@@ -1302,6 +1437,11 @@ function handleSubmitTestPhoto_(ctx, body) {
     for (var i = 0; i < RANKING_TEST_TIERS_.length; i++) {
       if (RANKING_TEST_TIERS_[i].id === scoreTier) { tier = RANKING_TEST_TIERS_[i]; break; }
     }
+  } else if (testType === 'challenge') {
+    for (var ci = 0; ci < CHALLENGE_TEST_TIERS_.length; ci++) {
+      if (CHALLENGE_TEST_TIERS_[ci].id === scoreTier) { tier = CHALLENGE_TEST_TIERS_[ci]; break; }
+    }
+    if (!tier) return { ok: false, error: 'missing_fields' };
   }
 
   // 事前チェック(ロック不要)：失敗しやすい経路を先に弾いておき、後段のDriveアップロード
@@ -1311,12 +1451,22 @@ function handleSubmitTestPhoto_(ctx, body) {
   if (testType === 'ranking' && RANKING_TEST_BLOCKED_GRADES_.indexOf(precheckRow.grade) !== -1) {
     return { ok: false, error: 'elementary_not_allowed' };
   }
+  if (testType === 'hyakuMasu' && HYAKUMASU_ALLOWED_GRADES_.indexOf(precheckRow.grade) === -1) {
+    return { ok: false, error: 'grade_not_allowed' };
+  }
   var currentMonth = monthKeyTokyo_(new Date());
   // ランキングテストは月1回まで。写真自体は3週間で自動削除されるため、TestPhotosの
   // 履歴をスキャンするのではなく、Studentsシートに「最後に提出した月」を別途持たせて
   // 判定する(3週間の保存期限と月1回の制限が食い違わないようにするため)。
   if (testType === 'ranking' && precheckRow.lastRankingTestMonth === currentMonth) {
     return { ok: false, error: 'already_submitted_this_month' };
+  }
+  var currentWeek = mondayKeyTokyo_(new Date());
+  if (WEEKLY_LIMITED_TEST_TYPES_.indexOf(testType) !== -1) {
+    var weeklyLimit = weeklySubmitLimitForTestType_(testType, precheckRow.grade);
+    if (countSubmittedTestPhotoThisWeek_(ctx, id, testType, currentWeek) >= weeklyLimit) {
+      return { ok: false, error: 'already_submitted_this_week' };
+    }
   }
 
   // Driveへの画像アップロードはシートの読み書きと違って時間がかかるため、グローバル
@@ -1333,6 +1483,8 @@ function handleSubmitTestPhoto_(ctx, body) {
       result = { ok: false, error: 'not_found' };
     } else if (testType === 'ranking' && row.lastRankingTestMonth === currentMonth) {
       result = { ok: false, error: 'already_submitted_this_month' };
+    } else if (WEEKLY_LIMITED_TEST_TYPES_.indexOf(testType) !== -1 && countSubmittedTestPhotoThisWeek_(ctx, id, testType, currentWeek) >= weeklySubmitLimitForTestType_(testType, row.grade)) {
+      result = { ok: false, error: 'already_submitted_this_week' };
     } else {
       var pointsAwarded = 0;
       var tierUsed = '';
@@ -1342,6 +1494,12 @@ function handleSubmitTestPhoto_(ctx, body) {
         // 自動的に日付型へ変換してしまい、次回の文字列比較(===currentMonth)が常にfalseになって
         // 月1回の制限が効かなくなる不具合があった(生徒IDが数値化されてしまうのと同じ原因)。
         ctx.students.getRange(row.rowIndex, 22).setNumberFormat('@').setValue(currentMonth);
+      } else if (testType === 'challenge') {
+        pointsAwarded = tier.mp;
+        tierUsed = tier.id;
+        ctx.students.getRange(row.rowIndex, 27).setValue((row.challengeCorrectTotal || 0) + tier.count);
+      } else if (testType === 'hyakuMasu') {
+        pointsAwarded = HYAKUMASU_MP_;
       } else {
         var today = dateKeyTokyo_(new Date());
         var todayTotal = sumPenaPointsToday_(ctx, id, today);
@@ -1364,5 +1522,62 @@ function handleSubmitTestPhoto_(ctx, body) {
   }
   // Driveの掲示掃除(期限切れ写真の削除)もネットワークI/Oを伴うため、ロックの外で行う。
   cleanupExpiredTestPhotos_(ctx);
+  return result;
+}
+
+function handleWeeklyQuizGet_(ctx, body) {
+  var id = String(body.id || '').trim();
+  if (!id) return { ok: false, error: 'missing_fields' };
+  var row = findStudentRow_(ctx.students, id);
+  if (!row) return { ok: false, error: 'not_found' };
+
+  var currentWeek = mondayKeyTokyo_(new Date());
+  if (WEEKLY_QUIZ_.weekKey !== currentWeek) {
+    return { ok: true, available: false };
+  }
+  var quiz = WEEKLY_QUIZ_.byGrade[row.grade];
+  if (!quiz) return { ok: true, available: false };
+
+  if (hasAnsweredWeeklyQuiz_(ctx, id, currentWeek)) {
+    return { ok: true, available: false, alreadyAnswered: true };
+  }
+  return { ok: true, available: true, question: quiz.question, choices: quiz.choices };
+}
+
+function handleWeeklyQuizAnswer_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var choiceIndex = Number(body.choiceIndex);
+  if (!id || !isFinite(choiceIndex)) return { ok: false, error: 'missing_fields' };
+
+  var currentWeek = mondayKeyTokyo_(new Date());
+  if (WEEKLY_QUIZ_.weekKey !== currentWeek) return { ok: false, error: 'no_quiz' };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  var result;
+  try {
+    var row = findStudentRow_(ctx.students, id);
+    if (!row) {
+      result = { ok: false, error: 'not_found' };
+    } else {
+      var quiz = WEEKLY_QUIZ_.byGrade[row.grade];
+      if (!quiz) {
+        result = { ok: false, error: 'no_quiz' };
+      } else if (hasAnsweredWeeklyQuiz_(ctx, id, currentWeek)) {
+        result = { ok: false, error: 'already_answered' };
+      } else {
+        var correct = (choiceIndex === quiz.correctIndex);
+        var delta = correct ? WEEKLY_QUIZ_CORRECT_MP_ : WEEKLY_QUIZ_WRONG_MP_;
+        var newPoints = Math.max(0, row.points + delta);
+        ctx.students.getRange(row.rowIndex, 7).setValue(newPoints);
+        ctx.weeklyQuiz.appendRow([new Date(), id, row.name, row.grade, currentWeek, correct, delta]);
+        var newRow = ctx.weeklyQuiz.getLastRow();
+        ctx.weeklyQuiz.getRange(newRow, 2).setNumberFormat('@').setValue(id);
+        result = { ok: true, correct: correct, pointsDelta: delta, newTotalPoints: newPoints, correctIndex: quiz.correctIndex };
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
   return result;
 }

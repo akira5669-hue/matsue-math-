@@ -6828,11 +6828,20 @@
     rankingTabPoints: document.getElementById('rankingTabPoints'),
     rankingTabGrade: document.getElementById('rankingTabGrade'),
     rankingTabHp: document.getElementById('rankingTabHp'),
+    rankingTabChallenge: document.getElementById('rankingTabChallenge'),
     rankingHpHint: document.getElementById('rankingHpHint'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
     rankingNearby: document.getElementById('rankingNearby'),
     rankingNearbyList: document.getElementById('rankingNearbyList'),
+    rankingChallengeElementary: document.getElementById('rankingChallengeElementary'),
+    rankingChallengeElementaryList: document.getElementById('rankingChallengeElementaryList'),
+    rankingChallengeElementaryNearby: document.getElementById('rankingChallengeElementaryNearby'),
+    rankingChallengeElementaryNearbyList: document.getElementById('rankingChallengeElementaryNearbyList'),
+    rankingChallengeMiddle: document.getElementById('rankingChallengeMiddle'),
+    rankingChallengeMiddleList: document.getElementById('rankingChallengeMiddleList'),
+    rankingChallengeMiddleNearby: document.getElementById('rankingChallengeMiddleNearby'),
+    rankingChallengeMiddleNearbyList: document.getElementById('rankingChallengeMiddleNearbyList'),
     apologyBanner: document.getElementById('apologyBanner'),
     worldLaunchBanner: document.getElementById('worldLaunchBanner'),
     worldLaunchText: document.getElementById('worldLaunchText'),
@@ -6900,6 +6909,33 @@
     rankingTestConfirmYes: document.getElementById('rankingTestConfirmYes'),
     rankingTestConfirmNo: document.getElementById('rankingTestConfirmNo'),
     rankingTestResult: document.getElementById('rankingTestResult'),
+    hyakuMasuCard: document.getElementById('hyakuMasuCard'),
+    hyakuMasuHint: document.getElementById('hyakuMasuHint'),
+    hyakuMasuConfirmCheckbox: document.getElementById('hyakuMasuConfirmCheckbox'),
+    hyakuMasuFileInput: document.getElementById('hyakuMasuFileInput'),
+    hyakuMasuSubmitBtn: document.getElementById('hyakuMasuSubmitBtn'),
+    hyakuMasuResult: document.getElementById('hyakuMasuResult'),
+    challengeTestCard: document.getElementById('challengeTestCard'),
+    challengeTestHint: document.getElementById('challengeTestHint'),
+    challengeTestFileInput: document.getElementById('challengeTestFileInput'),
+    challengeTierRow: document.getElementById('challengeTierRow'),
+    challengeTestConfirm: document.getElementById('challengeTestConfirm'),
+    challengeTestConfirmText: document.getElementById('challengeTestConfirmText'),
+    challengeTestConfirmYes: document.getElementById('challengeTestConfirmYes'),
+    challengeTestConfirmNo: document.getElementById('challengeTestConfirmNo'),
+    challengeTestResult: document.getElementById('challengeTestResult'),
+    weeklyQuizToggle: document.getElementById('weeklyQuizToggle'),
+    weeklyQuizPanel: document.getElementById('weeklyQuizPanel'),
+    weeklyQuizUnavailable: document.getElementById('weeklyQuizUnavailable'),
+    weeklyQuizUnavailableText: document.getElementById('weeklyQuizUnavailableText'),
+    weeklyQuizBody: document.getElementById('weeklyQuizBody'),
+    weeklyQuizQuestion: document.getElementById('weeklyQuizQuestion'),
+    weeklyQuizChoiceRow: document.getElementById('weeklyQuizChoiceRow'),
+    weeklyQuizConfirm: document.getElementById('weeklyQuizConfirm'),
+    weeklyQuizConfirmText: document.getElementById('weeklyQuizConfirmText'),
+    weeklyQuizConfirmYes: document.getElementById('weeklyQuizConfirmYes'),
+    weeklyQuizConfirmNo: document.getElementById('weeklyQuizConfirmNo'),
+    weeklyQuizResult: document.getElementById('weeklyQuizResult'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -8292,6 +8328,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -8326,6 +8363,9 @@
   }
 
   function renderRanking(res, mode) {
+    els.rankingChallengeElementary.hidden = true;
+    els.rankingChallengeMiddle.hidden = true;
+    els.rankingList.hidden = false;
     els.rankingTitle.textContent = mode === 'grade' ? `ランキング（学年内 上位30位）${res.grade ? '【' + res.grade + '】' : ''}` : 'ランキング（上位50位）';
     if (res.ranking.length === 0) {
       els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : mode === 'grade' ? 'まだ同学年のランキングデータがありません。' : mode === 'hp' ? 'まだHPランキングデータがありません。' : 'まだランキングデータがありません。';
@@ -8345,6 +8385,40 @@
     }
   }
 
+  function challengeRankingRowHtml(r) {
+    var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
+    var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">正解 ${r.total}問</span></div>`;
+  }
+
+  function renderChallengeDivision(list, nearby, listEl, nearbyEl, nearbyListEl, emptyText) {
+    if (list.length === 0) {
+      listEl.innerHTML = `<p class="history-summary">${emptyText}</p>`;
+      nearbyEl.hidden = true;
+      return;
+    }
+    listEl.innerHTML = list.map(challengeRankingRowHtml).join('');
+    if (Array.isArray(nearby) && nearby.length > 0) {
+      nearbyEl.hidden = false;
+      nearbyListEl.innerHTML = nearby.map(challengeRankingRowHtml).join('');
+    } else {
+      nearbyEl.hidden = true;
+      nearbyListEl.innerHTML = '';
+    }
+  }
+
+  function renderChallengeRanking(res) {
+    els.rankingList.hidden = true;
+    els.rankingNearby.hidden = true;
+    els.rankingTitle.textContent = 'チャレンジ問題正解数ランキング（累計）';
+    els.rankingSummary.textContent = '提出のたびに申告した正解数（1問=1、2問=2、3問以上=3）を積み上げた累計です。';
+    els.rankingChallengeElementary.hidden = false;
+    els.rankingChallengeMiddle.hidden = false;
+    renderChallengeDivision(res.elementary, res.elementaryNearby, els.rankingChallengeElementaryList, els.rankingChallengeElementaryNearby, els.rankingChallengeElementaryNearbyList, 'まだ小学部のデータがありません。');
+    renderChallengeDivision(res.middle, res.middleNearby, els.rankingChallengeMiddleList, els.rankingChallengeMiddleNearby, els.rankingChallengeMiddleNearbyList, 'まだ中学部のデータがありません。');
+  }
+
   function setRankingTabActive(mode) {
     els.rankingTabExp.classList.toggle('is-active', mode === 'exp');
     els.rankingTabExp.setAttribute('aria-selected', String(mode === 'exp'));
@@ -8356,6 +8430,8 @@
     els.rankingTabGrade.setAttribute('aria-selected', String(mode === 'grade'));
     els.rankingTabHp.classList.toggle('is-active', mode === 'hp');
     els.rankingTabHp.setAttribute('aria-selected', String(mode === 'hp'));
+    els.rankingTabChallenge.classList.toggle('is-active', mode === 'challenge');
+    els.rankingTabChallenge.setAttribute('aria-selected', String(mode === 'challenge'));
     els.rankingHpHint.hidden = mode !== 'hp';
   }
 
@@ -8365,6 +8441,15 @@
 
     var session = loadSession();
     if (!session || !session.id) return;
+    if (mode === 'challenge') {
+      apiPost('challengeRanking', { id: session.id }).then(function (res) {
+        if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+        renderChallengeRanking(res);
+      }).catch(function () {
+        els.rankingSummary.textContent = '読み込みに失敗しました。';
+      });
+      return;
+    }
     var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : mode === 'hp' ? 'rankingHp' : 'ranking';
     apiPost(action, { id: session.id }).then(function (res) {
       if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
@@ -8390,6 +8475,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -8460,6 +8546,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -8523,6 +8610,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
@@ -8597,6 +8685,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
     renderAvatarPanel();
@@ -8963,6 +9052,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.worldPanel.removeAttribute('hidden');
     renderWorldPanel();
@@ -8981,6 +9071,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
     els.grantResult.className = 'grant-result';
@@ -9042,13 +9133,17 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
 
     els.testPhotoPanel.removeAttribute('hidden');
     renderTestPhotoPanel();
   }
 
+  var HYAKUMASU_ALLOWED_GRADES_ = ['小4', '小5', '小6'];
+  var HYAKUMASU_TARGET_TIME_LABELS_ = { '小4': '1分30秒', '小5': '1分', '小6': '45秒' };
+
   // 中学生は「抜き打ちテスト」、それ以外(小学生)は「ペナテスト」として同じ仕組みを表示する。
-  // ランキングテストカードは中学生のみ表示。
+  // ランキングテストカードは中学生のみ表示。100マス計算チャレンジは小4〜小6のみ表示。
   function renderTestPhotoPanel() {
     var session = loadSession();
     var grade = (session && session.grade) || '';
@@ -9066,6 +9161,29 @@
     rankingTestSubmitting = false;
     setRankingTestControlsDisabled(false);
     renderRankingTierButtons();
+
+    var hyakuMasuAllowed = HYAKUMASU_ALLOWED_GRADES_.indexOf(grade) !== -1;
+    els.hyakuMasuCard.hidden = !hyakuMasuAllowed;
+    if (hyakuMasuAllowed) {
+      var targetLabel = HYAKUMASU_TARGET_TIME_LABELS_[grade];
+      els.hyakuMasuHint.textContent = '100マス計算（50問）を目標タイム（' + targetLabel + '）内に解いて、その写真を提出すると20MPもらえます。提出は週1回（月〜日）までです。';
+    }
+    els.hyakuMasuConfirmCheckbox.checked = false;
+    els.hyakuMasuFileInput.value = '';
+    els.hyakuMasuSubmitBtn.disabled = true;
+    els.hyakuMasuResult.textContent = '';
+
+    els.challengeTestCard.hidden = false;
+    els.challengeTestHint.textContent = isMiddle
+      ? 'チャレンジ問題の写真を提出すると、正解数に応じてMPがもらえます（1問正解=10MP、2問正解=20MP、3問以上正解=30MP）。提出は週3回（月〜日）までです。写真を選んでから、正解数を選んでください。'
+      : 'チャレンジ問題の写真を提出すると、正解数に応じてMPがもらえます（1問正解=10MP、2問正解=20MP、3問以上正解=30MP）。提出は週1回（月〜日）までです。写真を選んでから、正解数を選んでください。';
+    els.challengeTestFileInput.value = '';
+    els.challengeTestConfirm.hidden = true;
+    els.challengeTestResult.textContent = '';
+    challengeTestSelectedTier = null;
+    challengeTestSubmitting = false;
+    setChallengeTestControlsDisabled(false);
+    renderChallengeTierButtons();
   }
 
   // 写真をそのまま送ると通信が重くなる/GASの実行時間を圧迫するため、canvasで
@@ -9201,6 +9319,236 @@
     els.rankingTestConfirm.hidden = true;
   }
 
+  /* ---------- 100マス計算チャレンジ ---------- */
+
+  function updateHyakuMasuSubmitEnabled() {
+    var hasFile = !!(els.hyakuMasuFileInput.files && els.hyakuMasuFileInput.files[0]);
+    els.hyakuMasuSubmitBtn.disabled = !(hasFile && els.hyakuMasuConfirmCheckbox.checked);
+  }
+
+  function submitHyakuMasuPhoto() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var file = els.hyakuMasuFileInput.files && els.hyakuMasuFileInput.files[0];
+    if (!file || !els.hyakuMasuConfirmCheckbox.checked) return;
+    els.hyakuMasuSubmitBtn.disabled = true;
+    els.hyakuMasuResult.textContent = '送信中…';
+    compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
+      return apiPost('submitTestPhoto', { id: session.id, testType: 'hyakuMasu', imageBase64: base64, mimeType: 'image/jpeg' });
+    }).then(function (res) {
+      if (!res.ok) {
+        els.hyakuMasuResult.textContent = res.error === 'already_submitted_this_week'
+          ? '今週の100マス計算チャレンジはすでに提出済みです（提出は週1回までです）。'
+          : res.error === 'grade_not_allowed'
+          ? '100マス計算チャレンジは小4〜小6限定です。'
+          : '送信に失敗しました。もう一度お試しください。';
+        updateHyakuMasuSubmitEnabled();
+        return;
+      }
+      applyTestPhotoPointsResult(res);
+      els.hyakuMasuFileInput.value = '';
+      els.hyakuMasuConfirmCheckbox.checked = false;
+      els.hyakuMasuSubmitBtn.disabled = true;
+      els.hyakuMasuResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！';
+    }).catch(function () {
+      els.hyakuMasuResult.textContent = '送信に失敗しました。もう一度お試しください。';
+      updateHyakuMasuSubmitEnabled();
+    });
+  }
+
+  /* ---------- チャレンジ問題 ---------- */
+
+  var CHALLENGE_TEST_TIER_LABELS_ = { '3plus': '3問以上正解（30MP）', '2': '2問正解（20MP）', '1': '1問正解（10MP）' };
+  var challengeTestSelectedTier = null;
+  var challengeTestSubmitting = false;
+
+  function renderChallengeTierButtons() {
+    Array.from(els.challengeTierRow.children).forEach(function (btn) {
+      btn.classList.toggle('is-selected', btn.dataset.tier === challengeTestSelectedTier);
+    });
+  }
+
+  function setChallengeTestControlsDisabled(disabled) {
+    Array.from(els.challengeTierRow.children).forEach(function (btn) { btn.disabled = disabled; });
+    els.challengeTestConfirmYes.disabled = disabled;
+    els.challengeTestConfirmNo.disabled = disabled;
+    els.challengeTestFileInput.disabled = disabled;
+  }
+
+  function handleChallengeTierClick(tier) {
+    if (challengeTestSubmitting) return;
+    var file = els.challengeTestFileInput.files && els.challengeTestFileInput.files[0];
+    if (!file) { els.challengeTestResult.textContent = '先に写真を選んでください。'; return; }
+    els.challengeTestResult.textContent = '';
+    challengeTestSelectedTier = tier;
+    renderChallengeTierButtons();
+    els.challengeTestConfirmText.textContent = CHALLENGE_TEST_TIER_LABELS_[tier] + ' で送信します。これでいいですか？';
+    els.challengeTestConfirm.hidden = false;
+  }
+
+  function submitChallengeTestPhoto() {
+    if (challengeTestSubmitting) return;
+    var session = loadSession();
+    if (!session || !session.id || !challengeTestSelectedTier) return;
+    var file = els.challengeTestFileInput.files && els.challengeTestFileInput.files[0];
+    if (!file) { els.challengeTestResult.textContent = '写真を選んでください。'; els.challengeTestConfirm.hidden = true; return; }
+    var tier = challengeTestSelectedTier;
+    challengeTestSubmitting = true;
+    setChallengeTestControlsDisabled(true);
+    els.challengeTestConfirm.hidden = true;
+    els.challengeTestResult.textContent = '送信中…';
+    compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
+      return apiPost('submitTestPhoto', { id: session.id, testType: 'challenge', scoreTier: tier, imageBase64: base64, mimeType: 'image/jpeg' });
+    }).then(function (res) {
+      challengeTestSubmitting = false;
+      setChallengeTestControlsDisabled(false);
+      if (!res.ok) {
+        els.challengeTestResult.textContent = res.error === 'already_submitted_this_week'
+          ? '今週のチャレンジ問題はすでに提出済みです（提出は週1回までです）。'
+          : '送信に失敗しました。もう一度お試しください。';
+        return;
+      }
+      applyTestPhotoPointsResult(res);
+      els.challengeTestFileInput.value = '';
+      challengeTestSelectedTier = null;
+      renderChallengeTierButtons();
+      els.challengeTestResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！';
+    }).catch(function () {
+      challengeTestSubmitting = false;
+      setChallengeTestControlsDisabled(false);
+      els.challengeTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
+    });
+  }
+
+  function cancelChallengeTierConfirm() {
+    if (challengeTestSubmitting) return;
+    challengeTestSelectedTier = null;
+    renderChallengeTierButtons();
+    els.challengeTestConfirm.hidden = true;
+  }
+
+  /* ---------- 週替わりクイズ ---------- */
+
+  var weeklyQuizChoices = [];
+  var weeklyQuizSelectedIndex = null;
+  var weeklyQuizSubmitting = false;
+
+  function toggleWeeklyQuiz() {
+    var isHidden = els.weeklyQuizPanel.hasAttribute('hidden');
+    if (!isHidden) { els.weeklyQuizPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
+
+    els.weeklyQuizPanel.removeAttribute('hidden');
+    loadWeeklyQuiz();
+  }
+
+  function setWeeklyQuizControlsDisabled(disabled) {
+    Array.from(els.weeklyQuizChoiceRow.children).forEach(function (btn) { btn.disabled = disabled; });
+    els.weeklyQuizConfirmYes.disabled = disabled;
+    els.weeklyQuizConfirmNo.disabled = disabled;
+  }
+
+  function renderWeeklyQuizChoiceButtons() {
+    Array.from(els.weeklyQuizChoiceRow.children).forEach(function (btn, idx) {
+      btn.classList.toggle('is-selected', idx === weeklyQuizSelectedIndex);
+    });
+  }
+
+  function loadWeeklyQuiz() {
+    var session = loadSession();
+    els.weeklyQuizUnavailable.hidden = true;
+    els.weeklyQuizBody.hidden = true;
+    els.weeklyQuizConfirm.hidden = true;
+    els.weeklyQuizResult.textContent = '';
+    weeklyQuizSelectedIndex = null;
+    weeklyQuizSubmitting = false;
+    if (!session || !session.id) {
+      els.weeklyQuizUnavailable.hidden = false;
+      els.weeklyQuizUnavailableText.textContent = 'この機能は生徒登録した方のみご利用いただけます。';
+      return;
+    }
+    els.weeklyQuizUnavailable.hidden = false;
+    els.weeklyQuizUnavailableText.textContent = '読み込み中…';
+    apiPost('weeklyQuizGet', { id: session.id }).then(function (res) {
+      if (!res.ok) { els.weeklyQuizUnavailableText.textContent = '読み込みに失敗しました。'; return; }
+      if (!res.available) {
+        els.weeklyQuizUnavailable.hidden = false;
+        els.weeklyQuizUnavailableText.textContent = res.alreadyAnswered
+          ? '今週のクイズはすでに回答済みです。また来週挑戦してください！'
+          : '今週の問題はまだ準備中です。もうしばらくお待ちください。';
+        return;
+      }
+      weeklyQuizChoices = res.choices;
+      els.weeklyQuizUnavailable.hidden = true;
+      els.weeklyQuizBody.hidden = false;
+      els.weeklyQuizQuestion.textContent = res.question;
+      els.weeklyQuizChoiceRow.innerHTML = res.choices.map(function (choice, idx) {
+        return '<button type="button" class="test-photo-tier-btn" data-idx="' + idx + '">' + choice + '</button>';
+      }).join('');
+      Array.from(els.weeklyQuizChoiceRow.children).forEach(function (btn) {
+        btn.addEventListener('click', function () { handleWeeklyQuizChoiceClick(Number(btn.dataset.idx)); });
+      });
+    }).catch(function () {
+      els.weeklyQuizUnavailableText.textContent = '読み込みに失敗しました。';
+    });
+  }
+
+  function handleWeeklyQuizChoiceClick(idx) {
+    if (weeklyQuizSubmitting) return;
+    weeklyQuizSelectedIndex = idx;
+    renderWeeklyQuizChoiceButtons();
+    els.weeklyQuizConfirmText.textContent = '「' + weeklyQuizChoices[idx] + '」で回答します。これでいいですか？';
+    els.weeklyQuizConfirm.hidden = false;
+  }
+
+  function submitWeeklyQuizAnswer() {
+    if (weeklyQuizSubmitting || weeklyQuizSelectedIndex === null) return;
+    var session = loadSession();
+    if (!session || !session.id) return;
+    weeklyQuizSubmitting = true;
+    setWeeklyQuizControlsDisabled(true);
+    els.weeklyQuizConfirm.hidden = true;
+    els.weeklyQuizResult.textContent = '送信中…';
+    apiPost('weeklyQuizAnswer', { id: session.id, choiceIndex: weeklyQuizSelectedIndex }).then(function (res) {
+      weeklyQuizSubmitting = false;
+      if (!res.ok) {
+        els.weeklyQuizResult.textContent = res.error === 'already_answered'
+          ? '今週のクイズはすでに回答済みです。'
+          : res.error === 'no_quiz'
+          ? '今週の問題はまだ準備中です。'
+          : '送信に失敗しました。もう一度お試しください。';
+        setWeeklyQuizControlsDisabled(false);
+        return;
+      }
+      state.points = res.newTotalPoints;
+      saveGameState(state);
+      updateStats();
+      updateGameHud();
+      els.weeklyQuizBody.hidden = true;
+      els.weeklyQuizResult.textContent = res.correct
+        ? '🎉 正解！ +' + res.pointsDelta + 'MP獲得しました！'
+        : '😢 不正解…（正解は「' + weeklyQuizChoices[res.correctIndex] + '」でした） ' + res.pointsDelta + 'MP';
+    }).catch(function () {
+      weeklyQuizSubmitting = false;
+      setWeeklyQuizControlsDisabled(false);
+      els.weeklyQuizResult.textContent = '送信に失敗しました。もう一度お試しください。';
+    });
+  }
+
+  function cancelWeeklyQuizConfirm() {
+    if (weeklyQuizSubmitting) return;
+    weeklyQuizSelectedIndex = null;
+    renderWeeklyQuizChoiceButtons();
+    els.weeklyQuizConfirm.hidden = true;
+  }
+
   function handleAvatarSave() {
     var session = loadSession();
     if (!session || !session.id) {
@@ -9252,6 +9600,7 @@
   els.rankingTabPoints.addEventListener('click', function () { selectRankingMode('points'); });
   els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
+  els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
   els.giftToggle.addEventListener('click', toggleGift);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
@@ -9269,6 +9618,17 @@
   });
   els.rankingTestConfirmYes.addEventListener('click', submitRankingTestPhoto);
   els.rankingTestConfirmNo.addEventListener('click', cancelRankingTierConfirm);
+  els.hyakuMasuFileInput.addEventListener('change', updateHyakuMasuSubmitEnabled);
+  els.hyakuMasuConfirmCheckbox.addEventListener('change', updateHyakuMasuSubmitEnabled);
+  els.hyakuMasuSubmitBtn.addEventListener('click', submitHyakuMasuPhoto);
+  Array.from(els.challengeTierRow.children).forEach(function (btn) {
+    btn.addEventListener('click', function () { handleChallengeTierClick(btn.dataset.tier); });
+  });
+  els.challengeTestConfirmYes.addEventListener('click', submitChallengeTestPhoto);
+  els.challengeTestConfirmNo.addEventListener('click', cancelChallengeTierConfirm);
+  els.weeklyQuizToggle.addEventListener('click', toggleWeeklyQuiz);
+  els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
+  els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
 
   var existingSession = loadSession();
   if (existingSession) {

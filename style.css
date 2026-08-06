@@ -868,6 +868,7 @@ h1 {
   max-height: 400px;
   overflow-y: auto;
 }
+.ranking-list[hidden] { display: none; }
 .ranking-row {
   display: flex;
   align-items: center;
@@ -892,6 +893,17 @@ h1 {
   font-size: 13px;
   font-weight: 700;
   color: var(--c-ink-soft);
+}
+.ranking-division {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-line);
+}
+.ranking-division[hidden] { display: none; }
+.ranking-division-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
 }
 .ranking-rank {
   font-family: var(--font-mono);
@@ -1462,6 +1474,7 @@ h1 {
   flex-direction: column;
   gap: 10px;
 }
+.test-photo-card[hidden] { display: none; }
 .test-photo-card-title {
   margin: 0;
   font-size: 15px;
@@ -1513,6 +1526,7 @@ h1 {
   flex-direction: column;
   gap: 10px;
 }
+.test-photo-confirm[hidden] { display: none; }
 .test-photo-confirm p {
   margin: 0;
   font-size: 14px;
@@ -1527,6 +1541,33 @@ h1 {
   font-size: 13px;
   font-weight: 700;
   min-height: 1.2em;
+}
+.test-photo-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 週替わりクイズ */
+.weekly-quiz-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.weekly-quiz-panel[hidden] { display: none; }
+.weekly-quiz-question {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.6;
 }
 
 /* アバター作成 */
