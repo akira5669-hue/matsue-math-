@@ -6253,7 +6253,7 @@
     { name: 'ケアレスミス',    emoji: '😅' },
     { name: 'ボンミスコ',      emoji: '💥', img: 'images/bonmisuko.png' },
     { name: 'チンカイトウ',    emoji: '❌' },
-    { name: 'ウッカリミスコ',  emoji: '😱' },
+    { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.png' },
     { name: 'アキラメタル',    emoji: '🤘' },
     { name: 'ゴーマジンガー',  emoji: '🤖' },
     { name: 'キラキラアキラ',  emoji: '⭐' },
