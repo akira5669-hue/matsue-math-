@@ -6647,6 +6647,10 @@
   const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'simulEqWordProblem2', 'quadEqWordProblem3'];
   const WORD_PROBLEM_FIXED_MP = 50;
   const WORD_PROBLEM_HP_GAIN = 10;
+  const WORD_PROBLEM_HP_GAIN_MIDDLE = 20;
+  function wordProblemHpGainForGrade_(grade) {
+    return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
+  }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
   const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5'];
   function isHpEarningCategory_(catId) {
@@ -7622,8 +7626,9 @@
 
       let hpBonusHtml = '';
       if (isHpEarningCategory_(catId)) {
-        state.hp = (Number(state.hp) || 0) + WORD_PROBLEM_HP_GAIN;
-        hpBonusHtml = ` +${WORD_PROBLEM_HP_GAIN}HP`;
+        const hpGain = wordProblemHpGainForGrade_(ownGrade);
+        state.hp = (Number(state.hp) || 0) + hpGain;
+        hpBonusHtml = ` +${hpGain}HP`;
       }
 
       let itemGainedHtml = '';

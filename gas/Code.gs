@@ -491,12 +491,19 @@ function handleCheckId_(ctx, body) {
 // キャッシュ(getStudentIdIndex_)を使えばシートを読まずに済む。
 function nextStudentId_(sheet) {
   var index = getStudentIdIndex_(sheet);
+  var used = {};
   var max = 0;
   for (var idStr in index) {
     if (/^\d{5}$/.test(idStr)) {
       var n = parseInt(idStr, 10);
+      used[n] = true;
       if (n > max) max = n;
     }
+  }
+  // 退会・重複整理等で削除されたIDの欠番があれば、新規登録のたびにIDが際限なく
+  // 大きくなっていくのを避けるため、最小の欠番から優先的に再利用する。
+  for (var i = 1; i <= max; i++) {
+    if (!used[i]) return ('00000' + i).slice(-5);
   }
   return ('00000' + (max + 1)).slice(-5);
 }
