@@ -9076,13 +9076,23 @@
     els.worldAllySection.innerHTML = '<p class="world-ally-title">🤝 仲間になったボス</p><div class="world-ally-list">' + chips + '</div>';
   }
 
-  // 100ヵ国制覇済みなら、2周目スタートの確認(はい/いいえ)を表示する。
+  // 世界一周は2周まで。100ヵ国制覇済みなら、1周目終了時だけ2周目スタートの確認
+  // (はい/いいえ)を表示する。2周目を制覇したら3周目の案内はせず、完全制覇のお祝いを表示する。
+  var WORLD_LAP_MAX_ = 2;
   function renderWorldLapRestart(count, total) {
     if (count < total) { els.worldLapRestart.hidden = true; els.worldLapRestart.innerHTML = ''; return; }
+    var currentLap = Number(state.worldLap) || 1;
     els.worldLapRestart.hidden = false;
+    if (currentLap >= WORLD_LAP_MAX_) {
+      els.worldLapRestart.innerHTML =
+        '<div class="world-lap-card">'
+        + '<p class="world-lap-question">🌍🎉 ' + currentLap + '周目も制覇！世界一周を完全制覇しました！おめでとう！ 🎉🌍</p>'
+        + '</div>';
+      return;
+    }
     els.worldLapRestart.innerHTML =
       '<div class="world-lap-card">'
-      + '<p class="world-lap-question">🌍 ' + (Number(state.worldLap) || 1) + '周目を制覇しました！2周目をスタートしますか？</p>'
+      + '<p class="world-lap-question">🌍 ' + currentLap + '周目を制覇しました！2周目をスタートしますか？</p>'
       + '<button type="button" class="primary-btn" id="worldLapYesBtn">はい</button>'
       + '<button type="button" class="ghost-btn" id="worldLapNoBtn">いいえ</button>'
       + '</div>';
