@@ -3,7 +3,7 @@
  *
  * Students シート: id | name | passwordHash | salt | createdAt | grade | points | guardian | level | exp | lastLogin | prefectureCount | avatar | apologyBonusGrantedAt
  * | items | rareCollected | rareDefeats | thinkerMilestone | loggedCorrectCount | todayStats | hp | lastRankingTestMonth
- * | worldLap | worldLapStartLevel | worldBossDefeated | worldAllies | challengeCorrectTotal
+ * | worldLap | worldLapStartLevel | worldBossDefeated | worldAllies | (27列目: 原因不明のデータが入っていたため未使用) | challengeCorrectTotal
  *
  * worldLap/worldLapStartLevel/worldBossDefeated/worldAllies: 世界一周(ボス戦付き)。
  * 各ステージ(大陸)最後の国はボスで、30問連続正解で撃破するまで先へ進めない。
@@ -311,7 +311,8 @@ function parseJsonCell_(raw, fallback) {
 // 誤った生徒のデータを返すことはない(自己修復する)。
 var STUDENT_ID_INDEX_CACHE_KEY_ = 'studentIdIndex_v1';
 var STUDENT_ID_INDEX_CACHE_TTL_ = 21600; // CacheServiceの最大値(6時間)
-var STUDENT_ROW_COLUMNS_ = 27; // id 〜 challengeCorrectTotal
+var STUDENT_ROW_COLUMNS_ = 28; // id 〜 challengeCorrectTotal(27列目は原因不明のデータが
+// 入っていたため使わず、確実に未使用の28列目を使う)
 
 function rebuildStudentIdIndex_(sheet) {
   var lastRow = sheet.getLastRow();
@@ -380,7 +381,7 @@ function buildStudentRowObject_(rowIndex, d) {
     worldAllies: parseJsonCell_(d[25], []),
     // チャレンジ問題ランキング用。提出のたびに自己申告の正解数(1/2/3)を積み上げた累計値。
     // 既存の生徒は列が空欄のままなので0として扱う。
-    challengeCorrectTotal: Number(d[26]) || 0
+    challengeCorrectTotal: Number(d[27]) || 0
   };
 }
 
@@ -1229,7 +1230,7 @@ function handleChallengeRanking_(ctx, body) {
   for (var i = 1; i < data.length; i++) {
     var id = String(data[i][0]).trim();
     if (!id) continue;
-    var total = Number(data[i][26]) || 0;
+    var total = Number(data[i][27]) || 0;
     if (total <= 0) continue;
     var grade = data[i][5] || '';
     var entry = { id: id, total: total, grade: grade };
@@ -1547,7 +1548,7 @@ function handleSubmitTestPhoto_(ctx, body) {
       } else if (testType === 'challenge') {
         pointsAwarded = tier.mp;
         tierUsed = tier.id;
-        ctx.students.getRange(row.rowIndex, 27).setValue((row.challengeCorrectTotal || 0) + tier.count);
+        ctx.students.getRange(row.rowIndex, 28).setValue((row.challengeCorrectTotal || 0) + tier.count);
       } else if (testType === 'hyakuMasu') {
         pointsAwarded = HYAKUMASU_MP_;
       } else {

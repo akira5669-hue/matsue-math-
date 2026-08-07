@@ -474,7 +474,7 @@
   // 方程式の文章題（中1）。答えとなる整数を先に決め、そこから問題文の数値を
   // 逆算して作ることで、常に綺麗な整数解になるようにしている。
   function genEqWordProblem1() {
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 6);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       // ある数のa倍にbを足す(引く)とresultになる
@@ -561,22 +561,47 @@
         `x = ${cost - priceLo * total} ÷ ${priceHi - priceLo} = ${answer}`,
       ];
       wrongs = [total - answer, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
-    } else {
+    } else if (pat === 5) {
       // 比で分ける問題
       const ratioPairs = [[2, 3], [3, 4], [3, 5], [4, 5], [5, 7], [2, 5], [5, 8], [8, 9]];
       const [a, b] = ratioPairs[randInt(0, ratioPairs.length - 1)]; // a < b
       const k = randInt(3, 40);
       const total = (a + b) * k;
-      answer = a * k; // 少ない方(弟)の枚数
-      question = `${total}枚のカードを兄と弟の2人で分けるのに、兄と弟の枚数の比が${b}：${a}になるようにします。弟のカードは何枚ですか。`;
+      const askOlder = Math.random() < 0.5;
+      answer = askOlder ? b * k : a * k;
+      question = askOlder
+        ? `${total}枚のカードを兄と弟の2人で分けるのに、兄と弟の枚数の比が${b}：${a}になるようにします。兄のカードは何枚ですか。`
+        : `${total}枚のカードを兄と弟の2人で分けるのに、兄と弟の枚数の比が${b}：${a}になるようにします。弟のカードは何枚ですか。`;
       steps = [
         `比の1にあたる枚数をx枚とすると、兄は${b}x枚、弟は${a}x枚`,
         `${b}x + ${a}x = ${total}`,
         `${a + b}x = ${total}`,
         `x = ${total} ÷ ${a + b} = ${k}`,
-        `弟の枚数 = ${a} × ${k} = ${answer}`,
+        askOlder ? `兄の枚数 = ${b} × ${k} = ${answer}` : `弟の枚数 = ${a} × ${k} = ${answer}`,
       ];
-      wrongs = [b * k, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+      wrongs = [askOlder ? a * k : b * k, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+    } else {
+      // 比例式の利用: 2人がそれぞれ違う金額を持っていて、同じ金額を使ったら残金の比がp:qになった
+      const ratioPairs2 = [[2, 1], [3, 2], [4, 3], [5, 3], [5, 4], [3, 1], [7, 5]];
+      const [p, q] = ratioPairs2[randInt(0, ratioPairs2.length - 1)]; // p > q
+      answer = [50, 100, 150, 200, 250, 300, 400, 500][randInt(0, 7)]; // 買った品物の値段
+      const k = randInt(2, 12);
+      const m2 = answer + k * q; // 少ない方の残金
+      const m1 = answer + k * p; // 多い方の残金
+      const items = ['サインペン', 'ノート', 'ペン', '消しゴム', '色鉛筆'];
+      const item = items[randInt(0, items.length - 1)];
+      const namePairs = [['姉', '妹'], ['兄', '弟'], ['Aさん', 'Bさん']];
+      const [nameA, nameB] = namePairs[randInt(0, namePairs.length - 1)];
+      question = `${nameA}は${m1}円、${nameB}は${m2}円持っていました。2人とも同じ金額の${item}を買ったので、2人の残金の比は${p}：${q}になりました。2人が買った${item}の値段はいくらですか。`;
+      steps = [
+        `買った値段をx円とすると、(${m1} − x)：(${m2} − x) = ${p}：${q}`,
+        `${q}(${m1} − x) = ${p}(${m2} − x)`,
+        `${q * m1} − ${q}x = ${p * m2} − ${p}x`,
+        `${p}x − ${q}x = ${p * m2} − ${q * m1}`,
+        `${p - q}x = ${p * m2 - q * m1}`,
+        `x = ${p * m2 - q * m1} ÷ ${p - q} = ${answer}`,
+      ];
+      wrongs = [m1 - m2, answer + 50, answer - 50].filter((v) => v !== answer && v > 0);
     }
     return { category: 'eqWordProblem1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
