@@ -114,13 +114,24 @@
   var MAX_LEVEL = 9999;
 
   // 同じ単元ばかり周回してポイント・経験値を稼ぐのを防ぐため、単元ごとに1日の出題数へ
-  // 上限を設ける。90問解いた時点でその日は「コンプリート」扱いとしてチェックを外し、
-  // 選択できないようにする（100問は誤動作時の安全上限）。翌日になると自動的に解禁される。
-  var DAILY_CATEGORY_COMPLETE_AT = 90;
-  var DAILY_CATEGORY_HARD_CAP = 100;
+  // 上限を設ける。COMPLETE_AT問解いた時点でその日は「コンプリート」扱いとしてチェックを
+  // 外し、選択できないようにする（HARD_CAPは誤動作時の安全上限）。翌日になると自動的に
+  // 解禁される。2026-08-01に90問(安全上限100問)で開始し、2026-08-08から40問
+  // (安全上限50問)へ変更。
   var DAILY_CATEGORY_LIMIT_START = '2026-08-01';
+  var DAILY_CATEGORY_COMPLETE_AT_V1_ = 90;
+  var DAILY_CATEGORY_HARD_CAP_V1_ = 100;
+  var DAILY_CATEGORY_LIMIT_V2_START = '2026-08-08';
+  var DAILY_CATEGORY_COMPLETE_AT_V2_ = 40;
+  var DAILY_CATEGORY_HARD_CAP_V2_ = 50;
   function isDailyCategoryLimitActive() {
     return todayKey() >= DAILY_CATEGORY_LIMIT_START;
+  }
+  function dailyCategoryCompleteAt_() {
+    return todayKey() >= DAILY_CATEGORY_LIMIT_V2_START ? DAILY_CATEGORY_COMPLETE_AT_V2_ : DAILY_CATEGORY_COMPLETE_AT_V1_;
+  }
+  function dailyCategoryHardCap_() {
+    return todayKey() >= DAILY_CATEGORY_LIMIT_V2_START ? DAILY_CATEGORY_HARD_CAP_V2_ : DAILY_CATEGORY_HARD_CAP_V1_;
   }
   function ensureCategoryDailyReset(s) {
     var today = todayKey();
@@ -132,7 +143,7 @@
   function isCategoryCompleteToday(s, catId) {
     if (!isDailyCategoryLimitActive()) return false;
     ensureCategoryDailyReset(s);
-    return (s.categoryDailyCounts[catId] || 0) >= DAILY_CATEGORY_COMPLETE_AT;
+    return (s.categoryDailyCounts[catId] || 0) >= dailyCategoryCompleteAt_();
   }
 
   function todayKey() {
@@ -7045,9 +7056,11 @@
   }
 
   function renderSettings() {
-    els.settingsDailyLimitNote.textContent = isDailyCategoryLimitActive()
-      ? '📌 同じ単元は1日最大100問まで（90問でその日はコンプリート）。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！'
-      : '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。';
+    els.settingsDailyLimitNote.textContent = !isDailyCategoryLimitActive()
+      ? '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。'
+      : todayKey() >= DAILY_CATEGORY_LIMIT_V2_START
+      ? '📌 同じ単元は1日最大50問まで（40問でその日はコンプリート）。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！'
+      : '📌 同じ単元は1日最大100問まで（90問でその日はコンプリート）。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！ 📢8月8日から、1日最大50問（40問でコンプリート）に変更されます。';
     els.settingsGrid.innerHTML = CATEGORIES.map(c => {
       const cs = state.catStats[c.id];
       const acc = cs && cs.total >= 3
