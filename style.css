@@ -648,6 +648,18 @@ h1 {
   font-size: 13px;
   color: var(--c-ink-soft);
 }
+.login-gate-progress {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--c-accent, #4f6df5);
+}
+.login-gate-question {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.6;
+}
 .login-form { display: flex; flex-direction: column; gap: 6px; }
 .login-form[hidden] { display: none; }
 .login-label {

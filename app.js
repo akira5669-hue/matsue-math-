@@ -39,14 +39,18 @@
     }).then(function (res) { return res.json(); });
   }
 
-  // 「log」送信(正解数の記録)は、通信が不安定な端末だと失敗しても再送されず、
-  // その分だけサーバー側の記録正解数が実際より少なくなる不具合があった。経験値は
-  // 通信の成否に関係なく端末側で加算され続けるため、記録との差が開き、不正検知の
-  // 妥当性チェックで正当な経験値まで削られてしまうことがあった。失敗したlog送信を
-  // localStorageにキューイングし、後で自動的に再送する。
+  // 「log」送信(正解数の記録)を1問ごとに個別送信すると、たくさん解く生徒ほど
+  // Apps Scriptの実行回数(同時実行枠)を消費し、他の生徒のログイン・通信まで
+  // 詰まらせてしまう(実際に放課後の混雑時間帯にログインが極端に遅くなる問題が発生)。
+  // 1問ごとの即時送信をやめ、localStorageにキューイングしてから数秒分まとめて
+  // 1回のlogBatchリクエストで送信することで、実行回数を大幅に減らす。通信が
+  // 失敗してもキューに残ったままになるので、再送も兼ねる。
   var LOG_QUEUE_KEY_ = 'pendingLogQueue';
   var LOG_QUEUE_MAX_ = 500;
+  var LOG_BATCH_SIZE_ = 20;
+  var LOG_FLUSH_DEBOUNCE_MS_ = 4000;
   var logQueueFlushing = false;
+  var logFlushTimer_ = null;
 
   function loadLogQueue_() {
     try {
@@ -64,33 +68,50 @@
     if (queue.length > LOG_QUEUE_MAX_) queue = queue.slice(queue.length - LOG_QUEUE_MAX_);
     saveLogQueue_(queue);
   }
-  // キューを先頭から1件ずつ順番に再送する(並列で大量送信してサーバーに負荷をかけない
-  // ため)。成功した分だけキューから取り除き、失敗したら打ち切って次回の呼び出しに
-  // 委ねる(以後の項目の並び順は保つ)。
+  // キュー先頭からLOG_BATCH_SIZE_件(同じIDの分だけ、別の生徒の取りこぼし分が
+  // 混ざっていた場合はそこで区切る)をまとめて1回のlogBatchで送信する。成功した分だけ
+  // キューから取り除き、失敗したら打ち切って次回の呼び出しに委ねる。
   function flushLogQueue_() {
     if (logQueueFlushing) return;
     var queue = loadLogQueue_();
     if (queue.length === 0) return;
+    var targetId = queue[0].id;
+    var batch = [];
+    for (var i = 0; i < queue.length && batch.length < LOG_BATCH_SIZE_; i++) {
+      if (queue[i].id !== targetId) break;
+      batch.push(queue[i]);
+    }
+    if (batch.length === 0) return;
     logQueueFlushing = true;
-    var next = queue[0];
-    apiPost('log', next).then(function (res) {
+    var entries = batch.map(function (e) { return { category: e.category, correct: e.correct }; });
+    apiPost('logBatch', { id: targetId, entries: entries }).then(function (res) {
       logQueueFlushing = false;
       if (res && res.ok) {
         var remaining = loadLogQueue_();
-        remaining.shift();
+        remaining.splice(0, batch.length);
         saveLogQueue_(remaining);
-        flushLogQueue_();
+        if (remaining.length > 0) scheduleLogFlush_();
       }
     }).catch(function () {
       logQueueFlushing = false;
     });
   }
+  function scheduleLogFlush_() {
+    if (logFlushTimer_) return;
+    logFlushTimer_ = window.setTimeout(function () {
+      logFlushTimer_ = null;
+      flushLogQueue_();
+    }, LOG_FLUSH_DEBOUNCE_MS_);
+  }
   function logAnswer_(entry) {
-    apiPost('log', entry).then(function (res) {
-      if (!res || !res.ok) enqueueLog_(entry);
-    }).catch(function () {
-      enqueueLog_(entry);
-    });
+    enqueueLog_(entry);
+    var queueLength = loadLogQueue_().length;
+    if (queueLength >= LOG_BATCH_SIZE_) {
+      if (logFlushTimer_) { window.clearTimeout(logFlushTimer_); logFlushTimer_ = null; }
+      flushLogQueue_();
+    } else {
+      scheduleLogFlush_();
+    }
   }
 
   function loadSession() {
@@ -6873,6 +6894,12 @@
     numberlineTicks: document.querySelector('.nl-ticks'),
 
     loginCard: document.getElementById('loginCard'),
+    loginGateNotice: document.getElementById('loginGateNotice'),
+    loginGatePanel: document.getElementById('loginGatePanel'),
+    loginGateProgress: document.getElementById('loginGateProgress'),
+    loginGateQuestion: document.getElementById('loginGateQuestion'),
+    loginGateChoiceRow: document.getElementById('loginGateChoiceRow'),
+    loginGateResult: document.getElementById('loginGateResult'),
     tabLogin: document.getElementById('tabLogin'),
     tabRegister: document.getElementById('tabRegister'),
     loginForm: document.getElementById('loginForm'),
@@ -7479,9 +7506,11 @@
         state.rareType = assignRareType(state);
         saveGameState(state);
       } else if (doubleOrHalfFled) {
+        // 「本日のMPが半分に」という演出どおり、減らすのはあくまで今日稼いだ分
+        // (pointsToday)だけにする。以前はstate.points(累計MP)も一緒に減らしてしまっており、
+        // 生徒の累計MPが意図せず目減りするバグになっていた。
         const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
         const halfAmount = Math.floor(snapshot / 2);
-        state.points = Math.max(0, state.points - halfAmount);
         state.pointsToday = Math.max(0, state.pointsToday - halfAmount);
         missLineHtml += `<div class="enemy-quote-banner">💦 ダブルorハーフは逃げてしまった…本日のMPが半分に（-${halfAmount}MP）</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
@@ -7694,7 +7723,7 @@
       else { state.rareType = assignRareType(state); }
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', buildProgressSyncPayload(session.id)).then(function (res) {
+        debouncedSyncPoints_(session.id, function (res) {
           if (res && res.bonusAwarded > 0) {
             state.points += res.bonusAwarded;
             saveGameState(state);
@@ -7702,7 +7731,7 @@
             if (res.prefectureBonusAwarded > 0) window.alert(`🎉 都道府県制覇ボーナス！+${res.prefectureBonusAwarded}MP 🎉`);
             if (res.continentBonusAwarded > 0) window.alert(`🌏 大陸制覇ボーナス！+${res.continentBonusAwarded}MP 🌏`);
           }
-        }).catch(function () { });
+        });
       }
       let prefectureGainedHtml = '';
       if (newlyUnlockedPrefecture) {
@@ -7877,6 +7906,85 @@
     els.userName.textContent = (state.mathGodTitleEarned ? '【数学の神】' : '') + name;
   }
 
+  /* ---------- ログイン前チェック(文章題3問連続正解、8/10から) ---------- */
+  var LOGIN_GATE_START_ = '2026-08-10';
+  var LOGIN_GATE_REQUIRED_STREAK_ = 3;
+  var LOGIN_GATE_REWARD_MP_ = 10;
+  var GRADE_ORDER_ = ['小4', '小5', '小6', '中1', '中2', '中3'];
+  var GRADE_WORD_PROBLEM_CATEGORY_ = { '小4': 'timesWordProblem4', '小5': 'decWordProblem5', '小6': 'fracWordProblem6', '中1': 'eqWordProblem1', '中2': 'simulEqWordProblem2', '中3': 'quadEqWordProblem3' };
+  function isLoginGateActive_() {
+    return todayKey() >= LOGIN_GATE_START_;
+  }
+  // 自分の学年、および(小4以外は)1つ下の学年の文章題から出題する。
+  function loginGateCategoryIdsForGrade_(grade) {
+    var idx = GRADE_ORDER_.indexOf(grade);
+    if (idx === -1) return [];
+    var ids = [GRADE_WORD_PROBLEM_CATEGORY_[grade]];
+    if (idx > 0) ids.push(GRADE_WORD_PROBLEM_CATEGORY_[GRADE_ORDER_[idx - 1]]);
+    return ids.filter(Boolean);
+  }
+  var loginGate = { streak: 0, categories: [], current: null, pendingId: null, pendingName: null };
+
+  function startLoginGate(id, name, grade) {
+    loginGate.streak = 0;
+    loginGate.categories = CATEGORIES.filter(function (c) { return loginGateCategoryIdsForGrade_(grade).indexOf(c.id) !== -1; });
+    loginGate.pendingId = id;
+    loginGate.pendingName = name;
+    els.loginCard.hidden = true;
+    els.appMain.hidden = true;
+    els.loginGatePanel.hidden = false;
+    renderLoginGateQuestion();
+  }
+
+  function renderLoginGateQuestion() {
+    var cat = loginGate.categories[randInt(0, loginGate.categories.length - 1)];
+    var q = cat.gen();
+    loginGate.current = q;
+    els.loginGateProgress.textContent = loginGate.streak + '/' + LOGIN_GATE_REQUIRED_STREAK_;
+    els.loginGateQuestion.innerHTML = q.questionHtml || escHtml(String(q.question));
+    els.loginGateResult.textContent = '';
+    els.loginGateChoiceRow.innerHTML = '';
+    q.choices.forEach(function (choiceRaw) {
+      var choiceStr = String(choiceRaw);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'test-photo-tier-btn';
+      btn.dataset.value = choiceStr;
+      btn.innerHTML = stepToHtml(choiceStr);
+      btn.addEventListener('click', function () { handleLoginGateAnswer(choiceStr); });
+      els.loginGateChoiceRow.appendChild(btn);
+    });
+  }
+
+  function handleLoginGateAnswer(choiceStr) {
+    Array.from(els.loginGateChoiceRow.children).forEach(function (btn) { btn.disabled = true; });
+    var isCorrect = choiceStr === String(loginGate.current.answer);
+    if (isCorrect) {
+      loginGate.streak++;
+      if (loginGate.streak >= LOGIN_GATE_REQUIRED_STREAK_) {
+        finishLoginGate();
+        return;
+      }
+      els.loginGateResult.textContent = '✅ 正解！';
+      window.setTimeout(renderLoginGateQuestion, 700);
+    } else {
+      loginGate.streak = 0;
+      els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。最初からやり直しです。';
+      window.setTimeout(renderLoginGateQuestion, 1400);
+    }
+  }
+
+  function finishLoginGate() {
+    els.loginGatePanel.hidden = true;
+    var id = loginGate.pendingId;
+    var name = loginGate.pendingName;
+    state.points += LOGIN_GATE_REWARD_MP_;
+    saveGameState(state);
+    showApp(name, false);
+    window.alert('🎉 3問連続正解！+' + LOGIN_GATE_REWARD_MP_ + 'MP獲得！');
+    if (id) apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
+  }
+
   function showApp(name, isGuest) {
     els.loginCard.hidden = true;
     els.appMain.hidden = false;
@@ -7963,7 +8071,11 @@
       state.avatar = parseAvatarJson(res.avatar);
       saveGameState(state);
       reconcilePoints(id, res);
-      showApp(res.name, false);
+      if (isLoginGateActive_()) {
+        startLoginGate(id, res.name, res.grade);
+      } else {
+        showApp(res.name, false);
+      }
       if (res.pointsReset) {
         window.alert('5日以上ログインが無かったため、MPが0にリセットされました。レベル・EXPはそのまま残っています。');
       }
@@ -7997,6 +8109,22 @@
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
       mathGodTitleEarned: state.mathGodTitleEarned,
     };
+  }
+
+  // 敵を倒すたびに毎回即座にsyncPointsを送ると、短時間に連続で倒した時にApps Scriptの
+  // 実行回数を無駄に消費してしまう。数秒以内の連続呼び出しをまとめ、最後の状態だけを
+  // 1回で送信する(デバウンス)。ボーナス付与の判定はサーバー側で「前回保存値→今回の値」の
+  // 範囲を見て行っているため、間の呼び出しを省略しても正しく判定される。
+  var SYNC_POINTS_DEBOUNCE_MS_ = 3000;
+  var syncPointsDebounceTimer_ = null;
+  function debouncedSyncPoints_(id, onResult) {
+    if (syncPointsDebounceTimer_) window.clearTimeout(syncPointsDebounceTimer_);
+    syncPointsDebounceTimer_ = window.setTimeout(function () {
+      syncPointsDebounceTimer_ = null;
+      apiPost('syncPoints', buildProgressSyncPayload(id)).then(function (res) {
+        if (onResult) onResult(res);
+      }).catch(function () { });
+    }, SYNC_POINTS_DEBOUNCE_MS_);
   }
 
   // ログイン・再開時に、端末側とサーバー側の進捗のうち進んでいる方に揃える。
@@ -8264,6 +8392,8 @@
     var session = loadSession();
     if (!session || !session.id) { finishLogout(); return; }
     els.logoutBtn.disabled = true;
+    if (logFlushTimer_) { window.clearTimeout(logFlushTimer_); logFlushTimer_ = null; }
+    flushLogQueue_();
     var timeout = new Promise(function (resolve) { window.setTimeout(resolve, 4000); });
     Promise.race([apiPost('syncPoints', buildProgressSyncPayload(session.id)), timeout])
       .catch(function () { })
@@ -9747,6 +9877,7 @@
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
 
   applyMenuNewBadges();
+  els.loginGateNotice.hidden = isLoginGateActive_();
 
   // 未送信のlogキューを、起動時・オンライン復帰時・定期的(2分ごと)に再送を試みる。
   flushLogQueue_();

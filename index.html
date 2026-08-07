@@ -40,6 +40,7 @@
   </header>
 
   <section class="login-card" id="loginCard">
+    <p class="login-hint" id="loginGateNotice" hidden>📢 8月10日から、ログイン時に文章題を3問連続正解する必要があります（達成で+10MP）。</p>
     <div class="login-tabs" role="tablist">
       <button type="button" class="login-tab is-active" id="tabLogin" role="tab" aria-selected="true">ログイン</button>
       <button type="button" class="login-tab" id="tabRegister" role="tab" aria-selected="false">新規登録</button>
@@ -116,6 +117,14 @@
     </form>
 
     <button type="button" class="guest-link" id="resetBackBtn">戻る</button>
+  </section>
+
+  <section class="login-card" id="loginGatePanel" hidden>
+    <p class="login-hint">🔐 文章題を3問連続正解すると、ログインできます（達成で+10MP）。間違えると最初からやり直しです。</p>
+    <p class="login-gate-progress" id="loginGateProgress">0/3</p>
+    <p class="login-gate-question" id="loginGateQuestion"></p>
+    <div class="test-photo-tier-row" id="loginGateChoiceRow"></div>
+    <p class="test-photo-result" id="loginGateResult"></p>
   </section>
 
   <section class="login-card" id="guardianCard" hidden>

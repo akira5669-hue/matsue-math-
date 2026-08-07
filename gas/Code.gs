@@ -437,6 +437,8 @@ function doPost(e) {
     return jsonOut_(handleLogin_(ctx, body));
   } else if (action === 'log') {
     return jsonOut_(handleLog_(ctx, body));
+  } else if (action === 'logBatch') {
+    return jsonOut_(handleLogBatch_(ctx, body));
   } else if (action === 'history') {
     return jsonOut_(handleHistory_(ctx, body));
   } else if (action === 'syncPoints') {
@@ -712,6 +714,47 @@ function handleLog_(ctx, body) {
   ctx.students.getRange(row.rowIndex, 20).setValue(JSON.stringify(stats));
 
   return { ok: true };
+}
+
+// handleLog_を1問ずつ呼ぶと、生徒がたくさん解くほどApps Scriptの実行回数(同時実行枠)を
+// 大量に消費してしまう。クライアント側で数秒分まとめてキューイングし、まとめて1回の
+// 実行でRecordsシートへ書き込む(実行回数を大幅に削減する)。
+function handleLogBatch_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var entries = Array.isArray(body.entries) ? body.entries : [];
+  if (!id || entries.length === 0) return { ok: false, error: 'missing_fields' };
+
+  var row = findStudentRow_(ctx.students, id);
+  if (!row) return { ok: false, error: 'not_found' };
+
+  var today = dateKeyTokyo_(new Date());
+  var stats = (row.todayStats && row.todayStats.date === today) ? row.todayStats : { date: today, correct: 0, total: 0 };
+  var rows = [];
+  var correctCount = 0;
+  var now = new Date();
+  for (var i = 0; i < entries.length; i++) {
+    var category = String((entries[i] && entries[i].category) || '');
+    if (!category) continue;
+    var correct = !!(entries[i] && entries[i].correct);
+    rows.push([now, id, row.name, category, correct]);
+    if (correct) correctCount++;
+    stats.total++;
+    if (correct) stats.correct++;
+  }
+  if (rows.length === 0) return { ok: true };
+
+  var startRow = ctx.records.getLastRow() + 1;
+  // 先頭0埋けのIDが数値化されて消えないよう、書き込み前にID列を文字列書式にする
+  // (handleLog_の単発appendRowと同じ理由)。
+  ctx.records.getRange(startRow, 2, rows.length, 1).setNumberFormat('@');
+  ctx.records.getRange(startRow, 1, rows.length, 5).setValues(rows);
+
+  if (correctCount > 0) {
+    ctx.students.getRange(row.rowIndex, 19).setValue(row.loggedCorrectCount + correctCount);
+  }
+  ctx.students.getRange(row.rowIndex, 20).setValue(JSON.stringify(stats));
+
+  return { ok: true, logged: rows.length };
 }
 
 function dateKeyTokyo_(d) {
