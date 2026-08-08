@@ -361,6 +361,14 @@
     return neg ? `−(${num}/${den})` : `${num}/${den}`;
   }
 
+  // 30分刻みの分数を「H時間M分」表記に変換する（峠越え往復問題などで使用）。
+  function fmtHM_(totalMinutes) {
+    const h = Math.floor(totalMinutes / 60), m = totalMinutes % 60;
+    if (h === 0) return `${m}分`;
+    if (m === 0) return `${h}時間`;
+    return `${h}時間${m}分`;
+  }
+
   function stepToHtml(s) {
     const parts = String(s).split(/(√?[\w]+\/√?[\w]+)/);
     return parts.map((part, i) => {
@@ -606,6 +614,209 @@
     return { category: 'eqWordProblem1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  // 方程式の文章題の応用（中1）。genEqWordProblem1と同様、答えを先に決めてから
+  // 問題文の数値を逆算する。
+  function genEqWordProblemAdv1() {
+    const pat = randInt(0, 9);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 年齢問題: x年後に父の年齢が子のn倍になる
+      let childNow, n, x, fatherNow;
+      for (let tries = 0; tries < 30; tries++) {
+        childNow = randInt(6, 12); n = randInt(2, 4); x = randInt(1, 15);
+        fatherNow = n * (childNow + x) - x;
+        if (fatherNow >= 25 && fatherNow <= 55 && fatherNow > childNow) break;
+      }
+      if (!(fatherNow >= 25 && fatherNow <= 55)) return genEqWordProblemAdv1();
+      answer = x;
+      question = `現在、父の年齢は${fatherNow}歳、子の年齢は${childNow}歳です。父の年齢が子の年齢の${n}倍になるのは、今から何年後ですか。`;
+      steps = [
+        `x年後、父は(${fatherNow}+x)歳、子は(${childNow}+x)歳`,
+        `${fatherNow}+x = ${n}×(${childNow}+x)`,
+        `${fatherNow}+x = ${n * childNow}+${n}x`,
+        `x − ${n}x = ${n * childNow} − ${fatherNow}`,
+        `${1 - n}x = ${n * childNow - fatherNow}`,
+        `x = ${n * childNow - fatherNow} ÷ ${1 - n} = ${answer}`,
+      ];
+      wrongs = [answer + 1, answer - 1, n].filter((v) => v !== answer && v > 0);
+    } else if (pat === 1) {
+      // 割合の増減問題: 去年からr%増減して今年の人数になった
+      answer = randInt(2, 15) * 20;
+      const r = [5, 10, 15, 20, 25, 30, 40, 50][randInt(0, 7)];
+      const isIncrease = Math.random() < 0.5;
+      const rate = isIncrease ? 100 + r : 100 - r;
+      const result = (answer * rate) / 100;
+      question = `ある美術部の部員数は、去年から${r}%${isIncrease ? '増えて' : '減って'}、今年は${result}人になりました。去年の部員数を求めなさい。`;
+      steps = [
+        `去年の部員数をx人とすると、今年の部員数は ${rate}/100 x`,
+        `${rate}/100 x = ${result}`,
+        `x = ${result} × 100 ÷ ${rate} = ${answer}`,
+      ];
+      wrongs = [result, answer + 10, answer - 10].filter((v) => v !== answer && v > 0);
+    } else if (pat === 2) {
+      // 食塩水の混合(重さを求める): 濃度の異なる2つの食塩水を混ぜて目標濃度にする
+      const ratioPairs = [[1, 1], [2, 1], [1, 2], [3, 1], [1, 3], [2, 3], [3, 2], [3, 4], [4, 3]];
+      const [p, q] = ratioPairs[randInt(0, ratioPairs.length - 1)];
+      const s = p + q;
+      const m = randInt(1, 5);
+      const diff = s * m;
+      const c1 = randInt(3, 15);
+      const c2 = c1 + diff;
+      if (c2 > 35) return genEqWordProblemAdv1();
+      const ct = c1 + q * m;
+      const unit = [20, 50, 100][randInt(0, 2)];
+      const w1 = p * unit, w2 = q * unit;
+      const total = w1 + w2;
+      const askW1 = Math.random() < 0.5;
+      answer = askW1 ? w1 : w2;
+      question = `${c1}%の食塩水と${c2}%の食塩水を混ぜて、${ct}%の食塩水を${total}g作ります。${askW1 ? c1 : c2}%の食塩水は何g混ぜればよいですか。`;
+      if (askW1) {
+        steps = [
+          `${c1}%の食塩水をxgとすると、${c2}%の食塩水は(${total}−x)g`,
+          `${c1}x + ${c2}(${total}−x) = ${ct}×${total}`,
+          `${c1}x + ${c2 * total} − ${c2}x = ${ct * total}`,
+          `${c1 - c2}x = ${ct * total} − ${c2 * total}`,
+          `x = ${ct * total - c2 * total} ÷ ${c1 - c2} = ${answer}`,
+        ];
+      } else {
+        steps = [
+          `${c2}%の食塩水をxgとすると、${c1}%の食塩水は(${total}−x)g`,
+          `${c1}(${total}−x) + ${c2}x = ${ct}×${total}`,
+          `${c1 * total} − ${c1}x + ${c2}x = ${ct * total}`,
+          `${c2 - c1}x = ${ct * total} − ${c1 * total}`,
+          `x = ${ct * total - c1 * total} ÷ ${c2 - c1} = ${answer}`,
+        ];
+      }
+      wrongs = [total - answer, answer + 10, answer - 10].filter((v) => v !== answer && v > 0);
+    } else if (pat === 3) {
+      // 食塩を追加して濃度を上げる問題
+      const d = [4, 5, 8, 10, 20, 25, 40, 50][randInt(0, 7)];
+      const c2 = 100 - d;
+      const c1 = randInt(2, c2 - 3);
+      const k = randInt(2, 15);
+      const W = d * k;
+      answer = k * (c2 - c1);
+      if (W < 50 || W > 2000 || answer < 5 || answer > 500) return genEqWordProblemAdv1();
+      question = `${c1}%の食塩水が${W}gあります。これに食塩を何gか加えて、${c2}%の食塩水にしたい。食塩を何g加えればよいですか。`;
+      steps = [
+        `加える食塩の重さをxgとすると`,
+        `${W}×${c1}/100 + x = (${W}+x)×${c2}/100`,
+        `両辺に100をかけて: ${W * c1} + 100x = ${c2}(${W}+x)`,
+        `${W * c1} + 100x = ${c2 * W} + ${c2}x`,
+        `100x − ${c2}x = ${c2 * W} − ${W * c1}`,
+        `${100 - c2}x = ${c2 * W - W * c1}`,
+        `x = ${c2 * W - W * c1} ÷ ${100 - c2} = ${answer}`,
+      ];
+      wrongs = [answer + 10, answer - 10, W - answer].filter((v) => v !== answer && v > 0);
+    } else if (pat === 4) {
+      // 池のまわりを反対方向に進んで出会う問題
+      const a = [40, 50, 60, 70, 80, 90, 100, 120][randInt(0, 7)];
+      const b = [30, 40, 50, 60, 70, 80][randInt(0, 5)];
+      answer = randInt(3, 20);
+      const C = (a + b) * answer;
+      question = `1周${C}mの池のまわりを、Aさんは分速${a}m、Bさんは分速${b}mで、同じ地点から反対方向に同時に出発しました。2人が出会うのは、出発してから何分後ですか。`;
+      steps = [
+        `x分後に出会うとすると、2人が進んだ道のりの和が1周分になる`,
+        `${a}x + ${b}x = ${C}`,
+        `${a + b}x = ${C}`,
+        `x = ${C} ÷ ${a + b} = ${answer}`,
+      ];
+      wrongs = [answer + 1, answer - 1, Math.round(C / a)].filter((v) => v !== answer && v > 0);
+    } else if (pat === 5) {
+      // 池のまわりを同じ方向に進んで追いつく問題
+      const b = [30, 40, 50, 60, 70][randInt(0, 4)];
+      const diff = [10, 20, 30, 40, 50][randInt(0, 4)];
+      const a = b + diff;
+      answer = randInt(4, 25);
+      const C = diff * answer;
+      question = `1周${C}mの池のまわりを、Aさんは分速${a}m、Bさんは分速${b}mで、同じ地点から同じ方向に同時に出発しました。AさんがBさんに1周差をつけて追いつくのは、出発してから何分後ですか。`;
+      steps = [
+        `x分後に追いつくとすると、2人が進んだ道のりの差が1周分になる`,
+        `${a}x − ${b}x = ${C}`,
+        `${diff}x = ${C}`,
+        `x = ${C} ÷ ${diff} = ${answer}`,
+      ];
+      wrongs = [answer + 1, answer - 1, Math.round(C / a)].filter((v) => v !== answer && v > 0);
+    } else if (pat === 6) {
+      // ケーキと箱の値段問題
+      const box = randInt(50, 300);
+      const c = randInt(20, 200);
+      const cake = box + c;
+      const n = randInt(2, 8);
+      const total = n * cake + box;
+      answer = cake;
+      question = `ケーキの値段は、箱の値段より${c}円高く、ケーキ${n}個と箱1個を買うと、代金の合計は${total}円になりました。ケーキ1個の値段を求めなさい。`;
+      steps = [
+        `箱の値段をx円とすると、ケーキ1個の値段は(x+${c})円`,
+        `${n}(x+${c}) + x = ${total}`,
+        `${n}x + ${n * c} + x = ${total}`,
+        `${n + 1}x = ${total} − ${n * c} = ${total - n * c}`,
+        `x = ${total - n * c} ÷ ${n + 1} = ${box}`,
+        `ケーキ1個の値段 = ${box} + ${c} = ${answer}`,
+      ];
+      wrongs = [box, answer + 10, answer - 10].filter((v) => v !== answer && v > 0);
+    } else if (pat === 7) {
+      // 往復問題: 行きと帰りで速さが異なり、往復の合計時間が分かっている
+      const speeds = [3, 4, 5, 6, 8];
+      let a, b; do { a = speeds[randInt(0, speeds.length - 1)]; b = speeds[randInt(0, speeds.length - 1)]; } while (a === b);
+      const k = randInt(1, 3);
+      answer = a * b * k;
+      const t = (a + b) * k;
+      if (answer > 80 || t > 10) return genEqWordProblemAdv1();
+      question = `Pさんの家から公園までの道のりを、行きは時速${a}km、帰りは時速${b}kmで往復したところ、往復で合計${t}時間かかりました。家から公園までの道のりを求めなさい。`;
+      steps = [
+        `家から公園までの道のりをxkmとすると`,
+        `x/${a} + x/${b} = ${t}`,
+        `両辺に${a * b}をかけて: ${b}x + ${a}x = ${t * a * b}`,
+        `${a + b}x = ${t * a * b}`,
+        `x = ${t * a * b} ÷ ${a + b} = ${answer}`,
+      ];
+      wrongs = [answer + a, answer - a, a * b].filter((v) => v !== answer && v > 0);
+    } else if (pat === 8) {
+      // 連続する3つの奇数の和
+      const base = randInt(6, 100);
+      const mid = 2 * base + 1;
+      const n = mid - 2, l = mid + 2;
+      const sum = n + mid + l;
+      const ask = randInt(0, 2);
+      answer = ask === 0 ? n : ask === 2 ? l : mid;
+      const askLabel = ask === 0 ? '小さい方' : ask === 2 ? '大きい方' : '真ん中';
+      question = `連続する3つの奇数があります。この3つの数の和が${sum}であるとき、${askLabel}の数を求めなさい。`;
+      steps = [
+        `真ん中の奇数をxとすると、3つの奇数は (x−2)、x、(x+2)`,
+        `(x−2) + x + (x+2) = ${sum}`,
+        `3x = ${sum}`,
+        `x = ${sum} ÷ 3 = ${mid}`,
+      ];
+      if (ask === 0) steps.push(`小さい方の数 = ${mid} − 2 = ${answer}`);
+      if (ask === 2) steps.push(`大きい方の数 = ${mid} + 2 = ${answer}`);
+      wrongs = [n, mid, l].filter((v) => v !== answer);
+    } else {
+      // 二時点の年齢比問題: 現在k1倍、y年後にk2倍になる
+      const k1 = randInt(3, 6);
+      const k2 = randInt(2, k1 - 1);
+      const base = k2 - 1;
+      const mult = randInt(2, 10);
+      const x = base * mult;
+      const y = mult * (k1 - k2);
+      const fatherNow = k1 * x;
+      if (x < 4 || x > 25 || y < 2 || y > 40 || fatherNow > 70) return genEqWordProblemAdv1();
+      answer = x;
+      question = `現在、母の年齢は子の年齢の${k1}倍です。${y}年後には、母の年齢は子の年齢の${k2}倍になります。現在の子の年齢を求めなさい。`;
+      steps = [
+        `現在の子の年齢をx歳とすると、母の年齢は${k1}x歳`,
+        `${y}年後、子は(x+${y})歳、母は(${k1}x+${y})歳`,
+        `${k1}x + ${y} = ${k2}(x + ${y})`,
+        `${k1}x + ${y} = ${k2}x + ${k2 * y}`,
+        `${k1}x − ${k2}x = ${k2 * y} − ${y}`,
+        `${k1 - k2}x = ${k2 * y - y}`,
+        `x = ${k2 * y - y} ÷ ${k1 - k2} = ${answer}`,
+      ];
+      wrongs = [answer + 2, answer - 2, y].filter((v) => v !== answer && v > 0);
+    }
+    return { category: 'eqWordProblemAdv1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   function genExpand2() {
     const pat = randInt(0, 1);
     let q, answer, steps, wrongs;
@@ -846,6 +1057,173 @@
       wrongs = [askX ? y : x, answer + speed1, answer - speed1].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer && v > 0);
     }
     return { category: 'simulEqWordProblem2', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 連立方程式の文章題の応用（中2）。genSimulEqWordProblem2と同様、答え(x,y)を
+  // 先に決めてから問題文の数値を逆算する。
+  function genSimulEqWordProblemAdv2() {
+    const pat = randInt(0, 6);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 峠越えの往復問題: 上り・下りの速さが決まっていて、往復それぞれの所要時間から道のりを求める
+      const PAIRS = [[3, 6], [4, 8], [2, 6], [2, 4], [5, 10], [4, 12], [6, 12], [2, 8], [3, 12]];
+      const [su, sd] = PAIRS[randInt(0, PAIRS.length - 1)];
+      const k = sd / su, g = sd / 2;
+      let a, b, x, y, t1h, t2h;
+      for (let tries = 0; tries < 30; tries++) {
+        a = randInt(1, 6); b = randInt(1, 6);
+        x = g * a; y = g * b;
+        t1h = k * a + b; t2h = k * b + a;
+        if (x >= 1 && x <= 60 && y >= 1 && y <= 60 && t1h >= 2 && t1h <= 20 && t2h >= 2 && t2h <= 20) break;
+      }
+      if (!(x >= 1 && x <= 60 && y >= 1 && y <= 60)) return genSimulEqWordProblemAdv2();
+      const askWhich = randInt(0, 2);
+      answer = askWhich === 0 ? x : askWhich === 1 ? y : x + y;
+      const t1Label = fmtHM_(t1h * 30), t2Label = fmtHM_(t2h * 30);
+      const askLabel = askWhich === 0 ? 'A町から峠の頂上までの道のり' : askWhich === 1 ? '峠の頂上からB町までの道のり' : 'A町からB町までの道のり';
+      question = `A町から峠を越えてB町まで往復します。行きも帰りも上りは時速${su}km、下りは時速${sd}kmで歩くと、行きは${t1Label}、帰りは${t2Label}かかりました。${askLabel}を求めなさい。`;
+      steps = [
+        `A町から峠の頂上までの道のりをxkm、頂上からB町までの道のりをykmとすると`,
+        `行き(上りx・下りy): x/${su} + y/${sd} = ${t1h}/2 …①`,
+        `帰り(上りy・下りx): y/${su} + x/${sd} = ${t2h}/2 …②`,
+        `①、②を解くと、x=${x}、y=${y}`,
+        askWhich === 2 ? `A町からB町までの道のり = ${x}+${y} = ${answer}km` : `答え: ${answer}km`,
+      ];
+      wrongs = [askWhich === 0 ? y : x, x + y, answer + g].filter((v, i, arr) => arr.indexOf(v) === i && v !== answer && v > 0);
+    } else if (pat === 1) {
+      // 2桁の自然数の入れ替え問題
+      let x, y;
+      do { x = randInt(1, 9); y = randInt(0, 9); } while (x === y);
+      const S = x + y;
+      const diff = 9 * (y - x);
+      answer = 10 * x + y;
+      question = `十の位の数と一の位の数の和が${S}である2桁の自然数があります。この数の十の位の数と一の位の数を入れかえると、もとの数より${Math.abs(diff)}${diff > 0 ? '大きく' : '小さく'}なります。もとの自然数を求めなさい。`;
+      steps = [
+        `もとの数の十の位の数をx、一の位の数をyとすると`,
+        `x + y = ${S} …①`,
+        `(10y+x) − (10x+y) = ${diff} → 9y − 9x = ${diff} → y − x = ${diff / 9} …②`,
+        `①、②を解くと、x=${x}、y=${y}`,
+        `もとの自然数 = 10×${x} + ${y} = ${answer}`,
+      ];
+      wrongs = [10 * y + x, answer + 9, answer - 9].filter((v) => v !== answer && v > 0);
+    } else if (pat === 2) {
+      // 割合の増減で全体数が変わらない問題(アルミ缶・スチール缶)
+      const m = randInt(2, 15);
+      const x = 20 * m, y = 25 * m; // 先月のアルミ缶・スチール缶
+      const total = x + y;
+      const nowAlum = 21 * m, nowSteel = 24 * m; // 今月(アルミ+5%、スチール-4%)
+      const askWhich = randInt(0, 1);
+      answer = askWhich === 0 ? nowAlum : nowSteel;
+      question = `A中学校の生徒が拾ったアルミ缶とスチール缶の個数は、先月合わせて${total}個でした。今月は、アルミ缶の個数が5%増え、スチール缶の個数は4%減りましたが、全体の個数は変わりませんでした。先月拾ったアルミ缶の個数をx個、スチール缶の個数をy個として、今月拾った${askWhich === 0 ? 'アルミ缶' : 'スチール缶'}の個数を求めなさい。`;
+      steps = [
+        `x + y = ${total} …①`,
+        `1.05x + 0.96y = ${total} …②(全体の個数は変わらない)`,
+        `①、②を解くと、x=${x}、y=${y}`,
+        `今月のアルミ缶 = 1.05×${x} = ${nowAlum}個、今月のスチール缶 = 0.96×${y} = ${nowSteel}個`,
+      ];
+      wrongs = [askWhich === 0 ? nowSteel : nowAlum, answer + m, answer - m].filter((v) => v !== answer && v > 0);
+    } else if (pat === 3) {
+      // 列車が鉄橋・トンネルを通過する問題
+      let x, y, t1, t2, L1, L2;
+      for (let tries = 0; tries < 30; tries++) {
+        x = randInt(80, 300); y = randInt(15, 30);
+        t1 = randInt(10, 25); t2 = randInt(t1 + 15, t1 + 60);
+        L1 = y * t1 - x; L2 = y * t2 - x;
+        if (L1 >= 80 && L1 <= 3000 && L2 > L1 && L2 <= 6000) break;
+      }
+      if (!(L1 >= 80 && L2 > L1)) return genSimulEqWordProblemAdv2();
+      const askWhich = randInt(0, 1);
+      answer = askWhich === 0 ? x : y;
+      question = `ある列車が、長さ${L1}mの鉄橋を渡り始めてから渡り終わるまでに${t1}秒かかり、長さ${L2}mのトンネルに入り始めてから出てしまうまでに${t2}秒かかりました。列車の長さをxm、速さを秒速ymとして、${askWhich === 0 ? '列車の長さ' : '列車の速さ(秒速)'}を求めなさい。`;
+      steps = [
+        `鉄橋: x + ${L1} = ${t1}y …①`,
+        `トンネル: x + ${L2} = ${t2}y …②`,
+        `②−①: ${L2 - L1} = ${t2 - t1}y`,
+        `y = ${L2 - L1} ÷ ${t2 - t1} = ${y}`,
+        `①に代入: x = ${t1}×${y} − ${L1} = ${x}`,
+      ];
+      wrongs = [askWhich === 0 ? y : x, answer + 5, answer - 5].filter((v) => v !== answer && v > 0);
+    } else if (pat === 4) {
+      // 池のまわりを回る出会い・追いつき問題(兄・妹両方の速さを連立方程式で求める)
+      let a, b, diff, k, t1, t2, C;
+      for (let tries = 0; tries < 30; tries++) {
+        a = randInt(80, 180); diff = randInt(20, 80); b = a - diff;
+        if (b < 20) continue;
+        k = randInt(1, 3);
+        t1 = k * diff; t2 = k * (a + b); C = k * (a * a - b * b);
+        if (C >= 500 && C <= 6000 && t1 >= 3 && t1 <= 40 && t2 > t1 && t2 <= 90) break;
+      }
+      if (!(C >= 500 && C <= 6000)) return genSimulEqWordProblemAdv2();
+      const askWhich = randInt(0, 1);
+      answer = askWhich === 0 ? a : b;
+      question = `周囲${C}mの池があります。このまわりを兄は走って、妹は歩いて、同じ地点を同時に出発します。反対方向にまわると、${t1}分後に出会います。また、同じ方向にまわると、${t2}分後に兄は妹に追いつきます。${askWhich === 0 ? '兄' : '妹'}の速さ(分速)を求めなさい。`;
+      steps = [
+        `兄の分速をxm、妹の分速をymとすると`,
+        `反対方向: (x+y)×${t1} = ${C} → x+y = ${a + b} …①`,
+        `同じ方向: (x−y)×${t2} = ${C} → x−y = ${diff} …②`,
+        `①、②を解くと、x=${a}、y=${b}`,
+      ];
+      wrongs = [askWhich === 0 ? b : a, answer + 10, answer - 10].filter((v) => v !== answer && v > 0);
+    } else if (pat === 5) {
+      // 濃度の異なる2種類の砂糖水A・Bの濃さを求める問題
+      const RATIOS = [[5, 3], [3, 1], [1, 1], [2, 1], [3, 2], [4, 1], [1, 3], [2, 3], [1, 2], [4, 3]];
+      let idx1, idx2;
+      do { idx1 = randInt(0, RATIOS.length - 1); idx2 = randInt(0, RATIOS.length - 1); } while (idx1 === idx2 || RATIOS[idx1][0] * RATIOS[idx2][1] === RATIOS[idx1][1] * RATIOS[idx2][0]);
+      const [p1, q1] = RATIOS[idx1], [p2, q2] = RATIOS[idx2];
+      const s1 = p1 + q1, s2 = p2 + q2;
+      const L = lcmFrac(s1, s2);
+      const m1 = L / s1, m2 = L / s2;
+      let a, b, u, conc1, conc2;
+      for (let tries = 0; tries < 30; tries++) {
+        u = randInt(1, 3);
+        a = randInt(5, 30);
+        b = a + L * u;
+        conc1 = a + q1 * u * m1;
+        conc2 = a + q2 * u * m2;
+        if (b >= 3 && b <= 65 && conc1 >= 1 && conc1 <= 90 && conc2 >= 1 && conc2 <= 90) break;
+      }
+      if (!(b >= 3 && b <= 65)) return genSimulEqWordProblemAdv2();
+      const unit1 = [50, 100, 150, 200][randInt(0, 3)];
+      const unit2 = [50, 100, 150, 200][randInt(0, 3)];
+      const w1A = p1 * unit1, w1B = q1 * unit1, total1 = w1A + w1B;
+      const w2A = p2 * unit2, w2B = q2 * unit2, total2 = w2A + w2B;
+      const askWhich = randInt(0, 1);
+      answer = askWhich === 0 ? a : b;
+      question = `2種類の砂糖水A、Bがあります。砂糖水A ${w1A}gと砂糖水B ${w1B}gを混ぜ合わせると${conc1}%の砂糖水ができ、砂糖水A ${w2A}gと砂糖水B ${w2B}gを混ぜ合わせると${conc2}%の砂糖水ができます。このとき、砂糖水${askWhich === 0 ? 'A' : 'B'}の濃さを求めなさい。`;
+      steps = [
+        `砂糖水Aの濃さをx%、砂糖水Bの濃さをy%とすると`,
+        `${w1A}x + ${w1B}y = ${total1}×${conc1} …①`,
+        `${w2A}x + ${w2B}y = ${total2}×${conc2} …②`,
+        `①、②を解くと、x=${a}、y=${b}`,
+      ];
+      wrongs = [askWhich === 0 ? b : a, answer + 5, answer - 5].filter((v) => v !== answer && v > 0);
+    } else {
+      // 兄弟でお金を出し合って本を買う割合の問題
+      let x, y, r1, r2, price, keep1, keep2, diff;
+      const RATE_LIST = [10, 15, 20, 25, 30, 35, 40, 45, 50];
+      for (let tries = 0; tries < 30; tries++) {
+        x = randInt(15, 50) * 100; y = randInt(15, 50) * 100;
+        r1 = RATE_LIST[randInt(0, RATE_LIST.length - 1)];
+        do { r2 = RATE_LIST[randInt(0, RATE_LIST.length - 1)]; } while (r2 === r1);
+        price = (r1 * x) / 100 + (r2 * y) / 100;
+        keep1 = 100 - r1; keep2 = 100 - r2;
+        diff = (keep2 * y) / 100 - (keep1 * x) / 100;
+        if (price >= 500 && price <= 6000 && Math.abs(diff) >= 50 && Math.abs(diff) <= 2000) break;
+      }
+      if (!(price >= 500 && price <= 6000)) return genSimulEqWordProblemAdv2();
+      const askWhich = randInt(0, 1);
+      answer = askWhich === 0 ? x : y;
+      const bigger = diff >= 0 ? '弟' : '兄', smaller = diff >= 0 ? '兄' : '弟';
+      question = `兄と弟でお金を出し合って、${price}円の本を1冊買います。兄は自分の所持金の${r1}%、弟は自分の所持金の${r2}%を出して、代金をちょうど払いました。本を買った後、2人の残金を比べたところ、${bigger}の所持金が${smaller}より${Math.abs(diff)}円多くなりました。本を買う前の${askWhich === 0 ? '兄' : '弟'}の所持金を求めなさい。`;
+      steps = [
+        `兄の所持金をx円、弟の所持金をy円とすると`,
+        `${r1}/100 x + ${r2}/100 y = ${price} …①`,
+        `${keep2}/100 y − ${keep1}/100 x = ${diff} …②`,
+        `①、②を解くと、x=${x}、y=${y}`,
+      ];
+      wrongs = [askWhich === 0 ? y : x, answer + 500, answer - 500].filter((v) => v !== answer && v > 0);
+    }
+    return { category: 'simulEqWordProblemAdv2', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   function quadPolyStr(x2C, xC, con) {
@@ -1666,6 +2044,7 @@
     { id: 'maxof4',     label: '大小関係（中1）',                 gen: genMaxOf4 },
     { id: 'equation',   label: '一次方程式（中1）',               gen: genEquation },
     { id: 'eqWordProblem1', label: '方程式の文章題（中1）',        gen: genEqWordProblem1 , addedDate: '2026-08-01' },
+    { id: 'eqWordProblemAdv1', label: '方程式の文章題の応用（中1）', gen: genEqWordProblemAdv1 , addedDate: '2026-08-08' },
     { id: 'proportion', label: '比例・反比例（中1）',             gen: genProportion },
     { id: 'linearMul',   label: '1次式×÷数（中1）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）',              gen: genPolyMul },
@@ -1673,11 +2052,13 @@
     { id: 'planeFigure', label: '平面図形（中1）',                gen: genPlaneFigure },
     { id: 'planeFigureComposite1', label: '平面図形の複合図形（中1）', gen: genPlaneFigureComposite1, defaultOff: true , addedDate: '2026-08-03' },
     { id: 'solidFigure', label: '空間図形（中1）',                gen: genSolidFigure },
+    { id: 'coneDevelopment1', label: '空間図形（円錐の展開図・中心角）（中1）', gen: genConeDevelopment1, defaultOff: true , addedDate: '2026-08-08' },
     { id: 'construction', label: '作図（中1）',                    gen: genConstruction },
 
     // ---------- 中2 ----------
     { id: 'simul',      label: '連立方程式（中2）',               gen: genSimul },
     { id: 'simulEqWordProblem2', label: '連立方程式の文章題（中2）', gen: genSimulEqWordProblem2 , addedDate: '2026-08-01' },
+    { id: 'simulEqWordProblemAdv2', label: '連立方程式の文章題の応用（中2）', gen: genSimulEqWordProblemAdv2 , addedDate: '2026-08-08' },
     { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
@@ -1728,6 +2109,7 @@
     { id: 'decDivRemainder5', label: '小数のわり算：あまり・がい数（小5）', gen: genDecDivRemainder5, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'decWordProblem5', label: '小数の文章題（小5）',                 gen: genDecWordProblem5, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
+    { id: 'speedApp5',       label: '速さの計算の応用（小5）',             gen: genSpeedApp5,       defaultOff: true , addedDate: '2026-08-08' },
     { id: 'unitRateWordProblem5', label: '単位量あたりの大きさの文章題（小5）', gen: genUnitRateWordProblem5, defaultOff: true , addedDate: '2026-08-03' },
     { id: 'timeFraction5',   label: '時間と分数（小5）',                   gen: genTimeFraction5,   defaultOff: true , addedDate: '2026-08-03' },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
@@ -3666,6 +4048,103 @@
       steps = [`時間 = 道のり ÷ 速さ = ${d} ÷ ${v} = ${t} 時間`];
     }
     return { category: 'speedRate5', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 速さの計算の応用（小5）: 分速を求める・時速/分速/秒速の単位換算・時間(分/秒)を求める・複合問題
+  function genSpeedApp5() {
+    const pat = randInt(0, 6);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 分速を求める基本問題
+      const t = randInt(2, 10);
+      const v = randInt(50, 300);
+      const d = v * t;
+      question = `ひろみさんは自転車で${t}分間に${d}m走りました。自転車の走る速さは、分速何mですか。`;
+      answer = v;
+      wrongs = [d, t, v + 10, v - 10].filter((x) => x !== v && x > 0);
+      steps = [`速さ = 道のり ÷ 時間`, `= ${d} ÷ ${t} = ${v}`, `分速${v}m`];
+    } else if (pat === 1) {
+      // 時速⇄分速の単位換算
+      const base = randInt(1, 20) * 3; // 時速km（3の倍数）
+      const fun = (base * 1000) / 60; // 分速m
+      const askKmToM = Math.random() < 0.5;
+      if (askKmToM) {
+        question = `時速${base}kmは、分速何mですか。`;
+        answer = fun;
+        steps = [`時速${base}km = 分速(${base}×1000÷60)m`, `= ${base * 1000} ÷ 60 = ${fun}m`];
+      } else {
+        question = `分速${fun}mは、時速何kmですか。`;
+        answer = base;
+        steps = [`分速${fun}m = 時速(${fun}×60÷1000)km`, `= ${fun * 60} ÷ 1000 = ${base}km`];
+      }
+      wrongs = [answer + 10, answer - 10, answer * 2].filter((x) => x !== answer && x > 0);
+    } else if (pat === 2) {
+      // 分速⇄秒速の単位換算
+      const sec = randInt(1, 30);
+      const minV = sec * 60;
+      const askMinToSec = Math.random() < 0.5;
+      if (askMinToSec) {
+        question = `分速${minV}mは、秒速何mですか。`;
+        answer = sec;
+        steps = [`分速${minV}m = 秒速(${minV}÷60)m`, `= ${minV} ÷ 60 = ${sec}m`];
+      } else {
+        question = `秒速${sec}mは、分速何mですか。`;
+        answer = minV;
+        steps = [`秒速${sec}m = 分速(${sec}×60)m`, `= ${sec} × 60 = ${minV}m`];
+      }
+      wrongs = [answer + 5, answer - 5, answer * 2].filter((x) => x !== answer && x > 0);
+    } else if (pat === 3) {
+      // 時速⇄秒速の単位換算
+      const base = randInt(1, 6) * 18; // 時速km（18の倍数）
+      const secV = (base * 5) / 18;
+      const askKmToSec = Math.random() < 0.5;
+      if (askKmToSec) {
+        question = `時速${base}kmは、秒速何mですか。`;
+        answer = secV;
+        steps = [`時速${base}km = 秒速(${base}×1000÷3600)m`, `= ${base * 1000} ÷ 3600 = ${secV}m`];
+      } else {
+        question = `秒速${secV}mは、時速何kmですか。`;
+        answer = base;
+        steps = [`秒速${secV}m = 時速(${secV}×3600÷1000)km`, `= ${secV * 3600} ÷ 1000 = ${base}km`];
+      }
+      wrongs = [answer + 6, answer - 6, answer * 2].filter((x) => x !== answer && x > 0);
+    } else if (pat === 4) {
+      // 分速m・km距離から時間(分)を求める
+      const vMin = randInt(2, 12) * 100;
+      const tMin = randInt(2, 20);
+      const dM = vMin * tMin;
+      const dKm = dM / 1000;
+      question = `分速${vMin}mで走るバイクが、${dKm}km走るのにかかる時間は何分ですか。`;
+      answer = tMin;
+      wrongs = [tMin + 1, tMin - 1, Math.round(vMin / 100)].filter((x) => x !== tMin && x > 0);
+      steps = [`道のりをmに直すと ${dKm}km = ${dM}m`, `時間 = 道のり ÷ 速さ`, `= ${dM} ÷ ${vMin} = ${tMin}分`];
+    } else if (pat === 5) {
+      // 分速m・m距離から時間(秒)を求める
+      const vSec = randInt(1, 10);
+      const vMin = vSec * 60;
+      const tSec = randInt(5, 60);
+      const d = vSec * tSec;
+      question = `分速${vMin}mで走る人が、${d}m走るのにかかる時間は何秒ですか。`;
+      answer = tSec;
+      wrongs = [tSec + 5, tSec - 5, vSec].filter((x) => x !== tSec && x > 0);
+      steps = [`分速${vMin}m = 秒速(${vMin}÷60)m = 秒速${vSec}m`, `時間 = 道のり ÷ 速さ`, `= ${d} ÷ ${vSec} = ${tSec}秒`];
+    } else {
+      // 複合問題: 距離÷時間で時速を求めてから、分速または秒速に変換する
+      const hours = randInt(2, 8);
+      const vKmH = randInt(1, 10) * 18; // 18の倍数(分速・秒速どちらも整数になる)
+      const dKm = vKmH * hours;
+      const askUnit = randInt(0, 1); // 0=分速, 1=秒速
+      question = `新幹線が、${dKm}kmの道のりを${hours}時間で走りました。この新幹線の速さは、${askUnit === 0 ? '分速' : '秒速'}何mですか。`;
+      if (askUnit === 0) {
+        answer = (vKmH * 1000) / 60;
+        steps = [`まず時速を求める: ${dKm} ÷ ${hours} = ${vKmH}km`, `時速${vKmH}km = 分速(${vKmH}×1000÷60)m`, `= ${vKmH * 1000} ÷ 60 = ${answer}m`];
+      } else {
+        answer = (vKmH * 1000) / 3600;
+        steps = [`まず時速を求める: ${dKm} ÷ ${hours} = ${vKmH}km`, `時速${vKmH}km = 秒速(${vKmH}×1000÷3600)m`, `= ${vKmH * 1000} ÷ 3600 = ${answer}m`];
+      }
+      wrongs = [answer + 10, answer - 10, vKmH].filter((x) => x !== answer && x > 0);
+    }
+    return { category: 'speedApp5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 割合・百分率（小5）
@@ -6037,6 +6516,74 @@
     }
   }
 
+  /* ---------- 円錐の展開図・中心角（中1） ---------- */
+  // 底面の半径r・母線L の円錐を展開すると、側面は半径Lのおうぎ形になり、
+  // 弧の長さ=底面の円周(2πr)、中心角θ=360°×r/L になる。dは360の約数、
+  // k<d、L=d×m、r=k×m とすることで、θ=360×k/dが必ず整数になるようにしている。
+  function genConeDevelopment1() {
+    const DIVISORS = [2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 18, 20, 24, 30, 36, 40, 45];
+    let d, k, m, L, r, theta;
+    for (let tries = 0; tries < 30; tries++) {
+      d = DIVISORS[randInt(0, DIVISORS.length - 1)];
+      k = randInt(1, d - 1);
+      m = randInt(1, 4);
+      L = d * m; r = k * m; theta = (360 * k) / d;
+      if (r >= 2 && r <= 20 && L >= 3 && L <= 40 && theta >= 20 && theta <= 340) break;
+    }
+    if (!(r >= 2 && r <= 20 && L >= 3 && L <= 40 && theta >= 20 && theta <= 340)) return genConeDevelopment1();
+    const pat = randInt(0, 3);
+    let question, answer, choices, steps;
+    const sectorSvg = (labelR, labelTheta) => {
+      const ea = -Math.PI / 2 + (labelTheta || 90) * Math.PI / 180;
+      const x2 = (56 + 40 * Math.cos(ea)).toFixed(1), y2 = (50 + 40 * Math.sin(ea)).toFixed(1);
+      const la = (labelTheta || 90) > 180 ? 1 : 0;
+      return `<svg width="112" height="108" viewBox="0 0 112 108" style="display:block;margin:0 auto 8px"><path d="M56,50 L56,10 A40,40,0,${la},1,${x2},${y2} Z" fill="#e8f4f8" stroke="#1c2127" stroke-width="1.5"/><text x="56" y="66" font-size="11" fill="#555" text-anchor="middle">${labelTheta ? labelTheta + '°' : '?'}</text><text x="34" y="30" font-size="10" fill="#555">${labelR}</text></svg>`;
+    };
+    if (pat === 0) {
+      // 弧の長さを求める
+      question = `底面の半径が${r}cm、母線の長さが${L}cmの円錐があります。この円錐の展開図で、側面のおうぎ形の弧の長さを求めなさい。（πを含む式で）`;
+      answer = `${2 * r}π`;
+      choices = piCh(2 * r);
+      steps = [`おうぎ形の弧の長さ = 底面の円周に等しい`, `= 2πr = 2π×${r} = ${2 * r}π cm`];
+    } else if (pat === 1) {
+      // 中心角を求める(底面の半径・母線が既知)
+      question = `底面の半径が${r}cm、母線の長さが${L}cmの円錐があります。この円錐の展開図で、側面のおうぎ形の中心角を求めなさい。`;
+      answer = theta;
+      const wrongs = [theta + 10, theta - 10, 360 - theta].filter((v) => v !== theta && v > 0 && v < 360);
+      choices = buildChoices(theta, wrongs);
+      steps = [
+        `おうぎ形の弧の長さ = 底面の円周 = 2π×${r} = ${2 * r}π cm`,
+        `半径${L}cmの円周 = 2π×${L} = ${2 * L}π cm`,
+        `中心角 = 360° × ${r}/${L} = ${theta}°`,
+      ];
+    } else if (pat === 2) {
+      // 底面の半径を求める(母線・中心角が既知)
+      question = `母線の長さが${L}cm、展開図の側面のおうぎ形の中心角が${theta}°である円錐があります。底面の半径を求めなさい。`;
+      answer = r;
+      choices = buildChoices(r, [r + 1, r - 1, L - r].filter((v) => v !== r && v > 0));
+      steps = [
+        `底面の半径をxcmとすると、底面の円周は2πx`,
+        `おうぎ形の弧の長さ = 2π×${L} × ${theta}/360`,
+        `2πx = 2π×${L}×${theta}/360`,
+        `x = ${L} × ${theta}/360 = ${r}`,
+      ];
+    } else {
+      // 母線の長さを求める(底面の半径・中心角が既知)
+      question = `底面の半径が${r}cm、展開図の側面のおうぎ形の中心角が${theta}°である円錐があります。母線の長さを求めなさい。`;
+      answer = L;
+      choices = buildChoices(L, [L + 2, L - 2, r * 2].filter((v) => v !== L && v > 0));
+      steps = [
+        `母線の長さをxcmとすると`,
+        `底面の円周 = おうぎ形の弧の長さ`,
+        `2π×${r} = 2πx × ${theta}/360`,
+        `${r} = x × ${theta}/360`,
+        `x = ${r} × 360 ÷ ${theta} = ${L}`,
+      ];
+    }
+    const questionHtml = sectorSvg(`母線${L}cm`, pat === 2 ? theta : (pat === 3 ? theta : undefined)) + `<span style="display:block">${question}</span>`;
+    return { category: 'coneDevelopment1', question, questionHtml, answer, choices, steps };
+  }
+
   /* ---------- 作図（中1） ---------- */
 
   function genConstruction() {
@@ -6701,7 +7248,7 @@
   // 同じく10問連続正解で敵を倒す通常ルールのままだが、勝利時の報酬だけ特別扱いにする
   // 単元グループ。MPは学年に関わらず固定50、経験値は通常どおり+10、さらにおまけで
   // 新ステータス「HP」も+10稼げる。
-  const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'simulEqWordProblem2', 'quadEqWordProblem3'];
+  const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'eqWordProblemAdv1', 'simulEqWordProblem2', 'simulEqWordProblemAdv2', 'quadEqWordProblem3'];
   const WORD_PROBLEM_FIXED_MP = 50;
   const WORD_PROBLEM_HP_GAIN = 10;
   const WORD_PROBLEM_HP_GAIN_MIDDLE = 20;
@@ -6709,7 +7256,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
