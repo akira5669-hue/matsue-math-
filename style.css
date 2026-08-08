@@ -1610,6 +1610,44 @@ h1 {
   line-height: 1.6;
 }
 
+/* 退会 */
+.withdraw-toggle-btn {
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.withdraw-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.withdraw-panel[hidden] { display: none; }
+.withdraw-notice {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--c-text-muted, #555);
+}
+.withdraw-warning {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b91c1c;
+  line-height: 1.6;
+}
+.withdraw-submit-btn, .withdraw-confirm-yes-btn {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+.withdraw-submit-btn:hover, .withdraw-confirm-yes-btn:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
 /* アバター作成 */
 .avatar-panel {
   background: var(--c-surface);

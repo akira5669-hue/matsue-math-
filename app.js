@@ -7641,6 +7641,18 @@
     weeklyQuizConfirmYes: document.getElementById('weeklyQuizConfirmYes'),
     weeklyQuizConfirmNo: document.getElementById('weeklyQuizConfirmNo'),
     weeklyQuizResult: document.getElementById('weeklyQuizResult'),
+    withdrawToggle: document.getElementById('withdrawToggle'),
+    withdrawPanel: document.getElementById('withdrawPanel'),
+    withdrawForm: document.getElementById('withdrawForm'),
+    withdrawId: document.getElementById('withdrawId'),
+    withdrawPassword: document.getElementById('withdrawPassword'),
+    withdrawError: document.getElementById('withdrawError'),
+    withdrawSubmitBtn: document.getElementById('withdrawSubmitBtn'),
+    withdrawConfirm: document.getElementById('withdrawConfirm'),
+    withdrawConfirmText: document.getElementById('withdrawConfirmText'),
+    withdrawConfirmYes: document.getElementById('withdrawConfirmYes'),
+    withdrawConfirmNo: document.getElementById('withdrawConfirmNo'),
+    withdrawResult: document.getElementById('withdrawResult'),
   };
 
   const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -8591,6 +8603,7 @@
     els.grantPanel.hidden = true;
     els.testPhotoToggle.hidden = !!isGuest;
     els.testPhotoPanel.hidden = true;
+    els.withdrawPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
     els.rankingTabHp.hidden = !!isGuest;
     drawNumberline();
@@ -9155,6 +9168,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -9302,6 +9316,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -9373,6 +9388,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -9437,6 +9453,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
@@ -9512,6 +9529,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
     renderAvatarPanel();
@@ -9889,6 +9907,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.worldPanel.removeAttribute('hidden');
     renderWorldPanel();
@@ -9908,6 +9927,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
     els.grantResult.className = 'grant-result';
@@ -9970,6 +9990,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.testPhotoPanel.removeAttribute('hidden');
     renderTestPhotoPanel();
@@ -10285,6 +10306,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
 
     els.weeklyQuizPanel.removeAttribute('hidden');
     loadWeeklyQuiz();
@@ -10457,6 +10479,89 @@
     els.weeklyQuizConfirm.hidden = true;
   }
 
+  /* ---------- 退会 ---------- */
+
+  var withdrawSubmitting = false;
+
+  function toggleWithdraw() {
+    var isHidden = els.withdrawPanel.hasAttribute('hidden');
+    if (!isHidden) { els.withdrawPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
+
+    hideFieldError(els.withdrawError);
+    els.withdrawForm.hidden = false;
+    els.withdrawConfirm.hidden = true;
+    els.withdrawResult.textContent = '';
+    els.withdrawId.value = '';
+    els.withdrawPassword.value = '';
+    withdrawSubmitting = false;
+    els.withdrawPanel.removeAttribute('hidden');
+  }
+
+  function handleWithdrawSubmitClick() {
+    if (withdrawSubmitting) return;
+    hideFieldError(els.withdrawError);
+    var id = els.withdrawId.value.trim();
+    var password = els.withdrawPassword.value;
+    if (!id || !password) {
+      showFieldError(els.withdrawError, 'IDとパスワードを入力してください。');
+      return;
+    }
+    els.withdrawConfirmText.textContent = 'ID「' + id + '」を退会します。記録やデータはすべて削除され、元に戻せません。本当によろしいですか？';
+    els.withdrawConfirm.hidden = false;
+  }
+
+  function cancelWithdrawConfirm() {
+    if (withdrawSubmitting) return;
+    els.withdrawConfirm.hidden = true;
+  }
+
+  function submitWithdraw() {
+    if (withdrawSubmitting) return;
+    var id = els.withdrawId.value.trim();
+    var password = els.withdrawPassword.value;
+    if (!id || !password) return;
+    withdrawSubmitting = true;
+    els.withdrawConfirm.hidden = true;
+    els.withdrawSubmitBtn.disabled = true;
+    els.withdrawConfirmYes.disabled = true;
+    els.withdrawConfirmNo.disabled = true;
+    els.withdrawResult.textContent = '送信中…';
+    apiPost('withdraw', { id: id, password: password }).then(function (res) {
+      withdrawSubmitting = false;
+      els.withdrawSubmitBtn.disabled = false;
+      els.withdrawConfirmYes.disabled = false;
+      els.withdrawConfirmNo.disabled = false;
+      if (!res.ok) {
+        var msg = '退会処理に失敗しました。もう一度お試しください。';
+        if (res.error === 'not_found') msg = 'そのIDは登録されていません。';
+        else if (res.error === 'no_password') msg = 'パスワードが未設定のアカウントです。先生にご相談ください。';
+        else if (res.error === 'wrong_password') msg = 'パスワードが違います。';
+        else if (res.error === 'locked') msg = `パスワードを何度も間違えたため、${res.retryAfterMinutes}分ほどお試しいただけません。`;
+        els.withdrawResult.textContent = msg;
+        return;
+      }
+      els.withdrawForm.hidden = true;
+      els.withdrawResult.textContent = '退会手続きが完了しました。ご利用ありがとうございました。';
+      window.alert('退会手続きが完了しました。ご利用ありがとうございました。');
+      finishLogout();
+    }).catch(function () {
+      withdrawSubmitting = false;
+      els.withdrawSubmitBtn.disabled = false;
+      els.withdrawConfirmYes.disabled = false;
+      els.withdrawConfirmNo.disabled = false;
+      els.withdrawResult.textContent = '通信に失敗しました。もう一度お試しください。';
+    });
+  }
+
   function handleAvatarSave() {
     var session = loadSession();
     if (!session || !session.id) {
@@ -10538,6 +10643,10 @@
   els.weeklyQuizSpecialBannerBtn.addEventListener('click', toggleWeeklyQuiz);
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
+  els.withdrawToggle.addEventListener('click', toggleWithdraw);
+  els.withdrawSubmitBtn.addEventListener('click', handleWithdrawSubmitClick);
+  els.withdrawConfirmYes.addEventListener('click', submitWithdraw);
+  els.withdrawConfirmNo.addEventListener('click', cancelWithdrawConfirm);
 
   applyMenuNewBadges();
   els.loginGateNotice.hidden = isLoginGateActive_();

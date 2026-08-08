@@ -198,6 +198,7 @@
         <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
         <button id="weeklyQuizToggle" class="ghost-btn" type="button">🧠週替わり重要ワード</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
+        <button id="withdrawToggle" class="ghost-btn withdraw-toggle-btn" type="button">退会</button>
       </div>
     </section>
 
@@ -396,6 +397,28 @@
         </div>
       </div>
       <p class="test-photo-result" id="weeklyQuizResult"></p>
+    </section>
+
+    <section class="withdraw-panel" id="withdrawPanel" hidden>
+      <h3 class="history-title">退会</h3>
+      <p class="withdraw-notice">塾生以外は、このアプリの使用をできません。小4から中3の本科と単科理系の生徒さん以外で登録されている方や、退塾された方は、ご利用できません。該当する方は、以下から退会の手続きをお願いします。</p>
+      <p class="withdraw-warning">退会すると、この生徒IDの記録やデータはすべて削除され、元に戻すことはできません。</p>
+      <div id="withdrawForm">
+        <label class="login-label" for="withdrawId">生徒ID</label>
+        <input class="login-input" id="withdrawId" type="text" autocomplete="off" />
+        <label class="login-label" for="withdrawPassword">パスワード</label>
+        <input class="login-input" id="withdrawPassword" type="password" maxlength="4" autocomplete="off" />
+        <p class="login-error" id="withdrawError" hidden></p>
+        <button type="button" class="primary-btn withdraw-submit-btn" id="withdrawSubmitBtn">退会する</button>
+      </div>
+      <div class="test-photo-confirm" id="withdrawConfirm" hidden>
+        <p id="withdrawConfirmText">本当に退会しますか？記録やデータはすべて削除され、元に戻せません。</p>
+        <div class="test-photo-confirm-actions">
+          <button type="button" class="primary-btn withdraw-confirm-yes-btn" id="withdrawConfirmYes">はい</button>
+          <button type="button" class="ghost-btn" id="withdrawConfirmNo">いいえ</button>
+        </div>
+      </div>
+      <p class="test-photo-result" id="withdrawResult"></p>
     </section>
 
     <section class="avatar-panel" id="avatarPanel" hidden>

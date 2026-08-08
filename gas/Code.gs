@@ -76,6 +76,7 @@ var GIFTCODES_SHEET = 'GiftCodes';
 var ITEMGRANTS_SHEET = 'ItemGrants';
 var ANOMALYLOG_SHEET = 'PointsAnomalyLog';
 var WEEKLYQUIZ_SHEET = 'WeeklyQuiz';
+var WITHDRAWN_SHEET = 'WithdrawnStudents';
 var LOW_STOCK_THRESHOLDS = [10, 5];
 
 // 週替わり4択クイズ(各学年、授業の大切なワードを問う)。weekKeyがその週の月曜日
@@ -298,7 +299,17 @@ function getOrInitSheets_() {
     weeklyQuiz.appendRow(['timestamp', 'id', 'name', 'grade', 'weekKey', 'correct', 'pointsDelta']);
   }
 
-  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog, testPhotos: testPhotos, weeklyQuiz: weeklyQuiz };
+  // WithdrawnStudents: 退会した生徒のバックアップ。Studentsシートから行を削除する前に、
+  // 復元できるよう全カラムの値をrawDataJsonへそのまま保存しておく(誤操作からの安全弁)。
+  var withdrawn = ss.getSheetByName(WITHDRAWN_SHEET);
+  if (!withdrawn) {
+    withdrawn = ss.insertSheet(WITHDRAWN_SHEET);
+  }
+  if (withdrawn.getLastRow() === 0) {
+    withdrawn.appendRow(['withdrawnAt', 'id', 'name', 'grade', 'points', 'level', 'rawDataJson']);
+  }
+
+  return { ss: ss, students: students, records: records, guardians: guardians, gifts: gifts, giftCodes: giftCodes, itemGrants: itemGrants, anomalyLog: anomalyLog, testPhotos: testPhotos, weeklyQuiz: weeklyQuiz, withdrawn: withdrawn };
 }
 
 function sha256Hex_(text) {
@@ -494,6 +505,8 @@ function doPost(e) {
     return jsonOut_(handleWeeklyQuizGet_(ctx, body));
   } else if (action === 'weeklyQuizAnswer') {
     return jsonOut_(handleWeeklyQuizAnswer_(ctx, body));
+  } else if (action === 'withdraw') {
+    return jsonOut_(handleWithdraw_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
 }
@@ -610,6 +623,75 @@ function handleLogin_(ctx, body) {
     items: row.items, rareCollected: row.rareCollected, rareDefeats: row.rareDefeats, thinkerMilestone: row.thinkerMilestone, hp: row.hp,
     worldLap: row.worldLap, worldLapStartLevel: row.worldLapStartLevel, worldBossDefeated: row.worldBossDefeated, worldAllies: row.worldAllies
   };
+}
+
+// 退会処理。IDとパスワードで再認証したうえで、Studentsシートの行をWithdrawnStudentsへ
+// バックアップしてから削除する(誤操作・不正からの安全弁として、復元できるようJSONで
+// 全カラムを保存しておく)。関連する小規模シート(Records/TestPhotos/WeeklyQuiz/ItemGrants)
+// からも該当IDの行を削除する。GiftRequests/GiftCodes/Guardiansは、MP交換の会計記録・
+// 保護者登録記録として塾側に残す必要があるため削除しない。
+function handleWithdraw_(ctx, body) {
+  var id = String(body.id || '').trim();
+  var password = String(body.password || '');
+  if (!id || !password) return { ok: false, error: 'missing_fields' };
+
+  var cache = CacheService.getScriptCache();
+  var attemptKey = 'loginfail_' + id;
+  var attempts = Number(cache.get(attemptKey)) || 0;
+  if (attempts >= LOGIN_MAX_ATTEMPTS) {
+    return { ok: false, error: 'locked', retryAfterMinutes: Math.ceil(LOGIN_LOCK_SECONDS / 60) };
+  }
+
+  var row = findStudentRow_(ctx.students, id);
+  if (!row) return { ok: false, error: 'not_found' };
+  if (!row.passwordHash) return { ok: false, error: 'no_password' };
+
+  var hash = sha256Hex_(password + row.salt);
+  if (hash !== row.passwordHash) {
+    attempts++;
+    cache.put(attemptKey, String(attempts), LOGIN_LOCK_SECONDS);
+    if (attempts >= LOGIN_MAX_ATTEMPTS) {
+      return { ok: false, error: 'locked', retryAfterMinutes: Math.ceil(LOGIN_LOCK_SECONDS / 60) };
+    }
+    return { ok: false, error: 'wrong_password', attemptsRemaining: LOGIN_MAX_ATTEMPTS - attempts };
+  }
+  cache.remove(attemptKey);
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    // ロック取得後にもう一度確実な行番号を取得してから削除する(索引が古い可能性への対策)
+    var freshRow = findStudentRow_(ctx.students, id);
+    if (!freshRow) return { ok: false, error: 'not_found' };
+    var rawValues = ctx.students.getRange(freshRow.rowIndex, 1, 1, STUDENT_ROW_COLUMNS_).getValues()[0];
+    ctx.withdrawn.appendRow([new Date(), id, freshRow.name, freshRow.grade, freshRow.points, freshRow.level, JSON.stringify(rawValues)]);
+    var newWRow = ctx.withdrawn.getLastRow();
+    ctx.withdrawn.getRange(newWRow, 2).setNumberFormat('@').setValue(id);
+    ctx.students.deleteRow(freshRow.rowIndex);
+    rebuildStudentIdIndex_(ctx.students);
+
+    deleteRowsByIdColumn_(ctx.records, 2, id);
+    deleteRowsByIdColumn_(ctx.testPhotos, 2, id);
+    deleteRowsByIdColumn_(ctx.weeklyQuiz, 2, id);
+    deleteRowsByIdColumn_(ctx.itemGrants, 1, id);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
+}
+
+// 指定した列(1始まり)がidと一致する行を末尾から順に削除する(先頭から消すと行番号が
+// ずれるため、必ず末尾から消す)。
+function deleteRowsByIdColumn_(sheet, col, id) {
+  if (!sheet) return;
+  var data = sheet.getDataRange().getValues();
+  var rowsToDelete = [];
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][col - 1]).trim() === id) rowsToDelete.push(i + 1);
+  }
+  for (var j = rowsToDelete.length - 1; j >= 0; j--) {
+    sheet.deleteRow(rowsToDelete[j]);
+  }
 }
 
 // 管理者(ID 00001)が、ログアウト時のバグ等でアイテム・レアキャラ図鑑を失った生徒に
