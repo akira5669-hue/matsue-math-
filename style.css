@@ -754,6 +754,17 @@ h1 {
 .world-launch-banner[hidden] { display: none; }
 .world-launch-text { margin: 0; font-size: 13px; font-weight: 700; color: #0f766e; line-height: 1.6; }
 
+.special-quiz-banner {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1.5px solid #fb923c;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.special-quiz-banner[hidden] { display: none; }
+.special-quiz-text { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #9a3412; line-height: 1.6; }
+.special-quiz-banner-btn { width: 100%; }
+
 .mission-banner {
   background: linear-gradient(135deg, #fff8e1, #fef3c7);
   border: 1.5px solid #fcd34d;
@@ -1585,6 +1596,13 @@ h1 {
   gap: 10px;
 }
 .weekly-quiz-panel[hidden] { display: none; }
+.weekly-quiz-special-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #c2410c;
+}
+.weekly-quiz-special-label[hidden] { display: none; }
 .weekly-quiz-question {
   margin: 0;
   font-size: 16px;

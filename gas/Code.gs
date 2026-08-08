@@ -87,7 +87,25 @@ var WEEKLY_QUIZ_ = {
   weekKey: null, // 例: '2026-08-03'（対象週の月曜日）。nullの間は全学年「今週の問題は準備中」表示になる。
   byGrade: {
     // '小4': { question: '...', choices: ['...', '...', '...', '...'], correctIndex: 0 },
-  }
+  },
+  // special: 1日限定の特別クイズ(全学年共通、2問連続正解で加点)。activeDateの日だけ出題され、
+  // 通常の週替わり(byGrade)より優先される。両方nullの日は「今日は問題なし」になる。
+  special: {
+    activeDate: '2026-08-09',
+    label: '📅本日限定！特別クイズ（2問連続正解で+30ポイント）',
+    questions: [
+      {
+        question: '今週の授業の中で話をした、数学の偏差値が55から爆上がりした生徒さんは、いくつまで上がったのでしょう。',
+        choices: ['64', '69', '74', '79'],
+        correctIndex: 3,
+      },
+      {
+        question: 'その生徒さんの数学の偏差値が爆上がりした要因は！？',
+        choices: ['1人で頑張ったから', '保護者の方のサポートがあったから', '図書館で勉強したから', '学校の先生に質問したから'],
+        correctIndex: 1,
+      },
+    ],
+  },
 };
 
 // テスト画像提出(ペナテスト/抜き打ちテスト/ランキングテスト)。写真はGoogleドライブへ
@@ -1582,6 +1600,18 @@ function handleWeeklyQuizGet_(ctx, body) {
   var row = findStudentRow_(ctx.students, id);
   if (!row) return { ok: false, error: 'not_found' };
 
+  var special = WEEKLY_QUIZ_.special;
+  if (special && special.activeDate === dateKeyTokyo_(new Date())) {
+    var specialKey = 'SPECIAL:' + special.activeDate;
+    if (hasAnsweredWeeklyQuiz_(ctx, id, specialKey)) {
+      return { ok: true, available: false, alreadyAnswered: true, special: true };
+    }
+    return {
+      ok: true, available: true, special: true, label: special.label,
+      questions: special.questions.map(function (q) { return { question: q.question, choices: q.choices }; }),
+    };
+  }
+
   var currentWeek = mondayKeyTokyo_(new Date());
   if (WEEKLY_QUIZ_.weekKey !== currentWeek) {
     return { ok: true, available: false };
@@ -1597,8 +1627,15 @@ function handleWeeklyQuizGet_(ctx, body) {
 
 function handleWeeklyQuizAnswer_(ctx, body) {
   var id = String(body.id || '').trim();
+  if (!id) return { ok: false, error: 'missing_fields' };
+
+  var special = WEEKLY_QUIZ_.special;
+  if (special && special.activeDate === dateKeyTokyo_(new Date()) && Array.isArray(body.choiceIndices)) {
+    return handleWeeklyQuizSpecialAnswer_(ctx, id, body.choiceIndices, special);
+  }
+
   var choiceIndex = Number(body.choiceIndex);
-  if (!id || !isFinite(choiceIndex)) return { ok: false, error: 'missing_fields' };
+  if (!isFinite(choiceIndex)) return { ok: false, error: 'missing_fields' };
 
   var currentWeek = mondayKeyTokyo_(new Date());
   if (WEEKLY_QUIZ_.weekKey !== currentWeek) return { ok: false, error: 'no_quiz' };
@@ -1626,6 +1663,40 @@ function handleWeeklyQuizAnswer_(ctx, body) {
         ctx.weeklyQuiz.getRange(newRow, 2).setNumberFormat('@').setValue(id);
         result = { ok: true, correct: correct, pointsDelta: delta, newTotalPoints: newPoints, correctIndex: quiz.correctIndex };
       }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return result;
+}
+
+// 1日限定の特別クイズ(2問連続正解のみ加点)の採点。両方の選択肢を同時に受け取り、
+// サーバー側で一括採点することで、GASのステートレスな性質でも「1問目だけ正解した状態」
+// を保存する必要がないようにしている。
+function handleWeeklyQuizSpecialAnswer_(ctx, id, choiceIndices, special) {
+  var specialKey = 'SPECIAL:' + special.activeDate;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  var result;
+  try {
+    var row = findStudentRow_(ctx.students, id);
+    if (!row) {
+      result = { ok: false, error: 'not_found' };
+    } else if (hasAnsweredWeeklyQuiz_(ctx, id, specialKey)) {
+      result = { ok: false, error: 'already_answered' };
+    } else {
+      var correct = choiceIndices.length === special.questions.length &&
+        special.questions.every(function (q, i) { return Number(choiceIndices[i]) === q.correctIndex; });
+      var delta = correct ? WEEKLY_QUIZ_CORRECT_MP_ : WEEKLY_QUIZ_WRONG_MP_;
+      var newPoints = Math.max(0, row.points + delta);
+      ctx.students.getRange(row.rowIndex, 7).setValue(newPoints);
+      ctx.weeklyQuiz.appendRow([new Date(), id, row.name, row.grade, specialKey, correct, delta]);
+      var newRow = ctx.weeklyQuiz.getLastRow();
+      ctx.weeklyQuiz.getRange(newRow, 2).setNumberFormat('@').setValue(id);
+      result = {
+        ok: true, correct: correct, pointsDelta: delta, newTotalPoints: newPoints,
+        correctIndices: special.questions.map(function (q) { return q.correctIndex; }),
+      };
     }
   } finally {
     lock.releaseLock();

@@ -205,6 +205,11 @@
       <p class="apology-text">🙇 お詫び：ログアウトすると特別アイテムやレアキャラ図鑑が消えてしまう不具合がありました。ご迷惑をおかけしたお詫びに、全員へ300MPをプレゼントしました！（不具合はすでに直っています）</p>
     </section>
 
+    <section class="special-quiz-banner" id="weeklyQuizSpecialBanner" hidden>
+      <p class="special-quiz-text" id="weeklyQuizSpecialBannerText"></p>
+      <button type="button" class="ghost-btn special-quiz-banner-btn" id="weeklyQuizSpecialBannerBtn">🧠週替わり重要ワードで挑戦する</button>
+    </section>
+
     <section class="world-launch-banner" id="worldLaunchBanner" hidden>
       <p class="world-launch-text" id="worldLaunchText"></p>
     </section>
@@ -379,6 +384,7 @@
         <p class="test-photo-hint" id="weeklyQuizUnavailableText"></p>
       </div>
       <div id="weeklyQuizBody" hidden>
+        <p class="weekly-quiz-special-label" id="weeklyQuizSpecialLabel" hidden></p>
         <p class="weekly-quiz-question" id="weeklyQuizQuestion"></p>
         <div class="test-photo-tier-row" id="weeklyQuizChoiceRow"></div>
       </div>

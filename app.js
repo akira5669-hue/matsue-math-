@@ -7542,6 +7542,9 @@
     rankingChallengeMiddleNearby: document.getElementById('rankingChallengeMiddleNearby'),
     rankingChallengeMiddleNearbyList: document.getElementById('rankingChallengeMiddleNearbyList'),
     apologyBanner: document.getElementById('apologyBanner'),
+    weeklyQuizSpecialBanner: document.getElementById('weeklyQuizSpecialBanner'),
+    weeklyQuizSpecialBannerText: document.getElementById('weeklyQuizSpecialBannerText'),
+    weeklyQuizSpecialBannerBtn: document.getElementById('weeklyQuizSpecialBannerBtn'),
     worldLaunchBanner: document.getElementById('worldLaunchBanner'),
     worldLaunchText: document.getElementById('worldLaunchText'),
     missionBanner: document.getElementById('missionBanner'),
@@ -7630,6 +7633,7 @@
     weeklyQuizUnavailable: document.getElementById('weeklyQuizUnavailable'),
     weeklyQuizUnavailableText: document.getElementById('weeklyQuizUnavailableText'),
     weeklyQuizBody: document.getElementById('weeklyQuizBody'),
+    weeklyQuizSpecialLabel: document.getElementById('weeklyQuizSpecialLabel'),
     weeklyQuizQuestion: document.getElementById('weeklyQuizQuestion'),
     weeklyQuizChoiceRow: document.getElementById('weeklyQuizChoiceRow'),
     weeklyQuizConfirm: document.getElementById('weeklyQuizConfirm'),
@@ -7967,6 +7971,19 @@
   function renderApologyBanner() {
     const session = loadSession();
     els.apologyBanner.hidden = !(session && session.id && isWithinApologyBannerWindow());
+  }
+
+  // 1日限定の特別クイズ(週替わり重要ワード)の告知バナー。GAS側のWEEKLY_QUIZ_.special.activeDate
+  // と同じ日付をここにも直書きしている(バナー表示はサーバー往復せずクライアント側の日付だけで
+  // 判定する軽量な告知のため。実際の採点・回答済み判定はサーバー側が正とする)。
+  const WEEKLY_QUIZ_SPECIAL_DATE_ = '2026-08-09';
+  const WEEKLY_QUIZ_SPECIAL_BANNER_TEXT_ = '📅本日限定！「週替わり重要ワード」で特別クイズを開催中。2問連続正解で+30MP、間違えると-100MPです。';
+  function renderWeeklyQuizSpecialBanner() {
+    const session = loadSession();
+    els.weeklyQuizSpecialBanner.hidden = !(session && session.id && todayKey() === WEEKLY_QUIZ_SPECIAL_DATE_);
+    if (!els.weeklyQuizSpecialBanner.hidden) {
+      els.weeklyQuizSpecialBannerText.textContent = WEEKLY_QUIZ_SPECIAL_BANNER_TEXT_;
+    }
   }
 
   // 世界旅行編スタートの告知バナー。レベル100未満は「あと何レベル」、100以上は「挑戦しよう」の案内を出す。
@@ -8581,6 +8598,7 @@
     updateStats();
     updateGameHud();
     renderApologyBanner();
+    renderWeeklyQuizSpecialBanner();
     renderWorldLaunchBanner();
     renderMissionBanner();
     nextQuestion();
@@ -10250,6 +10268,11 @@
   var weeklyQuizChoices = [];
   var weeklyQuizSelectedIndex = null;
   var weeklyQuizSubmitting = false;
+  var weeklyQuizIsSpecial = false;
+  var weeklyQuizSpecialQuestions = [];
+  var weeklyQuizSpecialIndex = 0;
+  var weeklyQuizSpecialSelections = [];
+  var weeklyQuizSpecialLabelText = '';
 
   function toggleWeeklyQuiz() {
     var isHidden = els.weeklyQuizPanel.hasAttribute('hidden');
@@ -10284,9 +10307,14 @@
     els.weeklyQuizUnavailable.hidden = true;
     els.weeklyQuizBody.hidden = true;
     els.weeklyQuizConfirm.hidden = true;
+    els.weeklyQuizSpecialLabel.hidden = true;
     els.weeklyQuizResult.textContent = '';
     weeklyQuizSelectedIndex = null;
     weeklyQuizSubmitting = false;
+    weeklyQuizIsSpecial = false;
+    weeklyQuizSpecialQuestions = [];
+    weeklyQuizSpecialIndex = 0;
+    weeklyQuizSpecialSelections = [];
     if (!session || !session.id) {
       els.weeklyQuizUnavailable.hidden = false;
       els.weeklyQuizUnavailableText.textContent = 'この機能は生徒登録した方のみご利用いただけます。';
@@ -10299,23 +10327,47 @@
       if (!res.available) {
         els.weeklyQuizUnavailable.hidden = false;
         els.weeklyQuizUnavailableText.textContent = res.alreadyAnswered
-          ? '今週のクイズはすでに回答済みです。また来週挑戦してください！'
+          ? (res.special ? '本日限定クイズはすでに回答済みです。' : '今週のクイズはすでに回答済みです。また来週挑戦してください！')
           : '今週の問題はまだ準備中です。もうしばらくお待ちください。';
         return;
       }
-      weeklyQuizChoices = res.choices;
       els.weeklyQuizUnavailable.hidden = true;
       els.weeklyQuizBody.hidden = false;
-      els.weeklyQuizQuestion.textContent = res.question;
-      els.weeklyQuizChoiceRow.innerHTML = res.choices.map(function (choice, idx) {
-        return '<button type="button" class="test-photo-tier-btn" data-idx="' + idx + '">' + choice + '</button>';
-      }).join('');
-      Array.from(els.weeklyQuizChoiceRow.children).forEach(function (btn) {
-        btn.addEventListener('click', function () { handleWeeklyQuizChoiceClick(Number(btn.dataset.idx)); });
-      });
+      if (res.special) {
+        weeklyQuizIsSpecial = true;
+        weeklyQuizSpecialQuestions = res.questions;
+        weeklyQuizSpecialIndex = 0;
+        weeklyQuizSpecialSelections = [];
+        weeklyQuizSpecialLabelText = res.label || '';
+        renderWeeklyQuizCurrentQuestion();
+      } else {
+        weeklyQuizChoices = res.choices;
+        els.weeklyQuizSpecialLabel.hidden = true;
+        els.weeklyQuizQuestion.textContent = res.question;
+        renderWeeklyQuizChoiceRow(res.choices);
+      }
     }).catch(function () {
       els.weeklyQuizUnavailableText.textContent = '読み込みに失敗しました。';
     });
+  }
+
+  function renderWeeklyQuizChoiceRow(choices) {
+    els.weeklyQuizChoiceRow.innerHTML = choices.map(function (choice, idx) {
+      return '<button type="button" class="test-photo-tier-btn" data-idx="' + idx + '">' + choice + '</button>';
+    }).join('');
+    Array.from(els.weeklyQuizChoiceRow.children).forEach(function (btn) {
+      btn.addEventListener('click', function () { handleWeeklyQuizChoiceClick(Number(btn.dataset.idx)); });
+    });
+  }
+
+  function renderWeeklyQuizCurrentQuestion() {
+    var q = weeklyQuizSpecialQuestions[weeklyQuizSpecialIndex];
+    weeklyQuizChoices = q.choices;
+    weeklyQuizSelectedIndex = null;
+    els.weeklyQuizSpecialLabel.hidden = false;
+    els.weeklyQuizSpecialLabel.textContent = weeklyQuizSpecialLabelText + '（' + (weeklyQuizSpecialIndex + 1) + '/' + weeklyQuizSpecialQuestions.length + '問目）';
+    els.weeklyQuizQuestion.textContent = q.question;
+    renderWeeklyQuizChoiceRow(q.choices);
   }
 
   function handleWeeklyQuizChoiceClick(idx) {
@@ -10330,9 +10382,47 @@
     if (weeklyQuizSubmitting || weeklyQuizSelectedIndex === null) return;
     var session = loadSession();
     if (!session || !session.id) return;
+    els.weeklyQuizConfirm.hidden = true;
+
+    if (weeklyQuizIsSpecial) {
+      weeklyQuizSpecialSelections.push(weeklyQuizSelectedIndex);
+      if (weeklyQuizSpecialIndex < weeklyQuizSpecialQuestions.length - 1) {
+        weeklyQuizSpecialIndex++;
+        renderWeeklyQuizCurrentQuestion();
+        return;
+      }
+      weeklyQuizSubmitting = true;
+      setWeeklyQuizControlsDisabled(true);
+      els.weeklyQuizResult.textContent = '送信中…';
+      apiPost('weeklyQuizAnswer', { id: session.id, choiceIndices: weeklyQuizSpecialSelections }).then(function (res) {
+        weeklyQuizSubmitting = false;
+        if (!res.ok) {
+          els.weeklyQuizResult.textContent = res.error === 'already_answered'
+            ? '本日限定クイズはすでに回答済みです。'
+            : res.error === 'no_quiz'
+            ? '本日限定クイズは終了しました。'
+            : '送信に失敗しました。もう一度お試しください。';
+          setWeeklyQuizControlsDisabled(false);
+          return;
+        }
+        state.points = res.newTotalPoints;
+        saveGameState(state);
+        updateStats();
+        updateGameHud();
+        els.weeklyQuizBody.hidden = true;
+        els.weeklyQuizResult.textContent = res.correct
+          ? '🎉 2問連続正解！ +' + res.pointsDelta + 'MP獲得しました！'
+          : '😢 不正解の問題がありました… ' + res.pointsDelta + 'MP';
+      }).catch(function () {
+        weeklyQuizSubmitting = false;
+        setWeeklyQuizControlsDisabled(false);
+        els.weeklyQuizResult.textContent = '送信に失敗しました。もう一度お試しください。';
+      });
+      return;
+    }
+
     weeklyQuizSubmitting = true;
     setWeeklyQuizControlsDisabled(true);
-    els.weeklyQuizConfirm.hidden = true;
     els.weeklyQuizResult.textContent = '送信中…';
     apiPost('weeklyQuizAnswer', { id: session.id, choiceIndex: weeklyQuizSelectedIndex }).then(function (res) {
       weeklyQuizSubmitting = false;
@@ -10445,6 +10535,7 @@
   els.challengeTestConfirmYes.addEventListener('click', submitChallengeTestPhoto);
   els.challengeTestConfirmNo.addEventListener('click', cancelChallengeTierConfirm);
   els.weeklyQuizToggle.addEventListener('click', toggleWeeklyQuiz);
+  els.weeklyQuizSpecialBannerBtn.addEventListener('click', toggleWeeklyQuiz);
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
 
