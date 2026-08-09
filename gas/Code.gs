@@ -507,117 +507,8 @@ function doPost(e) {
     return jsonOut_(handleWeeklyQuizAnswer_(ctx, body));
   } else if (action === 'withdraw') {
     return jsonOut_(handleWithdraw_(ctx, body));
-  } else if (action === 'migrationExport_temp') {
-    return jsonOut_(handleMigrationExport_temp_(ctx, body));
-  } else if (action === 'reassignId_temp') {
-    return jsonOut_(handleReassignId_temp_(ctx, body));
-  } else if (action === 'adminDeleteStudent_temp') {
-    return jsonOut_(handleAdminDeleteStudent_temp_(ctx, body));
-  } else if (action === 'adminSetPoints_temp') {
-    return jsonOut_(handleAdminSetPoints_temp_(ctx, body));
   }
   return jsonOut_({ ok: false, error: 'unknown_action' });
-}
-
-// Postgresへのデータベース移行のための一時的なエクスポート用エンドポイント。
-// 移行が完了したらこの関数とdoPostの分岐、下のシークレットを削除する。
-var MIGRATION_EXPORT_SECRET_TEMP_ = '8cbc1a6671aa853ed0735cc2f7dc9cb9d146785d6f71c002';
-function handleMigrationExport_temp_(ctx, body) {
-  if (String(body.secret || '') !== MIGRATION_EXPORT_SECRET_TEMP_) return { ok: false, error: 'forbidden' };
-  function allRows(sheet) {
-    var last = sheet.getLastRow();
-    var lastCol = sheet.getLastColumn();
-    return (last >= 2 && lastCol >= 1) ? sheet.getRange(2, 1, last - 1, lastCol).getValues() : [];
-  }
-  var studentsLastRow = ctx.students.getLastRow();
-  var studentsData = studentsLastRow >= 2 ? ctx.students.getRange(2, 1, studentsLastRow - 1, STUDENT_ROW_COLUMNS_).getValues() : [];
-  return {
-    ok: true,
-    students: studentsData,
-    records: allRows(ctx.records),
-    testPhotos: allRows(ctx.testPhotos),
-    weeklyQuiz: allRows(ctx.weeklyQuiz),
-    guardians: allRows(ctx.guardians),
-    gifts: allRows(ctx.gifts),
-    giftCodes: allRows(ctx.giftCodes),
-    itemGrants: allRows(ctx.itemGrants),
-    anomalyLog: allRows(ctx.anomalyLog),
-    withdrawn: allRows(ctx.withdrawn),
-  };
-}
-
-// 重複IDの片方だけを新IDへ振り直すための一時的な管理用エンドポイント。IDだけでは
-// 重複している2行のどちらか判別できないため、passwordHashも一致した行だけを
-// 対象にする(重複ペアの中で狙った本人の行だけを確実に選ぶため)。移行が完了したら
-// この関数とdoPostの分岐を削除する。
-function handleReassignId_temp_(ctx, body) {
-  if (String(body.secret || '') !== MIGRATION_EXPORT_SECRET_TEMP_) return { ok: false, error: 'forbidden' };
-  var oldId = String(body.oldId || '').trim();
-  var passwordHash = String(body.passwordHash || '');
-  var newId = String(body.newId || '').trim();
-  if (!oldId || !passwordHash || !newId) return { ok: false, error: 'missing_fields' };
-
-  var lock = LockService.getScriptLock();
-  lock.waitLock(10000);
-  try {
-    var lastRow = ctx.students.getLastRow();
-    var data = ctx.students.getRange(2, 1, lastRow - 1, 3).getValues();
-    var targetRow = -1;
-    for (var i = 0; i < data.length; i++) {
-      if (String(data[i][0]).trim() === oldId && String(data[i][2]) === passwordHash) {
-        targetRow = i + 2;
-        break;
-      }
-    }
-    if (targetRow === -1) return { ok: false, error: 'not_found' };
-    var existing = findStudentRow_(ctx.students, newId);
-    if (existing) return { ok: false, error: 'new_id_taken' };
-    ctx.students.getRange(targetRow, 1).setNumberFormat('@').setValue(newId);
-    rebuildStudentIdIndex_(ctx.students);
-    return { ok: true, rowIndex: targetRow, newId: newId };
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-// 先生の判断で重複・未使用アカウントを削除するための一時的な管理用エンドポイント。
-// 生徒本人のパスワード確認は行わない(先生の管理操作のため)代わりに、シークレットで
-// 保護する。関連シートの掃除範囲はhandleWithdraw_と同じ。移行が完了したらこの関数と
-// doPostの分岐を削除する。
-function handleAdminDeleteStudent_temp_(ctx, body) {
-  if (String(body.secret || '') !== MIGRATION_EXPORT_SECRET_TEMP_) return { ok: false, error: 'forbidden' };
-  var id = String(body.id || '').trim();
-  if (!id) return { ok: false, error: 'missing_fields' };
-
-  var lock = LockService.getScriptLock();
-  lock.waitLock(10000);
-  try {
-    var row = findStudentRow_(ctx.students, id);
-    if (!row) return { ok: false, error: 'not_found' };
-    ctx.students.deleteRow(row.rowIndex);
-    rebuildStudentIdIndex_(ctx.students);
-    deleteRowsByIdColumn_(ctx.records, 2, id);
-    deleteRowsByIdColumn_(ctx.testPhotos, 2, id);
-    deleteRowsByIdColumn_(ctx.weeklyQuiz, 2, id);
-    deleteRowsByIdColumn_(ctx.itemGrants, 1, id);
-    return { ok: true, deletedId: id, name: row.name };
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-// 先生の判断でMPを直接補正するための一時的な管理用エンドポイント(バグによる
-// 誤ったMPリセット等の個別補填用)。移行が完了したらこの関数とdoPostの分岐を削除する。
-function handleAdminSetPoints_temp_(ctx, body) {
-  if (String(body.secret || '') !== MIGRATION_EXPORT_SECRET_TEMP_) return { ok: false, error: 'forbidden' };
-  var id = String(body.id || '').trim();
-  var points = Number(body.points);
-  if (!id || !isFinite(points)) return { ok: false, error: 'missing_fields' };
-
-  var row = findStudentRow_(ctx.students, id);
-  if (!row) return { ok: false, error: 'not_found' };
-  ctx.students.getRange(row.rowIndex, 7).setValue(points);
-  return { ok: true, id: id, name: row.name, oldPoints: row.points, newPoints: points };
 }
 
 function handleCheckId_(ctx, body) {
@@ -688,28 +579,10 @@ function handleRegister_(ctx, body) {
 var LOGIN_MAX_ATTEMPTS = 5;
 var LOGIN_LOCK_SECONDS = 15 * 60;
 
-// 2026-07-28/29に発生した「同じIDが2人に払い出される」不具合(nextStudentId_の
-// コメント参照)で、片方の生徒にだけ新しいIDを振り直した際の案内用。旧ID+旧
-// パスワードでログインしようとした本人だけを、パスワードハッシュの一致で見分けて
-// 新IDを案内する(旧IDは片方の生徒がそのまま使い続けているため、旧ID単体では
-// どちらの生徒か判別できない)。案内が行き渡ったら、このリストは空にしてよい。
-var ID_REASSIGN_NOTICES_ = [
-  { oldId: '00160', passwordHash: '47ccb7e1b0e2c87f418e82f9a40e4c845a10ad15f8c0ef64cf5cdfbb99ba5a9c', salt: '5cd2eeec-c2a0-4377-a7a3-b6e091171a12', newId: '00208', name: '近藤楽' },
-  { oldId: '00181', passwordHash: 'a504f0140870ba97963b3f5bce22b4cf269aeee3795ce8921cd3bd1d8372a568', salt: '0e75495c-0f58-4d03-bff6-cf9d5a8e9df5', newId: '00264', name: '新居　光' },
-  { oldId: '00239', passwordHash: '495f552903647919e5e2497a5558300b8e622f57502c98ccca787df8def407de', salt: '0faec306-19c9-420d-8ef8-a0e93e9f7e1f', newId: '00266', name: '松木美佳' },
-];
-
 function handleLogin_(ctx, body) {
   var id = String(body.id || '').trim();
   var password = String(body.password || '');
   if (!id || !password) return { ok: false, error: 'missing_fields' };
-
-  for (var n = 0; n < ID_REASSIGN_NOTICES_.length; n++) {
-    var notice = ID_REASSIGN_NOTICES_[n];
-    if (notice.oldId === id && sha256Hex_(password + notice.salt) === notice.passwordHash) {
-      return { ok: false, error: 'id_reassigned', newId: notice.newId };
-    }
-  }
 
   var cache = CacheService.getScriptCache();
   var attemptKey = 'loginfail_' + id;
