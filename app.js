@@ -8637,6 +8637,8 @@
           if (res.attemptsRemaining !== undefined) msg += `（あと${res.attemptsRemaining}回間違えるとロックされます）`;
         } else if (res.error === 'locked') {
           msg = `パスワードを何度も間違えたため、${res.retryAfterMinutes}分ほどログインできません。しばらくしてから再度お試しください。`;
+        } else if (res.error === 'id_reassigned') {
+          msg = `IDが変更になりました。お手数ですが、新しいID「${res.newId}」でログインし直してください。パスワードは今までと同じです。`;
         }
         showFieldError(els.loginError, msg);
         return;

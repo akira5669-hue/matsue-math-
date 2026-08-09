@@ -1,0 +1,11 @@
+{
+  "name": "matsue-math",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@vercel/blob": "^2.7.0",
+    "pg": "^8.13.1",
+    "resend": "^6.18.1"
+  }
+}
