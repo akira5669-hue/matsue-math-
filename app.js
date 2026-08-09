@@ -3,7 +3,7 @@
 
   /* ---------- ログインAPI ---------- */
 
-  var API_URL = 'https://script.google.com/macros/s/AKfycbwqg5Dt1ZjD7FxTlQeVCEKcHf2jg6QHwr0cWPCTC0VAtDjiOVL1spjm1EjmTe5gh3rf9w/exec';
+  var API_URL = '/api';
   var SESSION_KEY = 'matsue-math-session';
 
   // 47都道府県制覇データ（japan-map-data.js）が何らかの理由で読み込めなくても
