@@ -2097,6 +2097,10 @@
     { id: 'decAddSubMixed4', label: '小数のたし算・ひき算：発展（小4）',  gen: genDecAddSubMixed4, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'setSquareAngle4', label: '三角じょうぎの角度（小4）',           gen: genSetSquareAngle4, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'timesWordProblem4', label: '倍の見方の文章題（小4）',           gen: genTimesWordProblem4, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'divWordProblem4',   label: 'わり算の文章題（小4）',             gen: genDivWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'decWordProblem4',   label: '小数の文章題（小4）',               gen: genDecWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'fracType4',         label: '真分数・仮分数・帯分数（小4）',     gen: genFracType4, defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'sumDiffWordProblem4', label: '文章題特訓：和差算（小4）',       gen: genSumDiffWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
@@ -2136,8 +2140,14 @@
     { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
     { id: 'largeNum3',       label: '大きな数（小3）',                     gen: genLargeNum3,       defaultOff: true },
     { id: 'clockTime3',      label: '時こくと時間（小3）',                 gen: genClockTime3,      defaultOff: true },
+    { id: 'clockWordProblem3', label: '時こくと時間の文章題（小3）',       gen: genClockWordProblem3, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'addSub3Digit3',   label: 'たし算とひき算：3けた以上（小3）',    gen: genAddSub3Digit3,   defaultOff: true , addedDate: '2026-08-02' },
     { id: 'units3',          label: '単位の関係（小3）',                   gen: genUnits3,          defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'division3',       label: 'わり算（小3）',                       gen: genDivision3,       defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'boxEquation3',    label: '□を使った式（小3）',                 gen: genBoxEquation3,    defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'fraction3',       label: '分数の計算（小3）',                   gen: genFraction3,       defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'fractionWordProblem3', label: '分数の文章題（小3）',            gen: genFractionWordProblem3, defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'wordProblemMulDiv3', label: '算数の文章題まとめ（小3）',        gen: genWordProblemMulDiv3, defaultOff: true , addedDate: '2026-08-10' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -2513,7 +2523,8 @@
       steps = [`${startMin}分 + ${durationMin}分 = ${total}分`, `${total}分 = ${Math.floor(total / 60)}時間${total % 60}分`, `${startHour}時 + ${Math.floor(total / 60)}時間 = ${endHour}時、のこり${endMin}分 → ${answer}`];
       return { category: 'clockTime3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
     } else if (pat === 1) {
-      const kind = randInt(0, 2);
+      const kind = randInt(0, 6);
+      let choices;
       if (kind === 0) {
         const min = randInt(1, 9);
         question = `${min}分は何秒？`;
@@ -2525,14 +2536,56 @@
         question = `${sec}秒は何分？`;
         answer = minVal;
         wrongs = [answer + 1, Math.max(1, answer - 1), sec / 100];
-      } else {
+      } else if (kind === 2) {
         const hr = randInt(1, 5);
         question = `${hr}時間は何分？`;
         answer = hr * 60;
         wrongs = [answer + 60, Math.max(1, answer - 60), hr * 100];
+      } else if (kind === 3) {
+        // 分秒(複合)→秒
+        const min = randInt(1, 9);
+        const sec = randInt(1, 59);
+        question = `${min}分${sec}秒は何秒？`;
+        answer = min * 60 + sec;
+        wrongs = [answer + 10, Math.max(1, answer - 10), min * 100 + sec];
+      } else if (kind === 4) {
+        // 秒→分秒(複合)
+        const min = randInt(1, 9);
+        const sec = randInt(1, 59);
+        const totalSec = min * 60 + sec;
+        question = `${totalSec}秒は何分何秒？`;
+        answer = `${min}分${sec}秒`;
+        const wrongCands = [
+          `${min}分${sec + 10 <= 59 ? sec + 10 : sec - 10}秒`,
+          `${min + 1}分${sec}秒`,
+          `${min > 1 ? min - 1 : min + 1}分${sec}秒`,
+        ];
+        steps = [`${totalSec}秒 ÷ 60 = ${min}分あまり${sec}秒`, `= ${answer}`];
+        return { category: 'clockTime3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+      } else if (kind === 5) {
+        // 時間→秒
+        const hr = randInt(1, 3);
+        question = `${hr}時間は何秒？`;
+        answer = hr * 3600;
+        wrongs = [answer + 3600, Math.max(1, answer - 3600), hr * 60];
+        steps = [`${hr}時間 = ${hr}×60分 = ${hr * 60}分`, `${hr * 60}分 = ${hr * 60}×60秒 = ${answer}秒`];
+      } else {
+        // 分→時間分(複合)
+        const hr = randInt(1, 2);
+        const min = randInt(1, 59);
+        const totalMin = hr * 60 + min;
+        question = `${totalMin}分は何時間何分？`;
+        answer = `${hr}時間${min}分`;
+        const wrongCands = [
+          `${hr}時間${min + 10 <= 59 ? min + 10 : min - 10}分`,
+          `${hr + 1}時間${min}分`,
+          `${hr > 1 ? hr - 1 : hr + 1}時間${min}分`,
+        ];
+        steps = [`${totalMin}分 ÷ 60 = ${hr}時間あまり${min}分`, `= ${answer}`];
+        return { category: 'clockTime3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
       }
       wrongs = wrongs.filter((v, i, arr) => arr.indexOf(v) === i && v !== answer);
-      steps = [`= ${answer}`];
+      steps = steps || [`= ${answer}`];
       return { category: 'clockTime3', question, answer, choices: buildChoices(answer, wrongs), steps };
     } else if (pat === 2) {
       const startHour = randInt(1, 6);
@@ -2602,6 +2655,82 @@
     }
   }
 
+  // じこくと時間の文章題（小3）
+  function genClockWordProblem3() {
+    const pat = randInt(0, 3);
+    const places = ['公園', '図書館', '学校', '駅', 'プール'];
+    const place = places[randInt(0, places.length - 1)];
+    let question, answer, steps;
+    if (pat === 0) {
+      // 出発時こく + 所要時間 → 到着時こく
+      const startHour = randInt(1, 9);
+      const startMin = randInt(0, 11) * 5;
+      const durationMin = randInt(2, 9) * 10;
+      const total = startMin + durationMin;
+      const endHour = startHour + Math.floor(total / 60);
+      const endMin = total % 60;
+      question = `家を${startHour}時${startMin}分に出て、${durationMin}分歩くと${place}に着きました。着いた時こくは何時何分ですか。`;
+      answer = `${endHour}時${endMin}分`;
+      const wrongCands = [
+        `${endHour}時${(endMin + 10) % 60}分`,
+        `${endHour + 1}時${endMin}分`,
+        `${endHour}時${Math.max(0, endMin - 10)}分`,
+      ];
+      steps = [`${startMin}分 + ${durationMin}分 = ${total}分`, `${startHour}時 + ${Math.floor(total / 60)}時間${endMin}分 = ${answer}`];
+      return { category: 'clockWordProblem3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 1) {
+      // 到着時こく − 所要時間 → 出発時こく(答えを先に決めて逆算する)
+      const startHour = randInt(1, 9);
+      const startMin = randInt(0, 11) * 5;
+      const durationMin = randInt(2, 9) * 10;
+      const total = startMin + durationMin;
+      const endHour = startHour + Math.floor(total / 60);
+      const endMin = total % 60;
+      question = `家を出て${durationMin}分歩き、${place}に${endHour}時${endMin}分に着きました。家を出た時こくは何時何分ですか。`;
+      answer = `${startHour}時${startMin}分`;
+      const wrongCands = [
+        `${startHour}時${(startMin + 10) % 60}分`,
+        `${startHour + 1}時${startMin}分`,
+        `${startHour}時${Math.max(0, startMin - 10)}分`,
+      ];
+      steps = [`${endHour}時${endMin}分の${durationMin}分前を求める`, `= ${answer}`];
+      return { category: 'clockWordProblem3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 2) {
+      // 出発時こく・到着時こく → かかった時間
+      const startHour = randInt(1, 6);
+      const startMin = randInt(0, 11) * 5;
+      const durationMin = randInt(1, 8) * 10;
+      const total = startMin + durationMin;
+      const endHour = startHour + Math.floor(total / 60);
+      const endMin = total % 60;
+      question = `家を${startHour}時${startMin}分に出て、${place}に${endHour}時${endMin}分に着きました。家を出てから${place}に着くまでにかかった時間は何分ですか。`;
+      answer = durationMin;
+      const wrongs = [durationMin + 10, Math.max(1, durationMin - 10), durationMin + 60].filter((v) => v !== durationMin);
+      steps = [`${startHour}時${startMin}分 から ${endHour}時${endMin}分 まで`, `= ${durationMin}分`];
+      return { category: 'clockWordProblem3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 2つの時間の合計(時間分の複合表記になることもある)
+      const places2 = places.filter((p) => p !== place);
+      const place2 = places2[randInt(0, places2.length - 1)];
+      const dur1 = randInt(20, 50);
+      const dur2 = randInt(20, 50);
+      const total = dur1 + dur2;
+      const hr = Math.floor(total / 60);
+      const min = total % 60;
+      question = `${place}にいた時間は${dur1}分、${place2}にいた時間は${dur2}分です。あわせて何時間何分ですか。`;
+      if (hr === 0) {
+        answer = `${min}分`;
+        const wrongCands = [`${min + 10}分`, `${Math.max(1, min - 10)}分`, `1時間${min}分`];
+        steps = [`${dur1}分 + ${dur2}分 = ${total}分`, `= ${answer}`];
+        return { category: 'clockWordProblem3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+      }
+      answer = `${hr}時間${min}分`;
+      const wrongCands = [`${hr}時間${min === 0 ? 10 : Math.max(0, min - 10)}分`, `${hr + 1}時間${min}分`, `${hr}時間${(min + 10) % 60}分`];
+      steps = [`${dur1}分 + ${dur2}分 = ${total}分`, `${total}分 = ${hr}時間${min}分`, `= ${answer}`];
+      return { category: 'clockWordProblem3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    }
+  }
+
   // たし算とひき算：3けた以上（小3）
   function genAddSub3Digit3() {
     const digits = randInt(3, 4);
@@ -2628,29 +2757,733 @@
 
   // 単位の関係（小3）：L↔dL、kg↔g、km↔m、分↔秒
   function genUnits3() {
-    const units = [
-      { big: 'L', small: 'dL', factor: 10 },
-      { big: 'kg', small: 'g', factor: 1000 },
-      { big: 'km', small: 'm', factor: 1000 },
-      { big: '分', small: '秒', factor: 60 },
-    ];
-    const u = units[randInt(0, units.length - 1)];
-    const toSmall = Math.random() < 0.5;
-    const count = randInt(2, 9);
+    const pat = randInt(0, 5);
     let question, answer, wrongs, steps;
-    if (toSmall) {
-      question = `${count}${u.big} は何${u.small}ですか。`;
-      answer = count * u.factor;
-      wrongs = [answer + u.factor, Math.max(1, answer - u.factor), count * (u.factor / 10 || 1)].filter(v => v !== answer && v > 0);
-      steps = [`1${u.big} = ${u.factor}${u.small}`, `${count} × ${u.factor} = ${answer}`];
+    if (pat <= 1) {
+      const units = [
+        { big: 'L', small: 'dL', factor: 10 },
+        { big: 'kg', small: 'g', factor: 1000 },
+        { big: 'km', small: 'm', factor: 1000 },
+        { big: '分', small: '秒', factor: 60 },
+      ];
+      const u = units[randInt(0, units.length - 1)];
+      const toSmall = Math.random() < 0.5;
+      const count = randInt(2, 9);
+      if (toSmall) {
+        question = `${count}${u.big} は何${u.small}ですか。`;
+        answer = count * u.factor;
+        wrongs = [answer + u.factor, Math.max(1, answer - u.factor), count * (u.factor / 10 || 1)].filter(v => v !== answer && v > 0);
+        steps = [`1${u.big} = ${u.factor}${u.small}`, `${count} × ${u.factor} = ${answer}`];
+      } else {
+        const smallVal = count * u.factor;
+        question = `${smallVal}${u.small} は何${u.big}ですか。`;
+        answer = count;
+        wrongs = [count + 1, Math.max(1, count - 1), smallVal].filter(v => v !== answer && v > 0);
+        steps = [`1${u.big} = ${u.factor}${u.small}`, `${smallVal} ÷ ${u.factor} = ${answer}`];
+      }
+      return { category: 'units3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      // 複合(kg+g)→g
+      const kg = randInt(1, 9);
+      const g = randInt(1, 999);
+      question = `${kg}kg${g}g は何gですか。`;
+      answer = kg * 1000 + g;
+      wrongs = [answer + 100, Math.max(1, answer - 100), kg * 100 + g].filter(v => v !== answer && v > 0);
+      steps = [`1kg = 1000g`, `${kg}kg = ${kg * 1000}g`, `${kg * 1000}g + ${g}g = ${answer}g`];
+      return { category: 'units3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      // g→複合(kg◯g)
+      const kg = randInt(1, 9);
+      const g = randInt(1, 999);
+      const total = kg * 1000 + g;
+      question = `${total}g は何kg何gですか。`;
+      answer = `${kg}kg${g}g`;
+      const wrongCands = [`${kg}kg${g + 10}g`, `${kg + 1}kg${g}g`, `${kg > 1 ? kg - 1 : kg + 1}kg${g}g`];
+      steps = [`${total}g ÷ 1000 = ${kg}kgあまり${g}g`, `= ${answer}`];
+      return { category: 'units3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 4) {
+      // kg→t
+      const t = randInt(1, 9);
+      const kg = t * 1000;
+      question = `${kg}kg は何tですか。`;
+      answer = t;
+      wrongs = [t + 1, Math.max(1, t - 1), kg].filter(v => v !== answer && v > 0);
+      steps = [`1t = 1000kg`, `${kg} ÷ 1000 = ${answer}t`];
+      return { category: 'units3', question, answer, choices: buildChoices(answer, wrongs), steps };
     } else {
-      const smallVal = count * u.factor;
-      question = `${smallVal}${u.small} は何${u.big}ですか。`;
-      answer = count;
-      wrongs = [count + 1, Math.max(1, count - 1), smallVal].filter(v => v !== answer && v > 0);
-      steps = [`1${u.big} = ${u.factor}${u.small}`, `${smallVal} ÷ ${u.factor} = ${answer}`];
+      // t→kg
+      const t = randInt(1, 9);
+      question = `${t}t は何kgですか。`;
+      answer = t * 1000;
+      wrongs = [answer + 1000, Math.max(1, answer - 1000), t * 100].filter(v => v !== answer && v > 0);
+      steps = [`1t = 1000kg`, `${t} × 1000 = ${answer}kg`];
+      return { category: 'units3', question, answer, choices: buildChoices(answer, wrongs), steps };
     }
-    return { category: 'units3', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // □を使った式（小3）：数量の関係を□を使った式に表す・□にあてはまる数を求める
+  function genBoxEquation3() {
+    const pat = randInt(0, 4);
+    const items = ['色紙', 'おはじき', 'あめ', 'クッキー', 'ビー玉'];
+    const item = items[randInt(0, items.length - 1)];
+    let question, answer, steps;
+    if (pat === 0) {
+      // ひき算の式に表す(全部○個あって、□個使った/あげた→残りを式に表す)
+      const total = randInt(10, 30);
+      const verb = ['使いました', 'あげました', '食べました'][randInt(0, 2)];
+      question = `${item}が${total}こありましたが、□こ${verb}。のこった${item}のこ数を、□を使って式に表しなさい。`;
+      answer = `${total}－□`;
+      const wrongCands = [`□－${total}`, `${total}＋□`, `${total + 1}－□`];
+      steps = [`のこり = 全部 − 使った数`, `= ${answer}`];
+      return { category: 'boxEquation3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 1) {
+      // かけ算の式に表す(□の◯倍)
+      const n = randInt(2, 9);
+      const colors = [['赤', '青'], ['青', '赤'], ['白', '黒'], ['長い', '短い']];
+      const [nameA, nameB] = colors[randInt(0, colors.length - 1)];
+      question = `${nameB}のテープは${nameA}のテープの${n}倍の長さです。${nameA}のテープの長さを□cmとして、${nameB}のテープの長さを式に表しなさい。`;
+      answer = `□×${n}`;
+      const wrongCands = [`□÷${n}`, `□＋${n}`, `${n}×${n}`];
+      steps = [`${nameB} = ${nameA}(□) × ${n}`, `= ${answer}`];
+      return { category: 'boxEquation3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 2) {
+      // わり算の式に表す(□を等分する)
+      const n = randInt(2, 9);
+      const objects = ['リボン', 'ロープ', 'ひも', 'テープ'];
+      const obj = objects[randInt(0, objects.length - 1)];
+      question = `${obj}を同じ長さで${n}本に切り分けました。もとの${obj}の長さを□cmとして、切り分けた1本の長さを式に表しなさい。`;
+      answer = `□÷${n}`;
+      const wrongCands = [`□×${n}`, `${n}÷□`, `□－${n}`];
+      steps = [`1本分 = もとの長さ(□) ÷ 本数`, `= ${answer}`];
+      return { category: 'boxEquation3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 3) {
+      // たし算の式を解いて□を求める(皿の重さ+中身の重さ=全体)
+      const base = randInt(50, 200);
+      const boxAnswer = randInt(50, 300);
+      const total = base + boxAnswer;
+      const contents = ['バター', '小麦粉', 'さとう', 'チョコレート'];
+      const content = contents[randInt(0, contents.length - 1)];
+      question = `${content}を${base}gの皿にのせました。${content}の重さを□gとして、全体の重さが${total}gになったとき、□にあてはまる数を求めなさい。`;
+      answer = boxAnswer;
+      const wrongs = [answer + 10, Math.max(1, answer - 10), total].filter((v) => v !== answer && v > 0);
+      steps = [`□＋${base}＝${total}`, `□＝${total}－${base}＝${answer}`];
+      return { category: 'boxEquation3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // かけ算の式を解いて□を求める(1個の値段×こ数=代金)
+      const n = randInt(2, 8);
+      const boxAnswer = [50, 80, 100, 120, 150, 200][randInt(0, 5)];
+      const total = n * boxAnswer;
+      question = `${item}を${n}こ買うと、代金は${total}円でした。この${item}1こを□円として、□にあてはまる数を求めなさい。`;
+      answer = boxAnswer;
+      const wrongs = [answer + 10, Math.max(1, answer - 10), total].filter((v) => v !== answer && v > 0);
+      steps = [`□×${n}＝${total}`, `□＝${total}÷${n}＝${answer}`];
+      return { category: 'boxEquation3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // 分数の計算（小3）：同分母のたし算・ひき算
+  function genFraction3() {
+    const pat = randInt(0, 2);
+    const d = randInt(3, 9);
+    let question, answer, steps;
+    if (pat === 0) {
+      let a, b;
+      do { a = randInt(1, d - 1); b = randInt(1, d - 1); } while (a + b >= d);
+      question = `${a}/${d} + ${b}/${d} を計算しなさい。`;
+      answer = `${a + b}/${d}`;
+      steps = [`分母はそのまま、分子どうしをたす`, `${a} + ${b} = ${a + b}`, `= ${answer}`];
+      return { category: 'fraction3', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, [`${a + b + 1}/${d}`, `${Math.max(1, a + b - 1)}/${d}`, `${a + b}/${d + 1}`]), steps };
+    } else if (pat === 1) {
+      const a = randInt(2, d - 1);
+      const b = randInt(1, a - 1);
+      question = `${a}/${d} − ${b}/${d} を計算しなさい。`;
+      answer = `${a - b}/${d}`;
+      steps = [`分母はそのまま、分子どうしをひく`, `${a} − ${b} = ${a - b}`, `= ${answer}`];
+      return { category: 'fraction3', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, [`${a - b + 1}/${d}`, `${Math.max(1, a - b - 1)}/${d}`, `${a - b}/${d - 1}`]), steps };
+    } else {
+      // 整数(1)-分数
+      const a = randInt(1, d - 1);
+      question = `1 − ${a}/${d} を計算しなさい。`;
+      answer = `${d - a}/${d}`;
+      steps = [`1 = ${d}/${d}`, `${d}/${d} − ${a}/${d} = ${d - a}/${d}`, `= ${answer}`];
+      return { category: 'fraction3', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, [`${d - a + 1}/${d}`, `${Math.max(1, d - a - 1)}/${d}`, `${a}/${d}`]), steps };
+    }
+  }
+
+  // 分数の文章題（小3）：同分母のたし算・ひき算を使った文章題
+  function genFractionWordProblem3() {
+    const pat = randInt(0, 2);
+    const d = randInt(3, 9);
+    let question, answer, steps;
+    if (pat === 0) {
+      let a, b;
+      do { a = randInt(1, d - 1); b = randInt(1, d - 1); } while (a + b >= d);
+      const templates = [
+        { unit: 'dL', build: (x, y) => `水がコップに${x}/${d}dL入っています。もう1つのコップに${y}/${d}dL入っています。水は全部で何dLありますか。` },
+        { unit: 'kg', build: (x, y) => `油が${x}/${d}kgあります。この油を${y}/${d}kgの重さのかんに入れます。重さはあわせて何kgですか。` },
+        { unit: 'L', build: (x, y) => `ジュースが${x}/${d}Lあります。もう1本に${y}/${d}L入っています。ジュースは全部で何Lありますか。` },
+      ];
+      const T = templates[randInt(0, templates.length - 1)];
+      question = T.build(a, b);
+      answer = `${a + b}/${d}${T.unit}`;
+      steps = [`${a}/${d} + ${b}/${d} = ${a + b}/${d}`, `= ${answer}`];
+      return { category: 'fractionWordProblem3', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, [`${a + b + 1}/${d}${T.unit}`, `${Math.max(1, a + b - 1)}/${d}${T.unit}`, `${a + b}/${d + 1}${T.unit}`]), steps };
+    } else if (pat === 1) {
+      const a = randInt(2, d - 1);
+      const b = randInt(1, a - 1);
+      const items = [
+        { item: 'ジュース', unit: 'L', verb: '飲むと' },
+        { item: '水', unit: 'dL', verb: '使うと' },
+        { item: 'ジャム', unit: 'kg', verb: '使うと' },
+      ];
+      const I = items[randInt(0, items.length - 1)];
+      question = `${I.item}が${a}/${d}${I.unit}あります。${b}/${d}${I.unit}${I.verb}、のこりは何${I.unit}ですか。`;
+      answer = `${a - b}/${d}${I.unit}`;
+      steps = [`${a}/${d} − ${b}/${d} = ${a - b}/${d}`, `= ${answer}`];
+      return { category: 'fractionWordProblem3', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, [`${a - b + 1}/${d}${I.unit}`, `${Math.max(1, a - b - 1)}/${d}${I.unit}`, `${a - b}/${d - 1}${I.unit}`]), steps };
+    } else {
+      // 整数(1本・1つ)-分数
+      const a = randInt(1, d - 1);
+      const things = [
+        { item: 'ロールケーキ', unit: '本', verb: '食べると' },
+        { item: 'ようかん', unit: '本', verb: '食べると' },
+        { item: 'ピザ', unit: 'まい', verb: '食べると' },
+      ];
+      const T = things[randInt(0, things.length - 1)];
+      question = `${T.item}が1${T.unit}あります。${a}/${d}${T.unit}${T.verb}、のこりは何${T.unit}ですか。`;
+      answer = `${d - a}/${d}${T.unit}`;
+      steps = [`1 = ${d}/${d}`, `${d}/${d} − ${a}/${d} = ${d - a}/${d}`, `= ${answer}`];
+      return { category: 'fractionWordProblem3', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, [`${d - a + 1}/${d}${T.unit}`, `${Math.max(1, d - a - 1)}/${d}${T.unit}`, `${a}/${d}${T.unit}`]), steps };
+    }
+  }
+
+  // わり算（小3）：2桁・3桁÷1桁の筆算（あまりあり）、等分の文章題
+  function genDivision3() {
+    const pat = randInt(0, 2);
+    let question, answer, steps;
+    if (pat === 0) {
+      // 2桁÷1桁(あまりあり)
+      const divisor = randInt(2, 9);
+      let quotient, remainder, dividend;
+      for (let tries = 0; tries < 30; tries++) {
+        quotient = randInt(2, Math.floor(99 / divisor));
+        remainder = randInt(0, divisor - 1);
+        dividend = divisor * quotient + remainder;
+        if (dividend >= 10 && dividend <= 99) break;
+      }
+      question = `${dividend} ÷ ${divisor} を計算しなさい。`;
+      answer = remainder === 0 ? `${quotient}` : `${quotient}あまり${remainder}`;
+      const wrongCands = remainder === 0
+        ? [`${quotient + 1}`, `${Math.max(1, quotient - 1)}`, `${quotient}あまり1`]
+        : [`${quotient}あまり${remainder + 1}`, `${quotient + 1}あまり${remainder}`, `${Math.max(0, quotient - 1)}あまり${remainder}`];
+      steps = [`${divisor} × ${quotient} = ${divisor * quotient}`, `${dividend} − ${divisor * quotient} = ${remainder}`, `= ${answer}`];
+      return { category: 'division3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 1) {
+      // 3桁÷1桁(あまりあり)
+      const divisor = randInt(2, 9);
+      let quotient, remainder, dividend;
+      for (let tries = 0; tries < 30; tries++) {
+        quotient = randInt(34, Math.floor(999 / divisor));
+        remainder = randInt(0, divisor - 1);
+        dividend = divisor * quotient + remainder;
+        if (dividend >= 100 && dividend <= 999) break;
+      }
+      question = `${dividend} ÷ ${divisor} を計算しなさい。`;
+      answer = remainder === 0 ? `${quotient}` : `${quotient}あまり${remainder}`;
+      const wrongCands = remainder === 0
+        ? [`${quotient + 1}`, `${Math.max(1, quotient - 1)}`, `${quotient}あまり1`]
+        : [`${quotient}あまり${remainder + 1}`, `${quotient + 1}あまり${remainder}`, `${Math.max(0, quotient - 1)}あまり${remainder}`];
+      steps = [`${divisor} × ${quotient} = ${divisor * quotient}`, `${dividend} − ${divisor * quotient} = ${remainder}`, `= ${answer}`];
+      return { category: 'division3', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else {
+      // 等分の文章題(わり切れる)
+      const divisor = randInt(2, 9);
+      const quotient = randInt(20, 200);
+      const dividend = divisor * quotient;
+      const items = ['カード', 'おはじき', 'あめ', 'シール', '色紙'];
+      const item = items[randInt(0, items.length - 1)];
+      question = `${item}が${dividend}まいあります。${divisor}人に同じ数ずつ配ります。1人に何まいずつ配れますか。`;
+      answer = quotient;
+      const wrongs = [quotient + 1, Math.max(1, quotient - 1), dividend].filter((v) => v !== answer && v > 0);
+      steps = [`${dividend} ÷ ${divisor} = ${quotient}`, `= ${answer}まい`];
+      return { category: 'division3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // 算数の文章題まとめ（小3）：かけ算・わり算の一〜二段階の文章題
+  function genWordProblemMulDiv3() {
+    const pat = randInt(0, 6);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const items = ['ガム', 'あめ', 'クッキー', 'ビスケット', 'チョコレート'];
+      const item = items[randInt(0, items.length - 1)];
+      const perUnit = randInt(2, 30);
+      const bags = randInt(2, 40);
+      question = `${perUnit}こ入りの${item}のふくろが${bags}ふくろあります。${item}は全部で何こありますか。`;
+      answer = perUnit * bags;
+      wrongs = [perUnit + bags, bags, perUnit].filter(v => v !== answer && v > 0);
+      steps = [`${perUnit} × ${bags} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const items = ['クッキー', 'あめ', 'どんぐり', 'ビー玉', 'おはじき'];
+      const item = items[randInt(0, items.length - 1)];
+      const divisor = randInt(2, 9);
+      const quotient = randInt(3, 20);
+      const total = divisor * quotient;
+      question = `${item}が${total}こあります。1ふくろに${divisor}こずつ入れていきます。ふくろは何まいいりますか。`;
+      answer = quotient;
+      wrongs = [total, divisor, quotient + 1].filter(v => v !== answer && v > 0);
+      steps = [`${total} ÷ ${divisor} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      const items = ['ケーキ', 'プリン', 'パン', 'カップケーキ'];
+      const item = items[randInt(0, items.length - 1)];
+      const price = randInt(50, 300);
+      const n = randInt(10, 99);
+      question = `子どもが${n}人います。1こ${price}円の${item}を1人1こずつ配ります。${item}の代金は全部で何円ですか。`;
+      answer = price * n;
+      wrongs = [price + n, price, n].filter(v => v !== answer && v > 0);
+      steps = [`${price} × ${n} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      const pairs = [
+        { a: 'えん筆', b: 'ボールペン' },
+        { a: 'ノート', b: '消しゴム' },
+        { a: 'クレヨン', b: '色えんぴつ' },
+        { a: 'シール', b: 'カード' },
+      ];
+      const p = pairs[randInt(0, pairs.length - 1)];
+      const a = randInt(2, 9);
+      const b = randInt(2, 9);
+      const n = randInt(5, 30);
+      question = `${n}人に${p.a}を${a}本ずつ、${p.b}を${b}本ずつ配ります。${p.a}と${p.b}は、あわせて何本いりますか。`;
+      answer = (a + b) * n;
+      wrongs = [a * n, b * n, (a + b) + n].filter(v => v !== answer && v > 0);
+      steps = [`(${a} + ${b}) × ${n} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 4) {
+      const colors = ['赤', '青', '黄', '緑'];
+      const c1 = colors[randInt(0, colors.length - 1)];
+      let c2;
+      do { c2 = colors[randInt(0, colors.length - 1)]; } while (c2 === c1);
+      const a = randInt(2, 9);
+      const b = randInt(2, 9);
+      const people = randInt(3, 20);
+      const total = (a + b) * people;
+      question = `${c1}い色紙${a}まいと、${c2}い色紙${b}まいを1人分にして、色紙は全部で${total}まいくばりました。色紙は何人に配りましたか。`;
+      answer = people;
+      wrongs = [total, a + b, people + 1].filter(v => v !== answer && v > 0);
+      steps = [`${a} + ${b} = ${a + b}`, `${total} ÷ ${a + b} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 5) {
+      const names = ['はると', 'ひなた', 'さくら', 'ゆい', 'そら'];
+      let n1 = randInt(0, names.length - 1);
+      let n2, n3;
+      do { n2 = randInt(0, names.length - 1); } while (n2 === n1);
+      do { n3 = randInt(0, names.length - 1); } while (n3 === n1 || n3 === n2);
+      const itemCounter = { 'ミニカー': '台', 'シール': 'まい', 'カード': 'まい', 'おりがみ': 'まい' };
+      const items = Object.keys(itemCounter);
+      const item = items[randInt(0, items.length - 1)];
+      const counter = itemCounter[item];
+      const base = randInt(2, 9);
+      const k1 = randInt(2, 5);
+      const k2 = randInt(2, 5);
+      question = `${names[n1]}さんは${item}を${base}${counter}持っています。${names[n2]}さんは${names[n1]}さんの${k1}倍、${names[n3]}さんは${names[n2]}さんの${k2}倍持っています。${names[n3]}さんは${item}を何${counter}持っていますか。`;
+      answer = base * k1 * k2;
+      wrongs = [base * k1, base * k2, base * (k1 + k2)].filter(v => v !== answer && v > 0);
+      steps = [`${base} × ${k1} = ${base * k1}`, `${base * k1} × ${k2} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const names = ['はると', 'ひなた', 'さくら', 'ゆい', 'そら'];
+      let n1 = randInt(0, names.length - 1);
+      let n2;
+      do { n2 = randInt(0, names.length - 1); } while (n2 === n1);
+      const itemCounter = { 'ミニカー': '台', 'シール': 'まい', 'カード': 'まい', '切手': 'まい' };
+      const items = Object.keys(itemCounter);
+      const item = items[randInt(0, items.length - 1)];
+      const counter = itemCounter[item];
+      const quotient = randInt(2, 9);
+      const k = randInt(2, 9);
+      const total = quotient * k;
+      question = `${names[n1]}は${item}を${total}${counter}持っています。これは${names[n2]}の持っている${item}の${k}倍にあたります。${names[n2]}が持っている${item}は、何${counter}ですか。`;
+      answer = quotient;
+      wrongs = [total, total * k, k].filter(v => v !== answer && v > 0);
+      steps = [`${total} ÷ ${k} = ${answer}`];
+      return { category: 'wordProblemMulDiv3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // わり算の文章題（小4）：2〜3桁÷2桁のわり算文章題、あまりあり
+  function genDivWordProblem4() {
+    const pat = randInt(0, 4);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const items = ['色紙', 'おり紙', 'カード', 'シール'];
+      const item = items[randInt(0, items.length - 1)];
+      const divisor = randInt(10, 40);
+      const quotient = randInt(4, 30);
+      const dividend = divisor * quotient;
+      question = `${dividend}まいの${item}を、同じ数ずつ${divisor}人で分けます。1人分は何まいになりますか。`;
+      answer = quotient;
+      wrongs = [dividend, divisor, quotient + 1].filter(v => v !== answer && v > 0);
+      steps = [`${dividend} ÷ ${divisor} = ${answer}`];
+      return { category: 'divWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const items = [
+        { name: 'えん筆', counter: '本' },
+        { name: 'ノート', counter: 'さつ' },
+        { name: '消しゴム', counter: 'こ' },
+      ];
+      const it = items[randInt(0, items.length - 1)];
+      const price = randInt(15, 95);
+      const count = randInt(4, 20);
+      const money = price * count;
+      question = `${money}円では、1${it.counter}${price}円の${it.name}が何${it.counter}買えますか。`;
+      answer = count;
+      wrongs = [money, price, count + 1].filter(v => v !== answer && v > 0);
+      steps = [`${money} ÷ ${price} = ${answer}`];
+      return { category: 'divWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      const items = ['おかし', 'クッキー', 'みかん', 'りんご'];
+      const item = items[randInt(0, items.length - 1)];
+      const perBox = randInt(10, 20);
+      const boxes = randInt(4, 20);
+      const total = perBox * boxes;
+      question = `${total}この${item}を${perBox}こずつ箱につめていきます。${perBox}こ入りの箱は何箱できますか。`;
+      answer = boxes;
+      wrongs = [total, perBox, boxes + 1].filter(v => v !== answer && v > 0);
+      steps = [`${total} ÷ ${perBox} = ${answer}`];
+      return { category: 'divWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      const items = [
+        { name: 'えん筆', counter: '本' },
+        { name: 'ノート', counter: 'さつ' },
+        { name: 'クリアファイル', counter: 'まい' },
+      ];
+      const it = items[randInt(0, items.length - 1)];
+      let price, money, quotient, remainder;
+      let guard = 0;
+      do {
+        price = randInt(15, 95);
+        money = randInt(200, 900);
+        quotient = Math.floor(money / price);
+        remainder = money % price;
+        guard++;
+      } while ((remainder === 0 || quotient < 2) && guard < 100);
+      question = `${money}円で、1${it.counter}${price}円の${it.name}を買おうと思います。${it.name}は何${it.counter}買えて、いくらあまりますか。`;
+      answer = `${quotient}${it.counter}買えて、${remainder}円あまる`;
+      const wrongCands = [
+        `${quotient + 1}${it.counter}買えて、${remainder}円あまる`,
+        `${quotient}${it.counter}買えて、${price}円あまる`,
+        `${quotient}${it.counter}買えて、${Math.max(1, remainder - 1)}円あまる`,
+      ];
+      steps = [`${money} ÷ ${price} = ${quotient} あまり ${remainder}`, `= ${answer}`];
+      return { category: 'divWordProblem4', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else {
+      const items = [
+        { name: 'ノート', counter: 'さつ' },
+        { name: 'えん筆', counter: '本' },
+        { name: '色紙', counter: 'まい' },
+      ];
+      const it = items[randInt(0, items.length - 1)];
+      let total, perPerson, quotient, remainder;
+      let guard = 0;
+      do {
+        perPerson = randInt(11, 40);
+        total = randInt(50, 300);
+        quotient = Math.floor(total / perPerson);
+        remainder = total % perPerson;
+        guard++;
+      } while ((remainder === 0 || quotient < 2) && guard < 100);
+      question = `${it.name}が${total}${it.counter}あります。これを1人に${perPerson}${it.counter}ずつ配ると、何人に配ることができて、何${it.counter}あまりますか。`;
+      answer = `${quotient}人に配れて、${remainder}${it.counter}あまる`;
+      const wrongCands = [
+        `${quotient + 1}人に配れて、${remainder}${it.counter}あまる`,
+        `${quotient}人に配れて、${perPerson}${it.counter}あまる`,
+        `${quotient}人に配れて、${Math.max(1, remainder - 1)}${it.counter}あまる`,
+      ];
+      steps = [`${total} ÷ ${perPerson} = ${quotient} あまり ${remainder}`, `= ${answer}`];
+      return { category: 'divWordProblem4', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    }
+  }
+
+  // 小数の文章題（小4）：たし算・ひき算の文章題、単位換算あり
+  function formatDecFromCents(cents) {
+    if (cents % 10 === 0) return (cents / 100).toFixed(1);
+    return (cents / 100).toFixed(2);
+  }
+  function genDecWordProblem4() {
+    const pat = randInt(0, 3);
+    let question, answer, steps;
+    if (pat === 0) {
+      const templates = [
+        () => {
+          const box = randInt(105, 495);
+          const w = randInt(105, 995);
+          return {
+            q: `重さが${formatDecFromCents(box)}kgの箱に、りんごを${formatDecFromCents(w)}kg入れました。全体の重さは何kgですか。`,
+            unit: 'kg', a: box, b: w,
+          };
+        },
+        () => {
+          const big = randInt(505, 995);
+          const small = randInt(105, 495);
+          return {
+            q: `大小2つの水そうに水を入れます。大きい水そうには${formatDecFromCents(big)}L、小さい水そうには${formatDecFromCents(small)}L入れました。全部で何Lの水を入れましたか。`,
+            unit: 'L', a: big, b: small,
+          };
+        },
+        () => {
+          const a = randInt(205, 495);
+          const b = randInt(205, 495);
+          return {
+            q: `走りはばとびをしたときの記録は、たろう君が${formatDecFromCents(a)}m、はなこさんが${formatDecFromCents(b)}mでした。2人あわせた長さは何mですか。`,
+            unit: 'm', a, b,
+          };
+        },
+      ];
+      const t = templates[randInt(0, templates.length - 1)]();
+      question = t.q;
+      const total = t.a + t.b;
+      answer = `${formatDecFromCents(total)}${t.unit}`;
+      const wrongCands = [
+        `${formatDecFromCents(t.a)}${t.unit}`,
+        `${formatDecFromCents(total + 10)}${t.unit}`,
+        `${formatDecFromCents(Math.max(1, total - 10))}${t.unit}`,
+      ];
+      steps = [`${formatDecFromCents(t.a)} + ${formatDecFromCents(t.b)} = ${formatDecFromCents(total)}`];
+      return { category: 'decWordProblem4', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 1) {
+      const kind = randInt(0, 1);
+      let wrongCands;
+      if (kind === 0) {
+        const bigL = randInt(105, 495);
+        const dLraw = randInt(11, 99);
+        const smallLcents = dLraw * 10;
+        question = `牛にゅうが、大きいびんに${formatDecFromCents(bigL)}L、小さいびんに${dLraw}dL入っています。あわせて何Lありますか。`;
+        const total = bigL + smallLcents;
+        answer = `${formatDecFromCents(total)}L`;
+        wrongCands = [
+          `${formatDecFromCents(bigL + dLraw)}L`,
+          `${formatDecFromCents(total + 10)}L`,
+          `${formatDecFromCents(Math.max(1, total - 10))}L`,
+        ];
+        steps = [`${dLraw}dL = ${formatDecFromCents(smallLcents)}L`, `${formatDecFromCents(bigL)} + ${formatDecFromCents(smallLcents)} = ${formatDecFromCents(total)}`];
+      } else {
+        const kmCents = randInt(105, 495);
+        const mRaw = randInt(10, 99) * 10;
+        const mAsKmCents = mRaw / 10;
+        question = `たろう君の家から学校までの道のりは${mRaw}m、学校から駅までの道のりは${formatDecFromCents(kmCents)}kmあります。家から学校を通って駅まで行く道のりは何kmありますか。`;
+        const total = kmCents + mAsKmCents;
+        answer = `${formatDecFromCents(total)}km`;
+        wrongCands = [
+          `${formatDecFromCents(kmCents + mRaw)}km`,
+          `${formatDecFromCents(total + 10)}km`,
+          `${formatDecFromCents(Math.max(1, total - 10))}km`,
+        ];
+        steps = [`${mRaw}m = ${formatDecFromCents(mAsKmCents)}km`, `${formatDecFromCents(kmCents)} + ${formatDecFromCents(mAsKmCents)} = ${formatDecFromCents(total)}`];
+      }
+      return { category: 'decWordProblem4', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 2) {
+      const templates = [
+        { unit: 'm', name: 'リボン', verb: '使いました' },
+        { unit: 'L', name: 'ジュース', verb: '飲みました' },
+        { unit: 'kg', name: '砂糖', verb: '使いました' },
+      ];
+      const t = templates[randInt(0, templates.length - 1)];
+      let a, b;
+      do { a = randInt(205, 995); b = randInt(105, 895); } while (b >= a);
+      question = `${t.name}が${formatDecFromCents(a)}${t.unit}ありました。${formatDecFromCents(b)}${t.unit}${t.verb}。残りは何${t.unit}ですか。`;
+      const diff = a - b;
+      answer = `${formatDecFromCents(diff)}${t.unit}`;
+      const wrongCands = [
+        `${formatDecFromCents(a + b)}${t.unit}`,
+        `${formatDecFromCents(diff + 10)}${t.unit}`,
+        `${formatDecFromCents(Math.max(1, diff - 10))}${t.unit}`,
+      ];
+      steps = [`${formatDecFromCents(a)} - ${formatDecFromCents(b)} = ${formatDecFromCents(diff)}`];
+      return { category: 'decWordProblem4', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else {
+      const templates = [
+        { unit: 'm', build: (a, b) => `赤いテープの長さは${a}m、青いテープの長さは${b}mです。長さのちがいは何mですか。` },
+        { unit: 'kg', build: (a, b) => `たろう君のランドセルの重さは${a}kg、はなこさんのランドセルの重さは${b}kgです。重さのちがいは何kgですか。` },
+        { unit: 'L', build: (a, b) => `大きいバケツには水が${a}L、小さいバケツには水が${b}L入っています。かさのちがいは何Lですか。` },
+      ];
+      const t = templates[randInt(0, templates.length - 1)];
+      let a, b;
+      do { a = randInt(205, 995); b = randInt(105, 895); } while (b >= a);
+      question = t.build(formatDecFromCents(a), formatDecFromCents(b));
+      const diff = a - b;
+      answer = `${formatDecFromCents(diff)}${t.unit}`;
+      const wrongCands = [
+        `${formatDecFromCents(a + b)}${t.unit}`,
+        `${formatDecFromCents(diff + 10)}${t.unit}`,
+        `${formatDecFromCents(Math.max(1, diff - 10))}${t.unit}`,
+      ];
+      steps = [`${formatDecFromCents(a)} - ${formatDecFromCents(b)} = ${formatDecFromCents(diff)}`];
+      return { category: 'decWordProblem4', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    }
+  }
+
+  // 真分数・仮分数・帯分数（小4）：分類と相互変換
+  function genFracType4() {
+    const pat = randInt(0, 2);
+    let question, answer, steps;
+    if (pat === 0) {
+      const kind = randInt(0, 2);
+      let fracText;
+      if (kind === 0) {
+        const den = randInt(3, 12);
+        const num = randInt(1, den - 1);
+        fracText = `${num}/${den}`;
+        answer = '真分数';
+      } else if (kind === 1) {
+        const den = randInt(2, 9);
+        const num = randInt(den, den * 3);
+        fracText = `${num}/${den}`;
+        answer = '仮分数';
+      } else {
+        const den = randInt(2, 9);
+        const whole = randInt(1, 6);
+        const rem = randInt(1, den - 1);
+        fracText = `${whole}と${rem}/${den}`;
+        answer = '帯分数';
+      }
+      question = `次の分数は、真分数・仮分数・帯分数のどれですか。 ${fracText}`;
+      steps = [`${fracText} は${answer}`];
+      return { category: 'fracType4', question, questionHtml: stepToHtml(question), answer, choices: shuffle(['真分数', '仮分数', '帯分数']), steps };
+    } else if (pat === 1) {
+      const den = randInt(2, 9);
+      const whole = randInt(1, 6);
+      const rem = randInt(1, den - 1);
+      const num = whole * den + rem;
+      question = `${num}/${den} を帯分数で表しなさい。`;
+      answer = `${whole}と${rem}/${den}`;
+      const wrongCands = [
+        `${whole + 1}と${rem}/${den}`,
+        `${whole + 2}と${rem}/${den}`,
+        `${whole + 3}と${rem}/${den}`,
+      ];
+      steps = [`${num} ÷ ${den} = ${whole} あまり ${rem}`, `= ${answer}`];
+      return { category: 'fracType4', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else {
+      const den = randInt(2, 9);
+      const whole = randInt(1, 6);
+      const rem = randInt(1, den - 1);
+      question = `${whole}と${rem}/${den} を仮分数で表しなさい。`;
+      const num = whole * den + rem;
+      answer = `${num}/${den}`;
+      const wrongCands = [
+        `${num + 1}/${den}`,
+        `${Math.max(1, num - 1)}/${den}`,
+        `${whole * den}/${den}`,
+      ];
+      steps = [`${whole} × ${den} + ${rem} = ${num}`, `= ${answer}`];
+      return { category: 'fracType4', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    }
+  }
+
+  // 文章題特訓：和差算（小4）：和と差から2つの数量を求めるチャレンジ文章題
+  function genSumDiffWordProblem4() {
+    const pat = randInt(0, 5);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const small = randInt(20, 300);
+      const diff = randInt(5, 100);
+      const large = small + diff;
+      const sum = small + large;
+      const askLarge = Math.random() < 0.5;
+      question = `大小2つの数があります。その2つの数の和は${sum}で、差は${diff}です。${askLarge ? '大きい' : '小さい'}ほうの数はいくらですか。`;
+      answer = askLarge ? large : small;
+      wrongs = [askLarge ? small : large, sum, diff].filter(v => v !== answer && v > 0);
+      steps = askLarge
+        ? [`(${sum} + ${diff}) ÷ 2 = ${answer}`]
+        : [`(${sum} - ${diff}) ÷ 2 = ${answer}`];
+      return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const girls = randInt(10, 40);
+      const diffBG = randInt(2, Math.min(15, girls - 1));
+      const boysMore = Math.random() < 0.5;
+      const boys = boysMore ? girls + diffBG : girls - diffBG;
+      const total = girls + boys;
+      const askGirls = Math.random() < 0.5;
+      question = `あるクラスの児童の人数は${total}人です。男子が女子より${diffBG}人${boysMore ? '多い' : '少ない'}とき、このクラスの${askGirls ? '女子' : '男子'}は何人ですか。`;
+      answer = askGirls ? girls : boys;
+      wrongs = [askGirls ? boys : girls, total, diffBG].filter(v => v !== answer && v > 0);
+      steps = [`求める人数を求める`, `= ${answer}人`];
+      return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      const pairs = [
+        { big: 'Aさん', small: 'Bさん' },
+        { big: 'お姉さん', small: 'はなこさん' },
+        { big: 'お兄さん', small: '弟' },
+      ];
+      const p = pairs[randInt(0, pairs.length - 1)];
+      const small = randInt(200, 2000);
+      const diff = randInt(50, 500);
+      const big = small + diff;
+      const total = small + big;
+      const askBig = Math.random() < 0.5;
+      question = `${p.big}は${p.small}より${diff}円多くお金を持っています。2人の持っているお金の合計は${total}円です。${askBig ? p.big : p.small}の持っているお金はいくらですか。`;
+      answer = askBig ? big : small;
+      wrongs = [askBig ? small : big, total, diff].filter(v => v !== answer && v > 0);
+      steps = askBig
+        ? [`(${total} + ${diff}) ÷ 2 = ${answer}`]
+        : [`(${total} - ${diff}) ÷ 2 = ${answer}`];
+      return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      const pairs = [
+        { big: 'お母さん', small: 'たろう君', childMin: 5, childMax: 15, gapMin: 20, gapMax: 35 },
+        { big: 'お父さん', small: 'はなこさん', childMin: 5, childMax: 15, gapMin: 20, gapMax: 35 },
+        { big: 'お姉さん', small: '妹', childMin: 3, childMax: 12, gapMin: 2, gapMax: 8 },
+      ];
+      const p = pairs[randInt(0, pairs.length - 1)];
+      const small = randInt(p.childMin, p.childMax);
+      const diff = randInt(p.gapMin, p.gapMax);
+      const big = small + diff;
+      const sum = small + big;
+      const askBig = Math.random() < 0.5;
+      question = `${p.small}と${p.big}の年れいの和は${sum}才です。${p.big}と${p.small}の年れいの差は${diff}才です。${askBig ? p.big : p.small}は何才ですか。`;
+      answer = askBig ? big : small;
+      wrongs = [askBig ? small : big, sum, diff].filter(v => v !== answer && v > 0);
+      steps = askBig
+        ? [`(${sum} + ${diff}) ÷ 2 = ${answer}`]
+        : [`(${sum} - ${diff}) ÷ 2 = ${answer}`];
+      return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 4) {
+      const tate = randInt(20, 150);
+      const diff = randInt(5, 80);
+      const yoko = tate + diff;
+      const perimeter = 2 * (tate + yoko);
+      const askYoko = Math.random() < 0.5;
+      question = `長方形の形をした土地があります。この土地のまわりの長さは${perimeter}mで、横の長さはたての長さより${diff}m長いそうです。この土地の${askYoko ? '横' : 'たて'}の長さは何mですか。`;
+      answer = askYoko ? yoko : tate;
+      const half = tate + yoko;
+      wrongs = [askYoko ? tate : yoko, half, perimeter].filter(v => v !== answer && v > 0);
+      steps = askYoko
+        ? [`${perimeter} ÷ 2 = ${half}`, `(${half} + ${diff}) ÷ 2 = ${answer}`]
+        : [`${perimeter} ÷ 2 = ${half}`, `(${half} - ${diff}) ÷ 2 = ${answer}`];
+      return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const pairs = [
+        { big: 'ノート', small: '消しゴム' },
+        { big: '本', small: 'しおり' },
+        { big: '色えんぴつ', small: 'えんぴつ' },
+      ];
+      const p = pairs[randInt(0, pairs.length - 1)];
+      const small = randInt(20, 150);
+      const diff = randInt(5, 80);
+      const big = small + diff;
+      const total = small + big;
+      const askBig = Math.random() < 0.5;
+      question = `${p.big}と${p.small}を買い、合計で${total}円でした。${p.small}のねだんは${p.big}より${diff}円安かったです。${askBig ? p.big : p.small}のねだんはいくらでしたか。`;
+      answer = askBig ? big : small;
+      wrongs = [askBig ? small : big, total, diff].filter(v => v !== answer && v > 0);
+      steps = askBig
+        ? [`(${total} + ${diff}) ÷ 2 = ${answer}`]
+        : [`(${total} - ${diff}) ÷ 2 = ${answer}`];
+      return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
   }
 
   // 四則計算（小4）：かっこ・×÷の優先順位（負の数は使わない）
