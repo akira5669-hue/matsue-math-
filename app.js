@@ -7910,6 +7910,17 @@
         miss: '😈 まだまだじゃのう…！その調子で間違え続けるがいい！',
       },
     },
+    // 算数デビルちゃんは間違い大魔王と同じ「間違えた問題を出題」仕組みを使うレアキャラ
+    // (nextQuestion内でmistakekingと一緒に判定している)。イジワルっぽい性格の設定に
+    // 合わせ、ミスしても逃げずにその場でイジワルを続ける(mistakekingと同じ非フリー仕様)。
+    sansudevil: {
+      id: 'sansudevil', name: '算数デビルちゃん', img: 'images/sansudevil.png',
+      lines: {
+        appear: 'イジワルが大すき〜♪ 算数デビルちゃん参上！前に間違えた問題、もう一度見せちゃうぞ〜！',
+        defeat: 'むむっ、やられちゃった〜！でも正体はまだヒミツだよ〜？またイジワルしに来るからね〜♪',
+        miss: 'イジワル成功〜！その調子で、もっとまちがえちゃえ〜♪',
+      },
+    },
     warlord_nobunaga: {
       id: 'warlord_nobunaga', name: '織田信長', img: 'images/warlord_nobunaga.png', isWarlord: true,
       lines: {
@@ -8046,15 +8057,16 @@
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
-  // ごーまじ(1/50)を追加した分、素の合計は163/300(54.33%)になったため、
-  // スケール係数も60/163に更新して合計20%を維持する。
-  const RARE_SCALE = 60 / 163; // 合計54.33%→20%
+  // 算数デビルちゃん(1/15)を追加した分、素の合計は177/300(59%)になったため、
+  // スケール係数も60/177に更新して合計20%を維持する。
+  const RARE_SCALE = 60 / 177; // 合計59%→20%
   const RARE_CHANCE_ZOMBIE = 0.08 * RARE_SCALE;
   const RARE_CHANCE_SANTA = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SMILE = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_NEKODA = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_WARISU = (1 / 50) * RARE_SCALE;
   const RARE_CHANCE_MISTAKEKING = (1 / 10) * RARE_SCALE;
+  const RARE_CHANCE_SANSUDEVIL = (1 / 15) * RARE_SCALE;
   const RARE_CHANCE_INUDA = (1 / 20) * RARE_SCALE;
   // ダブルorハーフだけは他のレアキャラと違い、RARE_SCALEによる相対スケールを使わず
   // 最終的な出現率を直接0.5%に固定する。
@@ -8068,6 +8080,7 @@
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
   const MISTAKEKING_BONUS_MP = 30;
+  const SANSUDEVIL_BONUS_MP = 30;
   const INUDA_BONUS_MP = 20;
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
@@ -8147,6 +8160,7 @@
       ['nekoda', RARE_CHANCE_NEKODA],
       ['warisu', RARE_CHANCE_WARISU],
       ['mistakeking', RARE_CHANCE_MISTAKEKING],
+      ['sansudevil', RARE_CHANCE_SANSUDEVIL],
       ['iine', RARE_CHANCE_IINE],
       ['inuda', chanceInuda],
       ['doubleorhalf', RARE_CHANCE_DOUBLEORHALF],
@@ -8697,7 +8711,7 @@
 
   function nextQuestion() {
     clearMemoCanvas();
-    let mistakeQ = state.rareType === 'mistakeking' ? pickMistakeKingQuestion() : null;
+    let mistakeQ = (state.rareType === 'mistakeking' || state.rareType === 'sansudevil') ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
       mistakeQ = pickWorldBossWrongQuestion();
     }
@@ -9072,7 +9086,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(10 or 20)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。
