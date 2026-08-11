@@ -8828,11 +8828,15 @@
   // 通常キャラ「わるくん」：わり算だけを扱う単元を解いている時だけ表示される。
   const WARU_CATEGORY_IDS = ['div2', 'divRemainder4', 'div2by1_4', 'div2by2_4', 'div3by1_4', 'div3by2_4', 'div3by3_4', 'decDiv5', 'decDivRemainder5'];
   const WARU_KUN = { name: 'わるくん', img: 'images/warukun.png' };
+  // 通常キャラ「しすうくん」：累乗（指数）を扱う単元を解いている時だけ表示される。
+  const POWER_CATEGORY_IDS = ['power'];
+  const SHISUU_KUN = { name: 'しすうくん', img: 'images/shisuukun.png' };
   function currentEnemyDisplay(st) {
     if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
     if (st.current && FRACTION_CATEGORY_IDS.indexOf(st.current.category) !== -1) return FRACTION_KUN;
     if (st.current && KAKE_CATEGORY_IDS.indexOf(st.current.category) !== -1) return KAKE_CHAN;
     if (st.current && WARU_CATEGORY_IDS.indexOf(st.current.category) !== -1) return WARU_KUN;
+    if (st.current && POWER_CATEGORY_IDS.indexOf(st.current.category) !== -1) return SHISUU_KUN;
     return ENEMIES[st.enemyIdx];
   }
 
