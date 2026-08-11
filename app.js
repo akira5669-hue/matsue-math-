@@ -8554,6 +8554,18 @@
         miss: 'イジワル成功〜！その調子で、もっとまちがえちゃえ〜♪',
       },
     },
+    // 天使の涙は通常のレア抽選(rollRareType)とは完全に独立した専用トリガーで登場する。
+    // ボス戦以外で2問連続不正解になった瞬間、その時点の敵(通常の敵・レアキャラ問わず)が
+    // 天使の涙に変わる(handleAnswer内でwrongStreakを見て判定)。間違えても逃げず、
+    // 他のレアキャラと同じ10問連続正解で撃破するとずかんに載る。
+    angelTears: {
+      id: 'angelTears', name: '天使の涙', img: 'images/angeltears.png',
+      lines: {
+        appear: '私をこんなに泣かせたのは、あなたしかいないわ。もう、計算で間違わないでね。',
+        defeat: '涙が止まった…ありがとう。あなたのおかげで、また笑顔になれたよ。',
+        miss: 'もう泣かせないで…。',
+      },
+    },
     warlord_nobunaga: {
       id: 'warlord_nobunaga', name: '織田信長', img: 'images/warlord_nobunaga.png', isWarlord: true,
       lines: {
@@ -8686,7 +8698,7 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
@@ -8714,6 +8726,7 @@
   const WARISU_BONUS_MP = 30;
   const MISTAKEKING_BONUS_MP = 30;
   const SANSUDEVIL_BONUS_MP = 30;
+  const ANGELTEARS_BONUS_MP = 20;
   const INUDA_BONUS_MP = 20;
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
@@ -8849,6 +8862,7 @@
     total: 0,
     correct: 0,
     streak: 0,
+    wrongStreak: 0,
     streakAboveGrade: true,
     catStats: {},
     current: null,
@@ -9544,6 +9558,7 @@
       if (state.streak === 0) state.streakAboveGrade = true;
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.streak++;
+      state.wrongStreak = 0;
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
@@ -9628,6 +9643,17 @@
         missLineHtml += `<div class="enemy-quote-banner">💨 ごーまじは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
+        saveGameState(state);
+      }
+      // 天使の涙：通常のレア抽選とは独立した専用トリガー。ボス戦以外で2問連続不正解に
+      // なった瞬間、その時点の敵(通常の敵・レアキャラ問わず、上のfled処理で入れ替わった
+      // 後の敵も含む)を天使の涙に変える。間違えても逃げないので、ここでの判定は
+      // 「まだ天使の涙になっていない時だけ」でよい。
+      state.wrongStreak = (state.wrongStreak || 0) + 1;
+      if (state.wrongStreak >= 2 && !state.worldBossActiveStage && state.rareType !== 'angelTears') {
+        state.rareType = 'angelTears';
+        missLineHtml += `<div class="enemy-quote-banner">${RARE_TYPES.angelTears.lines.appear}</div>`;
+        state.wrongStreak = 0;
         saveGameState(state);
       }
       // ボス戦中の不正解は、ステージに応じた量だけHPが減る。HPが0になったら
@@ -9726,7 +9752,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(10 or 20)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。
