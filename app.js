@@ -8414,6 +8414,7 @@
     { name: 'ハナマルオ',      emoji: '⭕' },
     { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
     { name: 'かっこっこ',      emoji: '🐤', img: 'images/kakkokko.jpg' },
+    { name: 'イコールくん',    emoji: '🟰', img: 'images/ikorukun.png' },
   ];
 
   const RARE_TYPES = {
