@@ -12161,6 +12161,9 @@
           if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
           if (res.apologyBonusAwarded > 0) { state.points += res.apologyBonusAwarded; saveGameState(state); }
           reconcilePoints(existingSession.id, res);
+          if (res.pendingNotice) {
+            window.alert(res.pendingNotice);
+          }
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);

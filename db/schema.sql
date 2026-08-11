@@ -32,7 +32,8 @@ CREATE TABLE students (
   world_lap_start_level INTEGER NOT NULL DEFAULT 100,
   world_boss_defeated JSONB NOT NULL DEFAULT '{}',
   world_allies JSONB NOT NULL DEFAULT '[]',
-  challenge_correct_total INTEGER NOT NULL DEFAULT 0
+  challenge_correct_total INTEGER NOT NULL DEFAULT 0,
+  pending_notice TEXT                      -- 次回ログイン時に1回だけ表示するお知らせ(表示後NULLに戻す)
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
