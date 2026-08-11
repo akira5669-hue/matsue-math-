@@ -12140,6 +12140,16 @@
   window.addEventListener('online', flushLogQueue_);
   setInterval(flushLogQueue_, 2 * 60 * 1000);
 
+  // タブ/PWAを閉じずに何日も使い続けると、ページの再読み込み(getPoints呼び出し)が
+  // 発生しないままlast_loginだけが古くなり、次に何らかの理由で再ログインした際に
+  // 「5日以上ログイン無し」と誤判定されてMPが0にリセットされてしまうことがあった。
+  // これを防ぐため、ログイン中は1時間おきに軽くgetPointsを呼んでlast_loginを
+  // 更新し続ける(レスポンスは特に画面に反映しない、生存確認のみが目的)。
+  setInterval(function () {
+    var s = loadSession();
+    if (s && s.id) apiPost('getPoints', { id: s.id }).catch(function () { });
+  }, 60 * 60 * 1000);
+
   var existingSession = loadSession();
   if (existingSession) {
     showApp(existingSession.name, !!existingSession.guest);
