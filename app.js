@@ -10975,7 +10975,7 @@
     } else {
       actionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    els.shopList.innerHTML = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${actionHtml}</div>`;
+    els.shopList.innerHTML = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.png" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${actionHtml}</div>`;
     var btn = document.getElementById('akrPrayerBtn');
     if (btn) btn.addEventListener('click', function () { handleAkrPrayerClick(btn); });
   }
