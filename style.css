@@ -744,6 +744,17 @@ h1 {
 .apology-banner[hidden] { display: none; }
 .apology-text { margin: 0; font-size: 13px; font-weight: 700; color: #3730a3; line-height: 1.6; }
 
+.curse-banner {
+  background: linear-gradient(135deg, #2e1065, #4c1d95);
+  border: 1.5px solid #a78bfa;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.curse-banner[hidden] { display: none; }
+.curse-text { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #ede9fe; line-height: 1.6; }
+.curse-banner-btn { width: 100%; }
+
 .world-launch-banner {
   background: linear-gradient(135deg, #e0f7f5, #ccf3ee);
   border: 1.5px solid #5eead4;

@@ -243,7 +243,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
-        mathGodTitleEarned: s.mathGodTitleEarned,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -258,7 +258,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
-        mathGodTitleEarned: s.mathGodTitleEarned,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
       });
     }
   }
@@ -8731,6 +8731,11 @@
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
   const FUGOUPAKKUN_BONUS_MP = 20;
+  // ボン・ミスコの呪い：通常の敵「ボンミスコ」に間違えるとかかる。呪われている間は
+  // 10問連続正解してもMP報酬が上限5に制限される。なんでも屋でAKRの祈り(100MP)を
+  // 受けるまで解除されない。
+  const BONMISUKO_CURSE_MP_CAP = 5;
+  const AKR_PRAYER_COST_MP = 100;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
   // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
   const GOUMAJI_REQUIRED_STREAK = 20;
@@ -8898,6 +8903,9 @@
     // 間違い大魔王が出題する「間違えた問題」の保存庫。カテゴリID→問題スナップショット配列。
     wrongBank: (savedProgress && savedProgress.wrongBank && typeof savedProgress.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedProgress.wrongBank)) : ((savedGame && savedGame.wrongBank && typeof savedGame.wrongBank === 'object') ? JSON.parse(JSON.stringify(savedGame.wrongBank)) : {}),
     doubleOrHalfSnapshot: (savedGame && Number(savedGame.doubleOrHalfSnapshot)) || 0,
+    // ボン・ミスコの呪いにかかっているか。なんでも屋でAKRの祈りを受けるまで持続する
+    // 状態のため、アカウント別ストレージ(progress)を優先する。
+    cursed: (savedProgress ? !!savedProgress.cursed : !!(savedGame && savedGame.cursed)),
     // 単元ごとの1日の出題数上限(DAILY_CATEGORY_COMPLETE_AT)のカウンタ。日付が変われば
     // ensureCategoryDailyReset()でリセットされる。
     categoryDailyCounts: (savedProgress && savedProgress.categoryDailyCounts && typeof savedProgress.categoryDailyCounts === 'object') ? Object.assign({}, savedProgress.categoryDailyCounts) : ((savedGame && savedGame.categoryDailyCounts && typeof savedGame.categoryDailyCounts === 'object') ? Object.assign({}, savedGame.categoryDailyCounts) : {}),
@@ -9058,6 +9066,12 @@
     giftSummary: document.getElementById('giftSummary'),
     giftList: document.getElementById('giftList'),
     giftCodeResult: document.getElementById('giftCodeResult'),
+    curseBanner: document.getElementById('curseBanner'),
+    curseBannerBtn: document.getElementById('curseBannerBtn'),
+    shopToggle: document.getElementById('shopToggle'),
+    shopPanel: document.getElementById('shopPanel'),
+    shopSummary: document.getElementById('shopSummary'),
+    shopList: document.getElementById('shopList'),
     prefectureToggle: document.getElementById('prefectureToggle'),
     prefecturePanel: document.getElementById('prefecturePanel'),
     prefectureProgress: document.getElementById('prefectureProgress'),
@@ -9365,7 +9379,9 @@
 
   function nextQuestion() {
     clearMemoCanvas();
-    let mistakeQ = (state.rareType === 'mistakeking' || state.rareType === 'sansudevil') ? pickMistakeKingQuestion() : null;
+    // ボン・ミスコの呪いにかかっている間も、間違い大魔王/算数デビルちゃんと同じ
+    // 「間違えた問題の保存庫」から出題する。
+    let mistakeQ = (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
       mistakeQ = pickWorldBossWrongQuestion();
     }
@@ -9440,6 +9456,7 @@
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
     renderWorldLaunchBanner();
+    renderCurseBanner();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -9645,6 +9662,15 @@
         state.rareType = assignRareType(state);
         saveGameState(state);
       }
+      // ボン・ミスコの呪い：通常の敵「ボンミスコ」との対決で不正解になると呪いをかけ
+      // られる。呪われている間は間違えた問題ばかり出題され(nextQuestion側)、10問連続
+      // 正解のMP報酬も上限5に制限される(handleAnswerのisCorrect側)。なんでも屋で
+      // AKRの祈りを受けるまで解除されない。
+      if (!state.worldBossActiveStage && enemyBeforeMiss.name === 'ボンミスコ' && !state.cursed) {
+        state.cursed = true;
+        missLineHtml += `<div class="enemy-quote-banner">😈 ボン・ミスコの呪いをかけられた…！なんでも屋でAKRの祈りを受けるまで、間違えた問題ばかり出題され、MP獲得も${BONMISUKO_CURSE_MP_CAP}に制限されてしまう…</div>`;
+        saveGameState(state);
+      }
       // 天使の涙：通常のレア抽選とは独立した専用トリガー。ボス戦以外で2問連続不正解に
       // なった瞬間、その時点の敵(通常の敵・レアキャラ問わず、上のfled処理で入れ替わった
       // 後の敵も含む)を天使の涙に変える。間違えても逃げないので、ここでの判定は
@@ -9756,7 +9782,10 @@
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(10 or 20)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。
-      const basePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : (bonusEligible ? 20 : 10) + rareMpBonus;
+      const rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : (bonusEligible ? 20 : 10) + rareMpBonus;
+      // ボン・ミスコの呪いにかかっている間は、どんな組み合わせでもMP報酬が上限
+      // BONMISUKO_CURSE_MP_CAPに制限される。
+      const basePoints = state.cursed ? Math.min(rawBasePoints, BONMISUKO_CURSE_MP_CAP) : rawBasePoints;
       const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
@@ -10109,6 +10138,8 @@
     els.rankingPanel.hidden = true;
     els.giftToggle.hidden = !!isGuest;
     els.giftPanel.hidden = true;
+    els.shopToggle.hidden = !!isGuest;
+    els.shopPanel.hidden = true;
     var session = loadSession();
     updateWorldToggleVisibility();
     els.worldPanel.hidden = true;
@@ -10684,6 +10715,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
     els.historySummary.textContent = '読み込み中…';
@@ -10832,6 +10864,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
     selectRankingMode('exp');
@@ -10904,6 +10937,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
     els.giftSummary.textContent = '読み込み中…';
@@ -10922,6 +10956,73 @@
     }).catch(function () {
       els.giftSummary.textContent = '読み込みに失敗しました。';
     });
+  }
+
+  /* ---------- なんでも屋（ボン・ミスコの呪いをAKRの祈りで解く） ---------- */
+
+  function renderCurseBanner() {
+    els.curseBanner.hidden = !state.cursed;
+  }
+
+  function renderShopList() {
+    els.shopSummary.textContent = `現在のMP: ${state.points}`;
+    var canAfford = state.points >= AKR_PRAYER_COST_MP;
+    var actionHtml;
+    if (!state.cursed) {
+      actionHtml = `<span class="gift-insufficient">今は呪われていません</span>`;
+    } else if (canAfford) {
+      actionHtml = `<button type="button" class="gift-redeem-btn" id="akrPrayerBtn">祈ってもらう</button>`;
+    } else {
+      actionHtml = `<span class="gift-insufficient">MP不足</span>`;
+    }
+    els.shopList.innerHTML = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${actionHtml}</div>`;
+    var btn = document.getElementById('akrPrayerBtn');
+    if (btn) btn.addEventListener('click', function () { handleAkrPrayerClick(btn); });
+  }
+
+  function handleAkrPrayerClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`AKRの祈りを受けます（${AKR_PRAYER_COST_MP}MP）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('akrPrayer', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '祈りの受付に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.cursed = false;
+      saveGameState(state);
+      updateGameHud();
+      renderCurseBanner();
+      renderShopList();
+      window.alert('🙏 AKRの祈りが届き、ボン・ミスコの呪いが解けた！');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function toggleShop() {
+    var isHidden = els.shopPanel.hasAttribute('hidden');
+    if (!isHidden) { els.shopPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
+
+    els.shopPanel.removeAttribute('hidden');
+    renderShopList();
   }
 
   /* ---------- 47都道府県制覇（特別夏バージョン） ---------- */
@@ -10969,6 +11070,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
@@ -11045,6 +11147,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
     renderAvatarPanel();
@@ -11423,6 +11526,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.worldPanel.removeAttribute('hidden');
     renderWorldPanel();
@@ -11443,6 +11547,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
     els.grantResult.className = 'grant-result';
@@ -11506,6 +11611,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.testPhotoPanel.removeAttribute('hidden');
     renderTestPhotoPanel();
@@ -11822,6 +11928,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     els.weeklyQuizPanel.removeAttribute('hidden');
     loadWeeklyQuiz();
@@ -12010,6 +12117,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
 
     hideFieldError(els.withdrawError);
     els.withdrawForm.hidden = false;
@@ -12130,6 +12238,8 @@
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
   els.giftToggle.addEventListener('click', toggleGift);
+  els.shopToggle.addEventListener('click', toggleShop);
+  els.curseBannerBtn.addEventListener('click', toggleShop);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
