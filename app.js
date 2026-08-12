@@ -2087,6 +2087,7 @@
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'angleApplication2', label: '角度の応用（中2）',         gen: genAngleApplication2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
+    { id: 'parallelogramCondition2', label: '平行四辺形の性質や条件（中2）', gen: genParallelogramCondition2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
     { id: 'polyCalc2',  label: '式の計算（中2）',                  gen: genPolyCalc2 , addedDate: '2026-08-02' },
 
@@ -7730,6 +7731,47 @@
       questionHtml = sc.svg + `<span style="display:block">${question}</span>`;
     }
     return { category: 'congruence', question, questionHtml, answer, choices, steps };
+  }
+
+  /* ---------- 平行四辺形の性質や条件（中2） ---------- */
+
+  const PARA_COND2_CONDS_ = [
+    { name: '2組の対辺がそれぞれ平行である', c: ['AB∥DC', 'AD∥BC'] },
+    { name: '2組の対辺がそれぞれ等しい', c: ['AB=DC', 'AD=BC'] },
+    { name: '2組の対角がそれぞれ等しい', c: ['∠A=∠C', '∠B=∠D'] },
+    { name: '対角線がそれぞれの中点で交わる', c: ['対角線ACとBDの交点をMとすると、AM=CM', 'BM=DM'] },
+    { name: '1組の対辺が平行で、その長さが等しい', c: ['AB∥DC', 'AB=DC'] },
+  ];
+  const PARA_COND2_FAKE_ = '1組の対辺が平行である';
+
+  function genParallelogramCondition2() {
+    const pat = randInt(0, 1);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      const idx = randInt(0, PARA_COND2_CONDS_.length - 1);
+      const cond = PARA_COND2_CONDS_[idx];
+      const others = PARA_COND2_CONDS_.filter((_, i) => i !== idx).map(c => c.name);
+      const distractors = shuffle(others).slice(0, 2);
+      question = `四角形ABCDで ${cond.c.join('、')} が成り立つとき、四角形ABCDが平行四辺形になるための条件として使えるものは？`;
+      answer = cond.name;
+      choices = shuffle([answer, ...distractors, PARA_COND2_FAKE_]);
+      steps = [`${cond.c.join('、')} → 「${cond.name}」`];
+      return { category: 'parallelogramCondition2', question, answer, choices, steps };
+    } else {
+      const picked = shuffle(PARA_COND2_CONDS_.map(c => c.name)).slice(0, 3);
+      question = `次のうち、四角形が平行四辺形になるための条件として正しくないものはどれですか。`;
+      answer = PARA_COND2_FAKE_;
+      choices = shuffle([answer, ...picked]);
+      steps = [
+        '① 2組の対辺がそれぞれ平行である → 平行四辺形の定義 ✓',
+        '② 2組の対辺がそれぞれ等しい → 平行四辺形になる ✓',
+        '③ 2組の対角がそれぞれ等しい → 平行四辺形になる ✓',
+        '④ 対角線がそれぞれの中点で交わる → 平行四辺形になる ✓',
+        '⑤ 1組の対辺が平行で、その長さが等しい → 平行四辺形になる ✓',
+        '「1組の対辺が平行である」だけでは、台形の場合もあるため平行四辺形とは限らない ✗',
+      ];
+      return { category: 'parallelogramCondition2', question, answer, choices, steps };
+    }
   }
 
   /* ---------- 三角形の相似（穴埋め） ---------- */
