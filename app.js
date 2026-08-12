@@ -2085,6 +2085,7 @@
     { id: 'simulEqWordProblemAdv2', label: '連立方程式の文章題の応用（中2）', gen: genSimulEqWordProblemAdv2 , addedDate: '2026-08-08' },
     { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
+    { id: 'angleApplication2', label: '角度の応用（中2）',         gen: genAngleApplication2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
     { id: 'polyCalc2',  label: '式の計算（中2）',                  gen: genPolyCalc2 , addedDate: '2026-08-02' },
@@ -7474,6 +7475,55 @@
     return { category: 'angle', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  // 角度の応用（中2）：多角形の外角の和(360°)・五芒星の先端角の和(180°)・
+  // 三角形の2つの角の二等分線の交点にできる角(90°+∠A÷2)を使った応用問題
+  const ANGLE_APP2_KANJI_NUM_ = { 4: '四', 5: '五', 6: '六' };
+  function genAngleApplication2() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const n = [4, 5, 6][randInt(0, 2)];
+      const count = n - 1;
+      let angles, remaining;
+      do {
+        angles = Array.from({ length: count }, () => randInt(20, 80));
+        remaining = 360 - angles.reduce((s, v) => s + v, 0);
+      } while (remaining < 10 || remaining > 170);
+      question = `凸${ANGLE_APP2_KANJI_NUM_[n]}角形の${n}つの外角のうち、${count}つの大きさがそれぞれ${angles.join('°、')}°です。残り1つの外角の大きさを求めなさい。（多角形の外角の和は360°です）`;
+      answer = remaining;
+      wrongs = [remaining + 10, remaining + 20, Math.max(1, remaining - 10), Math.max(1, remaining - 20)].filter(v => v !== answer && v > 0);
+      steps = [`多角形の外角の和 = 360°`, `残りの外角 = 360 − (${angles.join('+')}) = ${answer}°`];
+      return { category: 'angleApplication2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      let angles, remaining;
+      do {
+        angles = Array.from({ length: 4 }, () => randInt(15, 35));
+        remaining = 180 - angles.reduce((s, v) => s + v, 0);
+      } while (remaining < 20 || remaining > 120);
+      question = `五角形の形をした星（五芒星）の5つの先端の角の大きさの和は180°になることが知られています。5つの先端の角のうち4つの大きさがそれぞれ${angles.join('°、')}°のとき、残り1つの先端の角の大きさを求めなさい。`;
+      answer = remaining;
+      wrongs = [remaining + 10, remaining + 20, Math.max(1, remaining - 10), Math.max(1, remaining - 20)].filter(v => v !== answer && v > 0);
+      steps = [`五芒星の先端角の和 = 180°`, `残りの角 = 180 − (${angles.join('+')}) = ${answer}°`];
+      return { category: 'angleApplication2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const A = 2 * randInt(10, 60);
+      const P = 90 + A / 2;
+      const askA = Math.random() < 0.5;
+      if (!askA) {
+        question = `三角形ABCで、∠Bと∠Cの二等分線の交点をPとします。∠A = ${A}°のとき、∠BPCの大きさを求めなさい。`;
+        answer = P;
+        wrongs = [P + 10, P + 20, Math.max(1, P - 10), Math.max(1, P - 20)].filter(v => v !== answer && v > 0);
+        steps = [`∠BPC = 90° + ∠A÷2`, `= 90 + ${A}÷2 = ${answer}°`];
+      } else {
+        question = `三角形ABCで、∠Bと∠Cの二等分線の交点をPとします。∠BPC = ${P}°のとき、∠Aの大きさを求めなさい。`;
+        answer = A;
+        wrongs = [A + 10, A + 20, Math.max(1, A - 10), Math.max(1, A - 20)].filter(v => v !== answer && v > 0);
+        steps = [`∠BPC = 90° + ∠A÷2 より`, `∠A = (∠BPC − 90) × 2 = (${P} − 90) × 2 = ${answer}°`];
+      }
+      return { category: 'angleApplication2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   function mkTriSvg(tri1, tri2, sym) {
     const [a,b,c] = tri1, [d,e,f] = tri2;
     if (sym === '∽') {
@@ -8964,7 +9014,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
