@@ -8739,6 +8739,9 @@
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
   const HERB_COST_MP = 300;
   const HERB_HP_GAIN = 100;
+  // 薬草の上位版「爆裂薬草」：1000MPでHPを400増やせる。
+  const BAKUHERB_COST_MP = 1000;
+  const BAKUHERB_HP_GAIN = 400;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
   // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
   const GOUMAJI_REQUIRED_STREAK = 20;
@@ -10987,11 +10990,19 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var herbRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🌿 薬草（HPを${HERB_HP_GAIN}増やす）</span><span class="gift-cost">${HERB_COST_MP}MP</span></div>${herbActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml;
+    var bakuHerbCanAfford = state.points >= BAKUHERB_COST_MP;
+    var bakuHerbActionHtml = bakuHerbCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buyBakuHerbBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var bakuHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/bakuretsu_herb.png" alt="爆裂薬草"><div class="gift-info"><span class="gift-label">💥 爆裂薬草（HPを${BAKUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${BAKUHERB_COST_MP}MP</span></div>${bakuHerbActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml;
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
     if (herbBtn) herbBtn.addEventListener('click', function () { handleBuyHerbClick(herbBtn); });
+    var bakuHerbBtn = document.getElementById('buyBakuHerbBtn');
+    if (bakuHerbBtn) bakuHerbBtn.addEventListener('click', function () { handleBuyBakuHerbClick(bakuHerbBtn); });
   }
 
   function handleAkrPrayerClick(btn) {
@@ -11041,6 +11052,32 @@
       updateGameHud();
       renderShopList();
       window.alert(`🌿 薬草を使った！HPが${HERB_HP_GAIN}増えた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyBakuHerbClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`爆裂薬草を購入します（${BAKUHERB_COST_MP}MP）。HPが${BAKUHERB_HP_GAIN}増えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyBakuHerb', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`💥 爆裂薬草を使った！HPが${BAKUHERB_HP_GAIN}増えた！`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;

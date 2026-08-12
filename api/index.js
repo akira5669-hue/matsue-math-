@@ -9,7 +9,7 @@ const {
   handleRanking, handleRankingGrade, handleRankingToday, handleRankingPoints, handleRankingHp, handleChallengeRanking,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleBuyHerb } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleBuyHerb, handleBuyBakuHerb } = require('../lib/handlers/shop');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
@@ -37,6 +37,7 @@ const ACTIONS = {
   grantItems: handleGrantItems,
   akrPrayer: handleAkrPrayer,
   buyHerb: handleBuyHerb,
+  buyBakuHerb: handleBuyBakuHerb,
   registerGuardian: handleRegisterGuardian,
   withdraw: handleWithdraw,
   weeklyQuizGet: handleWeeklyQuizGet,
