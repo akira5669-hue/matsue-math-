@@ -2089,6 +2089,7 @@
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
     { id: 'parallelogramCondition2', label: '平行四辺形の性質や条件（中2）', gen: genParallelogramCondition2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
+    { id: 'quartileBoxplot2', label: '四分位範囲と箱ひげ図（中2）', gen: genQuartileBoxplot2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'polyCalc2',  label: '式の計算（中2）',                  gen: genPolyCalc2 , addedDate: '2026-08-02' },
 
     // ---------- 中3 ----------
@@ -8642,6 +8643,59 @@
     return { category: 'probability', question, answer, choices, steps };
   }
 
+  /* ---------- 四分位範囲と箱ひげ図（中2） ---------- */
+  // 四分位数は「はんぶんこ」方式(データを中央値で2つに分け、その中央値をそれぞれ
+  // 第1・第3四分位数とする)で求める。データ数が偶数のときの下組・上組の中央値が
+  // 割り切れる(整数になる)組み合わせが出るまでデータを作り直す。
+  function quartileBoxplot2Median_(arr) {
+    const m = arr.length;
+    return m % 2 === 1 ? arr[(m - 1) / 2] : (arr[m / 2 - 1] + arr[m / 2]) / 2;
+  }
+  function genQuartileBoxplot2() {
+    const nOptions = [7, 8, 9, 10, 11];
+    let n, data, q1, q2, q3, guard0 = 0;
+    do {
+      guard0++;
+      n = nOptions[randInt(0, nOptions.length - 1)];
+      const vals = new Set();
+      while (vals.size < n) vals.add(randInt(10, 99));
+      data = Array.from(vals).sort((a, b) => a - b);
+      q2 = quartileBoxplot2Median_(data);
+      let lower, upper;
+      if (n % 2 === 1) { lower = data.slice(0, (n - 1) / 2); upper = data.slice((n + 1) / 2); }
+      else { lower = data.slice(0, n / 2); upper = data.slice(n / 2); }
+      q1 = quartileBoxplot2Median_(lower);
+      q3 = quartileBoxplot2Median_(upper);
+    } while ((!Number.isInteger(q1) || !Number.isInteger(q2) || !Number.isInteger(q3)) && guard0 < 500);
+
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    const dataStr = data.join('、');
+    if (pat === 0) {
+      question = `次のデータは、あるデータを小さい順に並べたものです。${dataStr}　第1四分位数を求めなさい。`;
+      answer = q1;
+      wrongs = [q1 + 2, q1 + 4, Math.max(1, q1 - 2), Math.max(1, q1 - 4)].filter(v => v !== answer && v > 0);
+      steps = [`データ数は${n}個`, `第1四分位数 = ${q1}`];
+    } else if (pat === 1) {
+      question = `次のデータは、あるデータを小さい順に並べたものです。${dataStr}　第2四分位数（中央値）を求めなさい。`;
+      answer = q2;
+      wrongs = [q2 + 2, q2 + 4, Math.max(1, q2 - 2), Math.max(1, q2 - 4)].filter(v => v !== answer && v > 0);
+      steps = [`データ数は${n}個`, `第2四分位数（中央値） = ${q2}`];
+    } else if (pat === 2) {
+      question = `次のデータは、あるデータを小さい順に並べたものです。${dataStr}　第3四分位数を求めなさい。`;
+      answer = q3;
+      wrongs = [q3 + 2, q3 + 4, Math.max(1, q3 - 2), Math.max(1, q3 - 4)].filter(v => v !== answer && v > 0);
+      steps = [`データ数は${n}個`, `第3四分位数 = ${q3}`];
+    } else {
+      const iqr = q3 - q1;
+      question = `次のデータは、あるデータを小さい順に並べたものです。${dataStr}　四分位範囲を求めなさい。`;
+      answer = iqr;
+      wrongs = [iqr + 2, iqr + 4, Math.max(1, iqr - 2), Math.max(1, iqr - 4)].filter(v => v !== answer && v > 0);
+      steps = [`第1四分位数 = ${q1}、第3四分位数 = ${q3}`, `四分位範囲 = 第3四分位数 − 第1四分位数 = ${q3} − ${q1} = ${answer}`];
+    }
+    return { category: 'quartileBoxplot2', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   /* ---------- 円周角（中3） ---------- */
 
   function genCircleAngle() {
@@ -9143,7 +9197,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
