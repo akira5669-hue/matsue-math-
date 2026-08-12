@@ -2270,6 +2270,7 @@
     { id: 'matterInvestigation1', label: '物の調べ方（中1）', gen: genMatterInvestigation1, addedDate: '2026-08-12' },
     { id: 'whitePowder1', label: '白い粉末の見分け方（中1）', gen: genWhitePowder1, addedDate: '2026-08-12' },
     { id: 'dissolve1', label: '物質が水にとけるようす（中1）', gen: genDissolve1, addedDate: '2026-08-12' },
+    { id: 'solubility1', label: '溶解度と再結晶（中1）', gen: genSolubility1, addedDate: '2026-08-12' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -2502,6 +2503,76 @@
       return { category: 'dissolve1', question, answer, choices: buildChoices(answer, wrongs), steps };
     }
     return { category: 'dissolve1', question, answer, choices, steps };
+  }
+
+  // 溶解度と再結晶（中1）：結晶・飽和水溶液・溶解度・溶解度曲線・再結晶の用語、
+  // 硝酸カリウム/塩化ナトリウムの溶解度表を使った知識問題と析出量の計算。
+  const SOLUBILITY1_TEMPS_ = [0, 10, 20, 40, 60, 80, 100];
+  const SOLUBILITY1_KNO3_ = [13.3, 22.0, 31.6, 63.9, 109.2, 168.8, 244.8];
+  function solubility1Round1_(x) { return Math.round(x * 10) / 10; }
+  function genSolubility1() {
+    const pat = randInt(0, 8);
+    let question, answer, choices, steps, wrongs;
+    if (pat === 0) {
+      question = '規則正しい形をした固体を何といいますか。';
+      answer = '結晶';
+      choices = shuffle(['結晶', '溶質', '溶解度', '再結晶']);
+      steps = ['規則正しい形をした固体を結晶という'];
+    } else if (pat === 1) {
+      question = '物質が水にそれ以上とけることができなくなった水溶液を何といいますか。';
+      answer = '飽和水溶液';
+      choices = shuffle(['飽和水溶液', '再結晶', '溶解度曲線', 'ろ液']);
+      steps = ['物質がとけるだけとけた水溶液を飽和水溶液という'];
+    } else if (pat === 2) {
+      question = '100gの水にとかすことができる物質の最大の質量を何といいますか。';
+      answer = '溶解度';
+      choices = shuffle(['溶解度', '濃度', '密度', '融点']);
+      steps = ['水100gにとける物質の限度の質量を溶解度という'];
+    } else if (pat === 3) {
+      question = '溶解度を、水の温度に対するグラフで表したものを何といいますか。';
+      answer = '溶解度曲線';
+      choices = shuffle(['溶解度曲線', '状態変化', '飽和水溶液', '質量パーセント濃度']);
+      steps = ['溶解度を水の温度に対して表したグラフを溶解度曲線という'];
+    } else if (pat === 4) {
+      question = 'いったん水にとかした物質を、温度を下げたり水を蒸発させたりして、再び結晶としてとり出すことを何といいますか。';
+      answer = '再結晶';
+      choices = shuffle(['再結晶', '結晶', '溶解', 'ろ過']);
+      steps = ['水にとかした物質を再び結晶としてとり出すことを再結晶という'];
+    } else if (pat === 5) {
+      question = '硝酸カリウムと塩化ナトリウムのうち、水溶液の温度を下げることで結晶を多くとり出せるのはどちらですか。（温度による溶解度の変化が大きい方）';
+      answer = '硝酸カリウム';
+      choices = shuffle(['硝酸カリウム', '塩化ナトリウム', 'どちらも同じ', 'どちらもとり出せない']);
+      steps = ['硝酸カリウムは温度が下がると溶解度が大きく下がるため、冷やすと結晶が多く出てくる', '塩化ナトリウムは温度による溶解度の変化が小さいため、冷やしてもあまり結晶が出てこない'];
+    } else if (pat === 6) {
+      question = '塩化ナトリウムのように、温度による溶解度の変化が小さい物質から結晶をとり出すのに適した方法はどれですか。';
+      answer = '水を蒸発させる';
+      choices = shuffle(['水を蒸発させる', '水溶液の温度を下げる', '水を加える', '水溶液をあたためる']);
+      steps = ['温度による溶解度の変化が小さい物質は、冷やしてもあまり結晶が出ないため、水を蒸発させて濃度を上げることで結晶をとり出す'];
+    } else if (pat === 7) {
+      let t1idx, t2idx;
+      do { t1idx = randInt(0, SOLUBILITY1_TEMPS_.length - 1); t2idx = randInt(0, SOLUBILITY1_TEMPS_.length - 1); } while (t1idx <= t2idx);
+      const t1 = SOLUBILITY1_TEMPS_[t1idx], t2 = SOLUBILITY1_TEMPS_[t2idx];
+      const diff = solubility1Round1_(SOLUBILITY1_KNO3_[t1idx] - SOLUBILITY1_KNO3_[t2idx]);
+      question = `${t1}℃の水100gに硝酸カリウムをとけるだけとかした飽和水溶液を、${t2}℃まで冷やすと、何gの結晶が出てきますか。（${t1}℃での溶解度は${SOLUBILITY1_KNO3_[t1idx]}g、${t2}℃での溶解度は${SOLUBILITY1_KNO3_[t2idx]}g）`;
+      answer = diff;
+      wrongs = [solubility1Round1_(diff + 5), solubility1Round1_(diff + 10), Math.max(0.1, solubility1Round1_(diff - 5)), Math.max(0.1, solubility1Round1_(diff - 10))].filter(v => v !== answer);
+      steps = [`出てくる結晶の質量 = ${t1}℃の溶解度 − ${t2}℃の溶解度`, `= ${SOLUBILITY1_KNO3_[t1idx]} − ${SOLUBILITY1_KNO3_[t2idx]} = ${answer}g`];
+      return { category: 'solubility1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      let t1idx, t2idx;
+      do { t1idx = randInt(0, SOLUBILITY1_TEMPS_.length - 1); t2idx = randInt(0, SOLUBILITY1_TEMPS_.length - 1); } while (t1idx <= t2idx);
+      const t1 = SOLUBILITY1_TEMPS_[t1idx], t2 = SOLUBILITY1_TEMPS_[t2idx];
+      const waterAmounts = [50, 200, 300];
+      const waterAmount = waterAmounts[randInt(0, waterAmounts.length - 1)];
+      const diffPer100 = solubility1Round1_(SOLUBILITY1_KNO3_[t1idx] - SOLUBILITY1_KNO3_[t2idx]);
+      const crystalMass = solubility1Round1_(diffPer100 * (waterAmount / 100));
+      question = `${t1}℃の水${waterAmount}gに硝酸カリウムをとけるだけとかした飽和水溶液を、${t2}℃まで冷やすと、何gの結晶が出てきますか。（水100gあたりの溶解度は${t1}℃で${SOLUBILITY1_KNO3_[t1idx]}g、${t2}℃で${SOLUBILITY1_KNO3_[t2idx]}g）`;
+      answer = crystalMass;
+      wrongs = [solubility1Round1_(crystalMass + 5), solubility1Round1_(crystalMass + 10), Math.max(0.1, solubility1Round1_(crystalMass - 5)), Math.max(0.1, solubility1Round1_(crystalMass - 10))].filter(v => v !== answer);
+      steps = [`水100gあたりの結晶量 = ${SOLUBILITY1_KNO3_[t1idx]} − ${SOLUBILITY1_KNO3_[t2idx]} = ${diffPer100}g`, `水${waterAmount}gでは ${diffPer100} × ${waterAmount}/100 = ${answer}g`];
+      return { category: 'solubility1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+    return { category: 'solubility1', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
