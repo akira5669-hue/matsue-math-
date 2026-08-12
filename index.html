@@ -188,6 +188,7 @@
     <section class="user-bar">
       <p class="user-greeting"><span class="user-avatar-badge" id="userAvatarBadge" hidden></span>こんにちは、<span id="userName"></span> さん</p>
       <div class="user-bar-actions">
+        <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
         <button id="shopToggle" class="ghost-btn" type="button">🏪なんでも屋</button>
         <button id="rankingToggle" class="ghost-btn" type="button">ランキング</button>
@@ -504,7 +505,7 @@
       <button id="resetBtn" class="ghost-btn" type="button">リセット</button>
     </section>
 
-    <div class="enemy-area">
+    <div class="enemy-area" id="mathArea">
       <div class="enemy-left">
         <span class="enemy-emoji" id="enemyEmoji">🟩</span>
         <div>
@@ -522,6 +523,23 @@
       </div>
     </div>
     <div class="enemy-speech" id="enemySpeech" hidden></div>
+
+    <div class="enemy-area" id="scienceArea" hidden>
+      <div class="enemy-left">
+        <span class="enemy-emoji">🔬</span>
+        <div>
+          <div class="enemy-name">理科クイズ</div>
+          <div class="hp-row">
+            <div class="hp-bar-outer"><div class="hp-bar-inner" id="scienceStreakBarInner"></div></div>
+            <span class="hp-text" id="scienceStreakText">0/10</span>
+          </div>
+        </div>
+      </div>
+      <div class="enemy-right">
+        <div class="lv-row">理科の経験値</div>
+        <div class="exp-label" id="scienceExpText">0</div>
+      </div>
+    </div>
 
     <section class="quiz-card" aria-live="polite">
       <p class="category-tag" id="categoryTag">加法</p>

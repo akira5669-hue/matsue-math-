@@ -244,6 +244,7 @@
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
+        enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -259,6 +260,7 @@
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
+        enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
       });
     }
   }
@@ -2261,8 +2263,13 @@
     { id: 'wordProblemMulDiv3', label: '算数の文章題まとめ（小3）',        gen: genWordProblemMulDiv3, defaultOff: true , addedDate: '2026-08-10' },
   ];
 
-  const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
-  const categoryGrade = Object.fromEntries(CATEGORIES.map(c => {
+  // 理科の単元一覧。CATEGORIESとは完全に独立した別リスト(算数・数学とは出題範囲の
+  // 選択画面を分ける)。MPは算数・数学と共通のプール(state.points/pointsToday、
+  // 1日の上限も共通)を使うが、経験値だけは理科専用のstate.scienceExpに分けて集計する。
+  const SCIENCE_CATEGORIES = [
+    { id: 'matterInvestigation1', label: '物の調べ方（中1）', gen: genMatterInvestigation1, addedDate: '2026-08-12' },
+  ];
+  const categoryGrade = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map(c => {
     const m = c.label.match(/（(小[3456]|中[123])）/);
     return [c.id, m ? m[1] : null];
   }));
@@ -2289,6 +2296,97 @@
       const rank = GRADE_RANK[categoryGrade[c.id]];
       return rank && rank <= ownRank;
     }).map(c => c.id);
+  }
+  // 理科版のdefaultEnabledIds。生徒の学年以下の理科単元を初期状態でONにする。
+  function defaultEnabledScienceIds(grade) {
+    const ownRank = GRADE_RANK[grade];
+    if (!ownRank) return SCIENCE_CATEGORIES.filter(c => !c.defaultOff).map(c => c.id);
+    return SCIENCE_CATEGORIES.filter(c => {
+      const rank = GRADE_RANK[categoryGrade[c.id]];
+      return rank && rank <= ownRank;
+    }).map(c => c.id);
+  }
+
+  /* ---------- 理科の単元 ---------- */
+
+  // 実在する物質の密度(g/cm³、小数第1位)。密度から物質を特定する問題や、
+  // 誤答の選択肢としても使う。
+  const DENSITY_TABLE_1_ = [
+    { name: '鉄', d: 7.9 },
+    { name: '銅', d: 8.9 },
+    { name: 'アルミニウム', d: 2.7 },
+    { name: '金', d: 19.3 },
+    { name: '銀', d: 10.5 },
+    { name: '鉛', d: 11.3 },
+  ];
+
+  // 物の調べ方（中1）：密度の計算(質量・体積・密度の相互変換、密度表からの
+  // 物質の特定)と、金属の性質・展性延性などの知識問題。
+  function genMatterInvestigation1() {
+    const pat = randInt(0, 5);
+    let question, answer, wrongs, steps, choices;
+    if (pat === 0) {
+      const idx = randInt(0, DENSITY_TABLE_1_.length - 1);
+      const entry = DENSITY_TABLE_1_[idx];
+      const v = randInt(2, 40);
+      const mass = Math.round(entry.d * v * 10) / 10;
+      answer = entry.d.toFixed(1);
+      const others = DENSITY_TABLE_1_.filter((_, i) => i !== idx).map(e => e.d.toFixed(1));
+      const candidates = shuffle(others).slice(0, 3);
+      question = `質量${mass}g、体積${v}cm³の物質があります。この物質の密度は何g/cm³ですか。（小数第1位まで求めなさい）`;
+      steps = [`密度 = 質量 ÷ 体積`, `= ${mass} ÷ ${v} = ${answer}g/cm³`];
+      return { category: 'matterInvestigation1', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 1) {
+      const entry = DENSITY_TABLE_1_[randInt(0, DENSITY_TABLE_1_.length - 1)];
+      const v = randInt(2, 40);
+      const mass = Math.round(entry.d * v * 10) / 10;
+      question = `${entry.name}（密度${entry.d}g/cm³）${v}cm³の質量は何gですか。`;
+      answer = mass;
+      wrongs = [Math.round((mass + 1) * 10) / 10, Math.round((mass + 2) * 10) / 10, Math.max(0.1, Math.round((mass - 1) * 10) / 10), Math.max(0.1, Math.round((mass - 2) * 10) / 10)].filter(w => w !== answer);
+      steps = [`質量 = 密度 × 体積 = ${entry.d} × ${v} = ${answer}g`];
+      return { category: 'matterInvestigation1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      const entry = DENSITY_TABLE_1_[randInt(0, DENSITY_TABLE_1_.length - 1)];
+      const v = randInt(2, 40);
+      const mass = Math.round(entry.d * v * 10) / 10;
+      question = `${entry.name}（密度${entry.d}g/cm³）でできた物体があります。質量が${mass}gのとき、体積は何cm³ですか。`;
+      answer = v;
+      wrongs = [v + 1, v + 2, Math.max(1, v - 1), Math.max(1, v - 2)].filter(w => w !== answer);
+      steps = [`体積 = 質量 ÷ 密度 = ${mass} ÷ ${entry.d} = ${answer}cm³`];
+      return { category: 'matterInvestigation1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      const idx = randInt(0, DENSITY_TABLE_1_.length - 1);
+      const entry = DENSITY_TABLE_1_[idx];
+      const v = randInt(2, 40);
+      const mass = Math.round(entry.d * v * 10) / 10;
+      const tableStr = DENSITY_TABLE_1_.map(e => `${e.name}: ${e.d}g/cm³`).join('、');
+      question = `質量${mass}g、体積${v}cm³の物質があります。次の密度表をもとに、この物質は何であると考えられますか。（${tableStr}）`;
+      answer = entry.name;
+      const otherNames = DENSITY_TABLE_1_.filter((_, i) => i !== idx).map(e => e.name);
+      choices = shuffle([answer, ...shuffle(otherNames).slice(0, 3)]);
+      steps = [`密度 = ${mass} ÷ ${v} = ${entry.d}g/cm³`, `密度表より、${entry.d}g/cm³は${entry.name}`];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 4) {
+      const METAL_PROPS = ['電気をよく通す', '熱をよく伝える', 'みがくと特有の光沢(金属光沢)が出る', 'たたくと広がったり、引っ張るとのびたりする'];
+      const FAKE_METAL = '磁石には必ずつく';
+      question = '次のうち、金属に共通する性質として正しくないものはどれですか。';
+      answer = FAKE_METAL;
+      choices = shuffle([FAKE_METAL, ...shuffle(METAL_PROPS).slice(0, 3)]);
+      steps = ['金属は電気を通す・熱を伝える・金属光沢がある・展性延性がある、という性質を共通してもつ', '磁石につくのは鉄など一部の金属だけなので、金属に共通する性質ではない'];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else {
+      const VOCAB = [
+        { term: '展性', q: '金属をたたいて薄く広げることができる性質を何といいますか。' },
+        { term: '延性', q: '金属を引っ張って細くのばすことができる性質を何といいますか。' },
+      ];
+      const pick = VOCAB[randInt(0, 1)];
+      question = pick.q;
+      answer = pick.term;
+      const otherTerms = ['展性', '延性', '金属光沢', '磁性'].filter(t => t !== pick.term);
+      choices = shuffle([pick.term, ...otherTerms]);
+      steps = [`「${pick.q}」の答えは「${answer}」`];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    }
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
@@ -9492,6 +9590,18 @@
         : ((savedGame && Array.isArray(savedGame.enabled) && savedGame.enabled.length > 0) ? savedGame.enabled : null);
       return savedEnabled || defaultEnabledIds((loadSession() || {}).grade);
     })()),
+    // 理科の出題範囲設定。算数・数学のenabledとは完全に別のSetで持つ。
+    enabledScience: new Set((function () {
+      var savedEnabledSci = (savedProgress && Array.isArray(savedProgress.enabledScience) && savedProgress.enabledScience.length > 0) ? savedProgress.enabledScience
+        : ((savedGame && Array.isArray(savedGame.enabledScience) && savedGame.enabledScience.length > 0) ? savedGame.enabledScience : null);
+      return savedEnabledSci || defaultEnabledScienceIds((loadSession() || {}).grade);
+    })()),
+    // 現在の科目('math'または'science')。理科ボタンで切り替える。
+    subject: (savedProgress && savedProgress.subject) || (savedGame && savedGame.subject) || 'math',
+    // 理科専用の経験値(算数・数学のexpとは別集計)。MPは共通プールを使う。
+    scienceExp: (savedProgress && Number(savedProgress.scienceExp)) || (savedGame && Number(savedGame.scienceExp)) || 0,
+    // 理科モードの連続正解数(端末セッション限定、あえて永続化しない)。
+    scienceStreak: 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -9674,6 +9784,12 @@
     missionProgressBarInner: document.getElementById('missionProgressBarInner'),
     missionProgressText: document.getElementById('missionProgressText'),
     missionReward: document.getElementById('missionReward'),
+    subjectToggle: document.getElementById('subjectToggle'),
+    mathArea: document.getElementById('mathArea'),
+    scienceArea: document.getElementById('scienceArea'),
+    scienceStreakBarInner: document.getElementById('scienceStreakBarInner'),
+    scienceStreakText: document.getElementById('scienceStreakText'),
+    scienceExpText: document.getElementById('scienceExpText'),
     giftToggle: document.getElementById('giftToggle'),
     giftPanel: document.getElementById('giftPanel'),
     giftSummary: document.getElementById('giftSummary'),
@@ -9783,7 +9899,7 @@
     withdrawResult: document.getElementById('withdrawResult'),
   };
 
-  const categoryLabel = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
+  const categoryLabel = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map(c => [c.id, c.label]));
 
   /* ---------- 描画 ---------- */
 
@@ -9799,6 +9915,35 @@
   }
 
   function renderSettings() {
+    if (state.subject === 'science') {
+      els.settingsDailyLimitNote.textContent = '🔬理科の出題単元を選べます。チェックした単元からランダムに出題します。';
+      els.settingsGrid.innerHTML = SCIENCE_CATEGORIES.map(c => {
+        const cs = state.catStats[c.id];
+        const acc = cs && cs.total >= 3
+          ? `<span class="cat-acc">${Math.round(cs.correct / cs.total * 100)}%</span>`
+          : '';
+        const newBadge = isRecentlyAdded(c.addedDate) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
+        return `
+          <label class="settings-item">
+            <input type="checkbox" data-cat="${c.id}" ${state.enabledScience.has(c.id) ? 'checked' : ''} />
+            <span class="cat-label">${c.label}</span>${newBadge}${acc}
+          </label>
+        `;
+      }).join('');
+      els.settingsGrid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const id = cb.dataset.cat;
+          if (cb.checked) state.enabledScience.add(id);
+          else state.enabledScience.delete(id);
+          if (state.enabledScience.size === 0) {
+            state.enabledScience.add(id);
+            cb.checked = true;
+          }
+          saveGameState(state);
+        });
+      });
+      return;
+    }
     els.settingsDailyLimitNote.textContent = !isDailyCategoryLimitActive()
       ? '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。'
       : todayKey() >= DAILY_CATEGORY_LIMIT_V2_START
@@ -9990,7 +10135,134 @@
     els.memoCanvas.addEventListener(evName, () => { memoDrawing = false; });
   });
 
+  /* ---------- 理科モード ---------- */
+
+  const SCIENCE_STREAK_MP = 10;
+  const SCIENCE_EXP_PER_STREAK = 10;
+
+  function pickScienceGenerator() {
+    const pool = SCIENCE_CATEGORIES.filter(c => state.enabledScience.has(c.id));
+    const src = pool.length > 0 ? pool : SCIENCE_CATEGORIES;
+    return src[randInt(0, src.length - 1)];
+  }
+
+  function updateScienceHud() {
+    const streak = state.scienceStreak || 0;
+    const pct = Math.round((streak / 10) * 100);
+    els.scienceStreakBarInner.style.width = `${pct}%`;
+    els.scienceStreakText.textContent = `${streak}/10`;
+    els.scienceExpText.textContent = state.scienceExp;
+    els.statPoints.textContent = state.points;
+  }
+
+  function nextScienceQuestion() {
+    clearMemoCanvas();
+    const cat = pickScienceGenerator();
+    const q = cat.gen();
+    state.current = q;
+    state.answered = false;
+    els.categoryTag.textContent = categoryLabel[q.category] || q.category;
+    if (q.questionHtml) {
+      els.questionText.innerHTML = q.questionHtml;
+    } else {
+      els.questionText.innerHTML = '';
+      els.questionText.appendChild(document.createTextNode(q.question));
+    }
+    els.feedback.innerHTML = '';
+    els.feedback.className = 'feedback';
+    els.nextBtn.disabled = true;
+
+    els.choices.innerHTML = '';
+    q.choices.forEach(choiceRaw => {
+      const choiceStr = String(choiceRaw);
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.type = 'button';
+      btn.dataset.value = choiceStr;
+      btn.innerHTML = stepToHtml(choiceStr);
+      btn.addEventListener('click', () => handleScienceAnswer(btn, choiceStr));
+      els.choices.appendChild(btn);
+    });
+    updateScienceHud();
+  }
+
+  function handleScienceAnswer(btn, choiceStr) {
+    if (state.answered) return;
+    state.answered = true;
+    state.total++;
+
+    const q = state.current;
+    const correctStr = String(q.answer);
+    const isCorrect = choiceStr === correctStr;
+    const catId = q.category;
+
+    Array.from(els.choices.children).forEach(b => {
+      b.disabled = true;
+      if (b.dataset.value === correctStr) b.classList.add('is-correct');
+      else if (b === btn) b.classList.add('is-incorrect');
+    });
+
+    const session = loadSession();
+    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect });
+
+    if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
+    state.catStats[catId].total++;
+
+    const stepsHtml = q.steps && q.steps.length > 0
+      ? `<div class="steps-box"><div class="steps-label">解説</div>${q.steps.map(s => `<span class="step-line">${stepToHtml(s)}</span>`).join('')}</div>`
+      : '';
+
+    let winHtml = '';
+    if (isCorrect) {
+      state.correct++;
+      state.catStats[catId].correct++;
+      state.scienceStreak = (state.scienceStreak || 0) + 1;
+      if (state.scienceStreak >= 10) {
+        const today = todayKey();
+        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
+        const pointsToAdd = Math.max(0, Math.min(SCIENCE_STREAK_MP, POINTS_DAILY_CAP - state.pointsToday));
+        state.points += pointsToAdd;
+        state.pointsToday += pointsToAdd;
+        state.scienceExp += SCIENCE_EXP_PER_STREAK;
+        state.scienceStreak = 0;
+        winHtml = pointsToAdd > 0
+          ? `<div class="win-banner">🎉 10問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
+          : `<div class="win-banner">🎉 10問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`;
+      }
+    } else {
+      state.scienceStreak = 0;
+    }
+    saveGameState(state);
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+
+    els.feedback.innerHTML =
+      (isCorrect
+        ? `<span class="fb-result">正解！</span>`
+        : `<span class="fb-result">不正解。正解は <strong>${stepToHtml(correctStr)}</strong> です。</span>`)
+      + winHtml + stepsHtml;
+    els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+    els.nextBtn.disabled = false;
+    updateStats();
+    updateScienceHud();
+    if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
+  }
+
+  // 算数・数学 ⇔ 理科の科目を切り替える。単元設定・出題プール・HUD表示が
+  // 丸ごと入れ替わる。MPは共通プールのまま、経験値だけ理科専用に分ける。
+  function toggleSubject() {
+    state.subject = state.subject === 'science' ? 'math' : 'science';
+    els.mathArea.hidden = state.subject === 'science';
+    els.scienceArea.hidden = state.subject !== 'science';
+    els.subjectToggle.textContent = state.subject === 'science' ? '🧮計算' : '🔬理科';
+    saveGameState(state);
+    if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
+    updateGameHud();
+    updateScienceHud();
+    nextQuestion();
+  }
+
   function nextQuestion() {
+    if (state.subject === 'science') { nextScienceQuestion(); return; }
     clearMemoCanvas();
     // ボン・ミスコの呪いにかかっている間も、間違い大魔王/算数デビルちゃんと同じ
     // 「間違えた問題の保存庫」から出題する。
@@ -10163,6 +10435,7 @@
   }
 
   function handleAnswer(btn, choiceStr) {
+    if (state.subject === 'science') { handleScienceAnswer(btn, choiceStr); return; }
     if (state.answered) return;
     state.answered = true;
     state.total++;
@@ -10763,6 +11036,9 @@
     els.withdrawPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
     els.rankingTabHp.hidden = !!isGuest;
+    els.mathArea.hidden = state.subject === 'science';
+    els.scienceArea.hidden = state.subject !== 'science';
+    els.subjectToggle.textContent = state.subject === 'science' ? '🧮計算' : '🔬理科';
     drawNumberline();
     renderSettings();
     updateStats();
@@ -12955,6 +13231,7 @@
   els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
+  els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
   els.curseBannerBtn.addEventListener('click', toggleShop);
