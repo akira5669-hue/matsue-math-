@@ -2269,6 +2269,7 @@
   const SCIENCE_CATEGORIES = [
     { id: 'matterInvestigation1', label: '物の調べ方（中1）', gen: genMatterInvestigation1, addedDate: '2026-08-12' },
     { id: 'whitePowder1', label: '白い粉末の見分け方（中1）', gen: genWhitePowder1, addedDate: '2026-08-12' },
+    { id: 'dissolve1', label: '物質が水にとけるようす（中1）', gen: genDissolve1, addedDate: '2026-08-12' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -2434,6 +2435,73 @@
       steps = ['有機物を燃やすと水ができ、集気びんの内側で水滴となってくもる'];
     }
     return { category: 'whitePowder1', question, answer, choices, steps };
+  }
+
+  // 物質が水にとけるようす（中1）：溶質・溶媒・溶液・水溶液の用語、水溶液の性質、
+  // 質量パーセント濃度の計算(3方向)。
+  const DISSOLVE1_SOLUTE_ITEMS_ = ['食塩', '砂糖', 'ミョウバン'];
+  function genDissolve1() {
+    const pat = randInt(0, 7);
+    let question, answer, choices, steps, wrongs;
+    if (pat === 0) {
+      question = '水溶液にとけている物質を何といいますか。';
+      answer = '溶質';
+      choices = shuffle(['溶質', '溶媒', '溶液', '結晶']);
+      steps = ['水溶液にとけている物質を溶質という'];
+    } else if (pat === 1) {
+      question = '物質をとかしている液体を何といいますか。';
+      answer = '溶媒';
+      choices = shuffle(['溶媒', '溶質', '溶液', 'ろ液']);
+      steps = ['物質をとかしている液体を溶媒という'];
+    } else if (pat === 2) {
+      question = '溶質が溶媒にとけた液全体を何といいますか。';
+      answer = '溶液';
+      choices = shuffle(['溶液', '溶質', '溶媒', '結晶']);
+      steps = ['溶質が溶媒にとけた液全体を溶液という'];
+    } else if (pat === 3) {
+      question = '溶媒が水である溶液を何といいますか。';
+      answer = '水溶液';
+      choices = shuffle(['水溶液', '純粋な物質', '混合物', 'ろ液']);
+      steps = ['溶媒が水である溶液を水溶液という'];
+    } else if (pat === 4) {
+      question = '水溶液の性質として正しいものはどれですか。';
+      answer = '透明である（色がついていることもある）';
+      choices = shuffle([answer, 'とけた物質が時間がたつと底にしずむ', '場所によって濃さがちがう', 'つぶが不均一に散らばっている']);
+      steps = ['水溶液は、とけた物質の粒が均一に広がっていて、時間がたってもかたよったりしずんだりしない透明な液体である'];
+    } else if (pat === 5) {
+      const item = DISSOLVE1_SOLUTE_ITEMS_[randInt(0, DISSOLVE1_SOLUTE_ITEMS_.length - 1)];
+      const concentration = 5 * randInt(1, 8);
+      const solutionMass = 20 * randInt(3, 20);
+      const soluteMass = (solutionMass * concentration) / 100;
+      const solventMass = solutionMass - soluteMass;
+      question = `水${solventMass}gに${item}${soluteMass}gをとかした水溶液の質量パーセント濃度は何%ですか。`;
+      answer = concentration;
+      wrongs = [concentration + 5, concentration + 10, Math.max(1, concentration - 5), Math.max(1, concentration - 10)].filter(v => v !== answer);
+      steps = [`質量パーセント濃度 = 溶質の質量 ÷ 溶液の質量 × 100`, `= ${soluteMass} ÷ (${soluteMass}+${solventMass}) × 100 = ${answer}%`];
+      return { category: 'dissolve1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 6) {
+      const item = DISSOLVE1_SOLUTE_ITEMS_[randInt(0, DISSOLVE1_SOLUTE_ITEMS_.length - 1)];
+      const concentration = 5 * randInt(1, 8);
+      const solutionMass = 20 * randInt(3, 20);
+      const soluteMass = (solutionMass * concentration) / 100;
+      question = `質量パーセント濃度${concentration}%の${item}水が${solutionMass}gあります。とけている${item}は何gですか。`;
+      answer = soluteMass;
+      wrongs = [soluteMass + 2, soluteMass + 4, Math.max(1, soluteMass - 2), Math.max(1, soluteMass - 4)].filter(v => v !== answer);
+      steps = [`溶質の質量 = 溶液の質量 × 濃度 ÷ 100`, `= ${solutionMass} × ${concentration} ÷ 100 = ${answer}g`];
+      return { category: 'dissolve1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const item = DISSOLVE1_SOLUTE_ITEMS_[randInt(0, DISSOLVE1_SOLUTE_ITEMS_.length - 1)];
+      const concentration = 5 * randInt(1, 8);
+      const solutionMass = 20 * randInt(3, 20);
+      const soluteMass = (solutionMass * concentration) / 100;
+      const solventMass = solutionMass - soluteMass;
+      question = `${soluteMass}gの${item}を水にとかして、質量パーセント濃度${concentration}%の${item}水を作りたい。水は何g必要ですか。`;
+      answer = solventMass;
+      wrongs = [solventMass + 5, solventMass + 10, Math.max(1, solventMass - 5), Math.max(1, solventMass - 10)].filter(v => v !== answer);
+      steps = [`溶液の質量 = 溶質の質量 ÷ (濃度 ÷ 100) = ${soluteMass} ÷ ${concentration / 100} = ${solutionMass}g`, `水の質量 = ${solutionMass} − ${soluteMass} = ${answer}g`];
+      return { category: 'dissolve1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+    return { category: 'dissolve1', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
