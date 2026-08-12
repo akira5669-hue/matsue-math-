@@ -2169,6 +2169,7 @@
     { id: 'circleArea6',     label: '円の面積（小6）',                     gen: genCircleArea6,     defaultOff: true },
     { id: 'circleSector6',   label: '円とおうぎ形（小6）',                 gen: genCircleSector6,   defaultOff: true , addedDate: '2026-08-11' },
     { id: 'speedFrac6',      label: '分数を含んだ速さの計算（小6）',       gen: genSpeedFrac6,      defaultOff: true , addedDate: '2026-08-12' },
+    { id: 'workMeetingPassage6', label: '仕事算・旅人算・通過算（小6）',   gen: genWorkMeetingPassage6, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'prismVolume6',    label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,    defaultOff: true },
     // ---------- 小3 ----------
     { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
@@ -6471,6 +6472,72 @@
     }
   }
 
+  // 仕事算・旅人算・通過算（小6）：小4〜小6の算数まとめの文章題のうち、既存単元に
+  // 無かった3タイプ(仕事算・列車の通過算・池のまわりの旅人算)をまとめた単元
+  const WORK_MEETING_PASSAGE6_PAIRS_ = [[4, 12, 3], [6, 3, 2], [9, 18, 6], [8, 8, 4], [10, 15, 6], [20, 5, 4], [6, 6, 3], [16, 16, 8], [12, 12, 6]];
+  function genWorkMeetingPassage6() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const [a, b, combined] = WORK_MEETING_PASSAGE6_PAIRS_[randInt(0, WORK_MEETING_PASSAGE6_PAIRS_.length - 1)];
+      const kind = randInt(0, 1);
+      if (kind === 0) {
+        question = `ある仕事をAさん1人ですると${a}日、Bさん1人ですると${b}日かかります。この仕事をAさんとBさんの2人でいっしょにすると、何日かかりますか。`;
+        answer = combined;
+        wrongs = [combined + 1, combined + 2, Math.max(1, combined - 1), Math.max(1, combined - 2)].filter(v => v !== answer && v > 0);
+        steps = [`1日にできる仕事量: Aさん = 1/${a}、Bさん = 1/${b}`, `2人ですると1日に 1/${a}+1/${b} = 1/${combined} だけ進むので、${combined}日かかる`];
+      } else {
+        question = `ある仕事を、AさんとBさんの2人でいっしょにすると${combined}日かかります。この仕事をAさんだけですると${a}日かかるとすると、Bさんだけですると何日かかりますか。`;
+        answer = b;
+        wrongs = [b + 1, b + 2, Math.max(1, b - 1), Math.max(1, b - 2)].filter(v => v !== answer && v > 0);
+        steps = [`2人の1日の仕事量 = 1/${combined}、Aさんの1日の仕事量 = 1/${a}`, `Bさんの1日の仕事量 = 1/${combined} − 1/${a}`, `Bさんだけですると${b}日かかる`];
+      }
+      return { category: 'workMeetingPassage6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const speed = randInt(10, 25);
+      const time = randInt(8, 40);
+      const totalDist = speed * time;
+      const trainLen = randInt(Math.max(30, totalDist - 500), totalDist - 20);
+      const objLen = totalDist - trainLen;
+      const kind = randInt(0, 1);
+      if (kind === 0) {
+        question = `長さ${trainLen}mの列車が、秒速${speed}mで走っています。この列車が、長さ${objLen}mの鉄橋を渡り始めてから渡り終わるまでにかかる時間は何秒ですか。`;
+        answer = time;
+        wrongs = [time + 2, time + 4, Math.max(1, time - 2), Math.max(1, time - 4)].filter(v => v !== answer && v > 0);
+        steps = [`渡る道のり = 列車の長さ + 鉄橋の長さ = ${trainLen} + ${objLen} = ${totalDist}m`, `時間 = ${totalDist} ÷ ${speed} = ${answer}秒`];
+      } else {
+        question = `長さ${trainLen}mの列車が、長さ${objLen}mの鉄橋を渡り始めてから渡り終わるまでに${time}秒かかりました。この列車の速さは秒速何mですか。`;
+        answer = speed;
+        wrongs = [speed + 2, speed + 4, Math.max(1, speed - 2), Math.max(1, speed - 4)].filter(v => v !== answer && v > 0);
+        steps = [`渡る道のり = 列車の長さ + 鉄橋の長さ = ${trainLen} + ${objLen} = ${totalDist}m`, `速さ = ${totalDist} ÷ ${time} = 秒速${answer}m`];
+      }
+      return { category: 'workMeetingPassage6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const kind = randInt(0, 1);
+      if (kind === 0) {
+        const vA = randInt(40, 90), vB = randInt(40, 90);
+        const sumV = vA + vB;
+        const time = randInt(3, 15);
+        const L = sumV * time;
+        question = `池のまわりを、AさんとBさんが同じ地点から反対方向に同時に出発します。Aさんの速さは分速${vA}m、Bさんの速さは分速${vB}mです。池のまわりは${L}mあります。2人が出会うのは出発してから何分後ですか。`;
+        answer = time;
+        wrongs = [time + 2, time + 4, Math.max(1, time - 2), Math.max(1, time - 4)].filter(v => v !== answer && v > 0);
+        steps = [`2人が1分間に近づく道のり = ${vA} + ${vB} = ${sumV}m`, `出会うまでの時間 = ${L} ÷ ${sumV} = ${answer}分後`];
+      } else {
+        const vB = randInt(40, 80);
+        const vA = randInt(vB + 10, vB + 60);
+        const diffV = vA - vB;
+        const time = randInt(5, 20);
+        const L = diffV * time;
+        question = `池のまわりを、AさんとBさんが同じ地点から同じ方向に同時に出発します。Aさんの速さは分速${vA}m、Bさんの速さは分速${vB}mです。池のまわりは${L}mあります。AさんがBさんに追いつくのは出発してから何分後ですか。`;
+        answer = time;
+        wrongs = [time + 2, time + 4, Math.max(1, time - 2), Math.max(1, time - 4)].filter(v => v !== answer && v > 0);
+        steps = [`1分間に縮まる差 = ${vA} − ${vB} = ${diffV}m`, `追いつくまでの時間 = ${L} ÷ ${diffV} = ${answer}分後`];
+      }
+      return { category: 'workMeetingPassage6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   // 角柱と円柱の体積（小6、円周率は3.14）
   function genPrismVolume6() {
     const pat = randInt(0, 2);
@@ -9197,7 +9264,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
