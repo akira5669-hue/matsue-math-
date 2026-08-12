@@ -1918,7 +1918,7 @@
   function genQuadFunc() {
     const a = randNonZero(-3, 3);
     const aD = a===1?'':a===-1?'−':`${a}`;
-    const pat = randInt(0, 3);
+    const pat = randInt(0, 7);
     let question, answer, steps, wrongs;
     if (pat === 0) {
       const x = randNonZero(-5, 5), y = a*x*x;
@@ -1945,7 +1945,7 @@
       ];
       answer = rate;
       wrongs = [a*(p+q+1), a*(p+q-1), -rate];
-    } else {
+    } else if (pat === 3) {
       // 変域（下に凸・上に凸どちらも）
       const aAbs = randInt(1, 3);
       const aSign = Math.random() < 0.5 ? 1 : -1;
@@ -1989,6 +1989,81 @@
       }
       answer = target;
       wrongs = [askMax ? yMin : yMax, target + aAbs, target + 2*aAbs];
+    } else if (pat === 4) {
+      // 変域全体を1つの答え(m≦y≦M)として求める
+      const aAbs4 = randInt(1, 3);
+      const aSign4 = Math.random() < 0.5 ? 1 : -1;
+      const aVal4 = aAbs4 * aSign4;
+      const aDom4 = aAbs4 === 1 ? (aSign4 > 0 ? '' : '−') : (aSign4 > 0 ? String(aAbs4) : `−${aAbs4}`);
+      const dc4 = randInt(0, 2);
+      let p4, q4;
+      if (dc4 === 0) { p4 = randInt(1, 3); q4 = p4 + randInt(1, 3); }
+      else if (dc4 === 1) { p4 = -randInt(1, 4); q4 = randInt(1, 4); }
+      else { q4 = -randInt(1, 2); p4 = q4 - randInt(1, 3); }
+      const yAtP4 = aVal4 * p4 * p4, yAtQ4 = aVal4 * q4 * q4;
+      const crosses04 = p4 < 0 && q4 > 0;
+      let yMin4, yMax4;
+      if (crosses04) {
+        yMin4 = aVal4 > 0 ? 0 : Math.min(yAtP4, yAtQ4);
+        yMax4 = aVal4 > 0 ? Math.max(yAtP4, yAtQ4) : 0;
+      } else {
+        yMin4 = Math.min(yAtP4, yAtQ4);
+        yMax4 = Math.max(yAtP4, yAtQ4);
+      }
+      const answerStr4 = `${yMin4} ≦ y ≦ ${yMax4}`;
+      question = `y = ${aDom4}x² で ${p4} ≦ x ≦ ${q4} のとき、y の変域を求めなさい。`;
+      steps = [`${p4} ≦ x ≦ ${q4}`, `y の変域: ${answerStr4}`];
+      const candidates4 = [
+        `${yMin4 - 2} ≦ y ≦ ${yMax4}`,
+        `${yMin4} ≦ y ≦ ${yMax4 + 2}`,
+        `${-yMax4} ≦ y ≦ ${-yMin4}`,
+        `${yMin4 - 4} ≦ y ≦ ${yMax4 + 4}`,
+      ];
+      return { category: 'quadfunc', question, answer: answerStr4, choices: buildChoicesFromList(answerStr4, candidates4), steps };
+    } else if (pat === 5) {
+      // 係数aを求める：xの変域(0をまたぐ)とyの変域から、aの値を求める
+      const p5 = randNonZero(-4, -1), q5 = randNonZero(1, 4);
+      const aSign5 = Math.random() < 0.5 ? 1 : -1;
+      const bigAbsX5 = Math.abs(p5) >= Math.abs(q5) ? Math.abs(p5) : Math.abs(q5);
+      const k5 = randInt(1, 4);
+      const aVal5 = aSign5 * k5;
+      const M5 = k5 * bigAbsX5 * bigAbsX5;
+      const rangeStr5 = aSign5 > 0 ? `0 ≦ y ≦ ${M5}` : `${-M5} ≦ y ≦ 0`;
+      question = `y = ax² で、x の変域が ${p5} ≦ x ≦ ${q5} のとき、y の変域が ${rangeStr5} です。a の値を求めなさい。`;
+      answer = aVal5;
+      wrongs = [aVal5 + 1, aVal5 + 2, Math.max(1, -aVal5), -aVal5 + 1].filter(v => v !== answer);
+      steps = [`x = 0 を含むので、頂点(0,0)がy=0を与える`, `もう一方の極値は |x| が大きい方(x=${Math.abs(p5) >= Math.abs(q5) ? p5 : q5})で決まる`, `a × ${bigAbsX5}² = ${aSign5 > 0 ? M5 : -M5}`, `a = ${answer}`];
+    } else if (pat === 6) {
+      // 未知の変域の端点aを求める：係数固定、既知の端点q、もう一方の未知の端点a(qと反対符号、|a|>|q|)
+      const kAbs6 = [1, 2, 3][randInt(0, 2)];
+      const kSign6 = Math.random() < 0.5 ? 1 : -1;
+      const kVal6 = kAbs6 * kSign6;
+      const kStr6 = kAbs6 === 1 ? (kSign6 > 0 ? '' : '−') : (kSign6 > 0 ? String(kAbs6) : `−${kAbs6}`);
+      const qSign6 = Math.random() < 0.5 ? 1 : -1;
+      const qAbs6 = randInt(1, 3);
+      const q6 = qSign6 * qAbs6;
+      const targetAbsX6 = qAbs6 + randInt(1, 3);
+      const aVal6 = -qSign6 * targetAbsX6;
+      const M6 = kAbs6 * targetAbsX6 * targetAbsX6;
+      const rangeStr6 = kSign6 > 0 ? `0 ≦ y ≦ ${M6}` : `${-M6} ≦ y ≦ 0`;
+      const domainStr6 = aVal6 < q6 ? `a ≦ x ≦ ${q6}` : `${q6} ≦ x ≦ a`;
+      question = `y = ${kStr6}x² で、x の変域が ${domainStr6} のとき、y の変域が ${rangeStr6} です。a の値を求めなさい。`;
+      answer = aVal6;
+      wrongs = [aVal6 + 1, aVal6 + 2, Math.max(1, -aVal6), -aVal6 + 1].filter(v => v !== answer);
+      steps = [`x=0を含むので頂点(0,0)がy=0を与える`, `もう一方の極値 ${kSign6 > 0 ? M6 : -M6} は |x|=${targetAbsX6} のときの値`, `q=${q6} では届かないので、a = ${aVal6}`];
+    } else {
+      // 変化の割合から始点aを逆算
+      const kAbs7 = [1, 2, 3][randInt(0, 2)];
+      const kSign7 = Math.random() < 0.5 ? 1 : -1;
+      const kVal7 = kAbs7 * kSign7;
+      const kStr7 = kAbs7 === 1 ? (kSign7 > 0 ? '' : '−') : (kSign7 > 0 ? String(kAbs7) : `−${kAbs7}`);
+      const d7 = randInt(1, 4);
+      const aVal7 = randNonZero(-6, 6);
+      const rate7 = kVal7 * (aVal7 + (aVal7 + d7));
+      question = `y = ${kStr7}x² について、x の値が a から a+${d7} まで増加するときの変化の割合が ${rate7} です。a の値を求めなさい。`;
+      answer = aVal7;
+      wrongs = [aVal7 + 1, aVal7 + 2, Math.max(1, -aVal7), -aVal7 + 1].filter(v => v !== answer);
+      steps = [`変化の割合 = ${kStr7 || 1}×(a + (a+${d7}))`, `${rate7} = ${kVal7}×(2a+${d7})`, `a = ${answer}`];
     }
     return { category:'quadfunc', question, answer, choices:buildChoices(answer, wrongs), steps };
   }
