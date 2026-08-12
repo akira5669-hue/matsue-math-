@@ -9976,6 +9976,12 @@
     scienceStreakBarInner: document.getElementById('scienceStreakBarInner'),
     scienceStreakText: document.getElementById('scienceStreakText'),
     scienceExpText: document.getElementById('scienceExpText'),
+    hpRulesBanner: document.getElementById('hpRulesBanner'),
+    hpRulesBannerText: document.getElementById('hpRulesBannerText'),
+    hpGameOverPanel: document.getElementById('hpGameOverPanel'),
+    hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
+    hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
+    quizCard: document.getElementById('quizCard'),
     giftToggle: document.getElementById('giftToggle'),
     giftPanel: document.getElementById('giftPanel'),
     giftSummary: document.getElementById('giftSummary'),
@@ -10422,6 +10428,12 @@
       }
     } else {
       state.scienceStreak = 0;
+      if (isHpDamageActive_()) {
+        state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
+        if (state.hp <= 0) {
+          winHtml = `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+        }
+      }
     }
     saveGameState(state);
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
@@ -10460,6 +10472,7 @@
   }
 
   function nextQuestion() {
+    if (ensureNotHpGameOver_()) return;
     if (state.subject === 'science') { nextScienceQuestion(); return; }
     clearMemoCanvas();
     // ボン・ミスコの呪いにかかっている間も、間違い大魔王/算数デビルちゃんと同じ
@@ -10540,6 +10553,7 @@
     updateWorldToggleVisibility();
     renderWorldLaunchBanner();
     renderCurseBanner();
+    renderHpRulesBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -10778,6 +10792,14 @@
           state.worldBossActiveStage = null;
         } else {
           missLineHtml += `${bossMissQuoteHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
+        }
+        saveGameState(state);
+      } else if (isHpDamageActive_()) {
+        // ボス戦以外の不正解は、8/13からHPが1減る。0になると、なんでも屋で回復するか
+        // 再ログイン時の文章題3問連続正解(HP+3)をするまで、問題に答えられなくなる。
+        state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
+        if (state.hp <= 0) {
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
       }
@@ -11135,6 +11157,55 @@
     els.userName.textContent = (state.mathGodTitleEarned ? '【数学の神】' : '') + name;
   }
 
+  /* ---------- HPダメージ制・ゲームオーバー(8/13から) ----------
+     問題を間違えるとHPが1減る(ボス戦をのぞく。ボス戦は既存の専用ペナルティのまま)。
+     HPが0になると、ログアウトして再ログイン後に文章題3問連続正解(HP+3)するか、
+     なんでも屋で薬草を購入してHPを回復するまで、問題に答えられなくなる。
+     8/12から予告バナーを出し、8/13に適用開始、8/18までバナーを表示する。 */
+  var HP_DAMAGE_START_ = '2026-08-13';
+  var HP_RULES_BANNER_START_ = '2026-08-12';
+  var HP_RULES_BANNER_END_ = '2026-08-18';
+  var HP_WRONG_ANSWER_PENALTY_ = 1;
+  var HP_LOGIN_GATE_BONUS_ = 3;
+  function isHpDamageActive_() {
+    return todayKey() >= HP_DAMAGE_START_;
+  }
+  function isHpGameOver_() {
+    return isHpDamageActive_() && (Number(state.hp) || 0) <= 0;
+  }
+
+  // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
+  // 戻り値trueのとき、呼び出し元(nextQuestion)は出題処理を中断する。
+  function ensureNotHpGameOver_() {
+    if (isHpGameOver_()) {
+      if (els.quizCard) els.quizCard.hidden = true;
+      if (els.mathArea) els.mathArea.hidden = true;
+      if (els.scienceArea) els.scienceArea.hidden = true;
+      if (els.hpGameOverPanel) els.hpGameOverPanel.hidden = false;
+      return true;
+    }
+    if (els.hpGameOverPanel) els.hpGameOverPanel.hidden = true;
+    if (els.quizCard) els.quizCard.hidden = false;
+    syncSubjectUi_();
+    return false;
+  }
+
+  // 8/12〜8/18は新ルールの予告・案内バナーを表示する。8/13の適用開始前後で文言を変える。
+  function renderHpRulesBanner_() {
+    if (!els.hpRulesBanner) return;
+    var today = todayKey();
+    if (today < HP_RULES_BANNER_START_ || today > HP_RULES_BANNER_END_) {
+      els.hpRulesBanner.hidden = true;
+      return;
+    }
+    els.hpRulesBanner.hidden = false;
+    if (els.hpRulesBannerText) {
+      els.hpRulesBannerText.textContent = isHpDamageActive_()
+        ? '❤️ HPのルール：ボスキャラ以外でも、問題を間違えるとHPが1減ります。HPが0になるとゲームオーバーになり、問題に答えられなくなります。ログアウトして再ログインし、文章題を3問連続正解するとHPが3回復します。または🏪なんでも屋で薬草を購入してもHPを回復できます。'
+        : '❤️ 8月13日からのお知らせ：ボスキャラ以外でも、問題を間違えるとHPが1減るようになります。HPが0になるとゲームオーバーになり、問題に答えられなくなります。ログアウトして再ログインし、文章題を3問連続正解するとHPが3回復します。または🏪なんでも屋で薬草を購入してもHPを回復できます。';
+    }
+  }
+
   /* ---------- ログイン前チェック(文章題3問連続正解、8/10から) ---------- */
   var LOGIN_GATE_START_ = '2026-08-10';
   var LOGIN_GATE_REQUIRED_STREAK_ = 3;
@@ -11208,9 +11279,14 @@
     var id = loginGate.pendingId;
     var name = loginGate.pendingName;
     state.points += LOGIN_GATE_REWARD_MP_;
+    var hpBonusAwarded = 0;
+    if (isHpDamageActive_()) {
+      hpBonusAwarded = HP_LOGIN_GATE_BONUS_;
+      state.hp = (Number(state.hp) || 0) + hpBonusAwarded;
+    }
     saveGameState(state);
     showApp(name, false);
-    window.alert('🎉 3問連続正解！+' + LOGIN_GATE_REWARD_MP_ + 'MP獲得！');
+    window.alert('🎉 3問連続正解！+' + LOGIN_GATE_REWARD_MP_ + 'MP獲得！' + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
     if (id) apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
   }
 
@@ -13433,6 +13509,8 @@
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
   els.curseBannerBtn.addEventListener('click', toggleShop);
+  if (els.hpGameOverLogoutBtn) els.hpGameOverLogoutBtn.addEventListener('click', handleLogout);
+  if (els.hpGameOverShopBtn) els.hpGameOverShopBtn.addEventListener('click', toggleShop);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);

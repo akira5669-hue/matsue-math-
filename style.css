@@ -765,6 +765,31 @@ h1 {
 .world-launch-banner[hidden] { display: none; }
 .world-launch-text { margin: 0; font-size: 13px; font-weight: 700; color: #0f766e; line-height: 1.6; }
 
+.hp-rules-banner {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 1.5px solid #fca5a5;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.hp-rules-banner[hidden] { display: none; }
+.hp-rules-text { margin: 0; font-size: 13px; font-weight: 700; color: #991b1b; line-height: 1.7; white-space: pre-line; }
+
+.hp-gameover-panel {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border: 1.5px solid #ef4444;
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.hp-gameover-panel[hidden] { display: none; }
+.hp-gameover-title { margin: 0 0 8px; font-size: 20px; font-weight: 800; color: #fecaca; }
+.hp-gameover-text { margin: 0 0 12px; font-size: 13px; font-weight: 700; color: #fca5a5; line-height: 1.6; }
+.hp-gameover-list { margin: 0 0 14px; padding-left: 20px; text-align: left; font-size: 13px; font-weight: 700; color: #fecaca; line-height: 1.8; }
+.hp-gameover-panel .primary-btn { width: 100%; margin-bottom: 8px; }
+.hp-gameover-panel .ghost-btn { width: 100%; }
+
 .special-quiz-banner {
   background: linear-gradient(135deg, #fff7ed, #ffedd5);
   border: 1.5px solid #fb923c;

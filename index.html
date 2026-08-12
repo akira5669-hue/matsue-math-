@@ -208,6 +208,10 @@
       <p class="apology-text">🙇 お詫び：ログアウトすると特別アイテムやレアキャラ図鑑が消えてしまう不具合がありました。ご迷惑をおかけしたお詫びに、全員へ300MPをプレゼントしました！（不具合はすでに直っています）</p>
     </section>
 
+    <section class="hp-rules-banner" id="hpRulesBanner" hidden>
+      <p class="hp-rules-text" id="hpRulesBannerText"></p>
+    </section>
+
     <section class="curse-banner" id="curseBanner" hidden>
       <p class="curse-text">😈 ボン・ミスコの呪いを受けています。呪われている間は間違えた問題ばかり出題され、10問連続正解してもMPは5しかもらえません。</p>
       <button type="button" class="ghost-btn curse-banner-btn" id="curseBannerBtn">🏪なんでも屋でAKRの祈りを受ける</button>
@@ -541,7 +545,18 @@
       </div>
     </div>
 
-    <section class="quiz-card" aria-live="polite">
+    <section class="hp-gameover-panel" id="hpGameOverPanel" hidden>
+      <p class="hp-gameover-title">💀 HPが0になりました…</p>
+      <p class="hp-gameover-text">今は問題に答えられません。次のどちらかでHPを回復してください。</p>
+      <ul class="hp-gameover-list">
+        <li>ログアウトして再ログインし、文章題を3問連続正解する（HP+3回復）</li>
+        <li>🏪なんでも屋で薬草を購入する</li>
+      </ul>
+      <button type="button" class="primary-btn" id="hpGameOverLogoutBtn">ログアウトする</button>
+      <button type="button" class="ghost-btn" id="hpGameOverShopBtn">🏪なんでも屋を開く</button>
+    </section>
+
+    <section class="quiz-card" id="quizCard" aria-live="polite">
       <p class="category-tag" id="categoryTag">加法</p>
       <h2 class="question" id="questionText">読み込み中…</h2>
 
