@@ -2118,6 +2118,7 @@
     { id: 'timeFraction5',   label: '時間と分数（小5）',                   gen: genTimeFraction5,   defaultOff: true , addedDate: '2026-08-03' },
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
     { id: 'percentWordProblem5', label: '割合の文章題（小5）',              gen: genPercentWordProblem5, defaultOff: true , addedDate: '2026-08-11' },
+    { id: 'percentWordProblemAdvanced5', label: '割合の文章題（応用）（小5）', gen: genPercentWordProblemAdvanced5, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
     { id: 'multiplesDivisorsWordProblem5', label: '倍数・約数の文章題（小5）', gen: genMultiplesDivisorsWordProblem5, defaultOff: true , addedDate: '2026-08-11' },
@@ -5162,7 +5163,7 @@
 
   // 割合の文章題（小5）：もとにする量・比べる量・割合を求める応用文章題、割引・利益・食塩水など
   function genPercentWordProblem5() {
-    const pat = randInt(0, 7);
+    const pat = randInt(0, 6);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       const percent = 5 * randInt(1, 30);
@@ -5259,19 +5260,6 @@
       wrongs = [angle + 9, angle + 18, Math.max(1, angle - 9), Math.max(1, angle - 18)].filter(v => v !== answer && v > 0);
       steps = [`360° × ${percent}/100 = ${answer}°`];
       return { category: 'percentWordProblem5', question, answer, choices: buildChoices(answer, wrongs), steps };
-    } else if (pat === 6) {
-      // newTotalを20の倍数、targetPercentを5の倍数にすると、salt=newTotal×targetPercent/100が
-      // 必ず整数になる(newTotal×5k/100=newTotal×k/20で、newTotalが20の倍数だから)。
-      const newTotal = 20 * randInt(15, 45);
-      const targetPercent = 5 * randInt(1, 5);
-      const salt = (newTotal * targetPercent) / 100;
-      const evaporate = randInt(50, 300);
-      const water = newTotal + evaporate - salt;
-      question = `${water}gの水に${salt}gの食塩をとかしました。この食塩水の濃さを${targetPercent}%にするには、何gの水をじょう発させるとよいですか。`;
-      answer = evaporate;
-      wrongs = [evaporate + 10, evaporate + 20, Math.max(1, evaporate - 10), Math.max(1, evaporate - 20)].filter(v => v !== answer && v > 0);
-      steps = [`目標の食塩水の量 = ${salt} ÷ ${targetPercent}/100 = ${newTotal}g`, `もとの量 ${water + salt}g − ${newTotal}g = ${answer}g`];
-      return { category: 'percentWordProblem5', question, answer, choices: buildChoices(answer, wrongs), steps };
     } else {
       const kind = randInt(0, 1);
       if (kind === 0) {
@@ -5295,6 +5283,70 @@
         steps = [`男子の割合 = 100 − ${percent} = ${100 - percent}%`, `${maleCount} ÷ ${(100 - percent) / 100} = ${answer}`];
         return { category: 'percentWordProblem5', question, answer, choices: buildChoices(answer, wrongs), steps };
       }
+    }
+  }
+
+  // 割合の文章題（応用）（小5）：食塩水（濃度）専門の応用文章題
+  function genPercentWordProblemAdvanced5() {
+    const pat = randInt(0, 4);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // newTotalを20の倍数、targetPercentを5の倍数にすると、salt=newTotal×targetPercent/100が
+      // 必ず整数になる(newTotal×5k/100=newTotal×k/20で、newTotalが20の倍数だから)。
+      const newTotal = 20 * randInt(15, 45);
+      const targetPercent = 5 * randInt(1, 5);
+      const salt = (newTotal * targetPercent) / 100;
+      const evaporate = randInt(50, 300);
+      const water = newTotal + evaporate - salt;
+      question = `${water}gの水に${salt}gの食塩をとかしました。この食塩水の濃さを${targetPercent}%にするには、何gの水をじょう発させるとよいですか。`;
+      answer = evaporate;
+      wrongs = [evaporate + 10, evaporate + 20, Math.max(1, evaporate - 10), Math.max(1, evaporate - 20)].filter(v => v !== answer && v > 0);
+      steps = [`目標の食塩水の量 = ${salt} ÷ ${targetPercent}/100 = ${newTotal}g`, `もとの量 ${water + salt}g − ${newTotal}g = ${answer}g`];
+      return { category: 'percentWordProblemAdvanced5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const total = 20 * randInt(5, 50);
+      const percent = 5 * randInt(1, 10);
+      const salt = (total * percent) / 100;
+      const water = total - salt;
+      question = `${water}gの水に${salt}gの食塩をとかしました。この食塩水の濃度は何%ですか。`;
+      answer = percent;
+      wrongs = [percent + 5, percent + 10, Math.max(1, percent - 5), Math.max(1, percent - 10)].filter(v => v !== answer && v > 0);
+      steps = [`食塩水全体の重さ = ${water}+${salt} = ${total}g`, `濃度 = ${salt}÷${total}×100 = ${percent}%`];
+      return { category: 'percentWordProblemAdvanced5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      const total = 20 * randInt(5, 50);
+      const percent = 5 * randInt(1, 15);
+      const salt = (total * percent) / 100;
+      question = `${percent}%の食塩水が${total}gあります。とけている食塩は何gですか。`;
+      answer = salt;
+      wrongs = [salt + 2, salt + 4, Math.max(1, salt - 2), Math.max(1, salt - 4)].filter(v => v !== answer && v > 0);
+      steps = [`食塩の重さ = ${total} × ${percent}/100 = ${answer}g`];
+      return { category: 'percentWordProblemAdvanced5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      const total = 20 * randInt(5, 50);
+      const percent = 5 * randInt(1, 15);
+      const salt = (total * percent) / 100;
+      const water = total - salt;
+      question = `${percent}%の食塩水が${total}gあります。とけている食塩以外の水の重さは何gですか。`;
+      answer = water;
+      wrongs = [water + 10, water + 20, Math.max(1, water - 10), Math.max(1, water - 20)].filter(v => v !== answer && v > 0);
+      steps = [`食塩の重さ = ${total} × ${percent}/100 = ${salt}g`, `水の重さ = ${total} − ${salt} = ${answer}g`];
+      return { category: 'percentWordProblemAdvanced5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // targetPercentの倍数mを掛けたものをoriginalPercentにすることで、newTotal=originalTotal×mが
+      // 必ず整数になるようにしている(originalTotalは常に整数のまま)。
+      const targetPercent = 5 * randInt(1, 5);
+      const m = randInt(2, Math.min(4, Math.floor(80 / targetPercent)));
+      const originalPercent = targetPercent * m;
+      const originalTotal = 20 * randInt(15, 45);
+      const salt = (originalTotal * originalPercent) / 100;
+      const newTotal = originalTotal * m;
+      const addedWater = newTotal - originalTotal;
+      question = `${originalPercent}%の食塩水が${originalTotal}gあります。これに水を加えて濃さを${targetPercent}%にするには、何gの水を加えればよいですか。`;
+      answer = addedWater;
+      wrongs = [addedWater + 10, addedWater + 20, Math.max(1, addedWater - 10), Math.max(1, addedWater - 20)].filter(v => v !== answer && v > 0);
+      steps = [`とけている食塩の重さ = ${originalTotal}×${originalPercent}/100 = ${salt}g`, `濃さ${targetPercent}%にするための食塩水の重さ = ${salt}÷${targetPercent}/100 = ${newTotal}g`, `加える水の重さ = ${newTotal}−${originalTotal} = ${answer}g`];
+      return { category: 'percentWordProblemAdvanced5', question, answer, choices: buildChoices(answer, wrongs), steps };
     }
   }
 
@@ -8762,7 +8814,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
