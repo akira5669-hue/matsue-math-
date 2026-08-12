@@ -2268,6 +2268,7 @@
   // 1日の上限も共通)を使うが、経験値だけは理科専用のstate.scienceExpに分けて集計する。
   const SCIENCE_CATEGORIES = [
     { id: 'matterInvestigation1', label: '物の調べ方（中1）', gen: genMatterInvestigation1, addedDate: '2026-08-12' },
+    { id: 'whitePowder1', label: '白い粉末の見分け方（中1）', gen: genWhitePowder1, addedDate: '2026-08-12' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -2389,6 +2390,50 @@
       steps = [`「${pick.q}」の答えは「${answer}」`];
       return { category: 'matterInvestigation1', question, answer, choices, steps };
     }
+  }
+
+  // 白い粉末の見分け方（中1）：有機物・無機物の区別、燃焼でできる物質(二酸化炭素・水)の知識問題。
+  const ORGANIC_EXAMPLES_1_ = ['白砂糖', 'デンプン', 'ろう', 'エタノール'];
+  const INORGANIC_EXAMPLES_1_ = ['食塩', '鉄', 'ガラス', 'アルミニウム'];
+  function genWhitePowder1() {
+    const pat = randInt(0, 5);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '炭素をふくみ、燃やすと炭になったり、二酸化炭素と水ができたりする物質を何といいますか。';
+      answer = '有機物';
+      choices = shuffle(['有機物', '無機物', '金属', '非金属']);
+      steps = ['炭素をふくむ物質を有機物、それ以外を無機物という'];
+    } else if (pat === 1) {
+      question = '有機物ではない物質を何といいますか。';
+      answer = '無機物';
+      choices = shuffle(['無機物', '有機物', '金属光沢', '展性']);
+      steps = ['有機物以外の物質を無機物という'];
+    } else if (pat === 2) {
+      const pick = ORGANIC_EXAMPLES_1_[randInt(0, ORGANIC_EXAMPLES_1_.length - 1)];
+      question = `次のうち、有機物はどれですか。`;
+      answer = pick;
+      const distractors = shuffle(INORGANIC_EXAMPLES_1_).slice(0, 3);
+      choices = shuffle([pick, ...distractors]);
+      steps = [`${pick}は炭素をふくむ有機物`];
+    } else if (pat === 3) {
+      const pick = INORGANIC_EXAMPLES_1_[randInt(0, INORGANIC_EXAMPLES_1_.length - 1)];
+      question = `次のうち、無機物はどれですか。`;
+      answer = pick;
+      const distractors = shuffle(ORGANIC_EXAMPLES_1_).slice(0, 3);
+      choices = shuffle([pick, ...distractors]);
+      steps = [`${pick}は炭素をふくまない無機物`];
+    } else if (pat === 4) {
+      question = '物質を燃やしたときにできる気体のうち、石灰水を白くにごらせるものは何ですか。';
+      answer = '二酸化炭素';
+      choices = shuffle(['二酸化炭素', '酸素', '水素', '窒素']);
+      steps = ['二酸化炭素には石灰水を白くにごらせる性質がある'];
+    } else {
+      question = '物質を燃やしたときに集気びんの内側がくもるのは、何という物質ができたためですか。';
+      answer = '水';
+      choices = shuffle(['水', '二酸化炭素', '炭', '灰']);
+      steps = ['有機物を燃やすと水ができ、集気びんの内側で水滴となってくもる'];
+    }
+    return { category: 'whitePowder1', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
