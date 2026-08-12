@@ -10149,10 +10149,10 @@
   function updateScienceHud() {
     const streak = state.scienceStreak || 0;
     const pct = Math.round((streak / 10) * 100);
-    els.scienceStreakBarInner.style.width = `${pct}%`;
-    els.scienceStreakText.textContent = `${streak}/10`;
-    els.scienceExpText.textContent = state.scienceExp;
-    els.statPoints.textContent = state.points;
+    if (els.scienceStreakBarInner) els.scienceStreakBarInner.style.width = `${pct}%`;
+    if (els.scienceStreakText) els.scienceStreakText.textContent = `${streak}/10`;
+    if (els.scienceExpText) els.scienceExpText.textContent = state.scienceExp;
+    if (els.statPoints) els.statPoints.textContent = state.points;
   }
 
   function nextScienceQuestion() {
@@ -10247,13 +10247,20 @@
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
   }
 
+  // 理科モード関連のDOM要素は、ブラウザのキャッシュでindex.htmlとapp.jsの
+  // バージョンがずれた場合(古いHTML+新しいJS)にnullになりうる。他の要素の
+  // 初期化やイベント登録を巻き添えで止めてしまわないよう、必ずnullチェックしてから触る。
+  function syncSubjectUi_() {
+    if (els.mathArea) els.mathArea.hidden = state.subject === 'science';
+    if (els.scienceArea) els.scienceArea.hidden = state.subject !== 'science';
+    if (els.subjectToggle) els.subjectToggle.textContent = state.subject === 'science' ? '🧮計算' : '🔬理科';
+  }
+
   // 算数・数学 ⇔ 理科の科目を切り替える。単元設定・出題プール・HUD表示が
   // 丸ごと入れ替わる。MPは共通プールのまま、経験値だけ理科専用に分ける。
   function toggleSubject() {
     state.subject = state.subject === 'science' ? 'math' : 'science';
-    els.mathArea.hidden = state.subject === 'science';
-    els.scienceArea.hidden = state.subject !== 'science';
-    els.subjectToggle.textContent = state.subject === 'science' ? '🧮計算' : '🔬理科';
+    syncSubjectUi_();
     saveGameState(state);
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
     updateGameHud();
@@ -11036,9 +11043,7 @@
     els.withdrawPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
     els.rankingTabHp.hidden = !!isGuest;
-    els.mathArea.hidden = state.subject === 'science';
-    els.scienceArea.hidden = state.subject !== 'science';
-    els.subjectToggle.textContent = state.subject === 'science' ? '🧮計算' : '🔬理科';
+    syncSubjectUi_();
     drawNumberline();
     renderSettings();
     updateStats();
@@ -13231,7 +13236,7 @@
   els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
-  els.subjectToggle.addEventListener('click', toggleSubject);
+  if (els.subjectToggle) els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
   els.curseBannerBtn.addEventListener('click', toggleShop);
