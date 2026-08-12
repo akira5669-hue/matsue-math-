@@ -10227,9 +10227,14 @@
         state.pointsToday += pointsToAdd;
         state.scienceExp += SCIENCE_EXP_PER_STREAK;
         state.scienceStreak = 0;
+        // レベルは算数・数学の経験値と理科の経験値を合算して決まる(単一のLv.)。
+        const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
+        const leveledUp = newLevel > state.level;
+        state.level = newLevel;
+        const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
         winHtml = pointsToAdd > 0
-          ? `<div class="win-banner">🎉 10問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
-          : `<div class="win-banner">🎉 10問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`;
+          ? `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
+          : `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`;
       }
     } else {
       state.scienceStreak = 0;
@@ -10344,9 +10349,9 @@
     els.hpText.textContent = `${hp}/${requiredStreak}`;
     els.statPoints.textContent = state.points;
     els.statHp.textContent = Number(state.hp) || 0;
-    els.statExpSub.textContent = `経験値 ${state.exp}（Lv.${state.level}）`;
+    els.statExpSub.textContent = `算数・数学の経験値${state.exp}、理科の経験値${state.scienceExp}（Lv.${state.level}）`;
     els.statLevel.textContent = state.level;
-    els.expBarInner.style.width = `${((state.exp % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
+    els.expBarInner.style.width = `${(((state.exp + state.scienceExp) % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
     renderWorldLaunchBanner();
@@ -10697,7 +10702,9 @@
         doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${doubleBonusToAdd}MP）💰</div>`;
       }
       state.exp += 10;
-      const newLevel = Math.min(MAX_LEVEL, Math.floor(state.exp / EXP_PER_LEVEL) + 1);
+      // レベルは算数・数学の経験値(exp)と理科の経験値(scienceExp)を合算して決まる。
+      // 経験値そのものは科目ごとに別集計だが、レベルは1つに統一する。
+      const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
       const leveledUp = newLevel > state.level;
       const prevWorldCount = worldCountForLevel(state.level);
       state.level = newLevel;
