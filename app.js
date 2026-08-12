@@ -1738,7 +1738,7 @@
   function genLinear() {
     const a = randNonZero(-5, 5);
     const aD = a===1?'':a===-1?'−':`${a}`;
-    const pat = randInt(0, 9);
+    const pat = randInt(0, 10);
     let question, answer, steps, wrongs;
     if (pat === 8) {
       // xの増加量・yの増加量を求める
@@ -1811,6 +1811,30 @@
         linearEqStr(a + 1, b),
       ];
       return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates), steps };
+    } else if (pat === 10) {
+      // 2点を「x=◯のときy=◯」の形で与えるパターン（座標表記の2点問題と数学的には同じ）
+      const x1 = randInt(-5, 4), y1 = randInt(-8, 7);
+      const dx = randNonZero(-4, 4), x2 = x1+dx;
+      const dy = a*dx, y2 = y1+dy;
+      const b = y1 - a*x1;
+      const yStep = y1<0?`${y2} − (${y1})`:`${y2} − ${y1}`;
+      const xStep = x1<0?`${x2} − (${x1})`:`${x2} − ${x1}`;
+      const answerStr = linearEqStr(a, b);
+      question = `x = ${x1} のとき y = ${y1}、x = ${x2} のとき y = ${y2} となる一次関数を求めなさい。`;
+      steps = [
+        `傾き = Δy ÷ Δx`,
+        `= (${yStep}) ÷ (${xStep}) = ${dy} ÷ ${dx} = ${a}`,
+        `y = ${aD}x + b に (${x1}, ${y1}) を代入して b を求める`,
+        `b = ${y1} − ${fmtNum(a*x1)} = ${b}`,
+        `${answerStr}`,
+      ];
+      const candidates10 = [
+        linearEqStr(a, -b),
+        linearEqStr(-a, b),
+        linearEqStr(a, b + 1),
+        linearEqStr(a + 1, b),
+      ];
+      return { category:'linear', question, answer: answerStr, choices: buildChoicesFromList(answerStr, candidates10), steps };
     } else if (pat === 4) {
       // 傾きと1点が与えられ、一次関数の式を求める
       const b = randNonZero(-8, 8), x1 = randNonZero(-5, 5), y1 = a*x1+b;
