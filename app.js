@@ -8736,6 +8736,9 @@
   // 受けるまで解除されない。
   const BONMISUKO_CURSE_MP_CAP = 5;
   const AKR_PRAYER_COST_MP = 100;
+  // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
+  const HERB_COST_MP = 300;
+  const HERB_HP_GAIN = 100;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
   // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
   const GOUMAJI_REQUIRED_STREAK = 20;
@@ -10966,18 +10969,29 @@
 
   function renderShopList() {
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
-    var canAfford = state.points >= AKR_PRAYER_COST_MP;
-    var actionHtml;
+
+    var prayerCanAfford = state.points >= AKR_PRAYER_COST_MP;
+    var prayerActionHtml;
     if (!state.cursed) {
-      actionHtml = `<span class="gift-insufficient">今は呪われていません</span>`;
-    } else if (canAfford) {
-      actionHtml = `<button type="button" class="gift-redeem-btn" id="akrPrayerBtn">祈ってもらう</button>`;
+      prayerActionHtml = `<span class="gift-insufficient">今は呪われていません</span>`;
+    } else if (prayerCanAfford) {
+      prayerActionHtml = `<button type="button" class="gift-redeem-btn" id="akrPrayerBtn">祈ってもらう</button>`;
     } else {
-      actionHtml = `<span class="gift-insufficient">MP不足</span>`;
+      prayerActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    els.shopList.innerHTML = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.png" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${actionHtml}</div>`;
-    var btn = document.getElementById('akrPrayerBtn');
-    if (btn) btn.addEventListener('click', function () { handleAkrPrayerClick(btn); });
+    var prayerRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.png" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${prayerActionHtml}</div>`;
+
+    var herbCanAfford = state.points >= HERB_COST_MP;
+    var herbActionHtml = herbCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buyHerbBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var herbRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🌿 薬草（HPを${HERB_HP_GAIN}増やす）</span><span class="gift-cost">${HERB_COST_MP}MP</span></div>${herbActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml;
+    var prayerBtn = document.getElementById('akrPrayerBtn');
+    if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
+    var herbBtn = document.getElementById('buyHerbBtn');
+    if (herbBtn) herbBtn.addEventListener('click', function () { handleBuyHerbClick(herbBtn); });
   }
 
   function handleAkrPrayerClick(btn) {
@@ -11001,6 +11015,32 @@
       renderCurseBanner();
       renderShopList();
       window.alert('🙏 AKRの祈りが届き、ボン・ミスコの呪いが解けた！');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyHerbClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`薬草を購入します（${HERB_COST_MP}MP）。HPが${HERB_HP_GAIN}増えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyHerb', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`🌿 薬草を使った！HPが${HERB_HP_GAIN}増えた！`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
