@@ -8742,6 +8742,9 @@
   // 薬草の上位版「爆裂薬草」：1000MPでHPを400増やせる。
   const BAKUHERB_COST_MP = 1000;
   const BAKUHERB_HP_GAIN = 400;
+  // 爆裂薬草のさらに上位版「超絶薬草」：3000MPでHPを1500増やせる。
+  const CHOUHERB_COST_MP = 3000;
+  const CHOUHERB_HP_GAIN = 1500;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
   // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
   const GOUMAJI_REQUIRED_STREAK = 20;
@@ -10996,13 +10999,21 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var bakuHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/bakuretsu_herb.png" alt="爆裂薬草"><div class="gift-info"><span class="gift-label">💥 爆裂薬草（HPを${BAKUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${BAKUHERB_COST_MP}MP</span></div>${bakuHerbActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml;
+    var chouHerbCanAfford = state.points >= CHOUHERB_COST_MP;
+    var chouHerbActionHtml = chouHerbCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buyChouHerbBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.png" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span></div>${chouHerbActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml;
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
     if (herbBtn) herbBtn.addEventListener('click', function () { handleBuyHerbClick(herbBtn); });
     var bakuHerbBtn = document.getElementById('buyBakuHerbBtn');
     if (bakuHerbBtn) bakuHerbBtn.addEventListener('click', function () { handleBuyBakuHerbClick(bakuHerbBtn); });
+    var chouHerbBtn = document.getElementById('buyChouHerbBtn');
+    if (chouHerbBtn) chouHerbBtn.addEventListener('click', function () { handleBuyChouHerbClick(chouHerbBtn); });
   }
 
   function handleAkrPrayerClick(btn) {
@@ -11078,6 +11089,32 @@
       updateGameHud();
       renderShopList();
       window.alert(`💥 爆裂薬草を使った！HPが${BAKUHERB_HP_GAIN}増えた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyChouHerbClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`超絶薬草を購入します（${CHOUHERB_COST_MP}MP）。HPが${CHOUHERB_HP_GAIN}増えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyChouHerb', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`🌟 超絶薬草を使った！HPが${CHOUHERB_HP_GAIN}増えた！`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
