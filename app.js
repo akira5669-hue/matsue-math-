@@ -2140,6 +2140,7 @@
     { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',        gen: genArrangeCombine6, defaultOff: true },
     { id: 'circleArea6',     label: '円の面積（小6）',                     gen: genCircleArea6,     defaultOff: true },
     { id: 'circleSector6',   label: '円とおうぎ形（小6）',                 gen: genCircleSector6,   defaultOff: true , addedDate: '2026-08-11' },
+    { id: 'speedFrac6',      label: '分数を含んだ速さの計算（小6）',       gen: genSpeedFrac6,      defaultOff: true , addedDate: '2026-08-12' },
     { id: 'prismVolume6',    label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,    defaultOff: true },
     // ---------- 小3 ----------
     { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
@@ -6318,6 +6319,89 @@
     }
   }
 
+  // 分数を含んだ速さの計算（小6）：時間の単位を分数で表す換算、分数の時間・速さでの
+  // 速さ・道のり・時間の計算（文章題を含む）
+  const SPEED_FRAC6_HOUR_MIN_DIVISORS_ = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60];
+  function genSpeedFrac6() {
+    const pat = randInt(0, 5);
+    let question, answer, wrongs, candidates, steps;
+    if (pat === 0) {
+      // 分数時間→分、分数分→秒（分母が60の約数なので必ず整数になる）
+      const kind = randInt(0, 1);
+      const d = SPEED_FRAC6_HOUR_MIN_DIVISORS_[randInt(0, SPEED_FRAC6_HOUR_MIN_DIVISORS_.length - 1)];
+      const n = randInt(1, d + Math.floor(d / 2));
+      const answerNum = (n * 60) / d;
+      const fracStr = fracDisplayStr6_(n, d);
+      question = kind === 0 ? `${fracStr}時間は何分ですか。` : `${fracStr}分は何秒ですか。`;
+      answer = answerNum;
+      wrongs = [answerNum + 2, answerNum + 4, Math.max(1, answerNum - 2), Math.max(1, answerNum - 4)].filter(v => v !== answer && v > 0);
+      steps = kind === 0 ? [`${fracStr}時間 = (60×${fracStr})分 = ${answer}分`] : [`${fracStr}分 = (60×${fracStr})秒 = ${answer}秒`];
+      return { category: 'speedFrac6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 整数分→分数時間、整数秒→分数分（答えが分数）
+      const kind = randInt(0, 1);
+      const m = randInt(1, 119);
+      answer = fracDisplayStr6_(m, 60);
+      candidates = [fracDisplayStr6_(m + 60, 60), fracDisplayStr6_(m + 120, 60), fracDisplayStr6_(m + 180, 60), fracDisplayStr6_(m, 62)];
+      question = kind === 0 ? `${m}分は何時間ですか。分数で答えなさい。` : `${m}秒は何分ですか。分数で答えなさい。`;
+      steps = kind === 0 ? [`${m}分 = ${m}/60時間 = ${answer}時間`] : [`${m}秒 = ${m}/60分 = ${answer}分`];
+      return { category: 'speedFrac6', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 2) {
+      // 道のり・分数時間 → 時速を求める
+      const d = randInt(2, 10);
+      let n; do { n = randInt(1, d - 1); } while (gcdFrac(n, d) !== 1);
+      const k = randInt(2, 15);
+      const S = k * d;
+      const distance = k * n;
+      const fracStr = fracDisplayStr6_(n, d);
+      question = `${distance}kmの道のりを${fracStr}時間で走る電車の速さは、時速何kmですか。`;
+      answer = S;
+      wrongs = [S + 5, S + 10, Math.max(1, S - 5), Math.max(1, S - 10)].filter(v => v !== answer && v > 0);
+      steps = [`速さ = 道のり ÷ 時間 = ${distance} ÷ ${fracStr} = ${answer}`];
+      return { category: 'speedFrac6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      // 道のり・整数分（分を時間の分数に直す）→ 時速を求める
+      const mList = [10, 12, 15, 20, 30, 60];
+      const m = mList[randInt(0, mList.length - 1)];
+      const k = randInt(1, 10);
+      const S = k * (60 / m);
+      const distance = k;
+      question = `${distance}kmの道のりを${m}分で走る自転車の時速は何kmですか。`;
+      answer = S;
+      wrongs = [S + 5, S + 10, Math.max(1, S - 5), Math.max(1, S - 10)].filter(v => v !== answer && v > 0);
+      steps = [`単位を時間にそろえると、${m}分 = ${m}/60時間`, `${distance} ÷ ${m}/60 = ${answer}`];
+      return { category: 'speedFrac6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 4) {
+      // 時速・道のり → かかる時間を分数時間で求め、分に直す
+      const dList = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
+      const d = dList[randInt(0, dList.length - 1)];
+      let n; do { n = randInt(1, d - 1); } while (gcdFrac(n, d) !== 1);
+      const base = randInt(2, 8);
+      const D = n * base;
+      const S = d * base;
+      const minutesAnswer = (n * 60) / d;
+      const fracStr = fracDisplayStr6_(n, d);
+      question = `時速${S}kmで走るバスが、${D}kmの道のりを進むのにかかる時間は何分ですか。`;
+      answer = minutesAnswer;
+      wrongs = [minutesAnswer + 5, minutesAnswer + 10, Math.max(1, minutesAnswer - 5), Math.max(1, minutesAnswer - 10)].filter(v => v !== answer && v > 0);
+      steps = [`時間 = 道のり ÷ 速さ = ${D} ÷ ${S} = ${fracStr}時間`, `= (60×${fracStr})分 = ${answer}分`];
+      return { category: 'speedFrac6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 分数の分速・整数分 → 道のりを求める
+      const d = randInt(2, 10);
+      let n; do { n = randInt(1, d - 1); } while (gcdFrac(n, d) !== 1);
+      const k = randInt(2, 10);
+      const t = d * k;
+      const distance = n * k;
+      const fracStr = fracDisplayStr6_(n, d);
+      question = `分速${fracStr}kmで走る自動車が、${t}分間に進む道のりは何kmですか。`;
+      answer = distance;
+      wrongs = [distance + 2, distance + 4, Math.max(1, distance - 2), Math.max(1, distance - 4)].filter(v => v !== answer && v > 0);
+      steps = [`道のり = 速さ × 時間 = ${fracStr} × ${t} = ${answer}km`];
+      return { category: 'speedFrac6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   // 角柱と円柱の体積（小6、円周率は3.14）
   function genPrismVolume6() {
     const pat = randInt(0, 2);
@@ -8814,7 +8898,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
