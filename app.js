@@ -2269,6 +2269,8 @@
   const SCIENCE_CATEGORIES = [
     { id: 'matterInvestigation1', label: '物の調べ方（中1）', gen: genMatterInvestigation1, addedDate: '2026-08-12' },
   ];
+
+  const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
   const categoryGrade = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map(c => {
     const m = c.label.match(/（(小[3456]|中[123])）/);
     return [c.id, m ? m[1] : null];
