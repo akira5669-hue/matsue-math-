@@ -2119,6 +2119,7 @@
     { id: 'percent5',        label: '割合・百分率（小5）',                 gen: genPercent5,        defaultOff: true },
     { id: 'percentWordProblem5', label: '割合の文章題（小5）',              gen: genPercentWordProblem5, defaultOff: true , addedDate: '2026-08-11' },
     { id: 'percentWordProblemAdvanced5', label: '割合の文章題（応用）（小5）', gen: genPercentWordProblemAdvanced5, defaultOff: true , addedDate: '2026-08-12' },
+    { id: 'figureArea5',     label: '図形の面積（小5）',                   gen: genFigureArea5,     defaultOff: true , addedDate: '2026-08-12' },
     { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
     { id: 'multiplesDivisorsWordProblem5', label: '倍数・約数の文章題（小5）', gen: genMultiplesDivisorsWordProblem5, defaultOff: true , addedDate: '2026-08-11' },
@@ -5348,6 +5349,47 @@
       wrongs = [addedWater + 10, addedWater + 20, Math.max(1, addedWater - 10), Math.max(1, addedWater - 20)].filter(v => v !== answer && v > 0);
       steps = [`とけている食塩の重さ = ${originalTotal}×${originalPercent}/100 = ${salt}g`, `濃さ${targetPercent}%にするための食塩水の重さ = ${salt}÷${targetPercent}/100 = ${newTotal}g`, `加える水の重さ = ${newTotal}−${originalTotal} = ${answer}g`];
       return { category: 'percentWordProblemAdvanced5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // 図形の面積（小5）：平行四辺形・三角形・台形・ひし形（対角線）の面積
+  function genFigureArea5() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      const b = randInt(3, 20), h = randInt(3, 20);
+      const a = b * h;
+      question = `底辺${b}cm、高さ${h}cmの平行四辺形の面積は何cm²ですか。`;
+      answer = a;
+      wrongs = [a + 2, a + 4, Math.max(1, a - 2), Math.max(1, a - 4)].filter(v => v !== answer && v > 0);
+      steps = [`平行四辺形の面積 = 底辺 × 高さ = ${b} × ${h} = ${answer}cm²`];
+      return { category: 'figureArea5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      const b = 2 * randInt(2, 12), h = randInt(2, 20);
+      const a = (b * h) / 2;
+      question = `底辺${b}cm、高さ${h}cmの三角形の面積は何cm²ですか。`;
+      answer = a;
+      wrongs = [a + 2, a + 4, Math.max(1, a - 2), Math.max(1, a - 4)].filter(v => v !== answer && v > 0);
+      steps = [`三角形の面積 = 底辺 × 高さ ÷ 2 = ${b} × ${h} ÷ 2 = ${answer}cm²`];
+      return { category: 'figureArea5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      const top = randInt(2, 15), bottom = randInt(2, 15);
+      const h = 2 * randInt(2, 10);
+      const a = ((top + bottom) * h) / 2;
+      question = `上底${top}cm、下底${bottom}cm、高さ${h}cmの台形の面積は何cm²ですか。`;
+      answer = a;
+      wrongs = [a + 2, a + 4, Math.max(1, a - 2), Math.max(1, a - 4)].filter(v => v !== answer && v > 0);
+      steps = [`台形の面積 = (上底+下底) × 高さ ÷ 2 = (${top}+${bottom}) × ${h} ÷ 2 = ${answer}cm²`];
+      return { category: 'figureArea5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const d1 = 2 * randInt(2, 15), d2 = randInt(2, 20);
+      const a = (d1 * d2) / 2;
+      const shapeName = Math.random() < 0.5 ? 'ひし形' : '対角線が垂直に交わる四角形';
+      question = `2本の対角線の長さが${d1}cmと${d2}cmの${shapeName}の面積は何cm²ですか。`;
+      answer = a;
+      wrongs = [a + 2, a + 4, Math.max(1, a - 2), Math.max(1, a - 4)].filter(v => v !== answer && v > 0);
+      steps = [`面積 = 対角線 × 対角線 ÷ 2 = ${d1} × ${d2} ÷ 2 = ${answer}cm²`];
+      return { category: 'figureArea5', question, answer, choices: buildChoices(answer, wrongs), steps };
     }
   }
 
@@ -8898,7 +8940,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
