@@ -8511,8 +8511,11 @@
 
   /* ---------- 確率（中2） ---------- */
 
+  const PROBABILITY_BALL_COLORS_ = ['赤', '白', '青', '黄', '黒'];
+  const PROBABILITY_SUM_COUNTS_ = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1 };
+
   function genProbability() {
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 10);
     let question, answer, choices, steps;
     if (pat === 0) {
       question = `1個のさいころを投げるとき、3の目が出る確率は？`;
@@ -8543,7 +8546,7 @@
       answer = '1/6';
       choices = shuffle(['1/6', '1/12', '1/9', '7/36']);
       steps = [`全体 = 36通り`, `和が7: (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) → 6通り`, `確率 = 6/36 = 1/6`];
-    } else {
+    } else if (pat === 5) {
       const combos = [{N:4,k:2,cnt:2,fr:'1/2'},{N:5,k:2,cnt:2,fr:'2/5'},{N:6,k:3,cnt:2,fr:'1/3'},{N:8,k:4,cnt:2,fr:'1/4'},{N:9,k:3,cnt:3,fr:'1/3'},{N:10,k:5,cnt:2,fr:'1/5'}];
       const c = combos[randInt(0, combos.length-1)];
       question = `1から ${c.N} のカードから1枚引くとき、${c.k} の倍数が出る確率は？`;
@@ -8551,6 +8554,90 @@
       const pool = ['1/6', '1/2', '2/3', '3/4', '3/5', '2/5'].filter(f => f !== c.fr);
       choices = shuffle([c.fr, pool[0], pool[1], pool[2]]);
       steps = [`全体 = ${c.N}通り、${c.k}の倍数 → ${c.cnt}通り`, `確率 = ${c.cnt}/${c.N} = ${c.fr}`];
+    } else if (pat === 6) {
+      // 箱の中の色玉を1個取り出す確率
+      const numColors = randInt(2, 3);
+      const colors = shuffle(PROBABILITY_BALL_COLORS_).slice(0, numColors);
+      const counts = colors.map(() => randInt(2, 8));
+      const total = counts.reduce((s, v) => s + v, 0);
+      const targetIdx = randInt(0, numColors - 1);
+      answer = frac(counts[targetIdx], total);
+      question = `箱の中に、${colors.map((c, i) => `${c}球${counts[i]}個`).join('、')}が入っています。この箱から球を1個取り出すとき、${colors[targetIdx]}球である確率を求めなさい。`;
+      const candidates6 = [
+        frac(counts[targetIdx] + 1, total),
+        frac(counts[targetIdx] + 2, total),
+        frac(total - counts[targetIdx], total),
+        frac(counts[targetIdx], total + 2),
+      ];
+      steps = [`全体 = ${total}個`, `${colors[targetIdx]}球 = ${counts[targetIdx]}個`, `確率 = ${counts[targetIdx]}/${total} = ${answer}`];
+      return { category: 'probability', question, answer, choices: buildChoicesFromList(answer, candidates6), steps };
+    } else if (pat === 7) {
+      // 3枚の硬貨：ちょうどk枚表、または余事象（少なくとも1枚裏）
+      const kind = randInt(0, 1);
+      if (kind === 0) {
+        const k = randInt(0, 3);
+        const C3 = [1, 3, 3, 1];
+        answer = frac(C3[k], 8);
+        question = `3枚の硬貨を同時に投げるとき、ちょうど${k}枚が表になる確率を求めなさい。`;
+        steps = [`全体 = 8通り`, `ちょうど${k}枚表になるのは${C3[k]}通り`, `確率 = ${C3[k]}/8 = ${answer}`];
+        const pool = ['1/8', '3/8', '5/8', '7/8'].filter(f => f !== answer);
+        choices = shuffle([answer, pool[0], pool[1], pool[2]]);
+      } else {
+        question = `3枚の硬貨を同時に投げるとき、少なくとも1枚は裏となる確率を求めなさい。`;
+        answer = '7/8';
+        steps = [`「少なくとも1枚裏」の余事象は「3枚とも表」`, `3枚とも表になる確率 = 1/8`, `少なくとも1枚裏になる確率 = 1 − 1/8 = 7/8`];
+        const pool = ['1/8', '3/8', '5/8', '1/2'].filter(f => f !== answer);
+        choices = shuffle([answer, pool[0], pool[1], pool[2]]);
+      }
+    } else if (pat === 8) {
+      // 2つのさいころ：目の和の余事象（○以上／○以下になる確率）
+      const kind = randInt(0, 1);
+      if (kind === 0) {
+        const threshold = randInt(9, 11);
+        let below = 0;
+        for (let s = 2; s < threshold; s++) below += PROBABILITY_SUM_COUNTS_[s];
+        const targetCount = 36 - below;
+        answer = frac(targetCount, 36);
+        question = `大小2つのさいころを同時に投げるとき、出た目の数の和が${threshold}以上になる確率を求めなさい。`;
+        steps = [`和が${threshold}未満になるのは${below}通り`, `確率 = 1 − ${below}/36 = ${targetCount}/36 = ${answer}`];
+        const candidates8 = [frac(targetCount + 2, 36), frac(Math.max(1, targetCount - 2), 36), frac(36 - targetCount, 36), frac(targetCount, 38)];
+        return { category: 'probability', question, answer, choices: buildChoicesFromList(answer, candidates8), steps };
+      } else {
+        const threshold = randInt(3, 5);
+        let atMost = 0;
+        for (let s = 2; s <= threshold; s++) atMost += PROBABILITY_SUM_COUNTS_[s];
+        answer = frac(atMost, 36);
+        question = `大小2つのさいころを同時に投げるとき、出た目の数の和が${threshold}以下になる確率を求めなさい。`;
+        steps = [`和が${threshold}以下になるのは${atMost}通り`, `確率 = ${atMost}/36 = ${answer}`];
+        const candidates8b = [frac(atMost + 2, 36), frac(Math.max(1, atMost - 2), 36), frac(36 - atMost, 36), frac(atMost, 38)];
+        return { category: 'probability', question, answer, choices: buildChoicesFromList(answer, candidates8b), steps };
+      }
+    } else if (pat === 9) {
+      // 3枚の数字カードから2枚を並べてできる2けたの整数が偶数/奇数になる確率
+      let digits, evenDigits, oddDigits;
+      do {
+        const pool = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3);
+        digits = pool;
+        evenDigits = digits.filter(d => d % 2 === 0);
+        oddDigits = digits.filter(d => d % 2 !== 0);
+      } while (evenDigits.length === 0 || oddDigits.length === 0);
+      const askEven = randInt(0, 1) === 0;
+      const evenCount = evenDigits.length * 2;
+      const targetCount = askEven ? evenCount : 6 - evenCount;
+      answer = frac(targetCount, 6);
+      question = `${digits.join('、')}の3枚のカードから2枚を取り出して並べ、2けたの整数を作ります。できた整数が${askEven ? '偶数' : '奇数'}になる確率を求めなさい。`;
+      steps = [`できる整数は全部で6通り`, `一の位が${askEven ? '偶数' : '奇数'}になるのは${targetCount}通り`, `確率 = ${targetCount}/6 = ${answer}`];
+      const candidates9 = [frac(targetCount + 1, 6), frac(Math.max(1, targetCount - 1), 6), frac(6 - targetCount, 6), frac(targetCount, 8)];
+      return { category: 'probability', question, answer, choices: buildChoicesFromList(answer, candidates9), steps };
+    } else {
+      // n人から2人をくじで選ぶとき、特定の2人が選ばれる確率
+      const n = randInt(4, 6);
+      const totalPairs = (n * (n - 1)) / 2;
+      question = `${n}人の中から、2人の委員をくじ引きで選びます。特定の2人が選ばれる確率を求めなさい。`;
+      answer = frac(1, totalPairs);
+      steps = [`選び方は全部で ${n}×${n - 1}÷2 = ${totalPairs}通り`, `特定の2人が選ばれるのは1通り`, `確率 = 1/${totalPairs}`];
+      const candidates10 = [frac(1, totalPairs + 1), frac(1, totalPairs + 2), frac(2, totalPairs), frac(1, totalPairs - 1)];
+      return { category: 'probability', question, answer, choices: buildChoicesFromList(answer, candidates10), steps };
     }
     return { category: 'probability', question, answer, choices, steps };
   }
