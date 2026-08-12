@@ -2170,6 +2170,7 @@
     { id: 'circleSector6',   label: '円とおうぎ形（小6）',                 gen: genCircleSector6,   defaultOff: true , addedDate: '2026-08-11' },
     { id: 'speedFrac6',      label: '分数を含んだ速さの計算（小6）',       gen: genSpeedFrac6,      defaultOff: true , addedDate: '2026-08-12' },
     { id: 'workMeetingPassage6', label: '仕事算・旅人算・通過算（小6）',   gen: genWorkMeetingPassage6, defaultOff: true , addedDate: '2026-08-12' },
+    { id: 'mathSummary456',  label: '算数のまとめ（小4〜小6）',            gen: genMathSummary456,  defaultOff: true , addedDate: '2026-08-12' },
     { id: 'prismVolume6',    label: '角柱と円柱の体積（小6）',             gen: genPrismVolume6,    defaultOff: true },
     // ---------- 小3 ----------
     { id: 'mulWritten3',     label: 'かけ算の筆算（小3）',                 gen: genMulWritten3,     defaultOff: true },
@@ -6538,6 +6539,32 @@
     }
   }
 
+  // 算数のまとめ（小4〜小6）：既存の小4〜小6の各単元の出題ロジックをそのまま流用し、
+  // 出題のたびにランダムでどれか1つを選んで出す「ミックス」単元。中身は既存単元の
+  // 複製ではなく、実際にその単元で使われている生成関数を直接呼び出しているので、
+  // 各単元の最新の出題内容がそのまま反映される。
+  const MATH_SUMMARY_456_GENS_ = [
+    genRound4, genFourOps4, genDecAddSub4, genDecMul4, genFrac4, genUnit4, genMul3x2_4,
+    genDivRemainder4, genDiv2by1_4, genDiv2by2_4, genDiv3by1_4, genDiv3by2_4, genDiv3by3_4,
+    genRectArea4, genLargeNum4, genDecAddSubMixed4, genSetSquareAngle4, genTimesWordProblem4,
+    genDivWordProblem4, genDecWordProblem4, genFracType4, genSumDiffWordProblem4,
+    genDecStructure5, genEvenOdd5, genFracAddSub5, genDecFracAddSub5, genFracReduceConvert5,
+    genDecMul5, genDecDiv5, genDecDivRemainder5, genDecWordProblem5, genSpeedRate5, genSpeedApp5,
+    genUnitRateWordProblem5, genTimeFraction5, genPercent5, genPercentWordProblem5,
+    genPercentWordProblemAdvanced5, genFigureArea5, genPercentConvert5, genMultiples5,
+    genMultiplesDivisorsWordProblem5, genPolygonAngle5, genFracDecConvert5, genFracDecimal5,
+    genAverage5, genAverageWordProblemAdvanced5, genCircumference5, genFracMulDiv6,
+    genFracDecIntMulDiv6, genFracWordProblem6, genRatioWordProblem6, genRatio6, genScale6,
+    genDataValues6, genArrangeCombine6, genCircleArea6, genCircleSector6, genSpeedFrac6,
+    genWorkMeetingPassage6, genPrismVolume6,
+  ];
+  function genMathSummary456() {
+    const gen = MATH_SUMMARY_456_GENS_[randInt(0, MATH_SUMMARY_456_GENS_.length - 1)];
+    const q = gen();
+    q.category = 'mathSummary456';
+    return q;
+  }
+
   // 角柱と円柱の体積（小6、円周率は3.14）
   function genPrismVolume6() {
     const pat = randInt(0, 2);
@@ -9264,7 +9291,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
