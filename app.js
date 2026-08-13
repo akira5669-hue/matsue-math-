@@ -2584,9 +2584,17 @@
   }
 
   // 気体の性質（中1）：気体の調べ方(におい・水へのとけやすさ・助燃性・可燃性・リトマス紙・
-  // BTB溶液)、二酸化炭素と酸素の発生方法・性質の比較。
+  // BTB溶液)、二酸化炭素・酸素・水素・窒素・アンモニアの発生方法・性質の比較、
+  // 気体の集め方(水上置換法・上方置換法・下方置換法)、空気の組成、密度比較。
+  const GAS_DENSITY_TABLE_1_ = [
+    { name: '二酸化炭素', d: 1.53 },
+    { name: '酸素', d: 1.11 },
+    { name: '水素', d: 0.07 },
+    { name: '窒素', d: 0.97 },
+    { name: 'アンモニア', d: 0.60 },
+  ];
   function genGasProperties1() {
-    const pat = randInt(0, 18);
+    const pat = randInt(0, 35);
     let question, answer, choices, steps;
     if (pat === 0) {
       question = '二酸化炭素を発生させるには、石灰石(貝殻)に何を加えればよいですか。';
@@ -2678,11 +2686,103 @@
       answer = '気体の入ったペットボトルに少量の水を入れ、ふたをしてよくふる';
       choices = shuffle([answer, '気体のにおいを直接かぐ', '気体に火のついた線香を入れる', '気体に石灰水を入れずに放置する']);
       steps = ['気体が水にとけやすいかどうかは、気体の入ったペットボトルに水を入れてふり、ペットボトルがへこむかどうかで調べる'];
-    } else {
+    } else if (pat === 18) {
       question = '酸素は、空気と比べて密度はどうですか。';
       answer = '空気よりも少し大きい（重い）';
       choices = shuffle([answer, '空気よりもかなり大きい（重い）', '空気よりも小さい（軽い）', '空気とほぼ同じである']);
       steps = ['酸素は空気よりも密度が少し大きい(重い)気体である'];
+    } else if (pat === 19) {
+      question = '水素を発生させるには、亜鉛などの金属に何を加えればよいですか。';
+      answer = 'うすい塩酸';
+      choices = shuffle(['うすい塩酸', 'オキシドール(うすい過酸化水素水)', '石灰石', '食塩水']);
+      steps = ['水素は、亜鉛などの金属にうすい塩酸を加えると発生する'];
+    } else if (pat === 20) {
+      question = '水素は、物質の中でどのような性質を持ちますか。';
+      answer = '物質の中でいちばん密度が小さい';
+      choices = shuffle([answer, '物質の中でいちばん密度が大きい', '空気とほぼ同じ密度である', '水よりも重い']);
+      steps = ['水素は、すべての物質の中でいちばん密度が小さい気体である'];
+    } else if (pat === 21) {
+      question = '水素に火をつけるとどうなりますか。';
+      answer = '音を出して燃え、水ができる';
+      choices = shuffle([answer, '火が消える', '爆発して分解するだけで何もできない', '変化しない']);
+      steps = ['水素は空気中で火をつけると、音を出して燃え、水ができる'];
+    } else if (pat === 22) {
+      question = '空気の体積の約何%が窒素ですか。';
+      answer = '約78%';
+      choices = shuffle(['約78%', '約21%', '約4%', '約1%']);
+      steps = ['空気の組成は、窒素が約78%、酸素が約21%である'];
+    } else if (pat === 23) {
+      question = '空気の体積の約何%が酸素ですか。';
+      answer = '約21%';
+      choices = shuffle(['約21%', '約78%', '約50%', '約1%']);
+      steps = ['空気の組成は、窒素が約78%、酸素が約21%である'];
+    } else if (pat === 24) {
+      question = '窒素は、ふつうの温度でどのような性質を示しますか。';
+      answer = 'ほかの物質と反応しにくい(燃えない)';
+      choices = shuffle([answer, '非常に反応しやすく、よく燃える', '強い酸性を示す', '強いアルカリ性を示す']);
+      steps = ['窒素はふつうの温度では他の物質とほとんど反応せず、燃えたり物を燃やしたりしない'];
+    } else if (pat === 25) {
+      question = 'アンモニアを発生させるには、塩化アンモニウムに何を混ぜ合わせて加熱すればよいですか。';
+      answer = '水酸化カルシウム';
+      choices = shuffle(['水酸化カルシウム', '二酸化マンガン', '石灰石', '食塩']);
+      steps = ['塩化アンモニウムと水酸化カルシウムを混ぜ合わせて加熱すると、アンモニアが発生する'];
+    } else if (pat === 26) {
+      question = 'アンモニアのにおいの特徴として正しいものはどれですか。';
+      answer = '特有の刺激臭がある';
+      choices = shuffle([answer, '無臭である', '甘いにおいがする', 'こげたようなにおいがする']);
+      steps = ['アンモニアには特有の刺激臭がある'];
+    } else if (pat === 27) {
+      question = 'アンモニアは水に非常にとけやすく、空気より密度が小さい気体です。この気体を集めるのに適した方法はどれですか。';
+      answer = '上方置換法';
+      choices = shuffle(['上方置換法', '下方置換法', '水上置換法', 'ろ過']);
+      steps = ['水にとけやすく、空気より密度が小さい気体は上方置換法で集める'];
+    } else if (pat === 28) {
+      question = 'アンモニアが水にとけた水溶液(アンモニア水)は、何性を示しますか。';
+      answer = 'アルカリ性';
+      choices = shuffle(['アルカリ性', '酸性', '中性', 'どれでもない']);
+      steps = ['アンモニア水はアルカリ性を示す(フェノールフタレイン溶液を赤色に変える)'];
+    } else if (pat === 29) {
+      question = '水にとけにくい気体を集めるのに適した方法はどれですか。';
+      answer = '水上置換法';
+      choices = shuffle(['水上置換法', '上方置換法', '下方置換法', 'ろ過']);
+      steps = ['水にとけにくい気体は水上置換法で集める'];
+    } else if (pat === 30) {
+      question = '水にとけやすく、空気より密度が大きい気体を集めるのに適した方法はどれですか。';
+      answer = '下方置換法';
+      choices = shuffle(['下方置換法', '上方置換法', '水上置換法', 'ろ過']);
+      steps = ['水にとけやすく、空気より密度が大きい気体は下方置換法で集める'];
+    } else if (pat === 31) {
+      question = '水にとけやすく、空気より密度が小さい気体を集めるのに適した方法はどれですか。';
+      answer = '上方置換法';
+      choices = shuffle(['上方置換法', '下方置換法', '水上置換法', 'ろ過']);
+      steps = ['水にとけやすく、空気より密度が小さい気体は上方置換法で集める'];
+    } else if (pat === 32) {
+      const idx = randInt(0, GAS_DENSITY_TABLE_1_.length - 1);
+      const entry = GAS_DENSITY_TABLE_1_[idx];
+      question = `空気を1としたときの密度が約${entry.d}である気体はどれですか。`;
+      answer = entry.name;
+      const others = GAS_DENSITY_TABLE_1_.filter((_, i) => i !== idx).map(e => e.name);
+      choices = shuffle([answer, ...shuffle(others).slice(0, 3)]);
+      steps = [`${entry.name}は、空気を1としたときの密度が約${entry.d}である`];
+    } else if (pat === 33) {
+      const idx = randInt(0, GAS_DENSITY_TABLE_1_.length - 1);
+      const entry = GAS_DENSITY_TABLE_1_[idx];
+      question = `${entry.name}の、空気を1としたときの密度は約何ですか。`;
+      answer = entry.d.toFixed(2);
+      const otherVals = GAS_DENSITY_TABLE_1_.filter((_, i) => i !== idx).map(e => e.d.toFixed(2));
+      choices = buildChoicesFromList(answer, shuffle(otherVals).slice(0, 3));
+      steps = [`${entry.name}の、空気を1としたときの密度は約${entry.d}である`];
+    } else if (pat === 34) {
+      const others = GAS_DENSITY_TABLE_1_.filter(g => g.name !== '水素').map(g => g.name);
+      question = '次の気体のうち、空気を1としたときの密度がいちばん小さいものはどれですか。';
+      answer = '水素';
+      choices = shuffle(['水素', ...shuffle(others).slice(0, 3)]);
+      steps = ['水素は物質の中でいちばん密度が小さい気体である(空気を1とした密度比は約0.07)'];
+    } else {
+      question = '空気中に最も多くふくまれる気体は何ですか。';
+      answer = '窒素';
+      choices = shuffle(['窒素', '酸素', '二酸化炭素', 'アルゴン']);
+      steps = ['空気中には窒素が約78%、酸素が約21%ふくまれており、窒素が最も多い'];
     }
     return { category: 'gasProperties1', question, answer, choices, steps };
   }
