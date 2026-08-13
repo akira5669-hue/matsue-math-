@@ -245,6 +245,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved),
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -261,6 +262,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved),
       });
     }
   }
@@ -10456,6 +10458,12 @@
     scienceExp: (savedProgress && Number(savedProgress.scienceExp)) || (savedGame && Number(savedGame.scienceExp)) || 0,
     // 理科モードの連続正解数(端末セッション限定、あえて永続化しない)。
     scienceStreak: 0,
+    // 爆裂想像力クイズで正解済みの問題ID一覧(同じ問題で何度もHPを稼げないようにする)。
+    bakuretsuSolved: new Set((function () {
+      var saved = (savedProgress && Array.isArray(savedProgress.bakuretsuSolved)) ? savedProgress.bakuretsuSolved
+        : ((savedGame && Array.isArray(savedGame.bakuretsuSolved)) ? savedGame.bakuretsuSolved : null);
+      return saved || [];
+    })()),
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -10745,6 +10753,14 @@
     weeklyQuizConfirmYes: document.getElementById('weeklyQuizConfirmYes'),
     weeklyQuizConfirmNo: document.getElementById('weeklyQuizConfirmNo'),
     weeklyQuizResult: document.getElementById('weeklyQuizResult'),
+    bakuretsuQuizToggle: document.getElementById('bakuretsuQuizToggle'),
+    bakuretsuQuizPanel: document.getElementById('bakuretsuQuizPanel'),
+    bakuretsuQuizUnavailable: document.getElementById('bakuretsuQuizUnavailable'),
+    bakuretsuQuizUnavailableText: document.getElementById('bakuretsuQuizUnavailableText'),
+    bakuretsuQuizBody: document.getElementById('bakuretsuQuizBody'),
+    bakuretsuQuizQuestion: document.getElementById('bakuretsuQuizQuestion'),
+    bakuretsuQuizChoiceRow: document.getElementById('bakuretsuQuizChoiceRow'),
+    bakuretsuQuizResult: document.getElementById('bakuretsuQuizResult'),
     withdrawToggle: document.getElementById('withdrawToggle'),
     withdrawPanel: document.getElementById('withdrawPanel'),
     withdrawForm: document.getElementById('withdrawForm'),
@@ -12545,6 +12561,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -12694,6 +12711,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -12767,6 +12785,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -12955,6 +12974,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
 
     els.shopPanel.removeAttribute('hidden');
@@ -13005,6 +13025,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -13082,6 +13103,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -13461,6 +13483,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -13482,6 +13505,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -13546,6 +13570,7 @@
     els.worldPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
@@ -14037,6 +14062,88 @@
     els.weeklyQuizConfirm.hidden = true;
   }
 
+  /* ---------- 爆裂想像力クイズ ----------
+     実際にあった生徒の面白い間違いを当てるクイズ。サーバー側の週次管理は
+     使わず、問題バンク(BAKURETSU_QUIZ_QUESTIONS_)を随時追加していく。
+     1問ごとに、正解済みIDをstate.bakuretsuSolvedに記録し、同じ問題では
+     二度とHPを稼げないようにする。正解でHP+1、不正解はペナルティなし。 */
+  const BAKURETSU_QUIZ_QUESTIONS_ = [
+    {
+      id: 'mom_weight_ton',
+      question: 'ある生徒の宿題「④ お母さんの体重 42( )」。単位をまちがえて書いてしまったこの生徒、いったい何と書いたでしょう？（ヒント: お母さんが42トンに…！？）',
+      choices: ['g', 'kg', 't', 'mL'],
+      correctIndex: 2,
+      revealText: '正解は「t」！お母さんの体重が42トン(=42000kg)になってしまう、まさかの大爆裂の間違いでした🔥 正しい単位はもちろん「kg」です。',
+    },
+  ];
+
+  function toggleBakuretsuQuiz() {
+    var isHidden = els.bakuretsuQuizPanel.hasAttribute('hidden');
+    if (!isHidden) { els.bakuretsuQuizPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
+
+    els.bakuretsuQuizPanel.removeAttribute('hidden');
+    renderBakuretsuQuiz();
+  }
+
+  var bakuretsuQuizCurrent = null;
+
+  function renderBakuretsuQuiz() {
+    els.bakuretsuQuizResult.textContent = '';
+    var next = BAKURETSU_QUIZ_QUESTIONS_.find(function (q) { return !state.bakuretsuSolved.has(q.id); });
+    if (!next) {
+      bakuretsuQuizCurrent = null;
+      els.bakuretsuQuizBody.hidden = true;
+      els.bakuretsuQuizUnavailable.hidden = false;
+      els.bakuretsuQuizUnavailableText.textContent = '今ある問題は全部クリア済みです！また新しい問題が追加されるのを待っててね🔥';
+      return;
+    }
+    bakuretsuQuizCurrent = next;
+    els.bakuretsuQuizUnavailable.hidden = true;
+    els.bakuretsuQuizBody.hidden = false;
+    els.bakuretsuQuizQuestion.textContent = next.question;
+    els.bakuretsuQuizChoiceRow.innerHTML = next.choices.map(function (choice, idx) {
+      return '<button type="button" class="test-photo-tier-btn" data-idx="' + idx + '">' + escHtml(choice) + '</button>';
+    }).join('');
+    Array.from(els.bakuretsuQuizChoiceRow.children).forEach(function (btn) {
+      btn.addEventListener('click', function () { handleBakuretsuQuizChoice(Number(btn.dataset.idx)); });
+    });
+  }
+
+  function handleBakuretsuQuizChoice(idx) {
+    if (!bakuretsuQuizCurrent) return;
+    var q = bakuretsuQuizCurrent;
+    Array.from(els.bakuretsuQuizChoiceRow.children).forEach(function (btn) { btn.disabled = true; });
+    var isCorrect = idx === q.correctIndex;
+    if (isCorrect) {
+      var alreadySolved = state.bakuretsuSolved.has(q.id);
+      state.bakuretsuSolved.add(q.id);
+      if (!alreadySolved) {
+        state.hp = (Number(state.hp) || 0) + 1;
+      }
+      saveGameState(state);
+      updateGameHud();
+      els.bakuretsuQuizResult.textContent = '🎉 正解！' + (alreadySolved ? '' : ' +1HP獲得！') + ' ' + q.revealText;
+      var session = loadSession();
+      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    } else {
+      els.bakuretsuQuizResult.textContent = '😅 ちがうかな…もう一度考えてみて！';
+      window.setTimeout(function () {
+        Array.from(els.bakuretsuQuizChoiceRow.children).forEach(function (btn) { btn.disabled = false; });
+      }, 900);
+    }
+  }
+
   /* ---------- 退会 ---------- */
 
   var withdrawSubmitting = false;
@@ -14053,6 +14160,7 @@
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     hideFieldError(els.withdrawError);
@@ -14207,6 +14315,7 @@
   els.weeklyQuizSpecialBannerBtn.addEventListener('click', toggleWeeklyQuiz);
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
+  if (els.bakuretsuQuizToggle) els.bakuretsuQuizToggle.addEventListener('click', toggleBakuretsuQuiz);
   els.withdrawToggle.addEventListener('click', toggleWithdraw);
   els.withdrawSubmitBtn.addEventListener('click', handleWithdrawSubmitClick);
   els.withdrawConfirmYes.addEventListener('click', submitWithdraw);

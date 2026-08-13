@@ -199,6 +199,7 @@
         <button id="grantToggle" class="ghost-btn" type="button" hidden>🎁アイテム付与</button>
         <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
         <button id="weeklyQuizToggle" class="ghost-btn" type="button">🧠週替わり重要ワード</button>
+        <button id="bakuretsuQuizToggle" class="ghost-btn" type="button">💥爆裂想像力クイズ</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
         <button id="withdrawToggle" class="ghost-btn withdraw-toggle-btn" type="button">退会</button>
       </div>
@@ -415,6 +416,19 @@
         </div>
       </div>
       <p class="test-photo-result" id="weeklyQuizResult"></p>
+    </section>
+
+    <section class="weekly-quiz-panel" id="bakuretsuQuizPanel" hidden>
+      <h3 class="history-title">💥 爆裂想像力クイズ</h3>
+      <p class="test-photo-hint">実際にあった生徒の面白い間違いを当てるクイズだよ！正解すると+1HP！何度でも挑戦できるけど、HPがもらえるのは1問につき最初の1回だけ。</p>
+      <div id="bakuretsuQuizUnavailable" hidden>
+        <p class="test-photo-hint" id="bakuretsuQuizUnavailableText"></p>
+      </div>
+      <div id="bakuretsuQuizBody" hidden>
+        <p class="weekly-quiz-question" id="bakuretsuQuizQuestion"></p>
+        <div class="test-photo-tier-row" id="bakuretsuQuizChoiceRow"></div>
+      </div>
+      <p class="test-photo-result" id="bakuretsuQuizResult"></p>
     </section>
 
     <section class="withdraw-panel" id="withdrawPanel" hidden>
