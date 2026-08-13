@@ -2277,6 +2277,7 @@
     { id: 'stateChange1', label: '物質の状態変化（中1）', gen: genStateChange1, addedDate: '2026-08-13' },
     { id: 'meltingBoiling1', label: '状態変化が起こるときの温度とその利用（中1）', gen: genMeltingBoiling1, addedDate: '2026-08-13' },
     { id: 'distillation1', label: '蒸留（中1）', gen: genDistillation1, addedDate: '2026-08-13' },
+    { id: 'cellBiology2', label: '生物と細胞（中2）', gen: genCellBiology2, addedDate: '2026-08-13' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -3243,6 +3244,122 @@
       steps = ['出てきた気体を冷やすことで再び液体(蒸留液)になり、集めることができる'];
     }
     return { category: 'distillation1', question, answer, choices, steps };
+  }
+
+  // 生物と細胞（中2）：植物・動物の細胞のつくり(核・細胞膜・細胞質・葉緑体・細胞壁・液胞)、
+  // 単細胞生物・多細胞生物、細胞→組織→器官→個体の体制、細胞の呼吸。
+  const SINGLE_CELL_ORGANISMS_2_ = ['アメーバ', 'ミカヅキモ', 'ゾウリムシ'];
+  const MULTI_CELL_ORGANISMS_2_ = ['ミジンコ', 'ツバキ', 'ニワトリ', 'オオカナダモ'];
+  function genCellBiology2() {
+    const pat = randInt(0, 20);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = 'プレパラートを作るとき、カバーガラスはどのようにかぶせますか。';
+      answer = '気泡が入らないように、はしからゆっくりかぶせる';
+      choices = shuffle([answer, '中央から一気にかぶせる', '気泡が入るようにすばやくかぶせる', 'カバーガラスは使わない']);
+      steps = ['プレパラートを作るときは、気泡が入らないように、カバーガラスをはしからゆっくりかぶせる'];
+    } else if (pat === 1) {
+      question = '植物の細胞を観察するとき、酢酸カーミン液(または酢酸オルセイン液)を使うと、何が赤く染まりますか。';
+      answer = '核';
+      choices = shuffle(['核', '細胞壁', '葉緑体', '細胞膜']);
+      steps = ['酢酸カーミン液や酢酸オルセイン液は、核を赤く染める染色液である'];
+    } else if (pat === 2) {
+      question = '生物のからだに見られる、小さな部屋のようなつくりを何といいますか。';
+      answer = '細胞';
+      choices = shuffle(['細胞', '組織', '器官', '個体']);
+      steps = ['生物のからだに見られる小さな部屋のようなつくりを細胞という'];
+    } else if (pat === 3) {
+      question = '植物の細胞で、染色液によって赤く染まる、丸い部分を何といいますか。';
+      answer = '核';
+      choices = shuffle(['核', '液胞', '葉緑体', '細胞質']);
+      steps = ['染色液によって赤く染まる丸い部分を核という'];
+    } else if (pat === 4) {
+      question = '植物の細胞質の中にある、たくさんの緑色の粒を何といいますか。';
+      answer = '葉緑体';
+      choices = shuffle(['葉緑体', '液胞', '核', '細胞壁']);
+      steps = ['植物の細胞質に見られる緑色の粒を葉緑体という(光合成を行う)'];
+    } else if (pat === 5) {
+      question = '細胞質の外側をつつむ、無色のうすいふくろ状のつくりを何といいますか。';
+      answer = '細胞膜';
+      choices = shuffle(['細胞膜', '細胞壁', '液胞', '核膜']);
+      steps = ['細胞質の外側をつつむ無色のうすいふくろ状のつくりを細胞膜という'];
+    } else if (pat === 6) {
+      question = '植物の細胞で、細胞膜の外側にあり、細胞の形を維持してからだを支えるはたらきをするつくりを何といいますか。';
+      answer = '細胞壁';
+      choices = shuffle(['細胞壁', '細胞膜', '液胞', '葉緑体']);
+      steps = ['細胞膜の外側にあり、細胞の形を維持しからだを支えるつくりを細胞壁という'];
+    } else if (pat === 7) {
+      question = '植物の細胞に見られる、物質や水が入っているつくりを何といいますか。';
+      answer = '液胞';
+      choices = shuffle(['液胞', '葉緑体', '核', '細胞壁']);
+      steps = ['植物の細胞に見られ、物質や水が入っているつくりを液胞という'];
+    } else if (pat === 8) {
+      question = '植物の細胞と動物の細胞に共通して見られるつくりはどれですか。';
+      answer = '核・細胞膜・細胞質';
+      choices = shuffle([answer, '葉緑体・細胞壁・液胞', '葉緑体だけ', '細胞壁だけ']);
+      steps = ['核・細胞膜・細胞質は、植物の細胞と動物の細胞に共通して見られるつくりである'];
+    } else if (pat === 9) {
+      question = '次のうち、植物の細胞には見られるが、動物の細胞には見られないつくりはどれですか。';
+      answer = '細胞壁';
+      choices = shuffle(['細胞壁', '核', '細胞膜', '細胞質']);
+      steps = ['細胞壁は植物の細胞に特徴的なつくりで、動物の細胞には見られない'];
+    } else if (pat === 10) {
+      question = 'からだが1つの細胞だけでできている生物を何といいますか。';
+      answer = '単細胞生物';
+      choices = shuffle(['単細胞生物', '多細胞生物', '原核生物', '無脊椎動物']);
+      steps = ['からだが1つの細胞だけでできている生物を単細胞生物という'];
+    } else if (pat === 11) {
+      question = 'からだが多数の細胞からできている生物を何といいますか。';
+      answer = '多細胞生物';
+      choices = shuffle(['多細胞生物', '単細胞生物', '原核生物', '脊椎動物']);
+      steps = ['からだが多数の細胞からできている生物を多細胞生物という'];
+    } else if (pat === 12) {
+      question = '形やはたらきが同じ細胞が集まってできた、まとまりを何といいますか。';
+      answer = '組織';
+      choices = shuffle(['組織', '器官', '個体', '細胞膜']);
+      steps = ['形やはたらきが同じ細胞が集まってできたまとまりを組織という'];
+    } else if (pat === 13) {
+      question = 'いくつかの組織が集まって、特定のはたらきをする部分を何といいますか。';
+      answer = '器官';
+      choices = shuffle(['器官', '組織', '個体', '細胞']);
+      steps = ['いくつかの組織が集まって特定のはたらきをする部分を器官という'];
+    } else if (pat === 14) {
+      question = 'いくつかの器官が集まって、1つのまとまったからだをつくったものを何といいますか。';
+      answer = '個体';
+      choices = shuffle(['個体', '器官', '組織', '群体']);
+      steps = ['いくつかの器官が集まって1つのまとまったからだをつくったものを個体という'];
+    } else if (pat === 15) {
+      question = '多細胞生物のからだは、どのような順番でできていますか。';
+      answer = '細胞→組織→器官→個体';
+      choices = shuffle([answer, '細胞→器官→組織→個体', '組織→細胞→器官→個体', '個体→器官→組織→細胞']);
+      steps = ['多細胞生物のからだは、細胞→組織→器官→個体の順にできている'];
+    } else if (pat === 16) {
+      question = 'ゾウリムシなどの単細胞生物で、食物をとりこむところを何といいますか。';
+      answer = '食胞';
+      choices = shuffle(['食胞', '収縮胞', '核', '細胞膜']);
+      steps = ['ゾウリムシなどの単細胞生物で、食物をとりこむところを食胞という'];
+    } else if (pat === 17) {
+      question = 'ゾウリムシなどの単細胞生物にある、体内の余分な水などを排出するはたらきをするつくりを何といいますか。';
+      answer = '収縮胞';
+      choices = shuffle(['収縮胞', '食胞', '核', '細胞壁']);
+      steps = ['体内の余分な水などを排出するつくりを収縮胞という'];
+    } else if (pat === 18) {
+      answer = SINGLE_CELL_ORGANISMS_2_[randInt(0, SINGLE_CELL_ORGANISMS_2_.length - 1)];
+      question = '次のうち、単細胞生物はどれですか。';
+      choices = shuffle([answer, ...shuffle(MULTI_CELL_ORGANISMS_2_).slice(0, 3)]);
+      steps = [`${answer}は、からだが1つの細胞でできている単細胞生物である`];
+    } else if (pat === 19) {
+      answer = MULTI_CELL_ORGANISMS_2_[randInt(0, MULTI_CELL_ORGANISMS_2_.length - 1)];
+      question = '次のうち、多細胞生物はどれですか。';
+      choices = shuffle([answer, ...shuffle(SINGLE_CELL_ORGANISMS_2_)]);
+      steps = [`${answer}は、からだが多数の細胞でできている多細胞生物である`];
+    } else {
+      question = '細胞の内部で、酸素を使って養分を分解し、生きるためのエネルギーをとり出すはたらきを何といいますか。';
+      answer = '細胞の呼吸(細胞呼吸)';
+      choices = shuffle(['細胞の呼吸(細胞呼吸)', '光合成', '蒸散', '消化']);
+      steps = ['細胞内で酸素を使って養分を分解し、エネルギーをとり出すはたらきを細胞の呼吸(細胞呼吸)という'];
+    }
+    return { category: 'cellBiology2', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
