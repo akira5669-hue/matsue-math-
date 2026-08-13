@@ -10939,7 +10939,7 @@
   // (通常の文章題HP付与は小学生+10/中学生+20だが、この単元は指定により小学生でも+20)。
   const CIRCLE_SECTOR6_FIXED_HP_GAIN = 20;
   // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選とは独立して、文章題の
-  // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でスットボケの剣を
+  // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でAKRの杖を
   // ゲットできる(斬鉄剣と同様、確実ではなく確率ドロップ)。
   const SUTOBOKE_CHANCE = 0.05;
   const SUTOBOKE_ITEM_DROP_CHANCE = 1 / 10;
@@ -10974,7 +10974,7 @@
     { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
     { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
     { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
-    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）' },
+    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '<img src="images/akr_staff.png" alt="">', name: 'AKRの杖', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた杖（10分の1の確率）' },
     { id: SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA, icon: '👀', name: 'ゴーマジの目力', desc: 'ごーまじを撃破して手に入れた特別なアイテム（5分の1の確率）' },
   ];
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
@@ -11974,7 +11974,7 @@
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
         if (!state.items.includes(SPECIAL_ITEM_SUTOBOKE_SWORD) && Math.random() < SUTOBOKE_ITEM_DROP_CHANCE) {
           state.items.push(SPECIAL_ITEM_SUTOBOKE_SWORD);
-          sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">⚔️ スペシャルアイテム「スットボケの剣」を手に入れた！⚔️</div>`;
+          sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">🌀 スペシャルアイテム「AKRの杖」を手に入れた！🌀</div>`;
         } else {
           sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div>`;
         }
