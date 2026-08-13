@@ -2279,6 +2279,7 @@
     { id: 'distillation1', label: '蒸留（中1）', gen: genDistillation1, addedDate: '2026-08-13' },
     { id: 'cellBiology2', label: '生物と細胞（中2）', gen: genCellBiology2, addedDate: '2026-08-13' },
     { id: 'photosynthesis2', label: '葉と光合成（中2）', gen: genPhotosynthesis2, addedDate: '2026-08-13' },
+    { id: 'plantWater2', label: '植物と水（中2）', gen: genPlantWater2, addedDate: '2026-08-13' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -3440,6 +3441,106 @@
       steps = ['光が当たらないと光合成が行われず、呼吸によって二酸化炭素が出されるため、BTB溶液は黄色になる'];
     }
     return { category: 'photosynthesis2', question, answer, choices, steps };
+  }
+
+  // 植物と水（中2）：吸水・蒸散・気孔の用語、蒸散が葉の裏側で盛んなこと、
+  // 道管・師管・維管束のはたらきと位置、双子葉類/単子葉類の維管束の並び方、
+  // 主根・側根・ひげ根・根毛の用語。
+  function genPlantWater2() {
+    const pat = randInt(0, 17);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '植物が水を根から吸い上げることを何といいますか。';
+      answer = '吸水';
+      choices = shuffle(['吸水', '蒸散', '光合成', '呼吸']);
+      steps = ['植物が根から水を吸い上げることを吸水という'];
+    } else if (pat === 1) {
+      question = '植物のからだから、水が水蒸気として出ていくことを何といいますか。';
+      answer = '蒸散';
+      choices = shuffle(['蒸散', '吸水', '光合成', '呼吸']);
+      steps = ['植物のからだから水が水蒸気として出ていくことを蒸散という'];
+    } else if (pat === 2) {
+      question = '気孔は、その開閉によって何を調節していますか。';
+      answer = '蒸散(水蒸気の出入り)';
+      choices = shuffle([answer, '光合成の量だけ', '根からの吸水量だけ', '種子の数']);
+      steps = ['気孔は開閉することで蒸散(水蒸気の出入り)を調節している'];
+    } else if (pat === 3) {
+      question = '植物の蒸散は、主に葉のどこから行われますか。';
+      answer = '気孔';
+      choices = shuffle(['気孔', '道管', '師管', '形成層']);
+      steps = ['蒸散は主に葉の気孔から行われる'];
+    } else if (pat === 4) {
+      question = '葉の表面にワセリンをぬると、その面からの蒸散はどうなりますか。';
+      answer = '防がれる(できなくなる)';
+      choices = shuffle([answer, 'さらに盛んになる', '変化しない', '吸水が盛んになる']);
+      steps = ['ワセリンをぬると気孔がふさがれるため、その面からの蒸散が防がれる'];
+    } else if (pat === 5) {
+      question = '植物の葉で、蒸散がより盛んに行われるのは、表側と裏側のどちらですか。';
+      answer = '裏側';
+      choices = shuffle(['裏側', '表側', 'どちらも同じ', 'どちらも行われない']);
+      steps = ['一般に、葉の裏側には気孔が多く分布しているため、裏側からの蒸散が盛んである'];
+    } else if (pat === 6) {
+      question = '根から吸収した水や肥料分が通る管を何といいますか。';
+      answer = '道管';
+      choices = shuffle(['道管', '師管', '気孔', '維管束']);
+      steps = ['根から吸収した水や肥料分が通る管を道管という'];
+    } else if (pat === 7) {
+      question = '葉でつくられた養分が、水にとける形に変えられたあとに通る管を何といいますか。';
+      answer = '師管';
+      choices = shuffle(['師管', '道管', '気孔', '形成層']);
+      steps = ['葉でつくられた養分が水にとける形に変えられたあと通る管を師管という'];
+    } else if (pat === 8) {
+      question = '道管と師管が集まった束を何といいますか。';
+      answer = '維管束';
+      choices = shuffle(['維管束', '形成層', '気孔', '根毛']);
+      steps = ['道管と師管が集まった束を維管束という'];
+    } else if (pat === 9) {
+      question = '植物に色水を吸わせると、茎のどの管が染まりますか。';
+      answer = '道管';
+      choices = shuffle(['道管', '師管', '気孔', '形成層']);
+      steps = ['色水は根から吸収されて道管を通るため、道管が染まる'];
+    } else if (pat === 10) {
+      question = '双子葉類の茎の断面で、道管は師管に対してどちら側にありますか。';
+      answer = '内側(中心に近い側)';
+      choices = shuffle([answer, '外側(表皮に近い側)', '同じ位置', '決まった位置はない']);
+      steps = ['双子葉類の茎では、維管束の中で道管が内側、師管が外側に並んでいる'];
+    } else if (pat === 11) {
+      question = 'ヒマワリのような双子葉類の茎で、維管束はどのように並んでいますか。';
+      answer = '輪のように並んでいる';
+      choices = shuffle([answer, '茎全体に散らばっている', '中心に1つだけある', '外側だけに集まっている']);
+      steps = ['双子葉類の茎では、維管束が輪のように並んでいる'];
+    } else if (pat === 12) {
+      question = 'トウモロコシのような単子葉類の茎で、維管束はどのように並んでいますか。';
+      answer = '茎全体に散らばっている';
+      choices = shuffle([answer, '輪のように並んでいる', '中心に1つだけある', '外側だけに集まっている']);
+      steps = ['単子葉類の茎では、維管束が茎全体に散らばっている'];
+    } else if (pat === 13) {
+      question = '双子葉類に見られる、中心の太い根を何といいますか。';
+      answer = '主根';
+      choices = shuffle(['主根', '側根', 'ひげ根', '根毛']);
+      steps = ['双子葉類の中心にある太い根を主根という'];
+    } else if (pat === 14) {
+      question = '双子葉類で、主根から枝分かれして伸びる細い根を何といいますか。';
+      answer = '側根';
+      choices = shuffle(['側根', '主根', 'ひげ根', '根毛']);
+      steps = ['主根から枝分かれして伸びる細い根を側根という'];
+    } else if (pat === 15) {
+      question = 'トウモロコシなどの単子葉類に見られる、たくさんの細い根を何といいますか。';
+      answer = 'ひげ根';
+      choices = shuffle(['ひげ根', '主根', '側根', '根毛']);
+      steps = ['単子葉類に見られる、太さがほぼ同じ多数の細い根をひげ根という'];
+    } else if (pat === 16) {
+      question = '根の先端近くに見られる、綿毛のような小さな毛を何といいますか。';
+      answer = '根毛';
+      choices = shuffle(['根毛', '側根', '主根', '維管束']);
+      steps = ['根の先端近くに見られる綿毛のような小さな毛を根毛という'];
+    } else {
+      question = '根毛には、どのようなはたらきがありますか。';
+      answer = '根の表面積を広げ、水や養分を効率よく吸収する';
+      choices = shuffle([answer, '光合成を行う', 'デンプンをつくる', '二酸化炭素を出す']);
+      steps = ['根毛は根の表面積を広げ、水や養分を効率よく吸収するはたらきをもつ'];
+    }
+    return { category: 'plantWater2', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
