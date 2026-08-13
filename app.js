@@ -2324,11 +2324,17 @@
     { name: '銀', d: 10.5 },
     { name: '鉛', d: 11.3 },
   ];
+  const NONMAGNETIC_METALS_1_ = ['銅', 'アルミニウム', '金', '銀', '鉛'];
+  const NONMETAL_EXAMPLES_1_ = ['プラスチック', 'ガラス', '紙'];
+  const BALANCE_DESCRIPTIONS_1_ = [
+    { desc: '水平なところに置き、針が左右に等しく振れるかを確認してから使う。分銅と皿にのせた物のつり合いで、質量をはかることができる。', ans: '上皿てんびん' },
+    { desc: '水平なところに置き、何ものせていないときの表示を0.0gや0.00gなどにしてから、質量をはかる。', ans: '電子てんびん' },
+  ];
 
   // 物の調べ方（中1）：密度の計算(質量・体積・密度の相互変換、密度表からの
   // 物質の特定)と、金属の性質・展性延性などの知識問題。
   function genMatterInvestigation1() {
-    const pat = randInt(0, 5);
+    const pat = randInt(0, 12);
     let question, answer, wrongs, steps, choices;
     if (pat === 0) {
       const idx = randInt(0, DENSITY_TABLE_1_.length - 1);
@@ -2379,7 +2385,7 @@
       choices = shuffle([FAKE_METAL, ...shuffle(METAL_PROPS).slice(0, 3)]);
       steps = ['金属は電気を通す・熱を伝える・金属光沢がある・展性延性がある、という性質を共通してもつ', '磁石につくのは鉄など一部の金属だけなので、金属に共通する性質ではない'];
       return { category: 'matterInvestigation1', question, answer, choices, steps };
-    } else {
+    } else if (pat === 5) {
       const VOCAB = [
         { term: '展性', q: '金属をたたいて薄く広げることができる性質を何といいますか。' },
         { term: '延性', q: '金属を引っ張って細くのばすことができる性質を何といいますか。' },
@@ -2390,6 +2396,79 @@
       const otherTerms = ['展性', '延性', '金属光沢', '磁性'].filter(t => t !== pick.term);
       choices = shuffle([pick.term, ...otherTerms]);
       steps = [`「${pick.q}」の答えは「${answer}」`];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 6) {
+      const isTai = Math.random() < 0.5;
+      if (isTai) {
+        question = 'いすやコップのように、形や大きさ、使いみちに着目したときの、物の名前を何といいますか。';
+        answer = '物体';
+        choices = shuffle(['物体', '物質', '質量', '密度']);
+        steps = ['形や大きさ、使いみちなど、物の外観に注目したときの分類を物体という'];
+      } else {
+        question = '物体をつくっている材料に着目したときの、物の名前を何といいますか。';
+        answer = '物質';
+        choices = shuffle(['物質', '物体', '混合物', '単体']);
+        steps = ['物をつくっている材料に注目したときの分類を物質という'];
+      }
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 7) {
+      const isMagnetic = Math.random() < 0.5;
+      if (isMagnetic) {
+        question = '次の金属のうち、磁石につくものはどれですか。';
+        answer = '鉄';
+        choices = shuffle(['鉄', ...shuffle(NONMAGNETIC_METALS_1_).slice(0, 3)]);
+        steps = ['金属の中で、磁石につくのは鉄などごく一部だけである'];
+      } else {
+        answer = NONMAGNETIC_METALS_1_[randInt(0, NONMAGNETIC_METALS_1_.length - 1)];
+        question = '次の金属のうち、磁石につかないものはどれですか。';
+        const others = NONMAGNETIC_METALS_1_.filter(m => m !== answer);
+        choices = shuffle([answer, '鉄', ...shuffle(others).slice(0, 2)]);
+        steps = [`${answer}は磁石につかない`, '鉄は磁石につくが、銅・アルミニウム・金・銀・鉛などは磁石につかない'];
+      }
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 8) {
+      answer = NONMETAL_EXAMPLES_1_[randInt(0, NONMETAL_EXAMPLES_1_.length - 1)];
+      question = '次のうち、非金属であるものはどれですか。';
+      const metalNames = shuffle(DENSITY_TABLE_1_.map(e => e.name)).slice(0, 3);
+      choices = shuffle([answer, ...metalNames]);
+      steps = [`${answer}は金属ではないので非金属`, '非金属は電気を通しにくく、磁石にもつかない'];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 9) {
+      const LIQUIDS_ = [{ name: '水', d: 1.00 }, { name: '水銀', d: 13.6 }];
+      const liquid = LIQUIDS_[randInt(0, 1)];
+      const obj = DENSITY_TABLE_1_[randInt(0, DENSITY_TABLE_1_.length - 1)];
+      answer = obj.d > liquid.d ? '沈む' : '浮く';
+      const opposite = answer === '沈む' ? '浮く' : '沈む';
+      question = `密度${obj.d}g/cm³の${obj.name}を、密度${liquid.d}g/cm³の${liquid.name}に入れると、${obj.name}はどうなりますか。`;
+      choices = shuffle([answer, opposite, '完全にとけてなくなる', '液体の中間の高さで静止する']);
+      steps = [`物体の密度が液体の密度より大きいときは沈み、小さいときは浮く`, `${obj.name}の密度(${obj.d}g/cm³)は${liquid.name}の密度(${liquid.d}g/cm³)より${obj.d > liquid.d ? '大きい' : '小さい'}ので、${answer}`];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 10) {
+      const isEyeQ = Math.random() < 0.5;
+      if (isEyeQ) {
+        question = 'メスシリンダーの目盛りを読むときは、目の位置をどこに合わせますか。';
+        answer = '液面と同じ高さ（水平な位置）';
+        choices = shuffle([answer, 'メスシリンダーの真上', '液面より少し低い位置', '液面より少し高い位置']);
+        steps = ['目盛りは、液面と同じ高さから水平に見て読む'];
+      } else {
+        question = 'メスシリンダーの目盛りを読むとき、最小目盛りの何分の1まで目分量で読みますか。';
+        answer = '10分の1（1/10）';
+        choices = shuffle([answer, '2分の1（1/2）', '100分の1（1/100）', '5分の1（1/5）']);
+        steps = ['メスシリンダーは、最小目盛りの1/10まで目分量で読み取る'];
+      }
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else if (pat === 11) {
+      const pick = BALANCE_DESCRIPTIONS_1_[randInt(0, 1)];
+      question = `次の特徴を持つ実験器具は何ですか。「${pick.desc}」`;
+      answer = pick.ans;
+      choices = shuffle([pick.ans, ...['上皿てんびん', '電子てんびん', 'メスシリンダー', '温度計'].filter(c => c !== pick.ans).slice(0, 3)]);
+      steps = [`「${pick.desc}」は${answer}の使い方`];
+      return { category: 'matterInvestigation1', question, answer, choices, steps };
+    } else {
+      question = '密度の単位として使われるものはどれですか。';
+      answer = 'g/cm³';
+      choices = shuffle(['g/cm³', 'cm³/g', 'g/cm', 'cm/g']);
+      steps = ['密度の単位は、グラム毎立方センチメートル(g/cm³)である'];
       return { category: 'matterInvestigation1', question, answer, choices, steps };
     }
   }
