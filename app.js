@@ -10939,7 +10939,7 @@
   // (通常の文章題HP付与は小学生+10/中学生+20だが、この単元は指定により小学生でも+20)。
   const CIRCLE_SECTOR6_FIXED_HP_GAIN = 20;
   // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選とは独立して、文章題の
-  // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でAKRの杖を
+  // 問題が表示されるたびに5%の確率で登場する。正解すると10分の1の確率でスットボケの剣を
   // ゲットできる(斬鉄剣と同様、確実ではなく確率ドロップ)。
   const SUTOBOKE_CHANCE = 0.05;
   const SUTOBOKE_ITEM_DROP_CHANCE = 1 / 10;
@@ -10968,14 +10968,16 @@
   const SPECIAL_ITEM_NATTO_GOKORO = 'nattoGokoro';
   const SPECIAL_ITEM_SUTOBOKE_SWORD = 'sutobokeSword';
   const SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA = 'goumajiMedamajikara';
+  const SPECIAL_ITEM_AKR_STAFF = 'akrStaff';
   const SPECIAL_ITEMS = [
     { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
     { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
     { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
     { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
     { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
-    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '<img src="images/akr_staff.png" alt="">', name: 'AKRの杖', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた杖（10分の1の確率）' },
+    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）' },
     { id: SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA, icon: '👀', name: 'ゴーマジの目力', desc: 'ごーまじを撃破して手に入れた特別なアイテム（5分の1の確率）' },
+    { id: SPECIAL_ITEM_AKR_STAFF, icon: '<img src="images/akr_staff.png" alt="">', name: 'AKRの杖', desc: 'ゾンビAKRを撃破して手に入れた不思議な杖' },
   ];
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
@@ -11974,7 +11976,7 @@
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
         if (!state.items.includes(SPECIAL_ITEM_SUTOBOKE_SWORD) && Math.random() < SUTOBOKE_ITEM_DROP_CHANCE) {
           state.items.push(SPECIAL_ITEM_SUTOBOKE_SWORD);
-          sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">🌀 スペシャルアイテム「AKRの杖」を手に入れた！🌀</div>`;
+          sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">⚔️ スペシャルアイテム「スットボケの剣」を手に入れた！⚔️</div>`;
         } else {
           sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div>`;
         }
@@ -12238,6 +12240,9 @@
       } else if (wasRareType === 'goumaji' && !state.items.includes(SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA) && Math.random() < GOUMAJI_ITEM_DROP_CHANCE) {
         state.items.push(SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA);
         itemGainedHtml = '<div class="item-gain-banner">👀 スペシャルアイテム「ゴーマジの目力」を手に入れた！👀</div>';
+      } else if (wasRareType === 'zombie' && !state.items.includes(SPECIAL_ITEM_AKR_STAFF)) {
+        state.items.push(SPECIAL_ITEM_AKR_STAFF);
+        itemGainedHtml = '<div class="item-gain-banner">🌀 スペシャルアイテム「AKRの杖」を手に入れた！🌀</div>';
       }
 
       let collectionGainedHtml = '';
@@ -14674,17 +14679,18 @@
   }
 
   /* ---------- 爆裂想像力クイズ ----------
-     実際にあった生徒の面白い間違いを当てるクイズ。サーバー側の週次管理は
-     使わず、問題バンク(BAKURETSU_QUIZ_QUESTIONS_)を随時追加していく。
-     1問ごとに、正解済みIDをstate.bakuretsuSolvedに記録し、同じ問題では
-     二度とHPを稼げないようにする。正解でHP+1、不正解はペナルティなし。 */
+     「こんな間違いをしてしまいそう」を想像して当てる、笑える間違い探しクイズ
+     (実話ではなく創作)。サーバー側の週次管理は使わず、問題バンク
+     (BAKURETSU_QUIZ_QUESTIONS_)を随時追加していく。1問ごとに、正解済みIDを
+     state.bakuretsuSolvedに記録し、同じ問題では二度とHPを稼げないように
+     する。正解でHP+1、不正解はペナルティなし。 */
   const BAKURETSU_QUIZ_QUESTIONS_ = [
     {
       id: 'mom_weight_ton',
-      question: 'ある生徒の宿題「④ お母さんの体重 42( )」。単位をまちがえて書いてしまったこの生徒、いったい何と書いたでしょう？（ヒント: お母さんが42トンに…！？）',
+      question: '宿題の問題「④ お母さんの体重 42( )」。もし単位を書きまちがえるとしたら、どんな単位を書いてしまいそう？（ヒント: お母さんが42トンに…！？）',
       choices: ['g', 'kg', 't', 'mL'],
       correctIndex: 2,
-      revealText: '正解は「t」！お母さんの体重が42トン(=42000kg)になってしまう、まさかの大爆裂の間違いでした🔥 正しい単位はもちろん「kg」です。',
+      revealText: '正解は「t」！お母さんの体重が42トン(=42000kg)になってしまう、まさかの大爆裂の間違い🔥 正しい単位はもちろん「kg」です。',
     },
   ];
 
