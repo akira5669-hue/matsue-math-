@@ -2791,7 +2791,7 @@
   // 質量パーセント濃度の計算(3方向)。
   const DISSOLVE1_SOLUTE_ITEMS_ = ['食塩', '砂糖', 'ミョウバン'];
   function genDissolve1() {
-    const pat = randInt(0, 7);
+    const pat = randInt(0, 11);
     let question, answer, choices, steps, wrongs;
     if (pat === 0) {
       question = '水溶液にとけている物質を何といいますか。';
@@ -2839,7 +2839,7 @@
       wrongs = [soluteMass + 2, soluteMass + 4, Math.max(1, soluteMass - 2), Math.max(1, soluteMass - 4)].filter(v => v !== answer);
       steps = [`溶質の質量 = 溶液の質量 × 濃度 ÷ 100`, `= ${solutionMass} × ${concentration} ÷ 100 = ${answer}g`];
       return { category: 'dissolve1', question, answer, choices: buildChoices(answer, wrongs), steps };
-    } else {
+    } else if (pat === 7) {
       const item = DISSOLVE1_SOLUTE_ITEMS_[randInt(0, DISSOLVE1_SOLUTE_ITEMS_.length - 1)];
       const concentration = 5 * randInt(1, 8);
       const solutionMass = 20 * randInt(3, 20);
@@ -2850,6 +2850,26 @@
       wrongs = [solventMass + 5, solventMass + 10, Math.max(1, solventMass - 5), Math.max(1, solventMass - 10)].filter(v => v !== answer);
       steps = [`溶液の質量 = 溶質の質量 ÷ (濃度 ÷ 100) = ${soluteMass} ÷ ${concentration / 100} = ${solutionMass}g`, `水の質量 = ${solutionMass} − ${soluteMass} = ${answer}g`];
       return { category: 'dissolve1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 8) {
+      question = 'ろ過をするとき、ろ紙はどこに密着させますか。';
+      answer = 'ろうと';
+      choices = shuffle(['ろうと', 'ビーカーの壁', 'ガラス棒', '三脚']);
+      steps = ['ろ過をするときは、ろ紙を水でぬらしてろうとに密着させてから使う'];
+    } else if (pat === 9) {
+      question = 'ろ過で液体をろうとに注ぐとき、正しい方法はどれですか。';
+      answer = 'ガラス棒を伝わらせて注ぐ';
+      choices = shuffle([answer, 'ろうとに直接勢いよく注ぐ', 'ガラス棒を使わず、ビーカーから直接すべて一気に注ぐ', 'ろ紙の外側から注ぐ']);
+      steps = ['ろ過で液体を注ぐときは、ガラス棒を伝わらせて静かに注ぐ'];
+    } else if (pat === 10) {
+      question = 'ろ過をするとき、ろうとの脚(あし)はどのようにしますか。';
+      answer = '脚の長い方をビーカーの壁につける';
+      choices = shuffle([answer, '脚をビーカーの底につける', '脚をビーカーには触れさせない', '脚を上に向ける']);
+      steps = ['ろうとの脚の長い方を、ビーカーの内側の壁につけるようにする'];
+    } else {
+      question = 'ろ過によって、水溶液中の何と何を分けることができますか。';
+      answer = 'とけずに残った固体と、水溶液(ろ液)';
+      choices = shuffle([answer, '水と水素', '酸性の部分とアルカリ性の部分', '固体の色のちがい']);
+      steps = ['ろ過は、液体にとけずに残っている固体と、液体(ろ液)を分ける操作である'];
     }
     return { category: 'dissolve1', question, answer, choices, steps };
   }
@@ -2860,7 +2880,7 @@
   const SOLUBILITY1_KNO3_ = [13.3, 22.0, 31.6, 63.9, 109.2, 168.8, 244.8];
   function solubility1Round1_(x) { return Math.round(x * 10) / 10; }
   function genSolubility1() {
-    const pat = randInt(0, 8);
+    const pat = randInt(0, 12);
     let question, answer, choices, steps, wrongs;
     if (pat === 0) {
       question = '規則正しい形をした固体を何といいますか。';
@@ -2907,7 +2927,7 @@
       wrongs = [solubility1Round1_(diff + 5), solubility1Round1_(diff + 10), Math.max(0.1, solubility1Round1_(diff - 5)), Math.max(0.1, solubility1Round1_(diff - 10))].filter(v => v !== answer);
       steps = [`出てくる結晶の質量 = ${t1}℃の溶解度 − ${t2}℃の溶解度`, `= ${SOLUBILITY1_KNO3_[t1idx]} − ${SOLUBILITY1_KNO3_[t2idx]} = ${answer}g`];
       return { category: 'solubility1', question, answer, choices: buildChoices(answer, wrongs), steps };
-    } else {
+    } else if (pat === 8) {
       let t1idx, t2idx;
       do { t1idx = randInt(0, SOLUBILITY1_TEMPS_.length - 1); t2idx = randInt(0, SOLUBILITY1_TEMPS_.length - 1); } while (t1idx <= t2idx);
       const t1 = SOLUBILITY1_TEMPS_[t1idx], t2 = SOLUBILITY1_TEMPS_[t2idx];
@@ -2920,6 +2940,26 @@
       wrongs = [solubility1Round1_(crystalMass + 5), solubility1Round1_(crystalMass + 10), Math.max(0.1, solubility1Round1_(crystalMass - 5)), Math.max(0.1, solubility1Round1_(crystalMass - 10))].filter(v => v !== answer);
       steps = [`水100gあたりの結晶量 = ${SOLUBILITY1_KNO3_[t1idx]} − ${SOLUBILITY1_KNO3_[t2idx]} = ${diffPer100}g`, `水${waterAmount}gでは ${diffPer100} × ${waterAmount}/100 = ${answer}g`];
       return { category: 'solubility1', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 9) {
+      question = '結晶の形について、正しく説明しているものはどれですか。';
+      answer = '物質によって決まった、規則正しい特有の形をしている';
+      choices = shuffle([answer, '物質の種類に関係なく、すべて同じ形になる', '結晶にはこれといって決まった形はない', '温度によって毎回ちがう形になる']);
+      steps = ['結晶の形は物質によって決まっており、物質ごとに特有の規則正しい形をしている'];
+    } else if (pat === 10) {
+      question = '冷やして結晶を出した水溶液から、結晶をとり出すために行う操作は何ですか。';
+      answer = 'ろ過';
+      choices = shuffle(['ろ過', '蒸留', '中和', '電気分解']);
+      steps = ['冷やして出てきた結晶は、ろ過によって水溶液と分けてとり出す'];
+    } else if (pat === 11) {
+      question = '食塩や硝酸カリウムを水にとかす実験で、水溶液の温度を50℃まで上げた後に行う操作はどれですか。';
+      answer = '水で冷やす';
+      choices = shuffle(['水で冷やす', 'ろ過する', '蒸発させる', 'さらに加熱を続ける']);
+      steps = ['水溶液の温度を50℃まで上げてとかした後、水で冷やしてようすを観察する'];
+    } else {
+      question = '食塩(塩化ナトリウム)の水溶液を冷やしても、結晶がほとんど出てこないのはなぜですか。';
+      answer = '食塩は、温度による溶解度の変化が小さいため';
+      choices = shuffle([answer, '食塩は水にとけないため', '食塩は温度が下がると溶解度が大きくなるため', '食塩は結晶をつくらない物質だから']);
+      steps = ['食塩は温度による溶解度の変化が小さいため、冷やしてもあまり結晶が出てこない'];
     }
     return { category: 'solubility1', question, answer, choices, steps };
   }
