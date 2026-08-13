@@ -2274,6 +2274,7 @@
     { id: 'gasProperties1', label: '気体の性質（中1）', gen: genGasProperties1, addedDate: '2026-08-13' },
     { id: 'stateChange1', label: '物質の状態変化（中1）', gen: genStateChange1, addedDate: '2026-08-13' },
     { id: 'meltingBoiling1', label: '状態変化が起こるときの温度とその利用（中1）', gen: genMeltingBoiling1, addedDate: '2026-08-13' },
+    { id: 'distillation1', label: '蒸留（中1）', gen: genDistillation1, addedDate: '2026-08-13' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -3156,6 +3157,90 @@
       steps = ['どの物質も、融点は沸点よりも低い(固体→液体→気体の順に温度が上がっていく)'];
     }
     return { category: 'meltingBoiling1', question, answer, choices, steps };
+  }
+
+  // 蒸留（中1）：純粋な物質・混合物の用語と沸点の性質、水とエタノールの混合物を
+  // 蒸留する実験(沸点のちがいで先にエタノールが多く出てくること)、蒸留装置の扱い方。
+  const PURE_SUBSTANCES_1_ = ['鉄', '水', 'エタノール', '塩化ナトリウム', '二酸化炭素'];
+  const MIXTURES_1_ = ['食塩水', '空気', '炭酸水', 'アンモニア水'];
+  function genDistillation1() {
+    const pat = randInt(0, 12);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '1種類の物質だけでできているものを何といいますか。';
+      answer = '純粋な物質(純物質)';
+      choices = shuffle(['純粋な物質(純物質)', '混合物', '化合物', '単体']);
+      steps = ['1種類の物質だけでできているものを純粋な物質(純物質)という'];
+    } else if (pat === 1) {
+      question = '2種類以上の物質が混ざり合ったものを何といいますか。';
+      answer = '混合物';
+      choices = shuffle(['混合物', '純粋な物質(純物質)', '単体', '化合物']);
+      steps = ['2種類以上の物質が混ざり合ったものを混合物という'];
+    } else if (pat === 2) {
+      question = '純粋な物質(純物質)の沸点について、正しいものはどれですか。';
+      answer = '決まった一定の値を示す';
+      choices = shuffle([answer, '決まった値を示さない', '物質の量によって変わる', '常に100℃である']);
+      steps = ['純粋な物質は、沸点が物質ごとに決まった一定の値を示す'];
+    } else if (pat === 3) {
+      question = '混合物の沸点について、正しいものはどれですか。';
+      answer = '決まった値を示さない(混ざる割合によって変わる)';
+      choices = shuffle([answer, '決まった一定の値を示す', '必ず100℃になる', '常に0℃になる']);
+      steps = ['混合物の沸点は決まった値を示さず、混ざっている物質の割合によって変化する'];
+    } else if (pat === 4) {
+      const askPure = Math.random() < 0.5;
+      if (askPure) {
+        answer = PURE_SUBSTANCES_1_[randInt(0, PURE_SUBSTANCES_1_.length - 1)];
+        question = '次のうち、純粋な物質(純物質)はどれですか。';
+        choices = shuffle([answer, ...shuffle(MIXTURES_1_).slice(0, 3)]);
+        steps = [`${answer}は1種類の物質だけでできている純粋な物質である`];
+      } else {
+        answer = MIXTURES_1_[randInt(0, MIXTURES_1_.length - 1)];
+        question = '次のうち、混合物はどれですか。';
+        choices = shuffle([answer, ...shuffle(PURE_SUBSTANCES_1_).slice(0, 3)]);
+        steps = [`${answer}は2種類以上の物質が混ざり合った混合物である`];
+      }
+    } else if (pat === 5) {
+      question = '液体を熱して沸騰させ、出てくる蒸気(気体)を冷やして再び液体にしてとり出す方法を何といいますか。';
+      answer = '蒸留';
+      choices = shuffle(['蒸留', 'ろ過', '再結晶', '中和']);
+      steps = ['液体を熱して沸騰させ、出てくる蒸気を冷やして再び液体としてとり出す操作を蒸留という'];
+    } else if (pat === 6) {
+      question = '蒸留は、物質の何のちがいを利用して、混合物中の物質を分ける方法ですか。';
+      answer = '沸点のちがい';
+      choices = shuffle(['沸点のちがい', '色のちがい', '質量のちがい', '密度のちがい']);
+      steps = ['蒸留は、物質による沸点のちがいを利用して、混合物中の物質をそれぞれ分けてとり出す方法である'];
+    } else if (pat === 7) {
+      question = '水とエタノールの混合物を熱すると、はじめに出てくる気体には、どちらの物質が多くふくまれていますか。';
+      answer = 'エタノール';
+      choices = shuffle(['エタノール', '水', 'どちらも同じ量', 'どちらもふくまれない']);
+      steps = ['エタノールの沸点(78℃)は水の沸点(100℃)より低いため、はじめにエタノールを多くふくむ気体が出てくる'];
+    } else if (pat === 8) {
+      question = '水とエタノールの混合物を熱し続けると、後から出てくる気体には、どちらの物質が多くふくまれるようになりますか。';
+      answer = '水';
+      choices = shuffle(['水', 'エタノール', 'どちらも同じ量', 'どちらもふくまれない']);
+      steps = ['加熱を続けると、沸点の高い水を多くふくむ気体が出てくるようになる'];
+    } else if (pat === 9) {
+      question = '水とエタノールの混合物を蒸留する実験で、最初に集めた液体に火をつけると、どうなると考えられますか。';
+      answer = 'エタノールを多くふくむため、よく燃える';
+      choices = shuffle([answer, '水を多くふくむため、燃えない', 'どちらの液体も同じくらい燃える', '燃やすと爆発する']);
+      steps = ['最初に集めた液体はエタノールを多くふくむため、火をつけるとよく燃える'];
+    } else if (pat === 10) {
+      question = '枝つきフラスコを使って蒸留するとき、温度計の球部(先端)はどこに合わせますか。';
+      answer = '枝の分かれ目の高さ';
+      choices = shuffle([answer, 'フラスコの底', '液面の中', 'フラスコの一番上']);
+      steps = ['出てくる気体の温度をはかるため、温度計の球部は枝の分かれ目の高さに合わせる'];
+    } else if (pat === 11) {
+      question = '蒸留の実験で、枝つきフラスコに沸騰石を入れるのはなぜですか。';
+      answer = '急に沸騰する(突沸)のを防ぐため';
+      choices = shuffle([answer, '液体の温度を下げるため', 'においの成分を消すため', '液体の色を変えるため']);
+      steps = ['沸騰石を入れないと急に沸騰する(突沸)ことがあり危険なため、必ず沸騰石を入れる'];
+    } else {
+      question = '蒸留の実験で、出てきた気体を集める試験管を、水などで冷やすのはなぜですか。';
+      answer = '出てきた気体を冷やして液体にするため';
+      choices = shuffle([answer, '気体のにおいを消すため', '試験管を割れにくくするため', '液体の色を変えるため']);
+      steps = ['出てきた気体を冷やすことで再び液体(蒸留液)になり、集めることができる'];
+    }
+    return { category: 'distillation1', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
