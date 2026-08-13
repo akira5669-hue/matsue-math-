@@ -2273,6 +2273,7 @@
     { id: 'solubility1', label: '溶解度と再結晶（中1）', gen: genSolubility1, addedDate: '2026-08-12' },
     { id: 'gasProperties1', label: '気体の性質（中1）', gen: genGasProperties1, addedDate: '2026-08-13' },
     { id: 'stateChange1', label: '物質の状態変化（中1）', gen: genStateChange1, addedDate: '2026-08-13' },
+    { id: 'meltingBoiling1', label: '状態変化が起こるときの温度とその利用（中1）', gen: genMeltingBoiling1, addedDate: '2026-08-13' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -3052,6 +3053,109 @@
       steps = ['水は例外的に、固体(氷)になると体積が大きくなるため、液体(水)の方が密度が大きい'];
     }
     return { category: 'stateChange1', question, answer, choices, steps };
+  }
+
+  // 状態変化が起こるときの温度とその利用（中1）：融点・沸点の用語、純粋な物質は
+  // 融点・沸点が一定であること、沸騰石の役割、物質ごとの融点・沸点表を使った状態判定。
+  const MP_BP_TABLE_1_ = [
+    { name: '鉄', mp: 1535, bp: 2750 },
+    { name: '銅', mp: 1083, bp: 2567 },
+    { name: '金', mp: 1064, bp: 2807 },
+    { name: 'アルミニウム', mp: 660, bp: 2467 },
+    { name: '水銀', mp: -39, bp: 357 },
+    { name: '塩化ナトリウム', mp: 801, bp: 1413 },
+    { name: '水', mp: 0, bp: 100 },
+    { name: 'エタノール', mp: -115, bp: 78 },
+    { name: '酸素', mp: -218, bp: -183 },
+    { name: '窒素', mp: -210, bp: -196 },
+    { name: 'パルミチン酸', mp: 63, bp: 360 },
+    { name: 'ナフタレン', mp: 81, bp: 218 },
+  ];
+  function genMeltingBoiling1() {
+    const pat = randInt(0, 12);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '固体が液体に変わるときの温度を何といいますか。';
+      answer = '融点';
+      choices = shuffle(['融点', '沸点', '凝固点', '沸騰']);
+      steps = ['固体が液体に変わるときの温度を融点という'];
+    } else if (pat === 1) {
+      question = '液体が沸騰して気体に変わるときの温度を何といいますか。';
+      answer = '沸点';
+      choices = shuffle(['沸点', '融点', '凝固点', '融解']);
+      steps = ['液体が沸騰して気体に変わるときの温度を沸点という'];
+    } else if (pat === 2) {
+      question = '純粋な物質の融点や沸点は、物質の量を変えるとどうなりますか。';
+      answer = '変わらない(物質の種類によって決まっている)';
+      choices = shuffle([answer, '量が多いほど高くなる', '量が多いほど低くなる', '量によって毎回変わる']);
+      steps = ['純粋な物質の融点・沸点は、物質の量に関係なく、物質の種類によって決まっている一定の値である'];
+    } else if (pat === 3) {
+      question = '純粋な物質が融解している間(固体と液体が混ざっている間)、温度はどうなっていますか。';
+      answer = '一定である(変化しない)';
+      choices = shuffle([answer, '上がり続ける', '下がり続ける', '急激に上下する']);
+      steps = ['純粋な物質が融解している間は、温度は融点のまま一定である'];
+    } else if (pat === 4) {
+      question = '純粋な物質が沸騰している間、温度はどうなっていますか。';
+      answer = '一定である(変化しない)';
+      choices = shuffle([answer, '上がり続ける', '下がり続ける', '急激に上下する']);
+      steps = ['純粋な物質が沸騰している間は、温度は沸点のまま一定である'];
+    } else if (pat === 5) {
+      question = '液体を加熱して沸騰させる実験で、沸騰石を入れるのはなぜですか。';
+      answer = '急に沸騰する(突沸)のを防ぐため';
+      choices = shuffle([answer, '液体の温度を下げるため', '液体の色を変えるため', '液体の量を増やすため']);
+      steps = ['沸騰石を入れないと、急に沸騰する(突沸)ことがあり危険なため、沸騰石を入れて防ぐ'];
+    } else if (pat === 6) {
+      question = '水(純粋な水)の融点は何℃ですか。';
+      answer = '0℃';
+      choices = shuffle(['0℃', '100℃', '-10℃', '50℃']);
+      steps = ['水の融点は0℃である'];
+    } else if (pat === 7) {
+      question = '水(純粋な水)の沸点は何℃ですか。';
+      answer = '100℃';
+      choices = shuffle(['100℃', '0℃', '80℃', '120℃']);
+      steps = ['水の沸点は100℃である'];
+    } else if (pat === 8) {
+      question = 'エタノールの沸点は、約何℃ですか。';
+      answer = '約78℃';
+      choices = shuffle(['約78℃', '約100℃', '約50℃', '約115℃']);
+      steps = ['エタノールの沸点は約78℃である'];
+    } else if (pat === 9) {
+      const entry = MP_BP_TABLE_1_[randInt(0, MP_BP_TABLE_1_.length - 1)];
+      const stateRoll = randInt(0, 2);
+      let temp, answerState;
+      if (stateRoll === 0) {
+        temp = entry.mp - randInt(5, 50);
+        answerState = '固体';
+      } else if (stateRoll === 1) {
+        const lo = entry.mp + 1, hi = entry.bp - 1;
+        temp = lo + randInt(0, Math.max(0, hi - lo));
+        answerState = '液体';
+      } else {
+        temp = entry.bp + randInt(5, 50);
+        answerState = '気体';
+      }
+      question = `${entry.name}(融点${entry.mp}℃、沸点${entry.bp}℃)は、${temp}℃のときどのような状態ですか。`;
+      answer = answerState;
+      const REAL_STATES = ['固体', '液体', '気体'];
+      choices = shuffle([...REAL_STATES, '固体と液体が混ざった状態']);
+      steps = [`融点は${entry.mp}℃、沸点は${entry.bp}℃なので、${temp}℃では${answer}である`];
+    } else if (pat === 10) {
+      question = '純粋な物質と異なり、混合物(2種類以上の物質が混ざったもの)を加熱すると、温度はどうなりますか。';
+      answer = '状態変化している間も温度が変化し続ける(一定にならない)';
+      choices = shuffle([answer, '状態変化している間は温度が一定になる', '沸点だけは物質と同じように一定になる', '融点だけは物質と同じように一定になる']);
+      steps = ['混合物では、成分によって融点・沸点がちがうため、状態変化している間も温度が変化し続け、一定にならない'];
+    } else if (pat === 11) {
+      question = '物質を加熱したときの温度変化のグラフで、温度が変化せず一定になっている(グラフが水平になっている)区間は、何を表していますか。';
+      answer = '状態変化が起こっている間(固体と液体、または液体と気体が混ざっている間)';
+      choices = shuffle([answer, '物質がまだ全く熱せられていない状態', '物質の温度が下がり続けている状態', '実験が失敗した部分']);
+      steps = ['温度が一定になっている区間は、固体⇔液体や液体⇔気体の状態変化が起こっている間である'];
+    } else {
+      question = 'ある物質の融点と沸点の関係として、正しいものはどれですか。';
+      answer = '融点は沸点より低い';
+      choices = shuffle([answer, '融点は沸点より高い', '融点と沸点は常に等しい', '融点と沸点に決まった関係はない']);
+      steps = ['どの物質も、融点は沸点よりも低い(固体→液体→気体の順に温度が上がっていく)'];
+    }
+    return { category: 'meltingBoiling1', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
