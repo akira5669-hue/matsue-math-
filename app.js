@@ -15127,6 +15127,7 @@
     },
     {
       id: 'game_time_limit',
+      isNew: true,
       question: '夜おそくまでゲームに夢中な男の子。カーテンの外はもう星空で、お父さんとお母さんも「まだかな…」と心配顔。この子が直すべきことは何でしょう？',
       choices: ['ゲーム機を2台買う', 'ゲーム機を破壊する', '時間を決めてゲームをする', 'もっと遅くまでゲームをする'],
       correctIndex: 2,
@@ -15168,7 +15169,8 @@
     bakuretsuQuizCurrent = next;
     els.bakuretsuQuizUnavailable.hidden = true;
     els.bakuretsuQuizBody.hidden = false;
-    els.bakuretsuQuizQuestion.textContent = next.question;
+    var newBadgeHtml = next.isNew ? '<span class="rare-badge">🆕NEW</span>' : '';
+    els.bakuretsuQuizQuestion.innerHTML = newBadgeHtml + escHtml(next.question);
     els.bakuretsuQuizChoiceRow.innerHTML = next.choices.map(function (choice, idx) {
       return '<button type="button" class="test-photo-tier-btn" data-idx="' + idx + '">' + escHtml(choice) + '</button>';
     }).join('');
