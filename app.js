@@ -2285,6 +2285,7 @@
     { id: 'stimulusResponse2', label: '刺激と反応（中2）', gen: genStimulusResponse2, addedDate: '2026-08-13' },
     { id: 'growthReproduction3', label: '生物の成長と生殖（中3）', gen: genGrowthReproduction3, addedDate: '2026-08-14' },
     { id: 'evolution3', label: '生物の多様性と進化（中3）', gen: genEvolution3, addedDate: '2026-08-14' },
+    { id: 'motion3', label: '物体の運動（中3）', gen: genMotion3, addedDate: '2026-08-14' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -4077,6 +4078,112 @@
       steps = ['中間的な特徴をもつ生物の化石は、生物が進化してきたことの証拠と考えられる'];
     }
     return { category: 'evolution3', question, answer, choices, steps };
+  }
+
+  // 物体の運動（中3）：記録タイマーの打点(東日本50Hz/西日本60Hz)、平均の速さ・
+  // 瞬間の速さ・等速直線運動の用語、おし出す力と速さ・移動距離の関係、
+  // 速さの単位(m/s・km/h)の意味と換算、テープの間隔から運動のようすを読み取る。
+  function genMotion3() {
+    const pat = randInt(0, 17);
+    let question, answer, choices, steps, wrongs;
+    if (pat === 0) {
+      question = '物体の運動を、一定時間ごとの打点としてテープに記録する装置を何といいますか。';
+      answer = '記録タイマー';
+      choices = shuffle(['記録タイマー', 'ストップウォッチ', 'ストロボスコープ', '速度計']);
+      steps = ['物体の運動を一定時間ごとの打点としてテープに記録する装置を記録タイマーという'];
+    } else if (pat === 1) {
+      question = '記録タイマーは、周波数が50Hzである東日本では、1秒間に何回打点しますか。';
+      answer = '50回';
+      choices = shuffle(['50回', '60回', '100回', '10回']);
+      steps = ['東日本の交流の周波数は50Hzなので、記録タイマーは1秒間に50回打点する'];
+    } else if (pat === 2) {
+      question = '記録タイマーは、周波数が60Hzである西日本では、1秒間に何回打点しますか。';
+      answer = '60回';
+      choices = shuffle(['60回', '50回', '100回', '10回']);
+      steps = ['西日本の交流の周波数は60Hzなので、記録タイマーは1秒間に60回打点する'];
+    } else if (pat === 3) {
+      question = '東日本(50Hz)の記録タイマーを使うとき、0.1秒間の移動距離を求めるには、何打点ごとにテープを区切ればよいですか。';
+      answer = '5打点ごと';
+      choices = shuffle(['5打点ごと', '6打点ごと', '10打点ごと', '1打点ごと']);
+      steps = ['50Hzでは1秒間に50打点、つまり0.1秒間に5打点するので、5打点ごとに区切る'];
+    } else if (pat === 4) {
+      question = '西日本(60Hz)の記録タイマーを使うとき、0.1秒間の移動距離を求めるには、何打点ごとにテープを区切ればよいですか。';
+      answer = '6打点ごと';
+      choices = shuffle(['6打点ごと', '5打点ごと', '10打点ごと', '1打点ごと']);
+      steps = ['60Hzでは1秒間に60打点、つまり0.1秒間に6打点するので、6打点ごとに区切る'];
+    } else if (pat === 5) {
+      question = 'ある距離を移動するのにかかった時間で、移動した距離を割って求める速さを何といいますか。';
+      answer = '平均の速さ';
+      choices = shuffle(['平均の速さ', '瞬間の速さ', '等速直線運動', '加速度']);
+      steps = ['移動距離を、かかった時間で割って求める速さを平均の速さという'];
+    } else if (pat === 6) {
+      question = 'ごく短い時間に移動した距離をもとに求めた、その一瞬の速さを何といいますか。';
+      answer = '瞬間の速さ';
+      choices = shuffle(['瞬間の速さ', '平均の速さ', '等速直線運動', '相対速度']);
+      steps = ['ごく短い時間の移動距離をもとに求めた、その一瞬の速さを瞬間の速さという'];
+    } else if (pat === 7) {
+      question = '一直線上を一定の速さで進む運動を何といいますか。';
+      answer = '等速直線運動';
+      choices = shuffle(['等速直線運動', '加速度運動', '自由落下運動', '等速円運動']);
+      steps = ['一直線上を一定の速さで進む運動を等速直線運動という'];
+    } else if (pat === 8) {
+      question = '等速直線運動では、移動距離は時間に対してどのような関係にありますか。';
+      answer = '比例する';
+      choices = shuffle(['比例する', '反比例する', '関係がない', '2乗に比例する']);
+      steps = ['等速直線運動では、移動距離は時間に比例する'];
+    } else if (pat === 9) {
+      question = '台車をおし出す力を強めると、記録テープの0.1秒ごとの移動距離はどうなりますか。';
+      answer = '大きくなる(長くなる)';
+      choices = shuffle(['大きくなる(長くなる)', '小さくなる(短くなる)', '変わらない', '0になる']);
+      steps = ['おし出す力を強めると、台車の速さが増すため0.1秒ごとの移動距離は大きくなる'];
+    } else if (pat === 10) {
+      question = '台車をおし出す力を強めるほど、台車の速さはどうなりますか。';
+      answer = '大きくなる';
+      choices = shuffle(['大きくなる', '小さくなる', '変わらない', '0になる']);
+      steps = ['おし出す力を強めるほど、台車の速さは大きくなる'];
+    } else if (pat === 11) {
+      question = '速さの単位「m/s」は、何を表していますか。';
+      answer = '1秒間に何m進むかを表す速さ';
+      choices = shuffle([answer, '1分間に何m進むかを表す速さ', '1時間に何m進むかを表す速さ', '1mを進むのにかかる時間']);
+      steps = ['m/s(メートル毎秒)は、1秒間に何m進むかを表す速さの単位である'];
+    } else if (pat === 12) {
+      question = '速さの単位「km/h」は、何を表していますか。';
+      answer = '1時間に何km進むかを表す速さ';
+      choices = shuffle([answer, '1秒間に何km進むかを表す速さ', '1分間に何km進むかを表す速さ', '1kmを進むのにかかる時間']);
+      steps = ['km/h(キロメートル毎時)は、1時間に何km進むかを表す速さの単位である'];
+    } else if (pat === 13) {
+      const ms = randInt(2, 50);
+      const kmh = Math.round(ms * 3.6 * 10) / 10;
+      question = `秒速${ms}mは、時速何kmですか。（小数第1位まで求めなさい）`;
+      answer = kmh;
+      wrongs = [Math.round((kmh + 3.6) * 10) / 10, Math.round((kmh + 7.2) * 10) / 10, Math.max(0.1, Math.round((kmh - 3.6) * 10) / 10), Math.max(0.1, Math.round((kmh - 7.2) * 10) / 10)].filter(v => v !== answer);
+      steps = [`km/hに直すには×3.6する`, `${ms} × 3.6 = ${answer}km/h`];
+      return { category: 'motion3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 14) {
+      const ms = randInt(2, 50);
+      const kmh = Math.round(ms * 3.6 * 10) / 10;
+      question = `時速${kmh}kmは、秒速何mですか。`;
+      answer = ms;
+      wrongs = [ms + 2, ms + 4, Math.max(1, ms - 2), Math.max(1, ms - 4)].filter(v => v !== answer);
+      steps = [`m/sに直すには÷3.6する`, `${kmh} ÷ 3.6 = ${answer}m/s`];
+      return { category: 'motion3', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 15) {
+      question = '一定時間ごとに物体を撮影したストロボ写真から、何がわかりますか。';
+      answer = '運動の速さと向きが、刻々とどのように変化しているか';
+      choices = shuffle([answer, '物体の色だけ', '物体の温度だけ', '物体の質量だけ']);
+      steps = ['一定時間ごとに撮影したストロボ写真から、運動の速さと向きの変化がわかる'];
+    } else if (pat === 16) {
+      question = '記録テープの打点の間隔が、常に同じ(均等)であるとき、その運動は何であると考えられますか。';
+      answer = '等速直線運動';
+      choices = shuffle(['等速直線運動', '加速度運動', '減速運動', '静止']);
+      steps = ['打点の間隔が均等であれば、一定時間ごとの移動距離が変わらないので等速直線運動と考えられる'];
+    } else {
+      question = '記録テープの打点の間隔が、だんだん広くなっているとき、物体の運動はどうなっていると考えられますか。';
+      answer = 'だんだん速くなっている(加速している)';
+      choices = shuffle([answer, 'だんだん遅くなっている', '一定の速さで動いている', '静止している']);
+      steps = ['打点の間隔がだんだん広くなっているのは、一定時間ごとの移動距離が増えている、つまり速くなっているということである'];
+    }
+    return { category: 'motion3', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
