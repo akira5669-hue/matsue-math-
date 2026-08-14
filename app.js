@@ -10301,8 +10301,10 @@
   // 大・中・小3つの円が同じ直線上で内接する「三日月型」の複合図形。
   // 大円の半径R = 中円の半径r2 + 小円の半径r1 になるようにすることで、
   // 周の長さ・面積のどちらも綺麗な整数×πになる。
+  // 中円・小円はどちらも大円の中の「くり抜き穴」(白い部分)であり、互いに
+  // 外接して重ならないため、色がついた部分はその両方を大円から引いた残り。
   // 周の長さ = 2π(R+r1+r2) = 2π(2R) = 4πR
-  // 面積 = πR² − πr2² + πr1²
+  // 面積 = πR² − πr2² − πr1² = π(2×r1×r2)
   function genPlaneFigureComposite1() {
     const askPerimeter = Math.random() < 0.5;
     const r1 = randInt(1, 5);
@@ -10316,7 +10318,7 @@
     const diagramSvg = `<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto 8px">`
       + `<circle cx="70" cy="70" r="60" fill="#f2b84b" stroke="#1c2127" stroke-width="1.5"/>`
       + `<circle cx="${medCenterX.toFixed(1)}" cy="70" r="${scaledR2.toFixed(1)}" fill="#e8f4f8" stroke="#1c2127" stroke-width="1.2"/>`
-      + `<circle cx="${smallCenterX.toFixed(1)}" cy="70" r="${scaledR1.toFixed(1)}" fill="#f2b84b" stroke="#1c2127" stroke-width="1.2"/>`
+      + `<circle cx="${smallCenterX.toFixed(1)}" cy="70" r="${scaledR1.toFixed(1)}" fill="#e8f4f8" stroke="#1c2127" stroke-width="1.2"/>`
       + `<text x="70" y="20" font-size="11" text-anchor="middle">半径${R}cm</text>`
       + `<text x="${medCenterX.toFixed(1)}" y="${(70 - scaledR2 - 6).toFixed(1)}" font-size="10" text-anchor="middle">${r2}cm</text>`
       + `<text x="${smallCenterX.toFixed(1)}" y="${(70 - scaledR1 - 6).toFixed(1)}" font-size="10" text-anchor="middle">${r1}cm</text>`
@@ -10330,12 +10332,12 @@
       const steps = [`大円の周 = 2π×${R} = ${2 * R}π`, `中円の周 = 2π×${r2} = ${2 * r2}π`, `小円の周 = 2π×${r1} = ${2 * r1}π`, `合計 = ${2 * R}π+${2 * r2}π+${2 * r1}π = ${perim}π cm`];
       return { category: 'planeFigureComposite1', question, questionHtml, answer, choices, steps };
     } else {
-      const area = R * R - r2 * r2 + r1 * r1;
+      const area = R * R - r2 * r2 - r1 * r1;
       const question = `右の図のように、半径${R}cmの大きい円の中に、半径${r2}cmと半径${r1}cmの円がぴったり並んで入っています（3つの円は同じ直線上で接しています）。色がついた部分の面積を求めなさい。`;
       const questionHtml = diagramSvg + `<span style="display:block">${question}</span>`;
       const answer = `${area}π`;
       const choices = piCh(area);
-      const steps = [`大円の面積 = ${R}×${R}×π = ${R * R}π`, `中円の面積 = ${r2}×${r2}×π = ${r2 * r2}π`, `小円の面積 = ${r1}×${r1}×π = ${r1 * r1}π`, `色がついた部分 = 大円 − 中円 + 小円 = ${R * R}π−${r2 * r2}π+${r1 * r1}π = ${area}π cm²`];
+      const steps = [`大円の面積 = ${R}×${R}×π = ${R * R}π`, `中円の面積 = ${r2}×${r2}×π = ${r2 * r2}π`, `小円の面積 = ${r1}×${r1}×π = ${r1 * r1}π`, `中円と小円はどちらも大円の中の穴(白い部分)なので、色がついた部分 = 大円 − 中円 − 小円 = ${R * R}π−${r2 * r2}π−${r1 * r1}π = ${area}π cm²`];
       return { category: 'planeFigureComposite1', question, questionHtml, answer, choices, steps };
     }
   }
