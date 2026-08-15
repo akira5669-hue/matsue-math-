@@ -245,7 +245,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -262,7 +262,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges,
       });
     }
   }
@@ -11354,6 +11354,11 @@
   const SPEEDSEED_COST_MP = 100;
   // 「逃げる」演出があるレアキャラのrareType一覧(handleAnswerの不正解分岐と一致させる)。
   const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'doubleorhalf', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
+  // なんでも屋の消費アイテム「鉄壁の種」：500MPで購入し、ボス戦で間違えるたびに
+  // 自動で1チャージ消費して、そのミスのダメージを半分にする(最大3チャージ)。
+  // すばやさの種と異なり複数個は保有できず、3回使い切ると壊れて消える。
+  const IRONWALL_COST_MP = 500;
+  const IRONWALL_MAX_CHARGES = 3;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
   // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
   const GOUMAJI_REQUIRED_STREAK = 20;
@@ -11519,6 +11524,8 @@
     })()),
     // なんでも屋で買える消費アイテム「すばやさの種」の所持数。
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
+    // なんでも屋で買える消費アイテム「鉄壁の種」の残りチャージ数(0〜3、複数保有不可)。
+    ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -12533,13 +12540,23 @@
       if (state.worldBossActiveStage) {
         const bossMissDisplay = worldBossEnemyDisplay(state.worldBossActiveStage, state.worldBossSubIndex[state.worldBossActiveStage] || 0);
         const bossMissQuoteHtml = (bossMissDisplay.lines && bossMissDisplay.lines.miss) ? `<div class="enemy-quote-banner">${bossMissDisplay.lines.miss}</div>` : '';
-        const penalty = worldBossHpPenalty(state.worldBossActiveStage);
+        let penalty = worldBossHpPenalty(state.worldBossActiveStage);
+        let ironWallHtml = '';
+        // 鉄壁の種：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
+        // このミスのダメージを半分にする(最大3チャージ、0回で「壊れて消える」)。
+        if ((Number(state.ironWallCharges) || 0) > 0) {
+          penalty = Math.floor(penalty / 2);
+          state.ironWallCharges = (Number(state.ironWallCharges) || 0) - 1;
+          ironWallHtml = state.ironWallCharges > 0
+            ? `<div class="enemy-quote-banner">🛡️ 鉄壁の種のおかげでダメージ半減！（残り${state.ironWallCharges}回）</div>`
+            : `<div class="enemy-quote-banner">🛡️ 鉄壁の種のおかげでダメージ半減！…種は壊れてなくなった。</div>`;
+        }
         state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
         if (state.hp <= 0) {
-          missLineHtml += `${bossMissQuoteHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
+          missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
         } else {
-          missLineHtml += `${bossMissQuoteHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
+          missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
         saveGameState(state);
       } else if (isHpDamageActive_()) {
@@ -13124,6 +13141,7 @@
         state.worldBossDefeated = (progress.worldBossDefeated && typeof progress.worldBossDefeated === 'object') ? Object.assign({}, progress.worldBossDefeated) : state.worldBossDefeated;
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
+        state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -13173,6 +13191,7 @@
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
+      ironWallCharges: state.ironWallCharges,
     };
   }
 
@@ -13533,6 +13552,11 @@
     var speedSeedCount = Number(state.speedSeedCount) || 0;
     if (speedSeedCount > 0) {
       html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.png" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
+    }
+    // 鉄壁の種も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
+    var ironWallCharges = Number(state.ironWallCharges) || 0;
+    if (ironWallCharges > 0) {
+      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">鉄壁の種（残り${ironWallCharges}回）</span></div>`;
     }
     els.historyItems.innerHTML = html;
   }
@@ -13928,7 +13952,19 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.png" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span></div>${speedSeedActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml;
+    var ironWallCharges = Number(state.ironWallCharges) || 0;
+    var ironWallCanAfford = state.points >= IRONWALL_COST_MP;
+    var ironWallActionHtml;
+    if (ironWallCharges > 0) {
+      ironWallActionHtml = `<span class="gift-insufficient">使用中（残り${ironWallCharges}回）</span>`;
+    } else if (ironWallCanAfford) {
+      ironWallActionHtml = `<button type="button" class="gift-redeem-btn" id="buyIronWallBtn">購入する</button>`;
+    } else {
+      ironWallActionHtml = `<span class="gift-insufficient">MP不足</span>`;
+    }
+    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="鉄壁の種"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の種（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml;
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
@@ -13939,6 +13975,8 @@
     if (chouHerbBtn) chouHerbBtn.addEventListener('click', function () { handleBuyChouHerbClick(chouHerbBtn); });
     var speedSeedBtn = document.getElementById('buySpeedSeedBtn');
     if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
+    var ironWallBtn = document.getElementById('buyIronWallBtn');
+    if (ironWallBtn) ironWallBtn.addEventListener('click', function () { handleBuyIronWallClick(ironWallBtn); });
   }
 
   function handleAkrPrayerClick(btn) {
@@ -14067,6 +14105,34 @@
       renderShopList();
       renderItems();
       window.alert(`🌱 すばやさの種を手に入れた！（所持数: ${state.speedSeedCount}個）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyIronWallClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`鉄壁の種を購入します（${IRONWALL_COST_MP}MP）。ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になります（最大${IRONWALL_MAX_CHARGES}回、使い切ると壊れてなくなります）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyIronWall', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'already_owned') msg = 'すでに鉄壁の種を持っています。使い切ってから購入してください。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.ironWallCharges = res.ironWallCharges;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`🛡️ 鉄壁の種を手に入れた！（残り${state.ironWallCharges}回分）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
