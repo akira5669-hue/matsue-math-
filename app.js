@@ -245,7 +245,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorDate: s.steelArmorDate,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -262,7 +262,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorDate: s.steelArmorDate,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
       });
     }
   }
@@ -11354,9 +11354,10 @@
   const SPEEDSEED_COST_MP = 100;
   // 「逃げる」演出があるレアキャラのrareType一覧(handleAnswerの不正解分岐と一致させる)。
   const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'doubleorhalf', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
-  // なんでも屋の消費アイテム「鉄壁の種」：500MPで購入し、ボス戦で間違えるたびに
+  // なんでも屋の消費アイテム「盾」：500MPで購入し、ボス戦で間違えるたびに
   // 自動で1チャージ消費して、そのミスのダメージを半分にする(最大3チャージ)。
   // すばやさの種と異なり複数個は保有できず、3回使い切ると壊れて消える。
+  // (内部の変数名/DB列名はironWall系のまま。表示名だけ「盾」に変更)
   const IRONWALL_COST_MP = 500;
   const IRONWALL_MAX_CHARGES = 3;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
@@ -11524,11 +11525,11 @@
     })()),
     // なんでも屋で買える消費アイテム「すばやさの種」の所持数。
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
-    // なんでも屋で買える消費アイテム「鉄壁の種」の残りチャージ数(0〜3、複数保有不可)。
+    // なんでも屋で買える消費アイテム「盾」の残りチャージ数(0〜3、複数保有不可)。
     ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
-    // なんでも屋で買える「鋼の鎧」が発動している日付('YYYY-MM-DD')。todayKey()と
-    // 一致する間だけ、ボス戦以外の不正解によるHP減少を防ぐ。
-    steelArmorDate: (savedProgress && savedProgress.steelArmorDate) || (savedGame && savedGame.steelArmorDate) || null,
+    // なんでも屋で買える消費アイテム「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)。
+    // ボス戦以外の不正解のたびに1消費してHP減少を防ぎ、10回使い切ると壊れてなくなる。
+    steelArmorCharges: (savedProgress && Number(savedProgress.steelArmorCharges)) || (savedGame && Number(savedGame.steelArmorCharges)) || 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -12177,8 +12178,11 @@
       }
     } else {
       state.scienceStreak = 0;
-      if (isHpDamageActive_() && isSteelArmorActive_()) {
-        winHtml = `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（本日発動中）</div>`;
+      if (isHpDamageActive_() && hasSteelArmorCharge_()) {
+        state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+        winHtml = state.steelArmorCharges > 0
+          ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
+          : `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！…鎧は壊れてなくなった。</div>`;
       } else if (isHpDamageActive_()) {
         state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
         if (state.hp <= 0) {
@@ -12547,14 +12551,14 @@
         const bossMissQuoteHtml = (bossMissDisplay.lines && bossMissDisplay.lines.miss) ? `<div class="enemy-quote-banner">${bossMissDisplay.lines.miss}</div>` : '';
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
-        // 鉄壁の種：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
+        // 盾：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
         // このミスのダメージを半分にする(最大3チャージ、0回で「壊れて消える」)。
         if ((Number(state.ironWallCharges) || 0) > 0) {
           penalty = Math.floor(penalty / 2);
           state.ironWallCharges = (Number(state.ironWallCharges) || 0) - 1;
           ironWallHtml = state.ironWallCharges > 0
-            ? `<div class="enemy-quote-banner">🛡️ 鉄壁の種のおかげでダメージ半減！（残り${state.ironWallCharges}回）</div>`
-            : `<div class="enemy-quote-banner">🛡️ 鉄壁の種のおかげでダメージ半減！…種は壊れてなくなった。</div>`;
+            ? `<div class="enemy-quote-banner">🛡️ 盾のおかげでダメージ半減！（残り${state.ironWallCharges}回）</div>`
+            : `<div class="enemy-quote-banner">🛡️ 盾のおかげでダメージ半減！…盾は壊れてなくなった。</div>`;
         }
         state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
         if (state.hp <= 0) {
@@ -12564,8 +12568,11 @@
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
         saveGameState(state);
-      } else if (isHpDamageActive_() && isSteelArmorActive_()) {
-        missLineHtml += `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（本日発動中）</div>`;
+      } else if (isHpDamageActive_() && hasSteelArmorCharge_()) {
+        state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+        missLineHtml += state.steelArmorCharges > 0
+          ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
+          : `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！…鎧は壊れてなくなった。</div>`;
         saveGameState(state);
       } else if (isHpDamageActive_()) {
         // ボス戦以外の不正解は、8/13からHPが1減る。0になると、なんでも屋で回復するか
@@ -12949,11 +12956,12 @@
   function isHpGameOver_() {
     return isHpDamageActive_() && (Number(state.hp) || 0) <= 0;
   }
-  // なんでも屋の消費アイテム「鋼の鎧」：購入した日の間だけ、ボス戦以外の不正解による
-  // HP減少を完全に防ぐ。日付が変わると自動的に効果が切れる(再購入が必要)。
+  // なんでも屋の消費アイテム「鋼の鎧」：購入日に関わらず、ボス戦以外の不正解による
+  // HP減少を最大10回分防ぐ(10回使い切ると壊れてなくなる)消費アイテム。
   const STEELARMOR_COST_MP = 100;
-  function isSteelArmorActive_() {
-    return !!state.steelArmorDate && state.steelArmorDate === todayKey();
+  const STEELARMOR_MAX_CHARGES = 10;
+  function hasSteelArmorCharge_() {
+    return (Number(state.steelArmorCharges) || 0) > 0;
   }
 
   // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
@@ -13156,7 +13164,7 @@
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
-        state.steelArmorDate = progress.steelArmorDate || state.steelArmorDate;
+        state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -13207,6 +13215,7 @@
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
       ironWallCharges: state.ironWallCharges,
+      steelArmorCharges: state.steelArmorCharges,
     };
   }
 
@@ -13568,14 +13577,15 @@
     if (speedSeedCount > 0) {
       html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.png" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
     }
-    // 鉄壁の種も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
+    // 盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
     if (ironWallCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">鉄壁の種（残り${ironWallCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">盾（残り${ironWallCharges}回）</span></div>`;
     }
-    // 鋼の鎧は購入した日(1日)だけ効くアイテムなので、当日中だけ図鑑に表示する。
-    if (isSteelArmorActive_()) {
-      html += `<div class="badge-item badge-earned" title="購入した日の間、ボス戦以外の間違いによるHP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.png" alt=""></span><span class="badge-name">鋼の鎧（本日発動中）</span></div>`;
+    // 鋼の鎧も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
+    var steelArmorCharges = Number(state.steelArmorCharges) || 0;
+    if (steelArmorCharges > 0) {
+      html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.png" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span></div>`;
     }
     els.historyItems.innerHTML = html;
   }
@@ -13981,19 +13991,19 @@
     } else {
       ironWallActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="鉄壁の種"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の種（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
+    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="盾"><div class="gift-info"><span class="gift-label">🛡️ 盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
 
-    var steelArmorActive = isSteelArmorActive_();
+    var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     var steelArmorCanAfford = state.points >= STEELARMOR_COST_MP;
     var steelArmorActionHtml;
-    if (steelArmorActive) {
-      steelArmorActionHtml = `<span class="gift-insufficient">本日発動中</span>`;
+    if (steelArmorCharges > 0) {
+      steelArmorActionHtml = `<span class="gift-insufficient">使用中（残り${steelArmorCharges}回）</span>`;
     } else if (steelArmorCanAfford) {
       steelArmorActionHtml = `<button type="button" class="gift-redeem-btn" id="buySteelArmorBtn">購入する</button>`;
     } else {
       steelArmorActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.png" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（購入した日だけ有効）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">その日1日、ボス戦以外の間違いによるHP減少を完全に防ぐ。日付が変わると効果が切れる</span></div>${steelArmorActionHtml}</div>`;
+    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.png" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
 
     els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml;
     var prayerBtn = document.getElementById('akrPrayerBtn');
@@ -14175,25 +14185,25 @@
   function handleBuySteelArmorClick(btn) {
     var session = loadSession();
     if (!session || !session.id) return;
-    if (!window.confirm(`鋼の鎧を購入します（${STEELARMOR_COST_MP}MP）。その日1日、ボス戦以外の間違いによるHP減少を完全に防ぎます（日付が変わると効果が切れます）。よろしいですか？`)) return;
+    if (!window.confirm(`鋼の鎧を購入します（${STEELARMOR_COST_MP}MP）。ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぎます（最大${STEELARMOR_MAX_CHARGES}回、使い切ると壊れてなくなります）。よろしいですか？`)) return;
 
     btn.disabled = true;
     apiPost('buySteelArmor', { id: session.id }).then(function (res) {
       if (!res.ok) {
         var msg = '購入に失敗しました。もう一度お試しください。';
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
-        else if (res.error === 'already_owned') msg = '今日はすでに鋼の鎧を購入済みです。';
+        else if (res.error === 'already_owned') msg = 'すでに鋼の鎧を持っています。使い切ってから購入してください。';
         window.alert(msg);
         btn.disabled = false;
         return;
       }
       state.points = res.remainingPoints;
-      state.steelArmorDate = res.steelArmorDate;
+      state.steelArmorCharges = res.steelArmorCharges;
       saveGameState(state);
       updateGameHud();
       renderShopList();
       renderItems();
-      window.alert('🛡️ 鋼の鎧を身につけた！本日1日、ボス戦以外の間違いでHPが減らなくなります。');
+      window.alert(`🛡️ 鋼の鎧を手に入れた！（残り${state.steelArmorCharges}回分）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
