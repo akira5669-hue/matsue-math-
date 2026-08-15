@@ -245,7 +245,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved),
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -262,7 +262,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved),
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount,
       });
     }
   }
@@ -11347,6 +11347,13 @@
   // 爆裂薬草のさらに上位版「超絶薬草」：3000MPでHPを1500増やせる。
   const CHOUHERB_COST_MP = 3000;
   const CHOUHERB_HP_GAIN = 1500;
+  // なんでも屋の消費アイテム「すばやさの種」：100MPで購入し、アイテム図鑑に個数が
+  // 表示される。逃げるタイプのレアキャラに間違えて逃げられそうになった瞬間、
+  // 所持していれば自動で1個消費されて逃走を防ぎ、もう1回だけそのレアキャラに
+  // 挑戦できる(使うと図鑑から減っていき、0個になると表示から消える)。
+  const SPEEDSEED_COST_MP = 100;
+  // 「逃げる」演出があるレアキャラのrareType一覧(handleAnswerの不正解分岐と一致させる)。
+  const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'doubleorhalf', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
   // 通常の(10 or 20)+ボーナスの積み上げ方式ではなく、固定30MPとする。
   const GOUMAJI_REQUIRED_STREAK = 20;
@@ -11510,6 +11517,8 @@
         : ((savedGame && Array.isArray(savedGame.bakuretsuSolved)) ? savedGame.bakuretsuSolved : null);
       return saved || [];
     })()),
+    // なんでも屋で買える消費アイテム「すばやさの種」の所持数。
+    speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -12422,16 +12431,25 @@
       }
       recordWrongQuestion(state.current);
       saveGameState(state);
-      const santaFled = state.rareType === 'santa';
-      const nekodaFled = state.rareType === 'nekoda';
-      const warisuFled = state.rareType === 'warisu';
-      const inudaFled = state.rareType === 'inuda';
-      const doubleOrHalfFled = state.rareType === 'doubleorhalf';
-      const iineFled = state.rareType === 'iine';
-      const soubusenFled = state.rareType === 'soubusen';
-      const nattomanFled = state.rareType === 'nattoman';
-      const fugoupakkunFled = state.rareType === 'fugoupakkun';
-      const goumajiFled = state.rareType === 'goumaji';
+      // すばやさの種：逃げるタイプのレアキャラに間違えて逃げられる直前、所持していれば
+      // 自動で1個消費して逃走そのものを取り消す(rareTypeは変えず、そのまま再挑戦できる)。
+      const speedSeedSaved = FLEEING_RARE_TYPES_.indexOf(state.rareType) !== -1 && (Number(state.speedSeedCount) || 0) > 0;
+      if (speedSeedSaved) {
+        state.speedSeedCount = (Number(state.speedSeedCount) || 0) - 1;
+        missLineHtml += `<div class="enemy-quote-banner">🌱 すばやさの種のおかげで、${RARE_TYPES[state.rareType].name}に追いついた！もう1回挑戦できる！（残り${state.speedSeedCount}個）</div>`;
+        saveGameState(state);
+        if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      const santaFled = !speedSeedSaved && state.rareType === 'santa';
+      const nekodaFled = !speedSeedSaved && state.rareType === 'nekoda';
+      const warisuFled = !speedSeedSaved && state.rareType === 'warisu';
+      const inudaFled = !speedSeedSaved && state.rareType === 'inuda';
+      const doubleOrHalfFled = !speedSeedSaved && state.rareType === 'doubleorhalf';
+      const iineFled = !speedSeedSaved && state.rareType === 'iine';
+      const soubusenFled = !speedSeedSaved && state.rareType === 'soubusen';
+      const nattomanFled = !speedSeedSaved && state.rareType === 'nattoman';
+      const fugoupakkunFled = !speedSeedSaved && state.rareType === 'fugoupakkun';
+      const goumajiFled = !speedSeedSaved && state.rareType === 'goumaji';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -13105,6 +13123,7 @@
         state.worldLapStartLevel = Number(progress.worldLapStartLevel) || state.worldLapStartLevel;
         state.worldBossDefeated = (progress.worldBossDefeated && typeof progress.worldBossDefeated === 'object') ? Object.assign({}, progress.worldBossDefeated) : state.worldBossDefeated;
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
+        state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -13153,6 +13172,7 @@
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
       mathGodTitleEarned: state.mathGodTitleEarned,
+      speedSeedCount: state.speedSeedCount,
     };
   }
 
@@ -13503,11 +13523,18 @@
   }
 
   function renderItems() {
-    els.historyItems.innerHTML = SPECIAL_ITEMS.map(function (it) {
+    var html = SPECIAL_ITEMS.map(function (it) {
       const owned = state.items.includes(it.id);
       const cls = 'badge-item' + (owned ? ' badge-earned' : ' badge-locked');
       return `<div class="${cls}" title="${it.desc}"><span class="badge-icon">${it.icon}</span><span class="badge-name">${it.name}</span></div>`;
     }).join('');
+    // すばやさの種はなんでも屋で買える消費アイテムなので、他のアイテムと違い所持数で
+    // 表示し、使い切って0個になったら図鑑から消える。
+    var speedSeedCount = Number(state.speedSeedCount) || 0;
+    if (speedSeedCount > 0) {
+      html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.png" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
+    }
+    els.historyItems.innerHTML = html;
   }
 
   // 管理者(ID 00001)がgrantItemsで付与予約したアイテム・レアキャラ図鑑を、
@@ -13895,7 +13922,13 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.png" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span></div>${chouHerbActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml;
+    var speedSeedCanAfford = state.points >= SPEEDSEED_COST_MP;
+    var speedSeedActionHtml = speedSeedCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buySpeedSeedBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.png" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span></div>${speedSeedActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml;
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
@@ -13904,6 +13937,8 @@
     if (bakuHerbBtn) bakuHerbBtn.addEventListener('click', function () { handleBuyBakuHerbClick(bakuHerbBtn); });
     var chouHerbBtn = document.getElementById('buyChouHerbBtn');
     if (chouHerbBtn) chouHerbBtn.addEventListener('click', function () { handleBuyChouHerbClick(chouHerbBtn); });
+    var speedSeedBtn = document.getElementById('buySpeedSeedBtn');
+    if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
   }
 
   function handleAkrPrayerClick(btn) {
@@ -14005,6 +14040,33 @@
       updateGameHud();
       renderShopList();
       window.alert(`🌟 超絶薬草を使った！HPが${CHOUHERB_HP_GAIN}増えた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuySpeedSeedClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`すばやさの種を購入します（${SPEEDSEED_COST_MP}MP）。逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぎます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buySpeedSeed', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.speedSeedCount = res.speedSeedCount;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`🌱 すばやさの種を手に入れた！（所持数: ${state.speedSeedCount}個）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
