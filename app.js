@@ -245,7 +245,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorDate: s.steelArmorDate,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -262,7 +262,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorDate: s.steelArmorDate,
       });
     }
   }
@@ -11526,6 +11526,9 @@
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
     // なんでも屋で買える消費アイテム「鉄壁の種」の残りチャージ数(0〜3、複数保有不可)。
     ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
+    // なんでも屋で買える「鋼の鎧」が発動している日付('YYYY-MM-DD')。todayKey()と
+    // 一致する間だけ、ボス戦以外の不正解によるHP減少を防ぐ。
+    steelArmorDate: (savedProgress && savedProgress.steelArmorDate) || (savedGame && savedGame.steelArmorDate) || null,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -12174,7 +12177,9 @@
       }
     } else {
       state.scienceStreak = 0;
-      if (isHpDamageActive_()) {
+      if (isHpDamageActive_() && isSteelArmorActive_()) {
+        winHtml = `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（本日発動中）</div>`;
+      } else if (isHpDamageActive_()) {
         state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
         if (state.hp <= 0) {
           winHtml = `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
@@ -12559,6 +12564,9 @@
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
         saveGameState(state);
+      } else if (isHpDamageActive_() && isSteelArmorActive_()) {
+        missLineHtml += `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（本日発動中）</div>`;
+        saveGameState(state);
       } else if (isHpDamageActive_()) {
         // ボス戦以外の不正解は、8/13からHPが1減る。0になると、なんでも屋で回復するか
         // 再ログイン時の文章題3問連続正解(HP+3)をするまで、問題に答えられなくなる。
@@ -12941,6 +12949,12 @@
   function isHpGameOver_() {
     return isHpDamageActive_() && (Number(state.hp) || 0) <= 0;
   }
+  // なんでも屋の消費アイテム「鋼の鎧」：購入した日の間だけ、ボス戦以外の不正解による
+  // HP減少を完全に防ぐ。日付が変わると自動的に効果が切れる(再購入が必要)。
+  const STEELARMOR_COST_MP = 100;
+  function isSteelArmorActive_() {
+    return !!state.steelArmorDate && state.steelArmorDate === todayKey();
+  }
 
   // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
   // 戻り値trueのとき、呼び出し元(nextQuestion)は出題処理を中断する。
@@ -13142,6 +13156,7 @@
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
+        state.steelArmorDate = progress.steelArmorDate || state.steelArmorDate;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -13558,6 +13573,10 @@
     if (ironWallCharges > 0) {
       html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">鉄壁の種（残り${ironWallCharges}回）</span></div>`;
     }
+    // 鋼の鎧は購入した日(1日)だけ効くアイテムなので、当日中だけ図鑑に表示する。
+    if (isSteelArmorActive_()) {
+      html += `<div class="badge-item badge-earned" title="購入した日の間、ボス戦以外の間違いによるHP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.png" alt=""></span><span class="badge-name">鋼の鎧（本日発動中）</span></div>`;
+    }
     els.historyItems.innerHTML = html;
   }
 
@@ -13964,7 +13983,19 @@
     }
     var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="鉄壁の種"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の種（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml;
+    var steelArmorActive = isSteelArmorActive_();
+    var steelArmorCanAfford = state.points >= STEELARMOR_COST_MP;
+    var steelArmorActionHtml;
+    if (steelArmorActive) {
+      steelArmorActionHtml = `<span class="gift-insufficient">本日発動中</span>`;
+    } else if (steelArmorCanAfford) {
+      steelArmorActionHtml = `<button type="button" class="gift-redeem-btn" id="buySteelArmorBtn">購入する</button>`;
+    } else {
+      steelArmorActionHtml = `<span class="gift-insufficient">MP不足</span>`;
+    }
+    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.png" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（購入した日だけ有効）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">その日1日、ボス戦以外の間違いによるHP減少を完全に防ぐ。日付が変わると効果が切れる</span></div>${steelArmorActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml;
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
@@ -13977,6 +14008,8 @@
     if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
     var ironWallBtn = document.getElementById('buyIronWallBtn');
     if (ironWallBtn) ironWallBtn.addEventListener('click', function () { handleBuyIronWallClick(ironWallBtn); });
+    var steelArmorBtn = document.getElementById('buySteelArmorBtn');
+    if (steelArmorBtn) steelArmorBtn.addEventListener('click', function () { handleBuySteelArmorClick(steelArmorBtn); });
   }
 
   function handleAkrPrayerClick(btn) {
@@ -14133,6 +14166,34 @@
       renderShopList();
       renderItems();
       window.alert(`🛡️ 鉄壁の種を手に入れた！（残り${state.ironWallCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuySteelArmorClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`鋼の鎧を購入します（${STEELARMOR_COST_MP}MP）。その日1日、ボス戦以外の間違いによるHP減少を完全に防ぎます（日付が変わると効果が切れます）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buySteelArmor', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'already_owned') msg = '今日はすでに鋼の鎧を購入済みです。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.steelArmorDate = res.steelArmorDate;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert('🛡️ 鋼の鎧を身につけた！本日1日、ボス戦以外の間違いでHPが減らなくなります。');
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
