@@ -2188,8 +2188,10 @@
     { id: 'quadEqWordProblem3', label: '二次方程式の文章題（中3）', gen: genQuadEqWordProblem3 , addedDate: '2026-08-01' },
     { id: 'quadfunc',   label: '二次関数（中3）',                 gen: genQuadFunc },
     { id: 'similarity',   label: '三角形の相似（中3）',            gen: genSimilarity },
+    { id: 'similarRatio3', label: '相似な図形の面積比・体積比（中3）', gen: genSimilarRatio3, addedDate: '2026-08-16' },
     { id: 'circleAngle', label: '円周角（中3）',                   gen: genCircleAngle },
     { id: 'pythagoras',    label: '三平方の定理（中3）',           gen: genPythagoras },
+    { id: 'samplingSurvey3', label: '標本調査（中3）',             gen: genSamplingSurvey3, addedDate: '2026-08-16' },
 
     // ---------- 小4 ----------
     { id: 'round4',         label: '四捨五入（小4）',                     gen: genRound4,         defaultOff: true },
@@ -10868,6 +10870,151 @@
       steps = [`第1四分位数 = ${q1}、第3四分位数 = ${q3}`, `四分位範囲 = 第3四分位数 − 第1四分位数 = ${q3} − ${q1} = ${answer}`];
     }
     return { category: 'quartileBoxplot2', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  /* ---------- 相似な図形の面積比・体積比（中3） ---------- */
+
+  function genSimilarRatio3() {
+    const pat = randInt(0, 6);
+    let question, answer, choices, steps;
+
+    if (pat === 0) {
+      // 相似比 → 面積比
+      let a, b; do { a = randInt(2, 9); b = randInt(2, 9); } while (gcdFrac(a, b) !== 1 || a === b);
+      question = `相似な2つの図形があり、相似比が${a}:${b}です。この2つの図形の面積比を求めなさい。`;
+      answer = `${a * a}:${b * b}`;
+      const candidates = [`${a}:${b}`, `${a * a * a}:${b * b * b}`, `${a * 2}:${b * 2}`, `${a * a}:${b * b + 1}`];
+      choices = buildChoicesFromList(answer, candidates);
+      steps = [`相似比 ${a}:${b} のとき、面積比は相似比の2乗`, `${a}²:${b}² = ${a * a}:${b * b}`];
+    } else if (pat === 1) {
+      // 面積比 → 相似比(逆算)
+      let a, b; do { a = randInt(2, 9); b = randInt(2, 9); } while (gcdFrac(a, b) !== 1 || a === b);
+      const p = a * a, q = b * b;
+      question = `相似な2つの図形があり、面積比が${p}:${q}です。この2つの図形の相似比を求めなさい。`;
+      answer = `${a}:${b}`;
+      const candidates = [`${p}:${q}`, `${a}:${b + 1}`, `${a + 1}:${b}`];
+      choices = buildChoicesFromList(answer, candidates);
+      steps = [`面積比 ${p}:${q} は相似比の2乗`, `√${p}:√${q} = ${a}:${b}`];
+    } else if (pat === 2) {
+      // 相似比+一方の面積 → 他方の面積(文章題)
+      let a, b; do { a = randInt(2, 9); b = randInt(2, 9); } while (gcdFrac(a, b) !== 1 || a === b);
+      const m = randInt(1, 6);
+      const areaA = a * a * m, areaB = b * b * m;
+      question = `相似な△ABCと△DEFがあり、相似比はAB:DE=${a}:${b}です。△ABCの面積が${areaA}cm²のとき、△DEFの面積を求めなさい。`;
+      answer = areaB;
+      const wrongs = [areaA, areaB + m, Math.max(1, areaB - m), areaB + 2 * m].filter(v => v !== answer);
+      choices = buildChoices(answer, wrongs);
+      steps = [`面積比 = ${a}²:${b}² = ${a * a}:${b * b}`, `△DEF = △ABC × ${b * b}/${a * a} = ${areaA} × ${b * b}/${a * a} = ${areaB}`];
+    } else if (pat === 3) {
+      // 相似比 → 体積比
+      let a, b; do { a = randInt(2, 6); b = randInt(2, 6); } while (gcdFrac(a, b) !== 1 || a === b);
+      question = `相似な2つの立体があり、相似比が${a}:${b}です。この2つの立体の体積比を求めなさい。`;
+      answer = `${a ** 3}:${b ** 3}`;
+      const candidates = [`${a}:${b}`, `${a * a}:${b * b}`, `${a * 2}:${b * 2}`];
+      choices = buildChoicesFromList(answer, candidates);
+      steps = [`相似比 ${a}:${b} のとき、体積比は相似比の3乗`, `${a}³:${b}³ = ${a ** 3}:${b ** 3}`];
+    } else if (pat === 4) {
+      // 体積比 → 相似比(逆算)
+      let a, b; do { a = randInt(2, 6); b = randInt(2, 6); } while (gcdFrac(a, b) !== 1 || a === b);
+      const p = a ** 3, q = b ** 3;
+      question = `相似な2つの立体があり、体積比が${p}:${q}です。この2つの立体の相似比を求めなさい。`;
+      answer = `${a}:${b}`;
+      const candidates = [`${p}:${q}`, `${a}:${b + 1}`, `${a * a}:${b * b}`];
+      choices = buildChoicesFromList(answer, candidates);
+      steps = [`体積比 ${p}:${q} は相似比の3乗`, `∛${p}:∛${q} = ${a}:${b}`];
+    } else if (pat === 5) {
+      // 相似比+一方の体積 → 他方の体積(文章題)
+      let a, b; do { a = randInt(2, 6); b = randInt(2, 6); } while (gcdFrac(a, b) !== 1 || a === b);
+      const m = randInt(1, 5);
+      const volA = a ** 3 * m, volB = b ** 3 * m;
+      question = `相似な2つの立体PとQがあり、相似比はP:Q=${a}:${b}です。Pの体積が${volA}cm³のとき、Qの体積を求めなさい。`;
+      answer = volB;
+      const wrongs = [volA, volB + m, Math.max(1, volB - m), volB + 2 * m].filter(v => v !== answer);
+      choices = buildChoices(answer, wrongs);
+      steps = [`体積比 = ${a}³:${b}³ = ${a ** 3}:${b ** 3}`, `Q = P × ${b ** 3}/${a ** 3} = ${volA} × ${b ** 3}/${a ** 3} = ${volB}`];
+    } else {
+      // 三角形の辺上の点を通る平行線と面積比
+      let m, n; do { m = randInt(1, 6); n = randInt(1, 6); } while (gcdFrac(m, n) !== 1 || m === n);
+      const total = m + n;
+      question = `△ABCの辺AB上に点Dがあり、Dを通り辺BCに平行な直線が辺ACと交わる点をEとする。AD:DB=${m}:${n}のとき、△ADEと△ABCの面積比を求めなさい。`;
+      answer = `${m * m}:${total * total}`;
+      const candidates = [`${m}:${n}`, `${m}:${total}`, `${m * m}:${n * n}`];
+      choices = buildChoicesFromList(answer, candidates);
+      steps = [`AD:AB = ${m}:${total}`, `△ADE∽△ABC で相似比は${m}:${total}`, `面積比 = ${m}²:${total}² = ${m * m}:${total * total}`];
+    }
+    return { category: 'similarRatio3', question, answer, choices, steps };
+  }
+
+  /* ---------- 標本調査（中3） ---------- */
+
+  function genSamplingSurvey3() {
+    const pat = randInt(0, 3);
+    let question, answer, choices, steps;
+
+    if (pat === 0) {
+      // 全数調査 か 標本調査 かの判別
+      const scenarios = [
+        { q: 'ある中学校で、健康診断のために全校生徒の体重を記録する', a: '全数調査' },
+        { q: 'テレビ番組の視聴率を調べる調査', a: '標本調査' },
+        { q: '缶詰工場で、缶詰を開けて中身の品質を検査する(開けると売り物にならなくなる)', a: '標本調査' },
+        { q: '国が5年ごとに行う国勢調査', a: '全数調査' },
+        { q: '電球工場で、電球の寿命を調べる検査(調べると壊れて使えなくなる)', a: '標本調査' },
+        { q: 'クラス全員の期末テストの点数を集計する', a: '全数調査' },
+        { q: '世論調査で内閣支持率を調べる', a: '標本調査' },
+        { q: '学校の避難訓練で、全生徒の出席を確認する', a: '全数調査' },
+        { q: '湖にどれくらいの魚がいるかを調べる調査', a: '標本調査' },
+        { q: '新入生全員の身長を記録する健康診断', a: '全数調査' },
+        { q: '工場で作られた大量のねじの中から不良品の割合を調べる検査', a: '標本調査' },
+        { q: '選挙の当選者を確定するための開票作業', a: '全数調査' },
+      ];
+      const sc = scenarios[randInt(0, scenarios.length - 1)];
+      question = `次の調査は、全数調査と標本調査のどちらが適切か。「${sc.q}」`;
+      answer = sc.a;
+      choices = shuffle(['全数調査', '標本調査', 'どちらでもよい', '調査する必要がない']);
+      steps = [sc.a === '全数調査' ? '対象全部を調べられる(または調べる必要がある)ので全数調査' : '対象全部を調べるのが困難、または調べると壊れる/コストがかかるので標本調査'];
+    } else if (pat === 1) {
+      // 混合法(既知の数を混ぜて標本抽出し、母集団を推定する)
+      let a, b; do { a = randInt(1, 3); b = randInt(a + 2, a + 7); } while (gcdFrac(a, b) !== 1);
+      const s = randInt(3, 10);
+      const t = randInt(2, 6);
+      const white = a * s;
+      const sampleTotal = b * t;
+      const whiteInSample = a * t;
+      const population = s * b;
+      const black = population - white;
+      question = `黒いご石の中に白いご石を${white}個入れてよくかき混ぜ、無作為に${sampleTotal}個取り出したところ、その中に白いご石が${whiteInSample}個ふくまれていました。黒いご石はおよそ何個あると考えられますか。`;
+      answer = black;
+      const wrongs = [population, white, Math.max(1, black - t), black + t].filter(v => v !== answer);
+      choices = buildChoices(answer, wrongs);
+      steps = [`標本での白の割合 = ${whiteInSample}/${sampleTotal}`, `全体 ≈ ${white} × ${sampleTotal}/${whiteInSample} = ${population}`, `黒 ≈ ${population} − ${white} = ${black}`];
+    } else if (pat === 2) {
+      // 捕獲再捕獲法
+      let p, q; do { p = randInt(1, 3); q = randInt(p + 2, p + 7); } while (gcdFrac(p, q) !== 1);
+      const k = randInt(2, 6);
+      const s = randInt(2, 8);
+      const n2 = q * k;
+      const m2 = p * k;
+      const M = p * s;
+      const population = s * q;
+      question = `ある池のフナを${M}匹捕まえて印をつけ、もとの池にもどしました。数日後、同じ池でフナを${n2}匹捕まえたところ、印のついたフナが${m2}匹ふくまれていました。この池には、およそ何匹のフナがいると考えられますか。`;
+      answer = population;
+      const wrongs = [M + n2, population + k, Math.max(1, population - k), population + 2 * k].filter(v => v !== answer);
+      choices = buildChoices(answer, wrongs);
+      steps = [`印のついた割合 = ${m2}/${n2}`, `池全体 ≈ ${M} × ${n2}/${m2} = ${population}`];
+    } else {
+      // 比率推定(不良品など)
+      const n = randInt(2, 10) * 50;
+      const d = randInt(10, 30);
+      const total = n * d;
+      const k = randInt(1, 6);
+      const estimate = d * k;
+      question = `ある工場では1日に${total}個の製品を生産しています。この${total}個の中から${n}個を無作為に抽出したところ、そのうち${k}個が不良品でした。この工場で1日に生産している製品の中に、およそ何個の不良品がふくまれていると考えられますか。`;
+      answer = estimate;
+      const wrongs = [k, total, estimate + d, Math.max(1, estimate - d)].filter(v => v !== answer);
+      choices = buildChoices(answer, wrongs);
+      steps = [`標本での不良品の割合 = ${k}/${n}`, `1日の不良品 ≈ ${total} × ${k}/${n} = ${estimate}`];
+    }
+    return { category: 'samplingSurvey3', question, answer, choices, steps };
   }
 
   /* ---------- 円周角（中3） ---------- */
