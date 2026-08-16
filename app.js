@@ -15492,7 +15492,11 @@
     els.teamEventBanner.hidden = false;
     var ev = teamEventCache.event;
     var my = teamEventCache.myTeam;
-    els.teamEventBannerText.textContent = `🤝 チーム対抗経験値バトル開催中！（${ev.startDate}〜${ev.endDate}）あなたのチームは「${my.teamName}」！5人の仲間と力を合わせて、チームの経験値上昇量ランキングで上位を目指そう。現在の順位：${my.rank}位`;
+    els.teamEventBannerText.textContent =
+      `🤝 チーム対抗経験値バトル開催中！（${ev.startDate}〜${ev.endDate}）\n` +
+      `5〜6人1組のチームで、期間中にどれだけ経験値を上げられるかを競います。\n` +
+      `チームの経験値上昇量の順位に応じて、1位3000MP・2位2500MP・3位2000MP・4位1800MP・5位1500MP・6位1400MP・7位1300MP・8位1200MP・9位1100MP・10位1000MPが、チーム内で経験値を上げた量に比例して分配されます（1つも上げていない人には分配されません）。\n` +
+      `あなたのチームは「${my.teamName}」！現在の順位：${my.rank}位`;
   }
 
   function teamMemberRowHtml_(m, isYou) {
