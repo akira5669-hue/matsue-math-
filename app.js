@@ -11354,10 +11354,10 @@
   const SPEEDSEED_COST_MP = 100;
   // 「逃げる」演出があるレアキャラのrareType一覧(handleAnswerの不正解分岐と一致させる)。
   const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'doubleorhalf', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
-  // なんでも屋の消費アイテム「盾」：500MPで購入し、ボス戦で間違えるたびに
+  // なんでも屋の消費アイテム「鉄壁の盾」：500MPで購入し、ボス戦で間違えるたびに
   // 自動で1チャージ消費して、そのミスのダメージを半分にする(最大3チャージ)。
   // すばやさの種と異なり複数個は保有できず、3回使い切ると壊れて消える。
-  // (内部の変数名/DB列名はironWall系のまま。表示名だけ「盾」に変更)
+  // (内部の変数名/DB列名はironWall系のまま。表示名だけ「鉄壁の盾」に変更)
   const IRONWALL_COST_MP = 500;
   const IRONWALL_MAX_CHARGES = 3;
   // ごーまじは他のレアキャラと違い、必要な連続正解数が10ではなく20。その分、撃破報酬は
@@ -11525,7 +11525,7 @@
     })()),
     // なんでも屋で買える消費アイテム「すばやさの種」の所持数。
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
-    // なんでも屋で買える消費アイテム「盾」の残りチャージ数(0〜3、複数保有不可)。
+    // なんでも屋で買える消費アイテム「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)。
     ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
     // なんでも屋で買える消費アイテム「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)。
     // ボス戦以外の不正解のたびに1消費してHP減少を防ぎ、10回使い切ると壊れてなくなる。
@@ -12551,14 +12551,14 @@
         const bossMissQuoteHtml = (bossMissDisplay.lines && bossMissDisplay.lines.miss) ? `<div class="enemy-quote-banner">${bossMissDisplay.lines.miss}</div>` : '';
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
-        // 盾：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
+        // 鉄壁の盾：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
         // このミスのダメージを半分にする(最大3チャージ、0回で「壊れて消える」)。
         if ((Number(state.ironWallCharges) || 0) > 0) {
           penalty = Math.floor(penalty / 2);
           state.ironWallCharges = (Number(state.ironWallCharges) || 0) - 1;
           ironWallHtml = state.ironWallCharges > 0
-            ? `<div class="enemy-quote-banner">🛡️ 盾のおかげでダメージ半減！（残り${state.ironWallCharges}回）</div>`
-            : `<div class="enemy-quote-banner">🛡️ 盾のおかげでダメージ半減！…盾は壊れてなくなった。</div>`;
+            ? `<div class="enemy-quote-banner">🛡️ 鉄壁の盾のおかげでダメージ半減！（残り${state.ironWallCharges}回）</div>`
+            : `<div class="enemy-quote-banner">🛡️ 鉄壁の盾のおかげでダメージ半減！…盾は壊れてなくなった。</div>`;
         }
         state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
         if (state.hp <= 0) {
@@ -13577,10 +13577,10 @@
     if (speedSeedCount > 0) {
       html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.png" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
     }
-    // 盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
+    // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
     if (ironWallCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">盾（残り${ironWallCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">鉄壁の盾（残り${ironWallCharges}回）</span></div>`;
     }
     // 鋼の鎧も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
@@ -13991,7 +13991,7 @@
     } else {
       ironWallActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="盾"><div class="gift-info"><span class="gift-label">🛡️ 盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
+    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="鉄壁の盾"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
 
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     var steelArmorCanAfford = state.points >= STEELARMOR_COST_MP;
@@ -14157,14 +14157,14 @@
   function handleBuyIronWallClick(btn) {
     var session = loadSession();
     if (!session || !session.id) return;
-    if (!window.confirm(`鉄壁の種を購入します（${IRONWALL_COST_MP}MP）。ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になります（最大${IRONWALL_MAX_CHARGES}回、使い切ると壊れてなくなります）。よろしいですか？`)) return;
+    if (!window.confirm(`鉄壁の盾を購入します（${IRONWALL_COST_MP}MP）。ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になります（最大${IRONWALL_MAX_CHARGES}回、使い切ると壊れてなくなります）。よろしいですか？`)) return;
 
     btn.disabled = true;
     apiPost('buyIronWall', { id: session.id }).then(function (res) {
       if (!res.ok) {
         var msg = '購入に失敗しました。もう一度お試しください。';
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
-        else if (res.error === 'already_owned') msg = 'すでに鉄壁の種を持っています。使い切ってから購入してください。';
+        else if (res.error === 'already_owned') msg = 'すでに鉄壁の盾を持っています。使い切ってから購入してください。';
         window.alert(msg);
         btn.disabled = false;
         return;
@@ -14175,7 +14175,7 @@
       updateGameHud();
       renderShopList();
       renderItems();
-      window.alert(`🛡️ 鉄壁の種を手に入れた！（残り${state.ironWallCharges}回分）`);
+      window.alert(`🛡️ 鉄壁の盾を手に入れた！（残り${state.ironWallCharges}回分）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
