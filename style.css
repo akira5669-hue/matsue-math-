@@ -1023,6 +1023,10 @@ h1 {
   padding: 1px 7px;
   border-radius: 999px;
 }
+.team-leader-crown {
+  display: inline-block;
+  margin-right: 4px;
+}
 .ranking-you-tag {
   display: inline-block;
   margin-left: 6px;

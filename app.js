@@ -15499,7 +15499,8 @@
     var cls = 'ranking-row' + (isYou ? ' ranking-you' : '');
     var youTag = isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
     var gradeTag = m.grade ? `<span class="ranking-grade">${m.grade}</span>` : '';
-    return `<div class="${cls}"><span class="ranking-rank"></span><span class="ranking-name">${gradeTag}${m.name}${youTag}</span><span class="ranking-points">経験値+${m.gained * 10}</span></div>`;
+    var leaderTag = m.isLeader ? '<span class="team-leader-crown" title="チームリーダー">👑</span>' : '';
+    return `<div class="${cls}"><span class="ranking-rank"></span><span class="ranking-name">${leaderTag}${gradeTag}${m.name}${youTag}</span><span class="ranking-points">経験値+${m.gained * 10}</span></div>`;
   }
 
   function teamRowHtml_(t, isMyTeam) {
