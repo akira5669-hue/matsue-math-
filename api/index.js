@@ -14,6 +14,7 @@ const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
 const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
+const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 
 const ACTIONS = {
   getPoints: handleGetPoints,
@@ -47,6 +48,7 @@ const ACTIONS = {
   weeklyQuizGet: handleWeeklyQuizGet,
   weeklyQuizAnswer: handleWeeklyQuizAnswer,
   submitTestPhoto: handleSubmitTestPhoto,
+  teamEventStatus: handleTeamEventStatus,
 };
 
 function parseBody(req) {

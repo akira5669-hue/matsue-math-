@@ -157,3 +157,34 @@ CREATE TABLE login_attempts (
   locked_until TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- チーム対抗経験値バトル(5人チームで1ヶ月の経験値上昇量を競うイベント)。
+-- 経験値の上昇量はlevelの差分で測る(1勝=経験値+10=1レベルアップで固定のため、
+-- levelの差分がそのまま経験値上昇量に比例する。science_expはサーバーに同期されて
+-- いないため、level差分を使うのが最も確実)。
+CREATE TABLE team_events (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  start_date TEXT NOT NULL,               -- 'YYYY-MM-DD'(JST基準)
+  end_date TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',  -- active | finished
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE team_event_teams (
+  id BIGSERIAL PRIMARY KEY,
+  event_id BIGINT NOT NULL REFERENCES team_events (id) ON DELETE CASCADE,
+  team_name TEXT NOT NULL
+);
+CREATE INDEX idx_team_event_teams_event ON team_event_teams (event_id);
+
+CREATE TABLE team_event_members (
+  id BIGSERIAL PRIMARY KEY,
+  team_id BIGINT NOT NULL REFERENCES team_event_teams (id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+  start_level INTEGER NOT NULL DEFAULT 1, -- イベント開始時点のlevelスナップショット
+  final_gain INTEGER,                     -- 集計確定後の経験値上昇量(終了時に記入)
+  points_awarded INTEGER                  -- 集計確定後の分配MP(終了時に記入)
+);
+CREATE INDEX idx_team_event_members_team ON team_event_members (team_id);
+CREATE INDEX idx_team_event_members_student ON team_event_members (student_id);

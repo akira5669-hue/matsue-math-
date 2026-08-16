@@ -734,6 +734,18 @@ h1 {
 .user-avatar-badge svg { width: 100%; height: 100%; border-radius: 50%; background: var(--c-bg); border: 1.5px solid var(--c-line); }
 
 /* Daily mission banner */
+.team-event-banner {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1.5px solid #fb923c;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.team-event-banner[hidden] { display: none; }
+.team-event-banner-text { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #9a3412; line-height: 1.6; white-space: pre-line; }
+.team-event-banner-btn { width: 100%; }
+.team-event-my-rank { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--c-text); }
+
 .apology-banner {
   background: linear-gradient(135deg, #eef2ff, #e0e7ff);
   border: 1.5px solid #a5b4fc;

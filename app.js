@@ -11702,6 +11702,18 @@
     rankingChallengeMiddleNearby: document.getElementById('rankingChallengeMiddleNearby'),
     rankingChallengeMiddleNearbyList: document.getElementById('rankingChallengeMiddleNearbyList'),
     apologyBanner: document.getElementById('apologyBanner'),
+    teamEventBanner: document.getElementById('teamEventBanner'),
+    teamEventBannerText: document.getElementById('teamEventBannerText'),
+    teamEventBannerBtn: document.getElementById('teamEventBannerBtn'),
+    teamEventToggle: document.getElementById('teamEventToggle'),
+    teamEventPanel: document.getElementById('teamEventPanel'),
+    teamEventTitle: document.getElementById('teamEventTitle'),
+    teamEventPeriod: document.getElementById('teamEventPeriod'),
+    teamEventMyTeamBox: document.getElementById('teamEventMyTeamBox'),
+    teamEventMyTeamTitle: document.getElementById('teamEventMyTeamTitle'),
+    teamEventMyRank: document.getElementById('teamEventMyRank'),
+    teamEventMyMembersList: document.getElementById('teamEventMyMembersList'),
+    teamEventAllTeamsList: document.getElementById('teamEventAllTeamsList'),
     weeklyQuizSpecialBanner: document.getElementById('weeklyQuizSpecialBanner'),
     weeklyQuizSpecialBannerText: document.getElementById('weeklyQuizSpecialBannerText'),
     weeklyQuizSpecialBannerBtn: document.getElementById('weeklyQuizSpecialBannerBtn'),
@@ -13111,6 +13123,7 @@
     renderWeeklyQuizSpecialBanner();
     renderWorldLaunchBanner();
     renderMissionBanner();
+    if (!isGuest) fetchTeamEventStatus_();
     nextQuestion();
     initInstallBanner();
   }
@@ -13692,6 +13705,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.historyPanel.removeAttribute('hidden');
@@ -13842,6 +13856,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.rankingPanel.removeAttribute('hidden');
@@ -13916,6 +13931,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.giftPanel.removeAttribute('hidden');
@@ -14224,6 +14240,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
 
     els.shopPanel.removeAttribute('hidden');
     renderShopList();
@@ -14275,6 +14292,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.prefecturePanel.removeAttribute('hidden');
@@ -14353,6 +14371,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.avatarPanel.removeAttribute('hidden');
@@ -14733,6 +14752,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.worldPanel.removeAttribute('hidden');
@@ -14755,6 +14775,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.grantResult.textContent = '';
@@ -14820,6 +14841,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
 
     els.testPhotoPanel.removeAttribute('hidden');
@@ -15138,6 +15160,7 @@
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
 
     els.weeklyQuizPanel.removeAttribute('hidden');
     loadWeeklyQuiz();
@@ -15348,6 +15371,7 @@
     els.withdrawPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
 
     els.bakuretsuQuizPanel.removeAttribute('hidden');
     renderBakuretsuQuiz();
@@ -15402,6 +15426,100 @@
     }
   }
 
+  /* ---------- チーム対抗経験値バトル ---------- */
+
+  var teamEventCache = null;
+
+  function fetchTeamEventStatus_(onDone) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('teamEventStatus', { id: session.id }).then(function (res) {
+      if (res && res.ok) {
+        teamEventCache = res;
+        renderTeamEventBanner_();
+        if (onDone) onDone(res);
+      }
+    }).catch(function () { });
+  }
+
+  function renderTeamEventBanner_() {
+    if (!els.teamEventBanner) return;
+    if (!teamEventCache || !teamEventCache.active || !teamEventCache.myTeam) {
+      els.teamEventBanner.hidden = true;
+      if (els.teamEventToggle) els.teamEventToggle.hidden = true;
+      return;
+    }
+    if (els.teamEventToggle) els.teamEventToggle.hidden = false;
+    els.teamEventBanner.hidden = false;
+    var ev = teamEventCache.event;
+    var my = teamEventCache.myTeam;
+    els.teamEventBannerText.textContent = `🤝 チーム対抗経験値バトル開催中！（${ev.startDate}〜${ev.endDate}）あなたのチームは「${my.teamName}」！5人の仲間と力を合わせて、チームの経験値上昇量ランキングで上位を目指そう。現在の順位：${my.rank}位`;
+  }
+
+  function teamMemberRowHtml_(m, isYou) {
+    var cls = 'ranking-row' + (isYou ? ' ranking-you' : '');
+    var youTag = isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = m.grade ? `<span class="ranking-grade">${m.grade}</span>` : '';
+    return `<div class="${cls}"><span class="ranking-rank"></span><span class="ranking-name">${gradeTag}${m.name}${youTag}</span><span class="ranking-points">経験値+${m.gained * 10}</span></div>`;
+  }
+
+  function teamRowHtml_(t, isMyTeam) {
+    var cls = 'ranking-row' + (isMyTeam ? ' ranking-you' : '');
+    var myTag = isMyTeam ? '<span class="ranking-you-tag">あなたのチーム</span>' : '';
+    return `<div class="${cls}"><span class="ranking-rank">${t.rank}</span><span class="ranking-name">${t.teamName}（${t.memberCount}人）${myTag}</span><span class="ranking-points">経験値+${t.totalGained * 10}</span></div>`;
+  }
+
+  function renderTeamEventPanel_() {
+    if (!teamEventCache || !teamEventCache.active) {
+      els.teamEventPeriod.textContent = '現在開催中のイベントはありません。';
+      els.teamEventMyTeamBox.hidden = true;
+      els.teamEventAllTeamsList.innerHTML = '';
+      return;
+    }
+    var ev = teamEventCache.event;
+    els.teamEventPeriod.textContent = `期間：${ev.startDate}〜${ev.endDate}／チームの経験値上昇量で対決！順位ごとのMPは、チーム内で経験値を上げた量に比例して分配されます（全く上げていない人には分配されません）。`;
+
+    var session = loadSession();
+    var myId = session && session.id;
+
+    if (teamEventCache.myTeam) {
+      els.teamEventMyTeamBox.hidden = false;
+      var my = teamEventCache.myTeam;
+      els.teamEventMyTeamTitle.textContent = `あなたのチーム：${my.teamName}`;
+      els.teamEventMyRank.textContent = `現在 ${my.rank}位／チーム合計 経験値+${my.totalGained * 10}`;
+      els.teamEventMyMembersList.innerHTML = my.members.map(function (m) {
+        return teamMemberRowHtml_(m, m.id === myId);
+      }).join('');
+    } else {
+      els.teamEventMyTeamBox.hidden = true;
+    }
+
+    els.teamEventAllTeamsList.innerHTML = teamEventCache.allTeams.map(function (t) {
+      return teamRowHtml_(t, !!(teamEventCache.myTeam && t.teamId === teamEventCache.myTeam.teamId));
+    }).join('');
+  }
+
+  function toggleTeamEvent() {
+    var isHidden = els.teamEventPanel.hasAttribute('hidden');
+    if (!isHidden) { els.teamEventPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
+
+    els.teamEventPanel.removeAttribute('hidden');
+    els.teamEventPeriod.textContent = '読み込み中…';
+    fetchTeamEventStatus_(function () { renderTeamEventPanel_(); });
+  }
+
   /* ---------- 退会 ---------- */
 
   var withdrawSubmitting = false;
@@ -15420,6 +15538,7 @@
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
     els.shopPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
 
     hideFieldError(els.withdrawError);
     els.withdrawForm.hidden = false;
@@ -15574,6 +15693,8 @@
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
   if (els.bakuretsuQuizToggle) els.bakuretsuQuizToggle.addEventListener('click', toggleBakuretsuQuiz);
+  if (els.teamEventToggle) els.teamEventToggle.addEventListener('click', toggleTeamEvent);
+  if (els.teamEventBannerBtn) els.teamEventBannerBtn.addEventListener('click', toggleTeamEvent);
   els.withdrawToggle.addEventListener('click', toggleWithdraw);
   els.withdrawSubmitBtn.addEventListener('click', handleWithdrawSubmitClick);
   els.withdrawConfirmYes.addEventListener('click', submitWithdraw);

@@ -200,9 +200,15 @@
         <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
         <button id="weeklyQuizToggle" class="ghost-btn" type="button">🧠週替わり重要ワード</button>
         <button id="bakuretsuQuizToggle" class="ghost-btn" type="button">💥爆裂想像力クイズ</button>
+        <button id="teamEventToggle" class="ghost-btn" type="button" hidden>🤝チーム対抗戦</button>
         <button id="logoutBtn" class="ghost-btn" type="button">ログアウト</button>
         <button id="withdrawToggle" class="ghost-btn withdraw-toggle-btn" type="button">退会</button>
       </div>
+    </section>
+
+    <section class="team-event-banner" id="teamEventBanner" hidden>
+      <p class="team-event-banner-text" id="teamEventBannerText"></p>
+      <button type="button" class="ghost-btn team-event-banner-btn" id="teamEventBannerBtn">🤝マイチームを見る</button>
     </section>
 
     <section class="apology-banner" id="apologyBanner" hidden>
@@ -286,6 +292,22 @@
           <p class="ranking-nearby-title">🔎 あなたの順位（前後3位）</p>
           <div class="ranking-list" id="rankingChallengeMiddleNearbyList"></div>
         </div>
+      </div>
+    </section>
+
+    <section class="ranking-panel" id="teamEventPanel" hidden>
+      <h3 class="history-title" id="teamEventTitle">🤝 チーム対抗経験値バトル</h3>
+      <p class="history-summary" id="teamEventPeriod">読み込み中…</p>
+
+      <div class="ranking-division" id="teamEventMyTeamBox" hidden>
+        <p class="ranking-division-title" id="teamEventMyTeamTitle">あなたのチーム</p>
+        <p class="team-event-my-rank" id="teamEventMyRank"></p>
+        <div class="ranking-list" id="teamEventMyMembersList"></div>
+      </div>
+
+      <div class="ranking-division">
+        <p class="ranking-division-title">全チーム順位</p>
+        <div class="ranking-list" id="teamEventAllTeamsList"></div>
       </div>
     </section>
 
