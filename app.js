@@ -131,6 +131,11 @@
 
   var GAME_KEY = 'matsue-math-game';
   var POINTS_DAILY_CAP = 100;
+  // 1日のMP上限を「計算問題(理科含む)」と「文章題」で別々の50MPずつに分ける
+  // (合計は今までと同じ100MPのまま)。計算問題は10問正解あたりのMPも
+  // 10→5MPに変更(学年より上の単元に挑戦したボーナスは20→10MPで、2倍の比率は維持)。
+  var POINTS_DAILY_CAP_CALC = 50;
+  var POINTS_DAILY_CAP_WORD = 50;
   var EXP_PER_LEVEL = 10;
   var MAX_LEVEL = 9999;
 
@@ -234,7 +239,8 @@
     try {
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
-        pointsToday: s.pointsToday, pointsDate: s.pointsDate, enemyIdx: s.enemyIdx,
+        pointsToday: s.pointsToday, pointsDate: s.pointsDate,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
@@ -252,6 +258,7 @@
     if (sess && sess.id) {
       saveAccountProgress_(sess.id, {
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord,
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
@@ -11538,6 +11545,10 @@
     // matsue-math-game側の値を使う(移行用フォールバック)。
     pointsToday: savedProgress ? (Number(savedProgress.pointsToday) || 0) : ((savedGame && Number(savedGame.pointsToday)) || 0),
     pointsDate: (savedProgress && savedProgress.pointsDate) || (savedGame && savedGame.pointsDate) || null,
+    // 計算問題(理科含む)と文章題、それぞれ別々の1日MP上限を管理するためのカウンター。
+    // pointsDateが変わったタイミングでpointsTodayと一緒にリセットする。
+    pointsTodayCalc: (savedProgress && Number(savedProgress.pointsTodayCalc)) || (savedGame && Number(savedGame.pointsTodayCalc)) || 0,
+    pointsTodayWord: (savedProgress && Number(savedProgress.pointsTodayWord)) || (savedGame && Number(savedGame.pointsTodayWord)) || 0,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedProgress && Array.isArray(savedProgress.items)) ? savedProgress.items.slice() : ((savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : []),
@@ -11732,6 +11743,8 @@
     scienceExpText: document.getElementById('scienceExpText'),
     hpRulesBanner: document.getElementById('hpRulesBanner'),
     hpRulesBannerText: document.getElementById('hpRulesBannerText'),
+    mpCapBanner: document.getElementById('mpCapBanner'),
+    mpCapBannerText: document.getElementById('mpCapBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -12173,10 +12186,12 @@
       state.scienceStreak = (state.scienceStreak || 0) + 1;
       if (state.scienceStreak >= 10) {
         const today = todayKey();
-        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
-        const pointsToAdd = Math.max(0, Math.min(SCIENCE_STREAK_MP, POINTS_DAILY_CAP - state.pointsToday));
+        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+        // 理科は文章題ではないので「計算問題」側の1日上限(50MP)を共有する。
+        const pointsToAdd = Math.max(0, Math.min(SCIENCE_STREAK_MP, POINTS_DAILY_CAP_CALC - state.pointsTodayCalc));
         state.points += pointsToAdd;
         state.pointsToday += pointsToAdd;
+        state.pointsTodayCalc += pointsToAdd;
         state.scienceExp += SCIENCE_EXP_PER_STREAK;
         state.scienceStreak = 0;
         // レベルは算数・数学の経験値と理科の経験値を合算して決まる(単一のLv.)。
@@ -12321,6 +12336,7 @@
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderHpRulesBanner_();
+    renderMpCapBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -12673,20 +12689,25 @@
       }
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
-      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; }
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
-      // ごーまじは20問連続正解という高いハードルの代わりに、通常の(10 or 20)+ボーナス
+      // ごーまじは20問連続正解という高いハードルの代わりに、通常の(5 or 10)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
-      // 固定50MP。
-      const rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : (bonusEligible ? 20 : 10) + rareMpBonus;
+      // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
+      // ボーナスは10MPで、2倍の比率は維持)。
+      const rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
       // ボン・ミスコの呪いにかかっている間は、どんな組み合わせでもMP報酬が上限
       // BONMISUKO_CURSE_MP_CAPに制限される。
       const basePoints = state.cursed ? Math.min(rawBasePoints, BONMISUKO_CURSE_MP_CAP) : rawBasePoints;
-      const pointsToAdd = Math.max(0, Math.min(basePoints, POINTS_DAILY_CAP - state.pointsToday));
+      // 文章題と計算問題(理科含む)で、1日のMP上限を別々の50MPずつに分けて管理する。
+      const dailyCapForThis = isWordProblem ? POINTS_DAILY_CAP_WORD : POINTS_DAILY_CAP_CALC;
+      const todayBucketForThis = isWordProblem ? state.pointsTodayWord : state.pointsTodayCalc;
+      const pointsToAdd = Math.max(0, Math.min(basePoints, dailyCapForThis - todayBucketForThis));
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
+      if (isWordProblem) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
       let doubleGainedHtml = '';
       if (wasRareType === 'doubleorhalf') {
         // 「本日のMPが2倍」というボーナスの性質上、通常の1日の上限(POINTS_DAILY_CAP)で
@@ -13008,6 +13029,22 @@
     }
   }
 
+  // MP上限の分割ルール変更のお知らせを5日間だけ表示する(8/16〜8/20)。
+  var MP_CAP_BANNER_START_ = '2026-08-16';
+  var MP_CAP_BANNER_END_ = '2026-08-20';
+  function renderMpCapBanner_() {
+    if (!els.mpCapBanner) return;
+    var today = todayKey();
+    if (today < MP_CAP_BANNER_START_ || today > MP_CAP_BANNER_END_) {
+      els.mpCapBanner.hidden = true;
+      return;
+    }
+    els.mpCapBanner.hidden = false;
+    if (els.mpCapBannerText) {
+      els.mpCapBannerText.textContent = '📢 MPのルール変更のお知らせ：計算問題（理科もふくむ）で稼げるMPは1日最大50MPまで、文章題で稼げるMPも1日最大50MPまで（今までと同じ）になりました。また、計算問題は10問連続正解ごとに+5MP（学年より上の単元に挑戦した場合は+10MP）です。';
+    }
+  }
+
   /* ---------- ログイン前チェック(文章題3問連続正解、8/10から) ---------- */
   var LOGIN_GATE_START_ = '2026-08-10';
   var LOGIN_GATE_REQUIRED_STREAK_ = 3;
@@ -13158,6 +13195,8 @@
       if (progress) {
         state.pointsToday = Number(progress.pointsToday) || 0;
         state.pointsDate = progress.pointsDate || null;
+        state.pointsTodayCalc = Number(progress.pointsTodayCalc) || 0;
+        state.pointsTodayWord = Number(progress.pointsTodayWord) || 0;
         state.items = Array.isArray(progress.items) ? progress.items.slice() : state.items;
         state.rareDefeats = (progress.rareDefeats && typeof progress.rareDefeats === 'object') ? Object.assign({}, progress.rareDefeats) : state.rareDefeats;
         state.rareCollected = Array.isArray(progress.rareCollected) ? progress.rareCollected.slice() : state.rareCollected;

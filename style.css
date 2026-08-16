@@ -734,6 +734,16 @@ h1 {
 .user-avatar-badge svg { width: 100%; height: 100%; border-radius: 50%; background: var(--c-bg); border: 1.5px solid var(--c-line); }
 
 /* Daily mission banner */
+.mp-cap-banner {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 1.5px solid #fca5a5;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.mp-cap-banner[hidden] { display: none; }
+.mp-cap-banner-text { margin: 0; font-size: 13px; font-weight: 700; color: #991b1b; line-height: 1.7; white-space: pre-line; }
+
 .team-event-banner {
   background: linear-gradient(135deg, #fff7ed, #ffedd5);
   border: 1.5px solid #fb923c;
