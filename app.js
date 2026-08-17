@@ -15630,15 +15630,21 @@
 
   function renderTeamEventBanner_() {
     if (!els.teamEventBanner) return;
-    if (!teamEventCache || !teamEventCache.active || !teamEventCache.myTeam) {
+    if (!teamEventCache || !teamEventCache.active) {
       els.teamEventBanner.hidden = true;
       if (els.teamEventToggle) els.teamEventToggle.hidden = true;
       return;
     }
+    // チームに参加していない生徒(管理者00001など)も、開催中であれば
+    // 🤝チーム対抗戦ボタンから全チームの順位だけは見られるようにする。
     if (els.teamEventToggle) els.teamEventToggle.hidden = false;
-    els.teamEventBanner.hidden = false;
     var ev = teamEventCache.event;
     var my = teamEventCache.myTeam;
+    if (!my) {
+      els.teamEventBanner.hidden = true;
+      return;
+    }
+    els.teamEventBanner.hidden = false;
     els.teamEventBannerText.textContent =
       `🤝 チーム対抗経験値バトル開催中！（${ev.startDate}〜${ev.endDate}）\n` +
       `5〜6人1組のチームで、期間中にどれだけ経験値を上げられるかを競います。\n` +
