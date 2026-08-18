@@ -36,7 +36,8 @@ CREATE TABLE students (
   pending_notice TEXT,                     -- 次回ログイン時に1回だけ表示するお知らせ(表示後NULLに戻す)
   speed_seed_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「すばやさの種」の所持数(消費型)
   iron_wall_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)
-  steel_armor_charges INTEGER NOT NULL DEFAULT 0 -- なんでも屋「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)
+  steel_armor_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)
+  world_country INTEGER NOT NULL DEFAULT 0 -- 世界一周の制覇済みヵ国数(サイコロ方式、クライアント管理・直接SET)
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
