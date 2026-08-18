@@ -1,9 +1,10 @@
-// 月末(9/1など)にチーム対抗経験値バトルの結果を確定し、MPを分配するスクリプト。
+// 月末にチーム対抗経験値バトルの結果を確定し、MPを分配するスクリプト。
 // 使い方: プロジェクトルートで `node scripts/finalize_team_event.js`
 // ・順位に応じたチームMPプールを、チーム内で経験値上昇量に比例して分配(0人は0MP)。
 // ・同点チームは同順位(1224方式)、その分だけ次の順位を飛ばす。
-// ・11位以降のチームは今回の指示に含まれていないため、MP分配なし(0MP)としています。
-//   もし11位以降にも配りたい場合はRANK_POOLの該当箇所を編集してから実行してください。
+// ・プール表(何位に何MPか)はイベント自身のrank_pool列に保存されているものを使う
+//   (月によって金額・対象順位が違うため、開催ごとにteam_eventsへ保存しておく方式)。
+//   rank_poolに無い順位のチームはMP分配なし(0MP)。
 // ・実行すると進行中(status='active')の最新イベントを確定し、status='finished'にします。
 const fs = require('fs');
 const path = require('path');
@@ -16,15 +17,14 @@ envText.split('\n').forEach((line) => {
 });
 const { neon } = require('../node_modules/@neondatabase/serverless');
 
-const RANK_POOL = { 1: 3000, 2: 2500, 3: 2000, 4: 1800, 5: 1500, 6: 1400, 7: 1300, 8: 1200, 9: 1100, 10: 1000 };
-function poolForRank(rank) { return RANK_POOL[rank] || 0; }
-
 async function main() {
   const sql = neon(process.env.DATABASE_URL);
-  const events = await sql`SELECT id, name FROM team_events WHERE status = 'active' ORDER BY id DESC LIMIT 1`;
+  const events = await sql`SELECT id, name, rank_pool FROM team_events WHERE status = 'active' ORDER BY id DESC LIMIT 1`;
   if (!events.length) { console.log('進行中のイベントがありません'); return; }
   const event = events[0];
-  console.log('finalizing event:', event.name, '(id=' + event.id + ')');
+  const rankPool = event.rank_pool || {};
+  function poolForRank(rank) { return Number(rankPool[rank]) || 0; }
+  console.log('finalizing event:', event.name, '(id=' + event.id + ')', 'rank_pool:', JSON.stringify(rankPool));
 
   const rows = await sql`
     SELECT t.id AS team_id, t.team_name, m.id AS member_id, m.student_id, m.start_level,

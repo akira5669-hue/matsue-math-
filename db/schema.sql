@@ -168,6 +168,7 @@ CREATE TABLE team_events (
   start_date TEXT NOT NULL,               -- 'YYYY-MM-DD'(JST基準)
   end_date TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',  -- active | finished
+  rank_pool JSONB,                        -- {"1":10000,"2":7000,...} 順位ごとの分配MP(月によって異なるため開催ごとに保存)
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
