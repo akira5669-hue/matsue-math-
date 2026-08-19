@@ -247,7 +247,7 @@
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
-        worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
+        worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
@@ -265,7 +265,7 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
-        worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
+        worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
@@ -11725,10 +11725,6 @@
     // 世界一周2周目以降の開始レベル(1周目は100)。worldCountForLevelはこの値を基準に
     // 「今の周」の制覇済みヵ国数を計算する(レベル自体は下げない)。
     worldLapStartLevel: (savedProgress && Number(savedProgress.worldLapStartLevel)) || (savedGame && Number(savedGame.worldLapStartLevel)) || 100,
-    // 世界一周の現在地点(制覇済みヵ国数)。レベル10ごとのサイコロで増減する
-    // (rollWorldCountryDice_を参照)。まだ保存されていない既存プレイヤーは、
-    // サイコロ方式導入前(レベルから自動計算)での位置をそのまま引き継ぐ。
-    worldCountry: (savedProgress && Number(savedProgress.worldCountry)) || (savedGame && Number(savedGame.worldCountry)) || legacyWorldCountForLevel_((savedGame && Number(savedGame.level)) || 1, (savedProgress && Number(savedProgress.worldLapStartLevel)) || (savedGame && Number(savedGame.worldLapStartLevel)) || 100),
     worldLap: (savedProgress && Number(savedProgress.worldLap)) || (savedGame && Number(savedGame.worldLap)) || 1,
     // ステージID→撃破済みかどうか。周が変わるとリセットされる。
     worldBossDefeated: (savedProgress && savedProgress.worldBossDefeated && typeof savedProgress.worldBossDefeated === 'object') ? Object.assign({}, savedProgress.worldBossDefeated) : ((savedGame && savedGame.worldBossDefeated && typeof savedGame.worldBossDefeated === 'object') ? Object.assign({}, savedGame.worldBossDefeated) : {}),
@@ -12348,12 +12344,11 @@
         // レベルは算数・数学の経験値と理科の経験値を合算して決まる(単一のLv.)。
         const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
         const leveledUp = newLevel > state.level;
-        const worldDiceHtml = rollWorldCountryDice_(state.level, newLevel);
         state.level = newLevel;
         const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
-        winHtml = (pointsToAdd > 0
+        winHtml = pointsToAdd > 0
           ? `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
-          : `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
+          : `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`;
       }
     } else {
       state.scienceStreak = 0;
@@ -12878,7 +12873,6 @@
       const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
       const leveledUp = newLevel > state.level;
       const prevWorldCount = worldCountForLevel(state.level);
-      const worldDiceHtml = rollWorldCountryDice_(state.level, newLevel);
       state.level = newLevel;
       state.streak = 0;
       state.streakAboveGrade = true;
@@ -12992,7 +12986,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -13365,7 +13359,6 @@
         state.hp = Number(progress.hp) || state.hp;
         state.worldLap = Number(progress.worldLap) || state.worldLap;
         state.worldLapStartLevel = Number(progress.worldLapStartLevel) || state.worldLapStartLevel;
-        state.worldCountry = (progress.worldCountry !== undefined && progress.worldCountry !== null) ? Number(progress.worldCountry) || 0 : state.worldCountry;
         state.worldBossDefeated = (progress.worldBossDefeated && typeof progress.worldBossDefeated === 'object') ? Object.assign({}, progress.worldBossDefeated) : state.worldBossDefeated;
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
@@ -13416,7 +13409,7 @@
       id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount,
       items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
       hp: state.hp,
-      worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
+      worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
@@ -13459,7 +13452,6 @@
     var sHp = Number(server.hp) || 0;
     var sWorldLap = Number(server.worldLap) || 1;
     var sWorldLapStartLevel = Number(server.worldLapStartLevel) || 100;
-    var sWorldCountry = Number(server.worldCountry) || 0;
     var sWorldBossDefeated = (server.worldBossDefeated && typeof server.worldBossDefeated === 'object') ? server.worldBossDefeated : {};
     var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
     var sMathGodTitleEarned = !!server.mathGodTitleEarned;
@@ -13471,7 +13463,6 @@
     }
     if (spc > state.prefectureCount) { state.prefectureCount = spc; changed = true; }
     if (sHp > (Number(state.hp) || 0)) { state.hp = sHp; changed = true; }
-    if (sWorldCountry > (Number(state.worldCountry) || 0)) { state.worldCountry = sWorldCountry; changed = true; }
     sItems.forEach(function (itemId) {
       if (state.items.indexOf(itemId) === -1) { state.items.push(itemId); changed = true; }
     });
@@ -14650,16 +14641,15 @@
     return { emoji: isoToFlagEmoji(country.iso), name: country.name + 'の守護者' };
   }
 
-  // 世界旅行編：レベル100で1ヵ国目に到達し、以降レベルが10上がるごとにサイコロ
-  // (1〜6)を振って、偶数ならその数だけヵ国を進め、奇数ならその数だけ戻る
-  // (state.worldCountryがサイコロで増減する実際の位置)。
+  // 世界旅行編：レベル100から開始し、10レベルごとに1ヵ国ずつ制覇していく。
   // 2周目以降はworldLapStartLevelがその周の開始レベルになる(レベル自体はリセットしない)。
   // また各ステージの最後の国(ボス)は、ボスを撃破する(worldBossDefeated)までは
-  // 制覇できないようキャップする(state.worldCountry自体はボスの手前を超えて
-  // 貯まっていてもよく、ボスを倒した瞬間に表示上も一気に進む――旧仕様からの踏襲)。
+  // 制覇できないようキャップする。
   function worldCountForLevel(level) {
     if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) return 0;
-    var raw = Math.max(0, Math.min(WORLD_DATA.length, Number(state && state.worldCountry) || 0));
+    var lapStart = (state && Number(state.worldLapStartLevel)) || 100;
+    if (level < lapStart) return 0;
+    var raw = Math.min(WORLD_DATA.length, Math.floor((level - lapStart) / 10) + 1);
     var defeated = (state && state.worldBossDefeated) || {};
     for (var i = 0; i < WORLD_STAGES.length; i++) {
       var stage = WORLD_STAGES[i];
@@ -14669,63 +14659,6 @@
       }
     }
     return raw;
-  }
-  // 移行用：サイコロ方式導入前の「レベルから自動計算」だった頃の制覇済みヵ国数。
-  // 既存プレイヤーのstate.worldCountry初期値を求めるためだけに使う
-  // (以降の進行はロールワールドカントリーダイス関数によるサイコロ制)。
-  function legacyWorldCountForLevel_(level, lapStart) {
-    if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) return 0;
-    var effectiveLapStart = Math.max(100, Number(lapStart) || 100);
-    if (level < effectiveLapStart) return 0;
-    return Math.min(WORLD_DATA.length, Math.floor((level - effectiveLapStart) / 10) + 1);
-  }
-  // 既に撃破済みのボスの国コードより手前には、サイコロで戻っても下がらない下限。
-  function worldCountryFloor_() {
-    if (typeof WORLD_STAGES === 'undefined' || !Array.isArray(WORLD_STAGES)) return 0;
-    var defeated = (state && state.worldBossDefeated) || {};
-    var floor = 0;
-    for (var i = 0; i < WORLD_STAGES.length; i++) {
-      var stage = WORLD_STAGES[i];
-      if (defeated[stage.id]) {
-        var bossCode = worldBossCountryCodeForStage(stage.id);
-        if (bossCode > floor) floor = bossCode;
-      }
-    }
-    return floor;
-  }
-  // レベルがoldLevel→newLevelに上がる間に「10レベルごと」の節目を何回またいだかを
-  // 数え、その回数分だけサイコロ(1〜6)を振ってstate.worldCountryを増減させる。
-  // 最初にlapStartへ到達する瞬間(1ヵ国目)だけは、旧仕様どおりサイコロ無しで
-  // 自動的に手に入る。戻り値はサイコロの結果を伝える演出用HTML(無ければ'')。
-  function rollWorldCountryDice_(oldLevel, newLevel) {
-    if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) return '';
-    var lapStart = Math.max(100, (state && Number(state.worldLapStartLevel)) || 100);
-    var oldThreshold = oldLevel >= lapStart ? Math.floor((oldLevel - lapStart) / 10) : -1;
-    var newThreshold = newLevel >= lapStart ? Math.floor((newLevel - lapStart) / 10) : -1;
-    if (newThreshold <= oldThreshold) return '';
-    var htmlParts = [];
-    if (oldThreshold < 0 && newThreshold >= 0) {
-      state.worldCountry = Math.max(Number(state.worldCountry) || 0, 1);
-      oldThreshold = 0;
-    }
-    var rollsToMake = Math.max(0, newThreshold - oldThreshold);
-    for (var i = 0; i < rollsToMake; i++) {
-      var die = randInt(1, 6);
-      var isEven = die % 2 === 0;
-      var delta = isEven ? die : -die;
-      var before = Number(state.worldCountry) || 0;
-      var floor = worldCountryFloor_();
-      var after = Math.max(floor, Math.min(WORLD_DATA.length, before + delta));
-      state.worldCountry = after;
-      if (isEven) {
-        htmlParts.push(`<div class="enemy-quote-banner">🎲 サイコロを振った！出た目：${die}（偶数）→ ${die}ヵ国分進んだ！</div>`);
-      } else if (after < before) {
-        htmlParts.push(`<div class="enemy-quote-banner">🎲 サイコロを振った！出た目：${die}（奇数）→ ${before - after}ヵ国分戻ってしまった…</div>`);
-      } else {
-        htmlParts.push(`<div class="enemy-quote-banner">🎲 サイコロを振った！出た目：${die}（奇数）→ 戻ろうとしたが、既に倒したボスより手前には戻らなかった！</div>`);
-      }
-    }
-    return htmlParts.join('');
   }
   // 現在、挑戦可能な(まだ倒していない)ボスのステージを返す。無ければnull。
   function currentChallengeableBossStage() {
@@ -14958,13 +14891,9 @@
     var total = WORLD_DATA.length;
     var count = worldCountForLevel(state.level);
     var lapLabel = (Number(state.worldLap) || 1) + '周目：';
-    var lapStart = Math.max(100, Number(state.worldLapStartLevel) || 100);
-    var nextRollText = state.level < lapStart
-      ? '（レベル' + lapStart + 'で1ヵ国目に到達！）'
-      : '（レベル' + (lapStart + (Math.floor((state.level - lapStart) / 10) + 1) * 10) + 'でサイコロを振って進む/戻る！）';
     els.worldProgress.textContent = count >= total
       ? '🎉 ' + lapLabel + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
-      : lapLabel + count + ' / ' + total + 'ヵ国を制覇！' + nextRollText;
+      : lapLabel + count + ' / ' + total + 'ヵ国を制覇！（次は「' + WORLD_DATA[count].name + '」、レベル' + (state.worldLapStartLevel + count * 10) + 'で制覇）';
     ensureWorldMapLoaded(count);
     applyWorldMapColors(count);
     renderWorldZoomTabs();
