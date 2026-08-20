@@ -11959,6 +11959,7 @@
     worldAllySection: document.getElementById('worldAllySection'),
     worldLapRestart: document.getElementById('worldLapRestart'),
     worldDiceModal: document.getElementById('worldDiceModal'),
+    worldDiceTestBtn: document.getElementById('worldDiceTestBtn'),
     worldDiceFace: document.getElementById('worldDiceFace'),
     worldDiceResultText: document.getElementById('worldDiceResultText'),
     worldDiceCloseBtn: document.getElementById('worldDiceCloseBtn'),
@@ -13322,6 +13323,7 @@
     updateWorldToggleVisibility();
     els.worldPanel.hidden = true;
     els.grantToggle.hidden = !(session && session.id === '00001');
+    if (els.worldDiceTestBtn) els.worldDiceTestBtn.hidden = !(session && session.id === '00001');
     els.grantPanel.hidden = true;
     els.testPhotoToggle.hidden = !!isGuest;
     els.testPhotoPanel.hidden = true;
@@ -14751,18 +14753,24 @@
     }
     var rollsToMake = Math.max(0, newThreshold - oldThreshold);
     for (var i = 0; i < rollsToMake; i++) {
-      var die = randInt(1, 6);
-      var isEven = die % 2 === 0;
-      var delta = isEven ? die : -die;
-      var before = Number(state.worldCountry) || 0;
-      var floor = worldCountryFloor_();
-      var after = Math.max(floor, Math.min(WORLD_DATA.length, before + delta));
-      state.worldCountry = after;
-      enqueueWorldDiceRoll_({ die: die, isEven: isEven, before: before, after: after });
+      rollOnceWorldCountryDice_();
     }
     // サイコロ演出は専用モーダル(worldDiceModal)で見せるため、win-banner側の
     // HTMLは返さない(呼び出し元はshowNextWorldDiceRoll_をDOM更新後に呼ぶ)。
     return '';
+  }
+  // サイコロを1回だけ振ってstate.worldCountryを増減させ、結果をキューに積む。
+  // rollWorldCountryDice_(通常のレベルアップ時)と、00001限定のテスト表示ボタンの
+  // 両方から呼ばれる共通処理。
+  function rollOnceWorldCountryDice_() {
+    var die = randInt(1, 6);
+    var isEven = die % 2 === 0;
+    var delta = isEven ? die : -die;
+    var before = Number(state.worldCountry) || 0;
+    var floor = worldCountryFloor_();
+    var after = Math.max(floor, Math.min((typeof WORLD_DATA !== 'undefined' ? WORLD_DATA.length : 100), before + delta));
+    state.worldCountry = after;
+    enqueueWorldDiceRoll_({ die: die, isEven: isEven, before: before, after: after });
   }
   // サイコロを振った結果を1件ずつ順番に見せるためのキュー。1回のレベルアップで
   // 複数回サイコロを振ることがあるため(例: 一気に20レベル上がった等)、
@@ -16016,6 +16024,15 @@
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
+  if (els.worldDiceTestBtn) {
+    els.worldDiceTestBtn.addEventListener('click', function () {
+      rollOnceWorldCountryDice_();
+      saveGameState(state);
+      var session = loadSession();
+      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      showNextWorldDiceRoll_();
+    });
+  }
   if (els.worldDiceCloseBtn) {
     els.worldDiceCloseBtn.addEventListener('click', function () {
       if (worldDiceRollQueue_.length > 0) {
