@@ -36,7 +36,9 @@ CREATE TABLE students (
   pending_notice TEXT,                     -- 次回ログイン時に1回だけ表示するお知らせ(表示後NULLに戻す)
   speed_seed_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「すばやさの種」の所持数(消費型)
   iron_wall_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)
-  steel_armor_charges INTEGER NOT NULL DEFAULT 0 -- なんでも屋「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)
+  steel_armor_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)
+  world_country INTEGER NOT NULL DEFAULT 0, -- 世界一周の制覇済みヵ国数(2026-09-01からサイコロ方式、クライアント管理・直接SET)
+  world_continent_bonus JSONB NOT NULL DEFAULT '{}' -- 大陸制覇ボーナス(500MP)を今の周で既に受け取った大陸のID一覧(重複付与防止用、周が変わるとリセット)
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
