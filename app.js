@@ -14975,6 +14975,7 @@
       applyWorldDataForLap_(state.worldLap);
       state.worldBossDefeated = {};
       state.worldBossActiveStage = null;
+      state.worldAllies = [];
       saveGameState(state);
       if (typeof window !== 'undefined') {
         const session = loadSession();
