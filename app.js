@@ -11958,6 +11958,10 @@
     worldBossSection: document.getElementById('worldBossSection'),
     worldAllySection: document.getElementById('worldAllySection'),
     worldLapRestart: document.getElementById('worldLapRestart'),
+    worldDiceModal: document.getElementById('worldDiceModal'),
+    worldDiceFace: document.getElementById('worldDiceFace'),
+    worldDiceResultText: document.getElementById('worldDiceResultText'),
+    worldDiceCloseBtn: document.getElementById('worldDiceCloseBtn'),
     grantToggle: document.getElementById('grantToggle'),
     grantPanel: document.getElementById('grantPanel'),
     grantForm: document.getElementById('grantForm'),
@@ -12397,6 +12401,7 @@
       + winHtml + stepsHtml;
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
     els.nextBtn.disabled = false;
+    showNextWorldDiceRoll_();
     updateStats();
     updateScienceHud();
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
@@ -13039,6 +13044,7 @@
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
 
     els.nextBtn.disabled = false;
+    showNextWorldDiceRoll_();
     updateStats();
     updateGameHud();
     renderMissionBanner();
@@ -14739,7 +14745,6 @@
     var oldThreshold = oldLevel >= lapStart ? Math.floor((oldLevel - lapStart) / 10) : -1;
     var newThreshold = newLevel >= lapStart ? Math.floor((newLevel - lapStart) / 10) : -1;
     if (newThreshold <= oldThreshold) return '';
-    var htmlParts = [];
     if (oldThreshold < 0 && newThreshold >= 0) {
       state.worldCountry = Math.max(Number(state.worldCountry) || 0, 1);
       oldThreshold = 0;
@@ -14753,15 +14758,50 @@
       var floor = worldCountryFloor_();
       var after = Math.max(floor, Math.min(WORLD_DATA.length, before + delta));
       state.worldCountry = after;
-      if (isEven) {
-        htmlParts.push(`<div class="enemy-quote-banner">🎲 サイコロを振った！出た目：${die}（偶数）→ ${die}ヵ国分進んだ！</div>`);
-      } else if (after < before) {
-        htmlParts.push(`<div class="enemy-quote-banner">🎲 サイコロを振った！出た目：${die}（奇数）→ ${before - after}ヵ国分戻ってしまった…</div>`);
-      } else {
-        htmlParts.push(`<div class="enemy-quote-banner">🎲 サイコロを振った！出た目：${die}（奇数）→ 戻ろうとしたが、既に倒したボスより手前には戻らなかった！</div>`);
-      }
+      enqueueWorldDiceRoll_({ die: die, isEven: isEven, before: before, after: after });
     }
-    return htmlParts.join('');
+    // サイコロ演出は専用モーダル(worldDiceModal)で見せるため、win-banner側の
+    // HTMLは返さない(呼び出し元はshowNextWorldDiceRoll_をDOM更新後に呼ぶ)。
+    return '';
+  }
+  // サイコロを振った結果を1件ずつ順番に見せるためのキュー。1回のレベルアップで
+  // 複数回サイコロを振ることがあるため(例: 一気に20レベル上がった等)、
+  // showNextWorldDiceRoll_で1件ずつモーダル表示する。
+  var worldDiceRollQueue_ = [];
+  var worldDiceRollTimer_ = null;
+  function enqueueWorldDiceRoll_(info) {
+    worldDiceRollQueue_.push(info);
+  }
+  function worldDiceResultText_(info) {
+    if (info.isEven) {
+      return `出た目：${info.die}（偶数）\n${info.die}ヵ国分すすんだ！`;
+    } else if (info.after < info.before) {
+      return `出た目：${info.die}（奇数）\n${info.before - info.after}ヵ国分もどってしまった…`;
+    }
+    return `出た目：${info.die}（奇数）\nでも、倒したボスより手前にはもどらなかった！`;
+  }
+  var WORLD_DICE_FACES_ = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+  function showNextWorldDiceRoll_() {
+    if (!els.worldDiceModal || worldDiceRollQueue_.length === 0) return;
+    var info = worldDiceRollQueue_.shift();
+    els.worldDiceModal.hidden = false;
+    els.worldDiceCloseBtn.textContent = worldDiceRollQueue_.length > 0 ? 'つぎへ' : 'とじる';
+    els.worldDiceResultText.textContent = '';
+    els.worldDiceFace.textContent = '🎲';
+    els.worldDiceFace.classList.add('is-rolling');
+    var ticks = 0;
+    if (worldDiceRollTimer_) clearInterval(worldDiceRollTimer_);
+    worldDiceRollTimer_ = setInterval(function () {
+      els.worldDiceFace.textContent = WORLD_DICE_FACES_[randInt(0, 5)];
+      ticks++;
+      if (ticks >= 9) {
+        clearInterval(worldDiceRollTimer_);
+        worldDiceRollTimer_ = null;
+        els.worldDiceFace.classList.remove('is-rolling');
+        els.worldDiceFace.textContent = WORLD_DICE_FACES_[info.die - 1];
+        els.worldDiceResultText.textContent = worldDiceResultText_(info);
+      }
+    }, 80);
   }
   // 現在、挑戦可能な(まだ倒していない)ボスのステージを返す。無ければnull。
   function currentChallengeableBossStage() {
@@ -15976,6 +16016,16 @@
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
+  if (els.worldDiceCloseBtn) {
+    els.worldDiceCloseBtn.addEventListener('click', function () {
+      if (worldDiceRollQueue_.length > 0) {
+        showNextWorldDiceRoll_();
+      } else {
+        els.worldDiceModal.hidden = true;
+        renderWorldPanel();
+      }
+    });
+  }
   els.grantToggle.addEventListener('click', toggleGrant);
   els.grantForm.addEventListener('submit', handleGrantSubmit);
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);

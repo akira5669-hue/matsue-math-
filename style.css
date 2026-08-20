@@ -263,6 +263,61 @@ h1 {
   margin-bottom: 10px;
   line-height: 1.5;
 }
+/* 世界一周サイコロ演出モーダル */
+.dice-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 33, 39, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.dice-modal-overlay[hidden] { display: none; }
+.dice-modal-card {
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  padding: 28px 24px 22px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+  animation: win-pop 0.3s ease;
+}
+.dice-modal-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-ink);
+}
+.dice-modal-face {
+  font-size: 72px;
+  line-height: 1;
+  margin: 4px 0 16px;
+}
+.dice-modal-face.is-rolling {
+  animation: dice-shake 0.1s linear infinite;
+}
+@keyframes dice-shake {
+  0%   { transform: rotate(0deg) scale(1); }
+  25%  { transform: rotate(-12deg) scale(1.05); }
+  50%  { transform: rotate(0deg) scale(0.95); }
+  75%  { transform: rotate(12deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+.dice-modal-result {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: #92400e;
+  white-space: pre-line;
+}
+.dice-modal-close {
+  width: 100%;
+}
+
 .item-gain-banner {
   background: linear-gradient(90deg, #fee2e2, #ffedd5);
   border: 1.5px solid #f97316;
