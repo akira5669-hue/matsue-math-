@@ -286,10 +286,16 @@ h1 {
   animation: win-pop 0.3s ease;
 }
 .dice-modal-title {
-  margin: 0 0 14px;
+  margin: 0 0 4px;
   font-size: 15px;
   font-weight: 700;
   color: var(--c-ink);
+}
+.dice-modal-rule {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-ink-soft);
 }
 .dice-modal-face {
   font-size: 72px;
