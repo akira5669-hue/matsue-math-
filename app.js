@@ -13440,7 +13440,7 @@
   // まとめてサーバーへ送るための共通ペイロード(syncPointsアクション)。
   function buildProgressSyncPayload(id) {
     return {
-      id: id, points: state.points, level: state.level, exp: state.exp, prefectureCount: state.prefectureCount,
+      id: id, points: state.points, level: state.level, exp: state.exp, scienceExp: state.scienceExp, prefectureCount: state.prefectureCount,
       items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
       hp: state.hp,
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
@@ -13478,6 +13478,7 @@
     var sp = Number(server.points) || 0;
     var sl = Number(server.level) || 1;
     var se = Number(server.exp) || 0;
+    var sse = Number(server.scienceExp) || 0;
     var spc = Number(server.prefectureCount) || 0;
     var sItems = Array.isArray(server.items) ? server.items : [];
     var sRareCollected = Array.isArray(server.rareCollected) ? server.rareCollected : [];
@@ -13493,8 +13494,11 @@
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
-    if (isProgressGreater(sl, se, state.level, state.exp)) {
-      state.level = sl; state.exp = se; changed = true;
+    // レベルの進み具合は算数exp+理科exp合算で比較する(理科expはサーバーに新しく
+    // 追加した列で、以前は比較に入っておらずサーバー同期のたびに理科分の
+    // レベルアップが巻き戻る不具合の原因だった)。
+    if (isProgressGreater(sl, se + sse, state.level, (Number(state.exp) || 0) + (Number(state.scienceExp) || 0))) {
+      state.level = sl; state.exp = se; state.scienceExp = sse; changed = true;
     }
     if (spc > state.prefectureCount) { state.prefectureCount = spc; changed = true; }
     if (sHp > (Number(state.hp) || 0)) { state.hp = sHp; changed = true; }
@@ -13535,7 +13539,9 @@
       updateGameHud();
     }
 
-    var localAhead = sp < state.points || isProgressGreater(state.level, state.exp, sl, se) || spc < state.prefectureCount
+    var localAhead = sp < state.points
+      || isProgressGreater(state.level, (Number(state.exp) || 0) + (Number(state.scienceExp) || 0), sl, se + sse)
+      || spc < state.prefectureCount
       || state.items.some(function (x) { return sItems.indexOf(x) === -1; })
       || state.rareCollected.some(function (x) { return sRareCollected.indexOf(x) === -1; })
       || Object.keys(state.rareDefeats).some(function (k) { return (Number(state.rareDefeats[k]) || 0) > (Number(sRareDefeats[k]) || 0); })

@@ -16,6 +16,7 @@ CREATE TABLE students (
   guardian TEXT NOT NULL DEFAULT '',
   level INTEGER NOT NULL DEFAULT 1,
   exp INTEGER NOT NULL DEFAULT 0,
+  science_exp INTEGER NOT NULL DEFAULT 0, -- 理科モードの経験値(以前はクライアントのみで保持しており、レベル整合性チェックが算数expだけを見ていたため同期のたびに理科分のレベルアップが巻き戻るバグがあった)
   last_login TIMESTAMPTZ,
   prefecture_count INTEGER NOT NULL DEFAULT 0,
   avatar JSONB,                            -- {hair,face,skin,hairColor,outfitColor}
