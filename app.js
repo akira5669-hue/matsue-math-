@@ -2312,11 +2312,9 @@
     { id: 'evolution3', label: '生物の多様性と進化（中3）', gen: genEvolution3, addedDate: '2026-08-14' },
     { id: 'motion3', label: '物体の運動（中3）', gen: genMotion3, addedDate: '2026-08-14' },
     { id: 'forceComposition3', label: '力の合成と分解（中3）', gen: genForceComposition3, addedDate: '2026-08-14' },
-    // 小学校理科は新規追加中。本番公開前に00001だけで内容を確認するため、
-    // adminOnly:trueの間は00001以外には表示・出題されない(isAdminSession_参照)。
-    { id: 'electricCircuit4', label: '電気のはたらき（小4）', gen: genElectricCircuit4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'dissolveWays5', label: 'もののとけ方（小5）', gen: genDissolveWays5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'combustion6', label: '燃焼のしくみ（小6）', gen: genCombustion6, addedDate: '2026-08-21', adminOnly: true },
+    { id: 'electricCircuit4', label: '電気のはたらき（小4）', gen: genElectricCircuit4, addedDate: '2026-08-21' },
+    { id: 'dissolveWays5', label: 'もののとけ方（小5）', gen: genDissolveWays5, addedDate: '2026-08-21' },
+    { id: 'combustion6', label: '燃焼のしくみ（小6）', gen: genCombustion6, addedDate: '2026-08-21' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
