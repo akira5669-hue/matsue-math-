@@ -2315,30 +2315,28 @@
     { id: 'electricCircuit4', label: '電気のはたらき（小4）', gen: genElectricCircuit4, addedDate: '2026-08-21' },
     { id: 'dissolveWays5', label: 'もののとけ方（小5）', gen: genDissolveWays5, addedDate: '2026-08-21' },
     { id: 'combustion6', label: '燃焼のしくみ（小6）', gen: genCombustion6, addedDate: '2026-08-21' },
-    // 小学校理科の残り単元を新規追加中。本番公開前に00001だけで内容を確認するため、
-    // adminOnly:trueの間は00001以外には表示・出題されない(isAdminSession_参照)。
-    { id: 'season4', label: '季節と生物（小4）', gen: genSeason4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'weather4', label: '天気の様子（小4）', gen: genWeather4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'moonStar4', label: '月と星（小4）', gen: genMoonStar4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'rainSoil4', label: '雨水のゆくえと地面の様子（小4）', gen: genRainSoil4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'confinedAirWater4', label: 'とじこめた空気や水（小4）', gen: genConfinedAirWater4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'heatSpread4', label: 'もののあたたまり方（小4）', gen: genHeatSpread4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'waterForms4', label: '水のすがた（小4）', gen: genWaterForms4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'bodyMovement4', label: '人の体のつくりと運動（小4）', gen: genBodyMovement4, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'weatherChange5', label: '天気の変化（小5）', gen: genWeatherChange5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'plantGrowth5', label: '植物の発芽・成長・結実（小5）', gen: genPlantGrowth5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'animalBirth5', label: '動物のたんじょう（小5）', gen: genAnimalBirth5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'flowingWater5', label: '流水のはたらきと土地の変化（小5）', gen: genFlowingWater5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'pendulum5', label: 'ふりこの運動（小5）', gen: genPendulum5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'electromagnet5', label: '電流がつくる磁力（小5）', gen: genElectromagnet5, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'humanBody6', label: '人の体のつくりとはたらき（小6）', gen: genHumanBody6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'plantFunction6', label: '植物のつくりとはたらき（小6）', gen: genPlantFunction6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'foodChain6', label: '生物どうしのつながり（小6）', gen: genFoodChain6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'landChange6', label: '土地のつくりと変化（小6）', gen: genLandChange6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'lever6', label: 'てこのはたらき（小6）', gen: genLever6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'electricityUse6', label: '電気の利用（小6）', gen: genElectricityUse6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'aqueousSolution6', label: '水溶液の性質（小6）', gen: genAqueousSolution6, addedDate: '2026-08-21', adminOnly: true },
-    { id: 'moonSun6', label: '月と太陽（小6）', gen: genMoonSun6, addedDate: '2026-08-21', adminOnly: true },
+    { id: 'season4', label: '季節と生物（小4）', gen: genSeason4, addedDate: '2026-08-21' },
+    { id: 'weather4', label: '天気の様子（小4）', gen: genWeather4, addedDate: '2026-08-21' },
+    { id: 'moonStar4', label: '月と星（小4）', gen: genMoonStar4, addedDate: '2026-08-21' },
+    { id: 'rainSoil4', label: '雨水のゆくえと地面の様子（小4）', gen: genRainSoil4, addedDate: '2026-08-21' },
+    { id: 'confinedAirWater4', label: 'とじこめた空気や水（小4）', gen: genConfinedAirWater4, addedDate: '2026-08-21' },
+    { id: 'heatSpread4', label: 'もののあたたまり方（小4）', gen: genHeatSpread4, addedDate: '2026-08-21' },
+    { id: 'waterForms4', label: '水のすがた（小4）', gen: genWaterForms4, addedDate: '2026-08-21' },
+    { id: 'bodyMovement4', label: '人の体のつくりと運動（小4）', gen: genBodyMovement4, addedDate: '2026-08-21' },
+    { id: 'weatherChange5', label: '天気の変化（小5）', gen: genWeatherChange5, addedDate: '2026-08-21' },
+    { id: 'plantGrowth5', label: '植物の発芽・成長・結実（小5）', gen: genPlantGrowth5, addedDate: '2026-08-21' },
+    { id: 'animalBirth5', label: '動物のたんじょう（小5）', gen: genAnimalBirth5, addedDate: '2026-08-21' },
+    { id: 'flowingWater5', label: '流水のはたらきと土地の変化（小5）', gen: genFlowingWater5, addedDate: '2026-08-21' },
+    { id: 'pendulum5', label: 'ふりこの運動（小5）', gen: genPendulum5, addedDate: '2026-08-21' },
+    { id: 'electromagnet5', label: '電流がつくる磁力（小5）', gen: genElectromagnet5, addedDate: '2026-08-21' },
+    { id: 'humanBody6', label: '人の体のつくりとはたらき（小6）', gen: genHumanBody6, addedDate: '2026-08-21' },
+    { id: 'plantFunction6', label: '植物のつくりとはたらき（小6）', gen: genPlantFunction6, addedDate: '2026-08-21' },
+    { id: 'foodChain6', label: '生物どうしのつながり（小6）', gen: genFoodChain6, addedDate: '2026-08-21' },
+    { id: 'landChange6', label: '土地のつくりと変化（小6）', gen: genLandChange6, addedDate: '2026-08-21' },
+    { id: 'lever6', label: 'てこのはたらき（小6）', gen: genLever6, addedDate: '2026-08-21' },
+    { id: 'electricityUse6', label: '電気の利用（小6）', gen: genElectricityUse6, addedDate: '2026-08-21' },
+    { id: 'aqueousSolution6', label: '水溶液の性質（小6）', gen: genAqueousSolution6, addedDate: '2026-08-21' },
+    { id: 'moonSun6', label: '月と太陽（小6）', gen: genMoonSun6, addedDate: '2026-08-21' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -4347,7 +4345,7 @@
   }
 
   // 電気のはたらき（小4）：直列つなぎ・へい列つなぎ、乾電池の向きとモーターの
-  // 回転、回路・電気用図記号の基礎。00001限定プレビュー中(adminOnly)。
+  // 回転、回路・電気用図記号の基礎。
   function genElectricCircuit4() {
     const pat = randInt(0, 10);
     let question, answer, choices, steps;
@@ -4412,7 +4410,6 @@
 
   // もののとけ方（小5）：とかしても重さは変わらない(質量保存)、とける量には
   // 限度がある(飽和)、水の温度や量を変えたときのとける量の変化、ろ過。
-  // 00001限定プレビュー中(adminOnly)。
   function genDissolveWays5() {
     const pat = randInt(0, 9);
     let question, answer, choices, steps;
@@ -4466,7 +4463,7 @@
   }
 
   // 燃焼のしくみ（小6）：ものが燃えるために必要な酸素、燃焼後にできる二酸化炭素、
-  // 空気中の気体の割合の変化、酸素・ちっ素の性質。00001限定プレビュー中(adminOnly)。
+  // 空気中の気体の割合の変化、酸素・ちっ素の性質。
   function genCombustion6() {
     const pat = randInt(0, 10);
     let question, answer, choices, steps;
@@ -4524,7 +4521,7 @@
     return { category: 'combustion6', question, answer, choices, steps };
   }
 
-  // 季節と生物（小4）。00001限定プレビュー中(adminOnly)。
+  // 季節と生物（小4）。
   function genSeason4() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -4572,7 +4569,7 @@
     return { category: 'season4', question, answer, choices, steps };
   }
 
-  // 天気の様子（小4）。00001限定プレビュー中(adminOnly)。
+  // 天気の様子（小4）。
   function genWeather4() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -4620,7 +4617,7 @@
     return { category: 'weather4', question, answer, choices, steps };
   }
 
-  // 月と星（小4）。00001限定プレビュー中(adminOnly)。
+  // 月と星（小4）。
   function genMoonStar4() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -4663,7 +4660,7 @@
     return { category: 'moonStar4', question, answer, choices, steps };
   }
 
-  // 雨水のゆくえと地面の様子（小4）。00001限定プレビュー中(adminOnly)。
+  // 雨水のゆくえと地面の様子（小4）。
   function genRainSoil4() {
     const pat = randInt(0, 5);
     let question, answer, choices, steps;
@@ -4696,7 +4693,7 @@
     return { category: 'rainSoil4', question, answer, choices, steps };
   }
 
-  // とじこめた空気や水（小4）。00001限定プレビュー中(adminOnly)。
+  // とじこめた空気や水（小4）。
   function genConfinedAirWater4() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -4734,7 +4731,7 @@
     return { category: 'confinedAirWater4', question, answer, choices, steps };
   }
 
-  // もののあたたまり方（小4）。00001限定プレビュー中(adminOnly)。
+  // もののあたたまり方（小4）。
   function genHeatSpread4() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -4772,7 +4769,7 @@
     return { category: 'heatSpread4', question, answer, choices, steps };
   }
 
-  // 水のすがた（小4）。00001限定プレビュー中(adminOnly)。
+  // 水のすがた（小4）。
   function genWaterForms4() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -4810,7 +4807,7 @@
     return { category: 'waterForms4', question, answer, choices, steps };
   }
 
-  // 人の体のつくりと運動（小4）。00001限定プレビュー中(adminOnly)。
+  // 人の体のつくりと運動（小4）。
   function genBodyMovement4() {
     const pat = randInt(0, 5);
     let question, answer, choices, steps;
@@ -4843,7 +4840,7 @@
     return { category: 'bodyMovement4', question, answer, choices, steps };
   }
 
-  // 天気の変化（小5）。00001限定プレビュー中(adminOnly)。
+  // 天気の変化（小5）。
   function genWeatherChange5() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -4886,7 +4883,7 @@
     return { category: 'weatherChange5', question, answer, choices, steps };
   }
 
-  // 植物の発芽・成長・結実（小5）。00001限定プレビュー中(adminOnly)。
+  // 植物の発芽・成長・結実（小5）。
   function genPlantGrowth5() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -4934,7 +4931,7 @@
     return { category: 'plantGrowth5', question, answer, choices, steps };
   }
 
-  // 動物のたんじょう（小5、メダカ・人）。00001限定プレビュー中(adminOnly)。
+  // 動物のたんじょう（小5、メダカ・人）。
   function genAnimalBirth5() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -4972,7 +4969,7 @@
     return { category: 'animalBirth5', question, answer, choices, steps };
   }
 
-  // 流水のはたらきと土地の変化（小5）。00001限定プレビュー中(adminOnly)。
+  // 流水のはたらきと土地の変化（小5）。
   function genFlowingWater5() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -5020,7 +5017,7 @@
     return { category: 'flowingWater5', question, answer, choices, steps };
   }
 
-  // ふりこの運動（小5）。00001限定プレビュー中(adminOnly)。
+  // ふりこの運動（小5）。
   function genPendulum5() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -5058,7 +5055,7 @@
     return { category: 'pendulum5', question, answer, choices, steps };
   }
 
-  // 電流がつくる磁力・電磁石（小5）。00001限定プレビュー中(adminOnly)。
+  // 電流がつくる磁力・電磁石（小5）。
   function genElectromagnet5() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -5096,7 +5093,7 @@
     return { category: 'electromagnet5', question, answer, choices, steps };
   }
 
-  // 人の体のつくりとはたらき（小6）。00001限定プレビュー中(adminOnly)。
+  // 人の体のつくりとはたらき（小6）。
   function genHumanBody6() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -5144,7 +5141,7 @@
     return { category: 'humanBody6', question, answer, choices, steps };
   }
 
-  // 植物のつくりとはたらき（小6）。00001限定プレビュー中(adminOnly)。
+  // 植物のつくりとはたらき（小6）。
   function genPlantFunction6() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -5187,7 +5184,7 @@
     return { category: 'plantFunction6', question, answer, choices, steps };
   }
 
-  // 生物どうしのつながり（小6）。00001限定プレビュー中(adminOnly)。
+  // 生物どうしのつながり（小6）。
   function genFoodChain6() {
     const pat = randInt(0, 5);
     let question, answer, choices, steps;
@@ -5220,7 +5217,7 @@
     return { category: 'foodChain6', question, answer, choices, steps };
   }
 
-  // 土地のつくりと変化（小6）。00001限定プレビュー中(adminOnly)。
+  // 土地のつくりと変化（小6）。
   function genLandChange6() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -5263,7 +5260,7 @@
     return { category: 'landChange6', question, answer, choices, steps };
   }
 
-  // てこのはたらき（小6）。00001限定プレビュー中(adminOnly)。
+  // てこのはたらき（小6）。
   function genLever6() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -5311,7 +5308,7 @@
     return { category: 'lever6', question, answer, choices, steps };
   }
 
-  // 電気の利用（小6）。00001限定プレビュー中(adminOnly)。
+  // 電気の利用（小6）。
   function genElectricityUse6() {
     const pat = randInt(0, 6);
     let question, answer, choices, steps;
@@ -5354,7 +5351,7 @@
     return { category: 'electricityUse6', question, answer, choices, steps };
   }
 
-  // 水溶液の性質（小6）。00001限定プレビュー中(adminOnly)。
+  // 水溶液の性質（小6）。
   function genAqueousSolution6() {
     const pat = randInt(0, 7);
     let question, answer, choices, steps;
@@ -5402,7 +5399,7 @@
     return { category: 'aqueousSolution6', question, answer, choices, steps };
   }
 
-  // 月と太陽（小6）。00001限定プレビュー中(adminOnly)。
+  // 月と太陽（小6）。
   function genMoonSun6() {
     const pat = randInt(0, 5);
     let question, answer, choices, steps;
