@@ -12418,6 +12418,17 @@
         miss: 'あ、ごーまじで逃げちゃうぞ…また今度な！',
       },
     },
+    // 漁師AKRは他のレアキャラと違い、間違えても逃げない(FLEEING_RARE_TYPES_に
+    // 含めていない)。その代わり不正解のたびにHPを2つ奪ってくる特別なレアキャラ
+    // (HP処理はhandleAnswer内でstate.rareType==='gyoshi'を見て行う)。
+    gyoshi: {
+      id: 'gyoshi', name: '漁師AKR', img: 'images/gyoshi_akr.png',
+      lines: {
+        appear: '海の男は逃げも隠れもしねぇ！1問間違えるごとに、HPを2つもらっていくぜ！',
+        defeat: 'やるじゃねぇか！今日イチの大物はお前だったな！',
+        miss: '🎣 いただき！',
+      },
+    },
     // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選(rollRareType)とは
     // 完全に独立した仕組みで、文章題の問題が出た瞬間に別枠で5%の確率で登場する。
     sutoboke: {
@@ -12590,13 +12601,13 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
-  // 算数デビルちゃん(1/15)を追加した分、素の合計は177/300(59%)になったため、
-  // スケール係数も60/177に更新して合計20%を維持する。
-  const RARE_SCALE = 60 / 177; // 合計59%→20%
+  // 漁師AKR(1/20)を追加した分、素の合計は192/300(64%)になったため、
+  // スケール係数も60/192に更新して合計20%を維持する。
+  const RARE_SCALE = 60 / 192; // 合計64%→20%
   const RARE_CHANCE_ZOMBIE = 0.08 * RARE_SCALE;
   const RARE_CHANCE_SANTA = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SMILE = (1 / 30) * RARE_SCALE;
@@ -12613,6 +12624,7 @@
   const RARE_CHANCE_NATTOMAN = (1 / 50) * RARE_SCALE;
   const RARE_CHANCE_FUGOUPAKKUN = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_GOUMAJI = (1 / 50) * RARE_SCALE;
+  const RARE_CHANCE_GYOSHI = (1 / 20) * RARE_SCALE;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -12623,6 +12635,10 @@
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
   const FUGOUPAKKUN_BONUS_MP = 20;
+  // 漁師AKR：逃げないレアキャラで、不正解のたびにHPを2つ奪ってくる(非フリー仕様は
+  // FLEEING_RARE_TYPES_に含めないことで実現、HP減少は上のhandleAnswer内で処理)。
+  const GYOSHI_BONUS_MP = 20;
+  const GYOSHI_HP_STEAL_ = 2;
   // ボン・ミスコの呪い：通常の敵「ボンミスコ」に間違えるとかかる。呪われている間は
   // 10問連続正解してもMP報酬が上限5に制限される。なんでも屋でAKRの祈り(100MP)を
   // 受けるまで解除されない。
@@ -12738,6 +12754,7 @@
       ['nattoman', chanceNattoman],
       ['fugoupakkun', RARE_CHANCE_FUGOUPAKKUN],
       ['goumaji', RARE_CHANCE_GOUMAJI],
+      ['gyoshi', RARE_CHANCE_GYOSHI],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -13893,6 +13910,22 @@
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
         saveGameState(state);
+      } else if (state.rareType === 'gyoshi' && hasSteelArmorCharge_()) {
+        state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+        missLineHtml += state.steelArmorCharges > 0
+          ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
+          : `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！…鎧は壊れてなくなった。</div>`;
+        saveGameState(state);
+      } else if (state.rareType === 'gyoshi') {
+        // 漁師AKRは他のレアキャラと違い逃げず、その場に居座って不正解のたびにHPを
+        // 2つ奪ってくる特別なレアキャラ(isHpDamageActive_の日付ゲートとは無関係に、
+        // このキャラ固有のルールとして常に有効)。
+        state.hp = Math.max(0, (Number(state.hp) || 0) - GYOSHI_HP_STEAL_);
+        missLineHtml += `<div class="enemy-quote-banner">🎣 漁師AKRに、HPを${GYOSHI_HP_STEAL_}つ奪われた！（残りHP: ${state.hp}）</div>`;
+        if (state.hp <= 0) {
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+        }
+        saveGameState(state);
       } else if (isHpDamageActive_() && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         missLineHtml += state.steelArmorCharges > 0
@@ -13989,7 +14022,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(5 or 10)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
