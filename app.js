@@ -2312,6 +2312,11 @@
     { id: 'evolution3', label: '生物の多様性と進化（中3）', gen: genEvolution3, addedDate: '2026-08-14' },
     { id: 'motion3', label: '物体の運動（中3）', gen: genMotion3, addedDate: '2026-08-14' },
     { id: 'forceComposition3', label: '力の合成と分解（中3）', gen: genForceComposition3, addedDate: '2026-08-14' },
+    // 小学校理科は新規追加中。本番公開前に00001だけで内容を確認するため、
+    // adminOnly:trueの間は00001以外には表示・出題されない(isAdminSession_参照)。
+    { id: 'electricCircuit4', label: '電気のはたらき（小4）', gen: genElectricCircuit4, addedDate: '2026-08-21', adminOnly: true },
+    { id: 'dissolveWays5', label: 'もののとけ方（小5）', gen: genDissolveWays5, addedDate: '2026-08-21', adminOnly: true },
+    { id: 'combustion6', label: '燃焼のしくみ（小6）', gen: genCombustion6, addedDate: '2026-08-21', adminOnly: true },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
@@ -2343,11 +2348,18 @@
       return rank && rank <= ownRank;
     }).map(c => c.id);
   }
+  // adminOnly:trueの単元(本番公開前のプレビュー中)は、00001アカウントだけに
+  // 表示・出題する。本番公開する際はSCIENCE_CATEGORIES側のadminOnlyを外す。
+  function isAdminSession_() {
+    var s = loadSession();
+    return !!(s && s.id === '00001');
+  }
   // 理科版のdefaultEnabledIds。生徒の学年以下の理科単元を初期状態でONにする。
   function defaultEnabledScienceIds(grade) {
     const ownRank = GRADE_RANK[grade];
-    if (!ownRank) return SCIENCE_CATEGORIES.filter(c => !c.defaultOff).map(c => c.id);
-    return SCIENCE_CATEGORIES.filter(c => {
+    const visible = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
+    if (!ownRank) return visible.filter(c => !c.defaultOff).map(c => c.id);
+    return visible.filter(c => {
       const rank = GRADE_RANK[categoryGrade[c.id]];
       return rank && rank <= ownRank;
     }).map(c => c.id);
@@ -4310,6 +4322,184 @@
       steps = ['2力がつくる角度を測るときは分度器を使う'];
     }
     return { category: 'forceComposition3', question, answer, choices, steps };
+  }
+
+  // 電気のはたらき（小4）：直列つなぎ・へい列つなぎ、乾電池の向きとモーターの
+  // 回転、回路・電気用図記号の基礎。00001限定プレビュー中(adminOnly)。
+  function genElectricCircuit4() {
+    const pat = randInt(0, 10);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '乾電池1個と、乾電池2個を直列につないだときとで、豆電球の明るさをくらべると、乾電池2個の方はどうなりますか。';
+      answer = '明るくなる';
+      choices = shuffle(['明るくなる', '暗くなる', '変わらない', '光らなくなる']);
+      steps = ['乾電池を直列につなぐと、回路に流れる電流が大きくなるため豆電球は明るくなる'];
+    } else if (pat === 1) {
+      question = '乾電池1個のときと、乾電池2個をへい列につないだときとで、豆電球の明るさをくらべるとどうなりますか。';
+      answer = '変わらない';
+      choices = shuffle(['変わらない', '明るくなる', '暗くなる', '光らなくなる']);
+      steps = ['乾電池をへい列につないでも、回路に流れる電流の大きさは乾電池1個のときとほぼ変わらない'];
+    } else if (pat === 2) {
+      question = '乾電池を直列つなぎとへい列つなぎにしたとき、電池が長持ちするのはどちらですか。';
+      answer = 'へい列つなぎ';
+      choices = shuffle(['へい列つなぎ', '直列つなぎ', 'どちらも同じ', 'つなぎ方には関係ない']);
+      steps = ['へい列つなぎは1個あたりの電池が使われる量が少なくてすむため、電池が長持ちする'];
+    } else if (pat === 3) {
+      question = 'モーターに流れる電流の向きを逆にすると、モーターの回転はどうなりますか。';
+      answer = '逆向きに回る';
+      choices = shuffle(['逆向きに回る', '同じ向きのまま回る', '止まる', '速く回る']);
+      steps = ['電流の向きを逆にすると、モーターは逆向きに回転する'];
+    } else if (pat === 4) {
+      question = '乾電池の向きを反対にしてつなぐと、モーターの回転はどうなりますか。';
+      answer = '逆向きに回る';
+      choices = shuffle(['逆向きに回る', '同じ向きのまま回る', '止まる', '速く回る']);
+      steps = ['乾電池の向きを反対にすると、回路に流れる電流の向きが逆になり、モーターは逆向きに回る'];
+    } else if (pat === 5) {
+      question = '電気を通す道が輪のようにひとつながりになっているものを何といいますか。';
+      answer = '回路';
+      choices = shuffle(['回路', '導線', '端子', '極']);
+      steps = ['電気の通り道がひとつながりの輪になっているものを回路という'];
+    } else if (pat === 6) {
+      question = '乾電池の記号で、たての線が長い方はどちらの極を表しますか。';
+      answer = '＋極';
+      choices = shuffle(['＋極', '－極', 'どちらでもない', '両方とも同じ極']);
+      steps = ['乾電池の電気用図記号は、長い線が＋極、短い線が－極を表す'];
+    } else if (pat === 7) {
+      question = '回路の中を流れる電流の向きは、乾電池のどちらの極からどちらの極に向かって流れますか。';
+      answer = '＋極から－極';
+      choices = shuffle(['＋極から－極', '－極から＋極', '両方の極から同時に流れる', '向きは決まっていない']);
+      steps = ['回路の外側(導線の中)を流れる電流は、乾電池の＋極から出て－極にもどる向きに流れる'];
+    } else if (pat === 8) {
+      question = '回路に流れる電流の大きさをはかる器具を何といいますか。';
+      answer = '検流計（電流計）';
+      choices = shuffle(['検流計（電流計）', '電圧計', '温度計', 'ばねばかり']);
+      steps = ['回路に流れる電流の大きさは検流計(電流計)ではかる'];
+    } else if (pat === 9) {
+      question = '乾電池の＋極と－極を、豆電球などを通さずに導線だけで直接つなぐと、どうなりますか。';
+      answer = 'とても大きな電流が流れて危険（ショート回路）';
+      choices = shuffle([answer, '電流はまったく流れない', '豆電球が最も明るく光る', '乾電池が長持ちする']);
+      steps = ['＋極と－極を導線だけで直接つなぐとショート回路となり、とても大きな電流が流れて危険なので絶対にしてはいけない'];
+    } else {
+      question = '直列つなぎにした2つの豆電球のうち、1つの豆電球のフィラメントが切れると、もう1つの豆電球はどうなりますか。';
+      answer = '消える（回路がつながらなくなるため）';
+      choices = shuffle([answer, '変わらず光り続ける', 'これまでより明るくなる', '一瞬だけ明るくなってから消える']);
+      steps = ['直列つなぎでは回路が1本の輪になっているため、1つの豆電球が切れると回路全体がつながらなくなり、もう1つも消える'];
+    }
+    return { category: 'electricCircuit4', question, answer, choices, steps };
+  }
+
+  // もののとけ方（小5）：とかしても重さは変わらない(質量保存)、とける量には
+  // 限度がある(飽和)、水の温度や量を変えたときのとける量の変化、ろ過。
+  // 00001限定プレビュー中(adminOnly)。
+  function genDissolveWays5() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '食塩を水にとかす前と後で、食塩と水を合わせた全体の重さはどうなりますか。';
+      answer = '変わらない';
+      choices = shuffle(['変わらない', '軽くなる', '重くなる', 'とけた分だけ軽くなる']);
+      steps = ['ものを水にとかしても、なくなったわけではなく水の中に広がっているだけなので、全体の重さは変わらない'];
+    } else if (pat === 1) {
+      question = '一定の量の水にとける食塩やミョウバンの量には限りがあります。それ以上とけなくなった状態の水よう液を何といいますか。';
+      answer = '飽和水よう液';
+      choices = shuffle(['飽和水よう液', '中性水よう液', 'うすい水よう液', '蒸留水']);
+      steps = ['ものがそれ以上とけることができなくなった水よう液を飽和水よう液という'];
+    } else if (pat === 2) {
+      question = '水の温度を上げると、ミョウバンが水にとける量はどうなりますか。';
+      answer = '増える';
+      choices = shuffle(['増える', '減る', '変わらない', '0になる']);
+      steps = ['ミョウバンは、水の温度が高くなるほど、とける量が大きく増える'];
+    } else if (pat === 3) {
+      question = '水の温度を上げても、食塩が水にとける量はミョウバンと比べてどうなりますか。';
+      answer = 'あまり変わらない（増え方が小さい）';
+      choices = shuffle([answer, 'ミョウバンよりも大きく増える', '減っていく', 'まったくとけなくなる']);
+      steps = ['食塩は、水の温度を上げてもとける量はあまり増えない。これはミョウバンとの大きなちがいである'];
+    } else if (pat === 4) {
+      question = '水の量を2倍にすると、その水にとけるものの量はどうなりますか。';
+      answer = '2倍になる';
+      choices = shuffle(['2倍になる', '変わらない', '半分になる', '4倍になる']);
+      steps = ['水の量を増やすと、とけるものの量もその分だけ増える(水の量に比例する)'];
+    } else if (pat === 5) {
+      question = 'とけ残った食塩を水よう液から取りのぞくには、どのような方法を使いますか。';
+      answer = 'ろ過';
+      choices = shuffle(['ろ過', '蒸発', '冷却', 'かくはん']);
+      steps = ['とけきれずに残った固体を液体と分けるには、ろ紙とろうとを使ったろ過を行う'];
+    } else if (pat === 6) {
+      question = 'ろ過をするときに使う実験器具の組み合わせとして正しいものはどれですか。';
+      answer = 'ろ紙・ろうと・ビーカー';
+      choices = shuffle(['ろ紙・ろうと・ビーカー', '温度計・ガスバーナーだけ', 'ピンセットだけ', '虫めがねと定規']);
+      steps = ['ろ過には、ろ紙・ろうと・ビーカー(受け皿)を使う'];
+    } else if (pat === 7) {
+      question = '食塩水を蒸発皿に入れて水を蒸発させ続けると、最後に何が残りますか。';
+      answer = '食塩の固体（結晶）';
+      choices = shuffle(['食塩の固体（結晶）', '何も残らない', '水だけが残る', '色のついた気体が残る']);
+      steps = ['水よう液の水をすべて蒸発させると、とけていた固体(この場合は食塩)が結晶として残る'];
+    } else {
+      question = '色のついていない水よう液に光を当てたとき、とけている粒(つぶ)の見え方として正しいものはどれですか。';
+      answer = '目に見えないくらい小さく、液全体に均一に広がっている';
+      choices = shuffle([answer, '液の底にだけ粒が集まっている', '液の表面にだけ粒がうかんでいる', '粒が大きく、はっきり見える']);
+      steps = ['水よう液にとけている粒は非常に小さく、目には見えず、液全体に均一に広がっている'];
+    }
+    return { category: 'dissolveWays5', question, answer, choices, steps };
+  }
+
+  // 燃焼のしくみ（小6）：ものが燃えるために必要な酸素、燃焼後にできる二酸化炭素、
+  // 空気中の気体の割合の変化、酸素・ちっ素の性質。00001限定プレビュー中(adminOnly)。
+  function genCombustion6() {
+    const pat = randInt(0, 10);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = 'ろうそくなどのものが燃え続けるために、空気中の何という気体が必要ですか。';
+      answer = '酸素';
+      choices = shuffle(['酸素', 'ちっ素', '二酸化炭素', '水素']);
+      steps = ['ものが燃え続けるには、空気中の酸素が必要である'];
+    } else if (pat === 1) {
+      question = 'ろうそくなどのものが燃えると、新しく何という気体ができますか。';
+      answer = '二酸化炭素';
+      choices = shuffle(['二酸化炭素', '酸素', 'ちっ素', '水素']);
+      steps = ['ものが燃える(燃焼する)と、二酸化炭素と水ができる'];
+    } else if (pat === 2) {
+      question = '燃えたあとの気体の中に二酸化炭素ができたことを確かめるには、何を使いますか。';
+      answer = '石灰水（白くにごる）';
+      choices = shuffle(['石灰水（白くにごる）', 'BTB液（緑色になる）', 'リトマス紙（赤色になる）', '線香の火（激しく燃える）']);
+      steps = ['気体に石灰水を入れて振り、白くにごれば二酸化炭素が含まれていることが確かめられる'];
+    } else if (pat === 3) {
+      question = '空気中の気体のうち、体積の割合が一番多いのは何ですか。';
+      answer = 'ちっ素（約78％）';
+      choices = shuffle(['ちっ素（約78％）', '酸素（約78％）', '二酸化炭素（約78％）', '水素（約78％）']);
+      steps = ['空気の体積の約78％はちっ素、約21％は酸素、残りが二酸化炭素などである'];
+    } else if (pat === 4) {
+      question = 'ちっ素には、ものを燃やすはたらきがありますか。';
+      answer = 'ない（燃焼に直接関係しない）';
+      choices = shuffle([answer, 'ある（酸素より強い）', '酸素と同じくらいある', 'ちっ素だけで燃える']);
+      steps = ['ちっ素には物を燃やすはたらきはなく、燃焼に直接関係しない気体である'];
+    } else if (pat === 5) {
+      question = 'ふたをした集気びんの中でろうそくを燃やし続けると、やがて火が消えます。この理由として正しいものはどれですか。';
+      answer = 'びんの中の酸素が使われて少なくなるから';
+      choices = shuffle([answer, 'びんの中のちっ素がなくなるから', 'びんの中の二酸化炭素がなくなるから', 'ろうそくのろうがなくなるから（酸素は関係ない）']);
+      steps = ['集気びんの中は酸素の量が限られているため、燃焼で酸素が使われて少なくなると、やがて燃え続けられなくなり火が消える'];
+    } else if (pat === 6) {
+      question = 'ものが燃える前と後で、空気中の酸素の割合はどう変化しますか。';
+      answer = '減る';
+      choices = shuffle(['減る', '増える', '変わらない', '0になる']);
+      steps = ['ものが燃えると酸素が使われるため、燃えた後の空気中の酸素の割合は減る'];
+    } else if (pat === 7) {
+      question = 'ものが燃える前と後で、空気中の二酸化炭素の割合はどう変化しますか。';
+      answer = '増える';
+      choices = shuffle(['増える', '減る', '変わらない', '0になる']);
+      steps = ['ものが燃えると二酸化炭素ができるため、燃えた後の空気中の二酸化炭素の割合は増える'];
+    } else if (pat === 8) {
+      question = '酸素だけを集めた集気びんの中でろうそくを燃やすと、空気中で燃やすときと比べてどうなりますか。';
+      answer = 'はげしく（明るく）燃える';
+      choices = shuffle(['はげしく（明るく）燃える', 'すぐに火が消える', '同じように燃える', 'まったく燃えない']);
+      steps = ['酸素の割合が高いほど、ものはより激しく燃える'];
+    } else {
+      question = '酸素そのものは、火をつけると燃えますか。';
+      answer = '燃えない（ものを燃やすはたらきがあるだけ）';
+      choices = shuffle([answer, 'よく燃える', '少しだけ燃える', 'ちっ素と混ざると燃える']);
+      steps = ['酸素自身は燃える気体ではなく、他の物質が燃えるのを助けるはたらき(助燃性)を持つ気体である'];
+    }
+    return { category: 'combustion6', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
@@ -12058,7 +12248,7 @@
   function renderSettings() {
     if (state.subject === 'science') {
       els.settingsDailyLimitNote.textContent = '🔬理科の出題単元を選べます。チェックした単元からランダムに出題します。';
-      els.settingsGrid.innerHTML = SCIENCE_CATEGORIES.map(c => {
+      els.settingsGrid.innerHTML = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_()).map(c => {
         const cs = state.catStats[c.id];
         const acc = cs && cs.total >= 3
           ? `<span class="cat-acc">${Math.round(cs.correct / cs.total * 100)}%</span>`
@@ -12282,8 +12472,9 @@
   const SCIENCE_EXP_PER_STREAK = 10;
 
   function pickScienceGenerator() {
-    const pool = SCIENCE_CATEGORIES.filter(c => state.enabledScience.has(c.id));
-    const src = pool.length > 0 ? pool : SCIENCE_CATEGORIES;
+    const allowed = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
+    const pool = allowed.filter(c => state.enabledScience.has(c.id));
+    const src = pool.length > 0 ? pool : allowed;
     return src[randInt(0, src.length - 1)];
   }
 
