@@ -2312,6 +2312,7 @@
     { id: 'evolution3', label: '生物の多様性と進化（中3）', gen: genEvolution3, addedDate: '2026-08-14' },
     { id: 'motion3', label: '物体の運動（中3）', gen: genMotion3, addedDate: '2026-08-14' },
     { id: 'forceComposition3', label: '力の合成と分解（中3）', gen: genForceComposition3, addedDate: '2026-08-14' },
+    { id: 'genetics3', label: '遺伝の規則性と遺伝子（中3）', gen: genGenetics3, addedDate: '2026-08-22', adminOnly: true },
     { id: 'electricCircuit4', label: '電気のはたらき（小4）', gen: genElectricCircuit4, addedDate: '2026-08-21' },
     { id: 'dissolveWays5', label: 'もののとけ方（小5）', gen: genDissolveWays5, addedDate: '2026-08-21' },
     { id: 'combustion6', label: '燃焼のしくみ（小6）', gen: genCombustion6, addedDate: '2026-08-21' },
@@ -5430,6 +5431,86 @@
       steps = ['太陽は月よりはるかに大きいが、地球からの距離も月よりはるかに遠いため、見かけの大きさがほぼ同じくらいに見える'];
     }
     return { category: 'moonSun6', question, answer, choices, steps };
+  }
+
+  // 遺伝の規則性と遺伝子（中3）：対立形質・純系・分離の法則・顕性形質と潜性形質・
+  // メンデルの交配実験の遺伝子の組み合わせと形質の比・DNA・遺伝子組換え・品種改良。
+  function genGenetics3() {
+    const pat = randInt(0, 13);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '同時に現れることのない、1つの形質についての2つの異なる形質(例：丸形としわ形)を何といいますか。';
+      answer = '対立形質';
+      choices = shuffle(['対立形質', '潜性形質', '遺伝子形質', '相同形質']);
+      steps = ['丸形としわ形のように、同時には現れない1つの形質についての2つの異なる形質を対立形質という'];
+    } else if (pat === 1) {
+      question = '代を重ねて自家受粉させても、親と同じ形質だけが子に現れる個体を何といいますか。';
+      answer = '純系';
+      choices = shuffle(['純系', '雑種', '対立形質', '中間形質']);
+      steps = ['代を重ねて自家受粉させても、親と同じ形質しか現れない個体を純系という'];
+    } else if (pat === 2) {
+      question = '同じ個体(または同じ純系)の花粉が、めしべについて受粉することを何といいますか。';
+      answer = '自家受粉';
+      choices = shuffle(['自家受粉', '他家受粉', '自家受精', '人工受粉']);
+      steps = ['同じ個体(同じ純系)の花粉がめしべにつくことを自家受粉という'];
+    } else if (pat === 3) {
+      question = '生殖細胞がつくられる減数分裂のとき、対になっている遺伝子が分かれてそれぞれ別の生殖細胞に入ることを何といいますか。';
+      answer = '分離の法則';
+      choices = shuffle(['分離の法則', '独立の法則', '優劣の法則', '純系の法則']);
+      steps = ['減数分裂の際、対になっている遺伝子が分離してそれぞれ別々の生殖細胞に入ることを分離の法則という'];
+    } else if (pat === 4) {
+      question = '対立形質をもつ純系どうしを交配したとき、子(雑種第一代)に現れる形質を何といいますか。';
+      answer = '顕性形質';
+      choices = shuffle(['顕性形質', '潜性形質', '中間形質', '対立形質']);
+      steps = ['対立形質の純系どうしを交配したとき、子に現れる形質を顕性形質(以前は優性形質と呼ばれた)という'];
+    } else if (pat === 5) {
+      question = '対立形質をもつ純系どうしを交配したとき、子に現れない形質を何といいますか。';
+      answer = '潜性形質';
+      choices = shuffle(['潜性形質', '顕性形質', '中間形質', '純系形質']);
+      steps = ['子に現れない方の形質を潜性形質(以前は劣性形質と呼ばれた)という'];
+    } else if (pat === 6) {
+      question = '丸形の遺伝子をAとし、丸形の純系(AA)としわ形の純系(aa)を交配してできた子の遺伝子の組み合わせは何ですか。';
+      answer = 'Aa（すべてAa）';
+      choices = shuffle(['Aa（すべてAa）', 'AA（すべてAA）', 'aa（すべてaa）', 'AAとaaが半分ずつ']);
+      steps = ['AAの生殖細胞はすべてA、aaの生殖細胞はすべてaなので、子の遺伝子の組み合わせはすべてAaになる'];
+    } else if (pat === 7) {
+      question = 'AAとaaの純系を交配してできた子(Aa)の形質は、丸形(A)としわ形(a)のどちらになりますか。';
+      answer = '丸形（顕性形質が現れる）';
+      choices = shuffle(['丸形（顕性形質が現れる）', 'しわ形（潜性形質が現れる）', '丸形としわ形の中間の形', '半分が丸形、半分がしわ形']);
+      steps = ['Aaは顕性形質の遺伝子Aをもつため、顕性形質である丸形が現れる'];
+    } else if (pat === 8) {
+      question = '子(Aa)を自家受粉させてできる孫の遺伝子の組み合わせの比(AA：Aa：aa)はどうなりますか。';
+      answer = '1：2：1';
+      choices = shuffle(['1：2：1', '1：1：1', '2：1：1', '1：3：1']);
+      steps = ['Aaの生殖細胞はAとaが1：1ずつでき、これらを組み合わせると孫の遺伝子の比はAA：Aa：aa＝1：2：1になる'];
+    } else if (pat === 9) {
+      question = '子(Aa)を自家受粉させてできる孫のうち、丸形(顕性形質)としわ形(潜性形質)の個体数の比はどうなりますか。';
+      answer = '3：1';
+      choices = shuffle(['3：1', '1：1', '2：1', '1：3']);
+      steps = ['孫の遺伝子の比はAA：Aa：aa＝1：2：1で、AAとAaはどちらも丸形になるため、丸形：しわ形＝(1+2)：1＝3：1になる'];
+    } else if (pat === 10) {
+      question = 'Aa（丸形）どうしを交配してできた種子が800個できました。このうち、しわ形になると考えられるのは理論上何個ですか。';
+      answer = 200;
+      choices = buildChoices(200, [150, 300, 400]);
+      steps = ['丸形：しわ形＝3：1なので、しわ形の個数 = 800 × 1/4 = 200個'];
+      return { category: 'genetics3', question, answer, choices, steps };
+    } else if (pat === 11) {
+      question = '遺伝子の本体である物質を何といいますか(アルファベット3文字)。';
+      answer = 'DNA';
+      choices = shuffle(['DNA', 'RNA', 'ATP', 'DNP']);
+      steps = ['遺伝子の本体はDNA(デオキシリボ核酸)という物質である'];
+    } else if (pat === 12) {
+      question = 'ある生物から取り出した遺伝子を、別の生物のDNAに組みこんで、新しい形質をもたせる技術を何といいますか。';
+      answer = '遺伝子組換え';
+      choices = shuffle(['遺伝子組換え', '細胞分裂', '自家受粉', '分離の法則']);
+      steps = ['ある生物の遺伝子を別の生物のDNAに組みこみ、新しい形質を発現させる技術を遺伝子組換えという'];
+    } else {
+      question = '遺伝子組換えなどの技術を農作物の品種改良に応用すると、どのようなことが期待できますか。';
+      answer = '収穫量が多い、乾燥や病気に強いなど、有用な形質をもつ新しい品種を短期間でつくれる';
+      choices = shuffle([answer, '品種改良の効果はまったく期待できない', '必ず収穫量が減ってしまう', '同じ形質の個体しかつくれなくなる']);
+      steps = ['遺伝子組換えなどの技術により、有用な形質をもつ新しい品種を、従来の交配をくり返す方法より短期間でつくり出すことができる'];
+    }
+    return { category: 'genetics3', question, answer, choices, steps };
   }
 
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
