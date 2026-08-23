@@ -13332,12 +13332,9 @@
     // 世界一周の最終ボス(ステージ4)を初めて倒すと永続的にtrueになる称号フラグ。
     // 2周目以降にworldBossDefeatedがリセットされても、この称号は失われない。
     mathGodTitleEarned: !!((savedProgress && savedProgress.mathGodTitleEarned) || (savedGame && savedGame.mathGodTitleEarned)),
-    // 世界一周2周目(9月)以降、ボスを倒すと覚える属性魔法(ボスID一覧)。周をまたいでも
-    // 失われない(rareCollectedと同じ扱い)。
-    worldSpells: (savedProgress && Array.isArray(savedProgress.worldSpells)) ? savedProgress.worldSpells.slice() : ((savedGame && Array.isArray(savedGame.worldSpells)) ? savedGame.worldSpells.slice() : []),
-    // 今のボス戦挑戦中に魔法を使ったか(1回のボス戦挑戦につき1回まで)。
-    // worldBossActiveStageと同様に端末セッション限定、あえて永続化しない。
-    worldSpellUsedThisBattle: false,
+    // 魔法の書(2周目/9月のボス戦専用消費アイテム)の所持冊数。{fire,ice,thunder,...}
+    // のように属性ごとに数える。treasureItemsと同じ「端末を信頼してSET」方式。
+    spellbooks: (savedProgress && savedProgress.spellbooks && typeof savedProgress.spellbooks === 'object') ? Object.assign({}, savedProgress.spellbooks) : ((savedGame && savedGame.spellbooks && typeof savedGame.spellbooks === 'object') ? Object.assign({}, savedGame.spellbooks) : {}),
   };
   applyWorldDataForLap_(state.worldLap);
 
@@ -13356,6 +13353,10 @@
     categoryTag: document.getElementById('categoryTag'),
     memoToggle: document.getElementById('memoToggle'),
     worldSpellBtn: document.getElementById('worldSpellBtn'),
+    battleVsRow: document.getElementById('battleVsRow'),
+    battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
+    battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
+    battleEnemyCaption: document.getElementById('battleEnemyCaption'),
     memoPanel: document.getElementById('memoPanel'),
     memoCanvas: document.getElementById('memoCanvas'),
     memoPenBtn: document.getElementById('memoPenBtn'),
@@ -14079,6 +14080,17 @@
     } else {
       els.enemySpeech.hidden = true;
     }
+    // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
+    if (els.battleVsRow) {
+      if (isBossFight) {
+        els.battleVsRow.hidden = false;
+        els.battlePlayerAvatar.innerHTML = (state.avatar && AVATAR_HAIR_SAFE.length > 0) ? buildAvatarSvgSafe(state.avatar) : '🧑';
+        els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
+        els.battleEnemyCaption.textContent = enemy.name;
+      } else {
+        els.battleVsRow.hidden = true;
+      }
+    }
     const hpPct = Math.round((hp / requiredStreak) * 100);
     els.hpBarInner.style.width = `${hpPct}%`;
     els.hpBarInner.style.background = hp <= requiredStreak * 0.3 ? '#ef4444' : hp <= requiredStreak * 0.6 ? '#f59e0b' : '#22c55e';
@@ -14356,7 +14368,6 @@
         if (state.hp <= 0) {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
-          state.worldSpellUsedThisBattle = false;
         } else {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
@@ -14977,7 +14988,7 @@
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
-        state.worldSpells = Array.isArray(progress.worldSpells) ? progress.worldSpells.slice() : state.worldSpells;
+        state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -15030,7 +15041,7 @@
       speedSeedCount: state.speedSeedCount,
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
-      worldSpells: state.worldSpells || [],
+      spellbooks: state.spellbooks || {},
     };
   }
 
@@ -15074,7 +15085,7 @@
     var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
     var sMathGodTitleEarned = !!server.mathGodTitleEarned;
     var sTreasureItems = (server.treasureItems && typeof server.treasureItems === 'object') ? server.treasureItems : {};
-    var sWorldSpells = Array.isArray(server.worldSpells) ? server.worldSpells : [];
+    var sSpellbooks = (server.spellbooks && typeof server.spellbooks === 'object') ? server.spellbooks : {};
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -15125,8 +15136,9 @@
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
     });
-    sWorldSpells.forEach(function (sid) {
-      if (state.worldSpells.indexOf(sid) === -1) { state.worldSpells.push(sid); changed = true; }
+    SPELLBOOK_ELEMENTS_.forEach(function (el) {
+      var sv = Number(sSpellbooks[el]) || 0;
+      if (sv > (Number(state.spellbooks[el]) || 0)) { state.spellbooks[el] = sv; changed = true; }
     });
 
     if (changed) {
@@ -15146,7 +15158,7 @@
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
       || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
       || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); })
-      || state.worldSpells.some(function (x) { return sWorldSpells.indexOf(x) === -1; });
+      || SPELLBOOK_ELEMENTS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); });
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -15848,8 +15860,9 @@
     var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.png" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
 
     var treasureRowsHtml = treasureShopRowsHtml_();
+    var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -15858,6 +15871,9 @@
     });
     els.shopList.querySelectorAll('[data-treasure-sell-ring]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleSellTreasureRingClick(btn.getAttribute('data-treasure-sell-ring'), btn); });
+    });
+    els.shopList.querySelectorAll('[data-spellbook-buy]').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleBuySpellbookClick(btn.getAttribute('data-spellbook-buy'), btn); });
     });
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
@@ -16006,6 +16022,50 @@
       renderShopList();
       var mpNote = granted < reward.mp ? `+${granted}MP（本日のMP上限のため一部のみ）` : `+${granted}MP`;
       window.alert(`🎁 ${label}の宝箱を開けた！ ${mpNote}・+${reward.hp}HP・${label}の指輪をゲット！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  // 魔法の書のなんでも屋UI(9月/2周目のボス戦専用)。00001限定プレビュー。
+  function spellbookShopRowsHtml_() {
+    if (!isAdminSession_()) return '';
+    var books = state.spellbooks || {};
+    var rowsHtml = SPELLBOOK_ELEMENTS_.map(function (el) {
+      var info = SPELLBOOK_INFO_[el];
+      var count = Number(books[el]) || 0;
+      var canAfford = state.points >= SPELLBOOK_COST_MP_;
+      var actionHtml = canAfford
+        ? `<button type="button" class="gift-redeem-btn" data-spellbook-buy="${el}">購入する</button>`
+        : `<span class="gift-insufficient">MP不足</span>`;
+      var selfDamageNote = info.selfDamage > 0 ? `。ただし使うと自分も${info.selfDamage}HP減る` : '';
+      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${info.emoji} 魔法の書「${info.label}」（所持: ${count}冊）</span><span class="gift-cost">${SPELLBOOK_COST_MP_}MP</span><span class="shop-item-note">ステージ${info.stageId}のボスに有効。使うと相手のHPを${info.dmg}減らす${selfDamageNote}</span></div>${actionHtml}</div>`;
+    }).join('');
+    return `<div class="shop-section-title">📖 魔法の書（00001限定プレビュー中）</div>` + rowsHtml;
+  }
+
+  function handleBuySpellbookClick(element, btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var info = SPELLBOOK_INFO_[element];
+    if (!info) return;
+    if (!window.confirm(`魔法の書「${info.label}」を購入します（${SPELLBOOK_COST_MP_}MP）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buySpellbook', { id: session.id, element: element }).then(function (res) {
+      if (!res.ok) {
+        var msg = res.error === 'insufficient_points' ? 'MPが不足しています。' : '購入に失敗しました。もう一度お試しください。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.spellbooks = res.spellbooks;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`📖 魔法の書「${info.label}」を手に入れた！`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -16414,36 +16474,44 @@
     ],
   };
   // 世界一周2周目(9月〜)専用のボス撃破に必要な連続正解数(=ボスのHP)。ボスキャラ自体は
-  // 1周目と共通(wboss_*)だが、9月ステージでは各ボスに属性が設定され、倒すと
-  // その属性の魔法を覚える(WORLD_SPELLS_参照)。
+  // 1周目と共通(wboss_*)だが、9月ステージでは各ボスに属性が設定され、対応する
+  // 魔法の書(SPELLBOOK_INFO_)でダメージを与えられる。ステージ4(大地・自然・光闇)の
+  // 書はまだ未実装(2026-08-24時点、追って追加予定)。
   const WORLD_BOSS_SEQUENCES_LAP2 = {
-    1: [{ streak: 30, id: 'wboss_baby' }],
-    2: [{ streak: 40, id: 'wboss_hebitsukai' }],
-    3: [{ streak: 50, id: 'wboss_suijobike' }],
+    1: [{ streak: 300, id: 'wboss_baby' }],
+    2: [{ streak: 400, id: 'wboss_hebitsukai' }],
+    3: [{ streak: 500, id: 'wboss_suijobike' }],
     4: [
-      { streak: 30, id: 'wboss_fullswing' },
-      { streak: 40, id: 'wboss_chuni' },
-      { streak: 50, id: 'wboss_sensei' },
+      { streak: 500, id: 'wboss_fullswing' },
+      { streak: 1000, id: 'wboss_chuni' },
+      { streak: 2000, id: 'wboss_sensei' },
     ],
   };
   function worldBossSequenceForStage(stageId) {
     var source = (Number(state.worldLap) || 1) >= 2 ? WORLD_BOSS_SEQUENCES_LAP2 : WORLD_BOSS_SEQUENCES;
     return source[stageId] || [{ streak: WORLD_BOSS_STREAK_REQUIRED, id: null }];
   }
-  // ボスごとの属性魔法(9月/2周目限定)。倒すと恒久的に覚え、以降どのボス戦でも
-  // 使える。1回のボス戦挑戦につき1回だけ使え、使うと連続正解数がWORLD_SPELL_DAMAGE_
-  // 問分進む(=ボスのHPを直接削る「攻撃系の効果」)。
-  const WORLD_SPELLS_ = {
-    wboss_baby: { name: '炎の魔法', emoji: '🔥' },
-    wboss_hebitsukai: { name: '氷の魔法', emoji: '❄️' },
-    wboss_suijobike: { name: '雷の魔法', emoji: '⚡' },
-    wboss_fullswing: { name: '大地の魔法', emoji: '🌎' },
-    wboss_chuni: { name: '自然の魔法', emoji: '🌿' },
-    wboss_sensei: { name: '光闇の魔法', emoji: '✨' },
-  };
-  const WORLD_SPELL_DAMAGE_ = 5;
   // 9月ステージ(2周目)のボスを倒すとMPは増えない代わりに+300HP。
   const WORLD_BOSS_LAP2_HP_BONUS_ = 300;
+  // 魔法の書(2周目のボス戦専用消費アイテム)。なんでも屋で100MPで購入し、対応する
+  // 属性のボス戦で1冊消費してボスのHPを削る(アイスランス・サンダーは自分も
+  // HPが減る)。ステージ4(大地・自然・光闇)の書は未実装。
+  const SPELLBOOK_ELEMENTS_ = ['fire', 'ice', 'thunder'];
+  const SPELLBOOK_COST_MP_ = 100;
+  const SPELLBOOK_INFO_ = {
+    fire: { label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDamage: 0, stageId: 1 },
+    ice: { label: 'アイスランス', emoji: '❄️', dmg: 50, selfDamage: 10, stageId: 2 },
+    thunder: { label: 'サンダー', emoji: '⚡', dmg: 50, selfDamage: 10, stageId: 3 },
+  };
+  // 現在挑戦中のボスの属性(ステージ1〜3のみ対応、ステージ4は未定でnullを返す)。
+  function currentWorldBossElement_() {
+    if (!state.worldBossActiveStage || (Number(state.worldLap) || 1) < 2) return null;
+    var el = null;
+    SPELLBOOK_ELEMENTS_.forEach(function (key) {
+      if (SPELLBOOK_INFO_[key].stageId === state.worldBossActiveStage) el = key;
+    });
+    return el;
+  }
   function worldBossCurrentSubBoss(stageId, subIndex) {
     const seq = worldBossSequenceForStage(stageId);
     return seq[Math.min(subIndex || 0, seq.length - 1)];
@@ -16473,24 +16541,13 @@
         collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${bossDisplay.name}」をコレクションにゲットした！🎖️</div>`;
       }
     }
-    // 9月の世界一周(2周目)限定：ボスを倒してもMPは増えないが+300HPと、そのボスの
-    // 属性魔法を覚える(既に覚えている魔法は再取得しないが、HPは毎回もらえる)。
-    let spellGainedHtml = '';
+    // 9月の世界一周(2周目)限定：ボスを倒してもMPは増えないが+300HP。
+    let hpBonusGainedHtml = '';
     if ((Number(state.worldLap) || 1) >= 2 && defeatedSub && defeatedSub.id) {
       state.hp = (Number(state.hp) || 0) + WORLD_BOSS_LAP2_HP_BONUS_;
-      const spell = WORLD_SPELLS_[defeatedSub.id];
-      if (spell) {
-        state.worldSpells = state.worldSpells || [];
-        if (state.worldSpells.indexOf(defeatedSub.id) === -1) {
-          state.worldSpells.push(defeatedSub.id);
-          spellGainedHtml = `<div class="item-gain-banner">${spell.emoji} 「${spell.name}」を覚えた！以降のボス戦でいつでも使える！（+${WORLD_BOSS_LAP2_HP_BONUS_}HP）</div>`;
-        } else {
-          spellGainedHtml = `<div class="item-gain-banner">💚 +${WORLD_BOSS_LAP2_HP_BONUS_}HP！</div>`;
-        }
-      }
+      hpBonusGainedHtml = `<div class="item-gain-banner">💚 +${WORLD_BOSS_LAP2_HP_BONUS_}HP！</div>`;
     }
     state.streak = 0;
-    state.worldSpellUsedThisBattle = false;
     const nextSubIndex = subIndex + 1;
     let winHtml;
     if (nextSubIndex >= sequence.length) {
@@ -16509,7 +16566,7 @@
       if (session && session.id) {
         apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       }
-      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${spellGainedHtml}${titleGainedHtml}`;
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}${titleGainedHtml}`;
     } else {
       state.worldBossSubIndex[stageId] = nextSubIndex;
       saveGameState(state);
@@ -16517,46 +16574,62 @@
         apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       }
       const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
-      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${spellGainedHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
     }
     return winHtml;
   }
 
-  // 「魔法を使う」ボタンの表示可否(ボス戦中・魔法を1つ以上覚えている・まだこの
-  // ボス戦で使っていない、の3条件を満たす時だけ表示する)。
+  // 「魔法を使う」ボタンの表示可否(ボス戦中・今のボスに対応する魔法の書を
+  // 1冊以上持っている場合だけ表示する)。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellBtn) return;
-    const canCast = !!state.worldBossActiveStage
-      && Array.isArray(state.worldSpells) && state.worldSpells.length > 0
-      && !state.worldSpellUsedThisBattle;
-    els.worldSpellBtn.hidden = !canCast;
+    if (!isAdminSession_()) { els.worldSpellBtn.hidden = true; return; }
+    const element = currentWorldBossElement_();
+    const info = element ? SPELLBOOK_INFO_[element] : null;
+    const count = info ? (Number((state.spellbooks || {})[element]) || 0) : 0;
+    if (info && count > 0) {
+      els.worldSpellBtn.hidden = false;
+      els.worldSpellBtn.textContent = `${info.emoji} ${info.label}を使う（残り${count}冊）`;
+    } else {
+      els.worldSpellBtn.hidden = true;
+    }
   }
 
-  // 魔法を使ってボスに直接ダメージを与える(=連続正解数をWORLD_SPELL_DAMAGE_問分
-  // 進める)。1回のボス戦挑戦につき1回まで。倒しきった場合はfinishWorldBossWin_を
-  // 呼んで通常の撃破と同じ演出にする。
+  // 魔法の書を1冊消費してボスに直接ダメージを与える(=連続正解数をinfo.dmg問分
+  // 進める)。アイスランス・サンダーは自分もHPが減る。所持数の分だけ何度でも
+  // 使える。倒しきった場合はfinishWorldBossWin_を呼んで通常の撃破と同じ演出にする。
   function castWorldSpell_() {
-    if (!state.worldBossActiveStage) return;
-    if (state.worldSpellUsedThisBattle) return;
-    if (!Array.isArray(state.worldSpells) || state.worldSpells.length === 0) return;
+    const element = currentWorldBossElement_();
+    if (!element) return;
+    const info = SPELLBOOK_INFO_[element];
+    const count = Number((state.spellbooks || {})[element]) || 0;
+    if (count <= 0) return;
     const stageId = state.worldBossActiveStage;
     const subIndex = state.worldBossSubIndex[stageId] || 0;
     const sub = worldBossCurrentSubBoss(stageId, subIndex);
     if (!sub) return;
-    const spellId = state.worldSpells[state.worldSpells.length - 1];
-    const spell = WORLD_SPELLS_[spellId] || { name: '魔法', emoji: '🔮' };
-    state.worldSpellUsedThisBattle = true;
-    state.streak = Math.min(sub.streak, (Number(state.streak) || 0) + WORLD_SPELL_DAMAGE_);
+    state.spellbooks[element] = count - 1;
+    state.streak = Math.min(sub.streak, (Number(state.streak) || 0) + info.dmg);
+    let selfDamageHtml = '';
+    if (info.selfDamage > 0) {
+      state.hp = Math.max(0, (Number(state.hp) || 0) - info.selfDamage);
+      selfDamageHtml = `（自分も${info.selfDamage}HP減った。残りHP: ${state.hp}）`;
+    }
+    const attackLineHtml = `<span class="fb-result">${info.emoji} ${info.label}で攻撃！ボスに${info.dmg}ダメージ！${selfDamageHtml}</span>`;
     if (state.streak >= sub.streak) {
       const winHtml = finishWorldBossWin_(stageId, subIndex);
       Array.from(els.choices.children).forEach(function (b) { b.disabled = true; });
-      els.feedback.innerHTML = `<span class="fb-result">${spell.emoji} ${spell.name}で攻撃！</span>` + winHtml;
+      els.feedback.innerHTML = attackLineHtml + winHtml;
       els.feedback.classList.remove('incorrect');
       els.feedback.classList.add('correct');
       els.nextBtn.disabled = false;
     } else {
       saveGameState(state);
-      els.feedback.innerHTML = `<span class="fb-result">${spell.emoji} ${spell.name}で攻撃！ボスに${WORLD_SPELL_DAMAGE_}ダメージ！</span>`;
+      const session = loadSession();
+      if (session && session.id) {
+        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      els.feedback.innerHTML = attackLineHtml;
       els.feedback.classList.remove('incorrect');
       els.feedback.classList.add('correct');
     }
@@ -16832,7 +16905,6 @@
       if (cancelBtn) cancelBtn.addEventListener('click', function () {
         state.worldBossActiveStage = null;
         state.streak = 0;
-        state.worldSpellUsedThisBattle = false;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
@@ -16861,7 +16933,6 @@
     if (challengeBtn) challengeBtn.addEventListener('click', function () {
       state.worldBossActiveStage = stage.id;
       state.streak = 0;
-      state.worldSpellUsedThisBattle = false;
       saveGameState(state);
       renderWorldPanel();
       updateGameHud();

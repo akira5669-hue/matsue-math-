@@ -105,6 +105,25 @@ h1 {
 }
 .ghost-btn:hover { border-color: var(--c-ink-soft); color: var(--c-ink); }
 
+/* Boss battle VS scene */
+.battle-vs-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.battle-avatar-side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.battle-avatar-box { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; font-size: 40px; border-radius: 50%; background: var(--c-bg); border: 2px solid var(--c-line); overflow: hidden; }
+.battle-avatar-box svg, .battle-avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+.battle-avatar-box-enemy { border-color: #ef4444; }
+.battle-avatar-caption { font-size: 12px; font-weight: 700; color: var(--c-ink-soft); }
+.battle-vs-label { font-size: 22px; flex-shrink: 0; }
+
 /* Enemy area */
 .enemy-area {
   display: flex;
