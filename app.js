@@ -14081,8 +14081,9 @@
       els.enemySpeech.hidden = true;
     }
     // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
+    // 00001限定プレビュー中(本番許可が出るまでlap1のボス戦にも出さない)。
     if (els.battleVsRow) {
-      if (isBossFight) {
+      if (isBossFight && isAdminSession_()) {
         els.battleVsRow.hidden = false;
         els.battlePlayerAvatar.innerHTML = (state.avatar && AVATAR_HAIR_SAFE.length > 0) ? buildAvatarSvgSafe(state.avatar) : '🧑';
         els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
