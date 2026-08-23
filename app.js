@@ -12984,20 +12984,32 @@
   // FLEEING_RARE_TYPES_に含めないことで実現、HP減少は上のhandleAnswer内で処理)。
   const GYOSHI_BONUS_MP = 20;
   const GYOSHI_HP_STEAL_ = 2;
-  // 宝箱・鍵・指輪(2026-08-28〜)：レアキャラを撃破すると5分の1の確率で、その時
-  // 解いていた問題の学年に応じたティアの宝箱を手に入れる(小学生→銅、中1→銀、
-  // 中2→金、中3→虹色)。宝箱はなんでも屋で対応するティアの鍵を買わないと開け
-  // られない。開けると報酬(MP・HP)とそのティアの指輪がもらえ、指輪はなんでも屋で
-  // 鍵と同額で売却できる。鍵の購入・宝箱を開ける・指輪の売却はMPが直接動くため
-  // サーバー側(handleBuyTreasureKey/handleOpenTreasureChest/handleSellTreasureRing)
-  // で検証してから実行する(薬草などの購入と同じ方式)。
-  var TREASURE_CHEST_START_ = '2026-08-28';
+  // 宝箱・鍵・指輪：レアキャラを撃破すると確率で、その時解いていた問題の学年に
+  // 応じたティアの宝箱を手に入れる(小学生→銅、中1→銀、中2→金、中3→虹色)。
+  // 8/29・30は「宝箱イベントデー」として5分の1の高確率、8/31以降は通常確率の
+  // 20分の1に下がる(それより前は宝箱自体が出ない)。宝箱はなんでも屋で対応する
+  // ティアの鍵を買わないと開けられない。開けると報酬(MP・HP)とそのティアの
+  // 指輪がもらえ、指輪はなんでも屋で鍵と同額で売却できる。鍵の購入・宝箱を
+  // 開ける・指輪の売却はMPが直接動くためサーバー側(handleBuyTreasureKey/
+  // handleOpenTreasureChest/handleSellTreasureRing)で検証してから実行する
+  // (薬草などの購入と同じ方式)。
+  var TREASURE_EVENT_START_ = '2026-08-29';
+  var TREASURE_EVENT_END_ = '2026-08-30';
+  const TREASURE_CHEST_EVENT_CHANCE = 1 / 5;
+  const TREASURE_CHEST_NORMAL_CHANCE = 1 / 20;
   function isTreasureChestActive_() {
     // 本番公開前に00001だけで動作確認できるよう、日付前でも00001アカウントなら
     // 有効にする(理科の新単元と同じisAdminSession_の仕組み)。
-    return todayKey() >= TREASURE_CHEST_START_ || isAdminSession_();
+    return todayKey() >= TREASURE_EVENT_START_ || isAdminSession_();
   }
-  const TREASURE_CHEST_DROP_CHANCE = 1 / 5;
+  // イベント日(8/29・30)は高確率、それ以外(8/31以降、または00001の事前確認時)は
+  // 低確率。日付前に00001が確認する場合は、イベント本来の確率(5分の1)で見せる。
+  function treasureChestDropChance_() {
+    var today = todayKey();
+    if (today >= TREASURE_EVENT_START_ && today <= TREASURE_EVENT_END_) return TREASURE_CHEST_EVENT_CHANCE;
+    if (today > TREASURE_EVENT_END_) return TREASURE_CHEST_NORMAL_CHANCE;
+    return TREASURE_CHEST_EVENT_CHANCE; // 00001の事前プレビュー用
+  }
   const TREASURE_TIER_LABEL_ = { bronze: '銅', silver: '銀', gold: '金', rainbow: '虹色' };
   const TREASURE_TIER_EMOJI_ = { bronze: '🥉', silver: '🥈', gold: '🥇', rainbow: '🌈' };
   const TREASURE_KEY_COST_MP_ = { bronze: 50, silver: 100, gold: 200, rainbow: 500 };
@@ -13267,7 +13279,7 @@
     worldBossDefeated: (savedProgress && savedProgress.worldBossDefeated && typeof savedProgress.worldBossDefeated === 'object') ? Object.assign({}, savedProgress.worldBossDefeated) : ((savedGame && savedGame.worldBossDefeated && typeof savedGame.worldBossDefeated === 'object') ? Object.assign({}, savedGame.worldBossDefeated) : {}),
     // 撃破したボス(国コード)のリスト。周をまたいでも記録として残す。
     worldAllies: (savedProgress && Array.isArray(savedProgress.worldAllies)) ? savedProgress.worldAllies.slice() : ((savedGame && Array.isArray(savedGame.worldAllies)) ? savedGame.worldAllies.slice() : []),
-    // 宝箱・鍵・指輪(2026-08-28〜)の所持数。{chestBronze,keyBronze,ringBronze,...}
+    // 宝箱・鍵・指輪の所持数。{chestBronze,keyBronze,ringBronze,...}
     // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
     treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
@@ -14487,10 +14499,10 @@
         collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${RARE_TYPES.thinker.name}」をコレクションにゲットした！🎖️</div>`;
       }
 
-      // 宝箱ドロップ(2026-08-28〜)：レアキャラ撃破時のみ5分の1の確率で、
+      // 宝箱ドロップ：レアキャラ撃破時のみ、その日の確率(イベントデーは高確率)で、
       // その時解いていた問題の学年に応じたティアの宝箱を1個手に入れる。
       let treasureChestGainedHtml = '';
-      if (wasRareType && isTreasureChestActive_() && Math.random() < TREASURE_CHEST_DROP_CHANCE) {
+      if (wasRareType && isTreasureChestActive_() && Math.random() < treasureChestDropChance_()) {
         const treasureTier = treasureTierForGrade_(categoryGrade[catId]);
         if (treasureTier) {
           const chestKey = treasureItemKey_('chest', treasureTier);
@@ -15848,7 +15860,7 @@
     if (steelArmorBtn) steelArmorBtn.addEventListener('click', function () { handleBuySteelArmorClick(steelArmorBtn); });
   }
 
-  // 宝箱・鍵・指輪(2026-08-28〜)のなんでも屋UI。ティアごとに「鍵を買う」
+  // 宝箱・鍵・指輪のなんでも屋UI。ティアごとに「鍵を買う」
   // 「宝箱を開ける」「指輪を売る」の3行を並べる。日付ゲート前は何も表示しない。
   function treasureShopRowsHtml_() {
     if (!isTreasureChestActive_()) return '';
@@ -15880,7 +15892,10 @@
 
       return keyRowHtml + openRowHtml + sellRowHtml;
     }).join('');
-    return `<div class="shop-section-title">🗝️ 宝箱・鍵・指輪（レアキャラを倒すと5分の1の確率で宝箱ゲット！）</div>` + rowsHtml;
+    var dropNote = (todayKey() >= TREASURE_EVENT_START_ && todayKey() <= TREASURE_EVENT_END_)
+      ? '宝箱イベントデー中！レアキャラを倒すと5分の1の確率で宝箱ゲット！'
+      : 'レアキャラを倒すと20分の1の確率で宝箱ゲット！（8/29・30はイベントデーで5分の1に）';
+    return `<div class="shop-section-title">🗝️ 宝箱・鍵・指輪（${dropNote}）</div>` + rowsHtml;
   }
 
   function handleBuyTreasureKeyClick(tier, btn) {
