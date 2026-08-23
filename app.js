@@ -13030,6 +13030,47 @@
   function treasureItemKey_(prefix, tier) {
     return prefix + tier.charAt(0).toUpperCase() + tier.slice(1);
   }
+  // 指輪の護り：銀・金・虹色の指輪を持っていると、ボス戦の不正解のダメージを
+  // 完全に防いでくれる(銅の指輪には効果なし)。1個の指輪につき防げる回数は
+  // 銀=1回・金=2回・虹色=3回で、使い切ると壊れてなくなる(所持数から1個減る)。
+  // 複数個持っていれば、1個使い切りしだい次の指輪に自動で切り替わる。
+  // 虹色→金→銀の順に、持っている中でいちばん強い指輪から使う。
+  const RING_SHIELD_CHARGES_ = { silver: 1, gold: 2, rainbow: 3 };
+  const RING_SHIELD_TIER_ORDER_ = ['rainbow', 'gold', 'silver'];
+  // treasureItemsに入りうる全キー(サーバー側sync.jsのTREASURE_ITEM_KEYS_と合わせる)。
+  const TREASURE_ITEM_ALL_KEYS_ = [
+    'chestBronze', 'chestSilver', 'chestGold', 'chestRainbow',
+    'keyBronze', 'keySilver', 'keyGold', 'keyRainbow',
+    'ringBronze', 'ringSilver', 'ringGold', 'ringRainbow',
+    'ringShieldChargesSilver', 'ringShieldChargesGold', 'ringShieldChargesRainbow',
+  ];
+  function consumeRingShieldIfAvailable_() {
+    state.treasureItems = state.treasureItems || {};
+    for (let i = 0; i < RING_SHIELD_TIER_ORDER_.length; i++) {
+      const tier = RING_SHIELD_TIER_ORDER_[i];
+      const chargeField = 'ringShieldCharges' + tier.charAt(0).toUpperCase() + tier.slice(1);
+      if ((Number(state.treasureItems[chargeField]) || 0) <= 0) {
+        const ringKey = treasureItemKey_('ring', tier);
+        const ringCount = Number(state.treasureItems[ringKey]) || 0;
+        if (ringCount > 0) {
+          state.treasureItems[ringKey] = ringCount - 1;
+          state.treasureItems[chargeField] = RING_SHIELD_CHARGES_[tier];
+        }
+      }
+      if ((Number(state.treasureItems[chargeField]) || 0) > 0) {
+        state.treasureItems[chargeField] = Number(state.treasureItems[chargeField]) - 1;
+        const remaining = state.treasureItems[chargeField];
+        const ringLeft = Number(state.treasureItems[treasureItemKey_('ring', tier)]) || 0;
+        return {
+          tier: tier,
+          html: remaining > 0
+            ? `<div class="enemy-quote-banner">${TREASURE_TIER_EMOJI_[tier]} ${TREASURE_TIER_LABEL_[tier]}の指輪のおかげでダメージなし！（残り${remaining}回）</div>`
+            : `<div class="enemy-quote-banner">${TREASURE_TIER_EMOJI_[tier]} ${TREASURE_TIER_LABEL_[tier]}の指輪のおかげでダメージなし！…指輪は壊れてなくなった。${ringLeft > 0 ? `（あと${ringLeft}個所持）` : ''}</div>`,
+        };
+      }
+    }
+    return null;
+  }
   // ボン・ミスコの呪い：通常の敵「ボンミスコ」に間違えるとかかる。呪われている間は
   // 10問連続正解してもMP報酬が上限5に制限される。なんでも屋でAKRの祈り(100MP)を
   // 受けるまで解除されない。
@@ -14287,9 +14328,15 @@
         const bossMissQuoteHtml = (bossMissDisplay.lines && bossMissDisplay.lines.miss) ? `<div class="enemy-quote-banner">${bossMissDisplay.lines.miss}</div>` : '';
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
-        // 鉄壁の盾：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
-        // このミスのダメージを半分にする(最大3チャージ、0回で「壊れて消える」)。
-        if ((Number(state.ironWallCharges) || 0) > 0) {
+        // 指輪の護り：銀・金・虹色の指輪を持っていれば、鉄壁の盾より優先して
+        // ダメージを完全に防ぐ(指輪が使われた場合、鉄壁の盾は消費しない)。
+        const ringShieldResult = consumeRingShieldIfAvailable_();
+        if (ringShieldResult) {
+          penalty = 0;
+          ironWallHtml = ringShieldResult.html;
+        } else if ((Number(state.ironWallCharges) || 0) > 0) {
+          // 鉄壁の盾：ボス戦の不正解のたびに、残りチャージがあれば自動で1個消費して
+          // このミスのダメージを半分にする(最大3チャージ、0回で「壊れて消える」)。
           penalty = Math.floor(penalty / 2);
           state.ironWallCharges = (Number(state.ironWallCharges) || 0) - 1;
           ironWallHtml = state.ironWallCharges > 0
@@ -14304,6 +14351,11 @@
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
         saveGameState(state);
+        // 指輪をシールドとして消費した場合、個数の減少をすぐサーバーに反映しておく
+        // (次回ログイン時に古いキャッシュへ巻き戻らないようにするため)。
+        if (ringShieldResult && session && session.id) {
+          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        }
       } else if (state.rareType === 'gyoshi' && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         missLineHtml += state.steelArmorCharges > 0
@@ -15007,12 +15059,7 @@
       hp: state.hp,
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
-      treasureChests: {
-        bronze: (state.treasureItems && state.treasureItems.chestBronze) || 0,
-        silver: (state.treasureItems && state.treasureItems.chestSilver) || 0,
-        gold: (state.treasureItems && state.treasureItems.chestGold) || 0,
-        rainbow: (state.treasureItems && state.treasureItems.chestRainbow) || 0,
-      },
+      treasureItems: state.treasureItems || {},
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
       ironWallCharges: state.ironWallCharges,
@@ -15102,17 +15149,13 @@
     sWorldAllies.forEach(function (code) {
       if (state.worldAllies.indexOf(code) === -1) { state.worldAllies.push(code); changed = true; }
     });
-    // 宝箱(chestXxx)はレアキャラ撃破で無償に増える端末ローカルな戦利品なので、
-    // 他のコレクション系と同じく大きい方を採用する。鍵(keyXxx)・指輪(ringXxx)は
-    // 専用エンドポイント(購入・売却・開封)でしかサーバー側の数が動かないため、
-    // 常にサーバー側の値をそのまま採用する(端末側の値は信用しない)。
-    ['chestBronze', 'chestSilver', 'chestGold', 'chestRainbow'].forEach(function (k) {
+    // 宝箱・鍵・指輪はironWallCharges等と同じ「端末ローカルの消費数値」の性質が
+    // あるため(指輪をシールドとして使うと個数が減る等)、大きい方を採用する
+    // (ゼロから作り直した端末で古いキャッシュに戻ってしまわないための保険。
+    // 通常はbuildProgressSyncPayloadで直近の値がすぐ同期される)。
+    TREASURE_ITEM_ALL_KEYS_.forEach(function (k) {
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
-    });
-    ['keyBronze', 'keySilver', 'keyGold', 'keyRainbow', 'ringBronze', 'ringSilver', 'ringGold', 'ringRainbow'].forEach(function (k) {
-      var sv = Number(sTreasureItems[k]) || 0;
-      if (sv !== (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
     });
 
     if (changed) {
@@ -15131,7 +15174,7 @@
       || localWorldLap > sWorldLap
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
       || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
-      || ['chestBronze', 'chestSilver', 'chestGold', 'chestRainbow'].some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); });
+      || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); });
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -15888,7 +15931,11 @@
       var sellActionHtml = ringCount > 0
         ? `<button type="button" class="gift-redeem-btn" data-treasure-sell-ring="${tier}">売却する</button>`
         : `<span class="gift-insufficient">未所持</span>`;
-      var sellRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span></div>${sellActionHtml}</div>`;
+      var shieldCharges = RING_SHIELD_CHARGES_[tier];
+      var shieldNoteHtml = shieldCharges
+        ? `<span class="shop-item-note">持っているとボス戦のダメージを${shieldCharges}回防いでくれる（使い切ると壊れてなくなる）</span>`
+        : '';
+      var sellRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}</div>${sellActionHtml}</div>`;
 
       return keyRowHtml + openRowHtml + sellRowHtml;
     }).join('');
