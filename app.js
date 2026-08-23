@@ -13332,6 +13332,12 @@
     // 世界一周の最終ボス(ステージ4)を初めて倒すと永続的にtrueになる称号フラグ。
     // 2周目以降にworldBossDefeatedがリセットされても、この称号は失われない。
     mathGodTitleEarned: !!((savedProgress && savedProgress.mathGodTitleEarned) || (savedGame && savedGame.mathGodTitleEarned)),
+    // 世界一周2周目(9月)以降、ボスを倒すと覚える属性魔法(ボスID一覧)。周をまたいでも
+    // 失われない(rareCollectedと同じ扱い)。
+    worldSpells: (savedProgress && Array.isArray(savedProgress.worldSpells)) ? savedProgress.worldSpells.slice() : ((savedGame && Array.isArray(savedGame.worldSpells)) ? savedGame.worldSpells.slice() : []),
+    // 今のボス戦挑戦中に魔法を使ったか(1回のボス戦挑戦につき1回まで)。
+    // worldBossActiveStageと同様に端末セッション限定、あえて永続化しない。
+    worldSpellUsedThisBattle: false,
   };
   applyWorldDataForLap_(state.worldLap);
 
@@ -13349,6 +13355,7 @@
     questionText: document.getElementById('questionText'),
     categoryTag: document.getElementById('categoryTag'),
     memoToggle: document.getElementById('memoToggle'),
+    worldSpellBtn: document.getElementById('worldSpellBtn'),
     memoPanel: document.getElementById('memoPanel'),
     memoCanvas: document.getElementById('memoCanvas'),
     memoPenBtn: document.getElementById('memoPenBtn'),
@@ -13814,6 +13821,7 @@
   }
 
   els.memoToggle.addEventListener('click', toggleMemo);
+  els.worldSpellBtn.addEventListener('click', castWorldSpell_);
   els.memoPenBtn.addEventListener('click', () => setMemoTool('pen'));
   els.memoEraserBtn.addEventListener('click', () => setMemoTool('eraser'));
   els.memoClearBtn.addEventListener('click', clearMemoCanvas);
@@ -14082,6 +14090,7 @@
     els.expBarInner.style.width = `${(((state.exp + state.scienceExp) % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
+    updateWorldSpellBtnVisibility_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderHpRulesBanner_();
@@ -14347,6 +14356,7 @@
         if (state.hp <= 0) {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
+          state.worldSpellUsedThisBattle = false;
         } else {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
@@ -14415,54 +14425,9 @@
       // 世界一周のボス撃破：MP/経験値の通常報酬ではなく、ボスが仲間になる特別演出。
       // ステージ4のように複数体を順番に倒すステージでは、途中のボスを倒しても
       // ステージ自体はまだクリアにならず、そのまま次のボスへ続く。
-      const stageId = state.worldBossActiveStage;
-      const subIndex = bossSubIndexForWin;
-      const sequence = worldBossSequenceForStage(stageId);
-      const bossDisplay = worldBossEnemyDisplay(stageId, subIndex);
-      const bossDefeatQuoteHtml = (bossDisplay.lines && bossDisplay.lines.defeat) ? `<div class="enemy-quote-banner">${bossDisplay.lines.defeat}</div>` : '';
-      // ボスは1回でも実際に倒すとレアキャラコレクションに追加される(通常のレア
-      // キャラのような5回撃破の閾値は無い)。移行処理で自動撃破扱いにした分では
-      // 加算されないので、既に世界一周済みの生徒は2周目で初めて実際に戦った時に
-      // 手に入る。
-      const defeatedSub = worldBossCurrentSubBoss(stageId, subIndex);
-      let collectionGainedHtml = '';
-      if (defeatedSub && defeatedSub.id) {
-        state.rareDefeats[defeatedSub.id] = (state.rareDefeats[defeatedSub.id] || 0) + 1;
-        if (state.rareCollected.indexOf(defeatedSub.id) === -1) {
-          state.rareCollected.push(defeatedSub.id);
-          collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${bossDisplay.name}」をコレクションにゲットした！🎖️</div>`;
-        }
-      }
-      state.streak = 0;
-      const nextSubIndex = subIndex + 1;
-      if (nextSubIndex >= sequence.length) {
-        const country = worldBossCountryForStage(stageId);
-        state.worldBossDefeated[stageId] = true;
-        if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
-        state.worldBossSubIndex[stageId] = 0;
-        state.worldBossActiveStage = null;
-        // ステージ4(最終ステージ)のボスをすべて倒すと、世界一周達成の証として
-        // 称号【数学の神】を獲得する(周をまたいでも失われない)。
-        let titleGainedHtml = '';
-        if (stageId === 4 && !state.mathGodTitleEarned) {
-          state.mathGodTitleEarned = true;
-          if (session && session.name) renderUserGreeting(session.name);
-          titleGainedHtml = `<div class="item-gain-banner">🏆 称号【数学の神】を獲得した！🏆</div>`;
-        }
-        saveGameState(state);
-        if (session && session.id) {
-          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-        }
-        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${titleGainedHtml}`;
-      } else {
-        state.worldBossSubIndex[stageId] = nextSubIndex;
-        saveGameState(state);
-        if (session && session.id) {
-          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-        }
-        const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
-        winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
-      }
+      // (共通処理はfinishWorldBossWin_に切り出し、魔法でトドメを刺した場合の
+      // castWorldSpell_からも呼べるようにしている)
+      winHtml = finishWorldBossWin_(state.worldBossActiveStage, bossSubIndexForWin);
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
@@ -15012,6 +14977,7 @@
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
+        state.worldSpells = Array.isArray(progress.worldSpells) ? progress.worldSpells.slice() : state.worldSpells;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -15064,6 +15030,7 @@
       speedSeedCount: state.speedSeedCount,
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
+      worldSpells: state.worldSpells || [],
     };
   }
 
@@ -15107,6 +15074,7 @@
     var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
     var sMathGodTitleEarned = !!server.mathGodTitleEarned;
     var sTreasureItems = (server.treasureItems && typeof server.treasureItems === 'object') ? server.treasureItems : {};
+    var sWorldSpells = Array.isArray(server.worldSpells) ? server.worldSpells : [];
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -15157,6 +15125,9 @@
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
     });
+    sWorldSpells.forEach(function (sid) {
+      if (state.worldSpells.indexOf(sid) === -1) { state.worldSpells.push(sid); changed = true; }
+    });
 
     if (changed) {
       saveGameState(state);
@@ -15174,7 +15145,8 @@
       || localWorldLap > sWorldLap
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
       || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
-      || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); });
+      || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); })
+      || state.worldSpells.some(function (x) { return sWorldSpells.indexOf(x) === -1; });
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -16441,9 +16413,37 @@
       { streak: 30, id: 'wboss_sensei' },
     ],
   };
+  // 世界一周2周目(9月〜)専用のボス撃破に必要な連続正解数(=ボスのHP)。ボスキャラ自体は
+  // 1周目と共通(wboss_*)だが、9月ステージでは各ボスに属性が設定され、倒すと
+  // その属性の魔法を覚える(WORLD_SPELLS_参照)。
+  const WORLD_BOSS_SEQUENCES_LAP2 = {
+    1: [{ streak: 30, id: 'wboss_baby' }],
+    2: [{ streak: 40, id: 'wboss_hebitsukai' }],
+    3: [{ streak: 50, id: 'wboss_suijobike' }],
+    4: [
+      { streak: 30, id: 'wboss_fullswing' },
+      { streak: 40, id: 'wboss_chuni' },
+      { streak: 50, id: 'wboss_sensei' },
+    ],
+  };
   function worldBossSequenceForStage(stageId) {
-    return WORLD_BOSS_SEQUENCES[stageId] || [{ streak: WORLD_BOSS_STREAK_REQUIRED, id: null }];
+    var source = (Number(state.worldLap) || 1) >= 2 ? WORLD_BOSS_SEQUENCES_LAP2 : WORLD_BOSS_SEQUENCES;
+    return source[stageId] || [{ streak: WORLD_BOSS_STREAK_REQUIRED, id: null }];
   }
+  // ボスごとの属性魔法(9月/2周目限定)。倒すと恒久的に覚え、以降どのボス戦でも
+  // 使える。1回のボス戦挑戦につき1回だけ使え、使うと連続正解数がWORLD_SPELL_DAMAGE_
+  // 問分進む(=ボスのHPを直接削る「攻撃系の効果」)。
+  const WORLD_SPELLS_ = {
+    wboss_baby: { name: '炎の魔法', emoji: '🔥' },
+    wboss_hebitsukai: { name: '氷の魔法', emoji: '❄️' },
+    wboss_suijobike: { name: '雷の魔法', emoji: '⚡' },
+    wboss_fullswing: { name: '大地の魔法', emoji: '🌎' },
+    wboss_chuni: { name: '自然の魔法', emoji: '🌿' },
+    wboss_sensei: { name: '光闇の魔法', emoji: '✨' },
+  };
+  const WORLD_SPELL_DAMAGE_ = 5;
+  // 9月ステージ(2周目)のボスを倒すとMPは増えない代わりに+300HP。
+  const WORLD_BOSS_LAP2_HP_BONUS_ = 300;
   function worldBossCurrentSubBoss(stageId, subIndex) {
     const seq = worldBossSequenceForStage(stageId);
     return seq[Math.min(subIndex || 0, seq.length - 1)];
@@ -16455,6 +16455,113 @@
     var country = worldBossCountryForStage(stageId);
     if (!country) return { emoji: '👑', name: 'ボス' };
     return { emoji: isoToFlagEmoji(country.iso), name: country.name + 'の守護者' };
+  }
+
+  // ボス撃破時の共通処理(コレクション登録・次のボスへの進行・ステージクリア判定)。
+  // 通常の正解での撃破と、魔法でトドメを刺した場合の両方から呼ばれる。
+  function finishWorldBossWin_(stageId, subIndex) {
+    const session = loadSession();
+    const sequence = worldBossSequenceForStage(stageId);
+    const bossDisplay = worldBossEnemyDisplay(stageId, subIndex);
+    const bossDefeatQuoteHtml = (bossDisplay.lines && bossDisplay.lines.defeat) ? `<div class="enemy-quote-banner">${bossDisplay.lines.defeat}</div>` : '';
+    const defeatedSub = worldBossCurrentSubBoss(stageId, subIndex);
+    let collectionGainedHtml = '';
+    if (defeatedSub && defeatedSub.id) {
+      state.rareDefeats[defeatedSub.id] = (state.rareDefeats[defeatedSub.id] || 0) + 1;
+      if (state.rareCollected.indexOf(defeatedSub.id) === -1) {
+        state.rareCollected.push(defeatedSub.id);
+        collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${bossDisplay.name}」をコレクションにゲットした！🎖️</div>`;
+      }
+    }
+    // 9月の世界一周(2周目)限定：ボスを倒してもMPは増えないが+300HPと、そのボスの
+    // 属性魔法を覚える(既に覚えている魔法は再取得しないが、HPは毎回もらえる)。
+    let spellGainedHtml = '';
+    if ((Number(state.worldLap) || 1) >= 2 && defeatedSub && defeatedSub.id) {
+      state.hp = (Number(state.hp) || 0) + WORLD_BOSS_LAP2_HP_BONUS_;
+      const spell = WORLD_SPELLS_[defeatedSub.id];
+      if (spell) {
+        state.worldSpells = state.worldSpells || [];
+        if (state.worldSpells.indexOf(defeatedSub.id) === -1) {
+          state.worldSpells.push(defeatedSub.id);
+          spellGainedHtml = `<div class="item-gain-banner">${spell.emoji} 「${spell.name}」を覚えた！以降のボス戦でいつでも使える！（+${WORLD_BOSS_LAP2_HP_BONUS_}HP）</div>`;
+        } else {
+          spellGainedHtml = `<div class="item-gain-banner">💚 +${WORLD_BOSS_LAP2_HP_BONUS_}HP！</div>`;
+        }
+      }
+    }
+    state.streak = 0;
+    state.worldSpellUsedThisBattle = false;
+    const nextSubIndex = subIndex + 1;
+    let winHtml;
+    if (nextSubIndex >= sequence.length) {
+      const country = worldBossCountryForStage(stageId);
+      state.worldBossDefeated[stageId] = true;
+      if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
+      state.worldBossSubIndex[stageId] = 0;
+      state.worldBossActiveStage = null;
+      let titleGainedHtml = '';
+      if (stageId === 4 && !state.mathGodTitleEarned) {
+        state.mathGodTitleEarned = true;
+        if (session && session.name) renderUserGreeting(session.name);
+        titleGainedHtml = `<div class="item-gain-banner">🏆 称号【数学の神】を獲得した！🏆</div>`;
+      }
+      saveGameState(state);
+      if (session && session.id) {
+        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${spellGainedHtml}${titleGainedHtml}`;
+    } else {
+      state.worldBossSubIndex[stageId] = nextSubIndex;
+      saveGameState(state);
+      if (session && session.id) {
+        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+      const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${spellGainedHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
+    }
+    return winHtml;
+  }
+
+  // 「魔法を使う」ボタンの表示可否(ボス戦中・魔法を1つ以上覚えている・まだこの
+  // ボス戦で使っていない、の3条件を満たす時だけ表示する)。
+  function updateWorldSpellBtnVisibility_() {
+    if (!els.worldSpellBtn) return;
+    const canCast = !!state.worldBossActiveStage
+      && Array.isArray(state.worldSpells) && state.worldSpells.length > 0
+      && !state.worldSpellUsedThisBattle;
+    els.worldSpellBtn.hidden = !canCast;
+  }
+
+  // 魔法を使ってボスに直接ダメージを与える(=連続正解数をWORLD_SPELL_DAMAGE_問分
+  // 進める)。1回のボス戦挑戦につき1回まで。倒しきった場合はfinishWorldBossWin_を
+  // 呼んで通常の撃破と同じ演出にする。
+  function castWorldSpell_() {
+    if (!state.worldBossActiveStage) return;
+    if (state.worldSpellUsedThisBattle) return;
+    if (!Array.isArray(state.worldSpells) || state.worldSpells.length === 0) return;
+    const stageId = state.worldBossActiveStage;
+    const subIndex = state.worldBossSubIndex[stageId] || 0;
+    const sub = worldBossCurrentSubBoss(stageId, subIndex);
+    if (!sub) return;
+    const spellId = state.worldSpells[state.worldSpells.length - 1];
+    const spell = WORLD_SPELLS_[spellId] || { name: '魔法', emoji: '🔮' };
+    state.worldSpellUsedThisBattle = true;
+    state.streak = Math.min(sub.streak, (Number(state.streak) || 0) + WORLD_SPELL_DAMAGE_);
+    if (state.streak >= sub.streak) {
+      const winHtml = finishWorldBossWin_(stageId, subIndex);
+      Array.from(els.choices.children).forEach(function (b) { b.disabled = true; });
+      els.feedback.innerHTML = `<span class="fb-result">${spell.emoji} ${spell.name}で攻撃！</span>` + winHtml;
+      els.feedback.classList.remove('incorrect');
+      els.feedback.classList.add('correct');
+      els.nextBtn.disabled = false;
+    } else {
+      saveGameState(state);
+      els.feedback.innerHTML = `<span class="fb-result">${spell.emoji} ${spell.name}で攻撃！ボスに${WORLD_SPELL_DAMAGE_}ダメージ！</span>`;
+      els.feedback.classList.remove('incorrect');
+      els.feedback.classList.add('correct');
+    }
+    updateGameHud();
+    if (!els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
   }
 
   // 世界一周サイコロ方式は2026-09-01から開始(生徒への告知済みの開始日)。
@@ -16725,6 +16832,7 @@
       if (cancelBtn) cancelBtn.addEventListener('click', function () {
         state.worldBossActiveStage = null;
         state.streak = 0;
+        state.worldSpellUsedThisBattle = false;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
@@ -16753,6 +16861,7 @@
     if (challengeBtn) challengeBtn.addEventListener('click', function () {
       state.worldBossActiveStage = stage.id;
       state.streak = 0;
+      state.worldSpellUsedThisBattle = false;
       saveGameState(state);
       renderWorldPanel();
       updateGameHud();

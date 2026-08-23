@@ -367,6 +367,8 @@ h1 {
 }
 
 .memo-toggle-btn { margin: 0 0 16px; }
+.world-spell-btn { margin: 8px 0 0; background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; border: none; }
+.world-spell-btn:disabled { opacity: 0.5; }
 .memo-panel {
   margin: 0 0 20px;
   padding: 12px;
