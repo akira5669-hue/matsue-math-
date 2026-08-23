@@ -264,7 +264,7 @@
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
-        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
@@ -282,7 +282,7 @@
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
-        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
@@ -12984,6 +12984,40 @@
   // FLEEING_RARE_TYPES_に含めないことで実現、HP減少は上のhandleAnswer内で処理)。
   const GYOSHI_BONUS_MP = 20;
   const GYOSHI_HP_STEAL_ = 2;
+  // 宝箱・鍵・指輪(2026-08-28〜)：レアキャラを撃破すると5分の1の確率で、その時
+  // 解いていた問題の学年に応じたティアの宝箱を手に入れる(小学生→銅、中1→銀、
+  // 中2→金、中3→虹色)。宝箱はなんでも屋で対応するティアの鍵を買わないと開け
+  // られない。開けると報酬(MP・HP)とそのティアの指輪がもらえ、指輪はなんでも屋で
+  // 鍵と同額で売却できる。鍵の購入・宝箱を開ける・指輪の売却はMPが直接動くため
+  // サーバー側(handleBuyTreasureKey/handleOpenTreasureChest/handleSellTreasureRing)
+  // で検証してから実行する(薬草などの購入と同じ方式)。
+  var TREASURE_CHEST_START_ = '2026-08-28';
+  function isTreasureChestActive_() {
+    // 本番公開前に00001だけで動作確認できるよう、日付前でも00001アカウントなら
+    // 有効にする(理科の新単元と同じisAdminSession_の仕組み)。
+    return todayKey() >= TREASURE_CHEST_START_ || isAdminSession_();
+  }
+  const TREASURE_CHEST_DROP_CHANCE = 1 / 5;
+  const TREASURE_TIER_LABEL_ = { bronze: '銅', silver: '銀', gold: '金', rainbow: '虹色' };
+  const TREASURE_TIER_EMOJI_ = { bronze: '🥉', silver: '🥈', gold: '🥇', rainbow: '🌈' };
+  const TREASURE_KEY_COST_MP_ = { bronze: 50, silver: 100, gold: 200, rainbow: 500 };
+  const TREASURE_RING_SELL_MP_ = { bronze: 50, silver: 100, gold: 200, rainbow: 500 };
+  const TREASURE_CHEST_REWARD_ = {
+    bronze: { mp: 1, hp: 5 }, silver: { mp: 2, hp: 10 }, gold: { mp: 3, hp: 15 }, rainbow: { mp: 5, hp: 20 },
+  };
+  // 出題単元の学年(小3〜小6/中1〜中3)から、獲得する宝箱のティアを決める。
+  // 学年が読み取れない単元(理科の一部など学年表記のないもの)では宝箱は出さない。
+  function treasureTierForGrade_(grade) {
+    if (!grade) return null;
+    if (grade.charAt(0) === '小') return 'bronze';
+    if (grade === '中1') return 'silver';
+    if (grade === '中2') return 'gold';
+    if (grade === '中3') return 'rainbow';
+    return null;
+  }
+  function treasureItemKey_(prefix, tier) {
+    return prefix + tier.charAt(0).toUpperCase() + tier.slice(1);
+  }
   // ボン・ミスコの呪い：通常の敵「ボンミスコ」に間違えるとかかる。呪われている間は
   // 10問連続正解してもMP報酬が上限5に制限される。なんでも屋でAKRの祈り(100MP)を
   // 受けるまで解除されない。
@@ -13233,6 +13267,9 @@
     worldBossDefeated: (savedProgress && savedProgress.worldBossDefeated && typeof savedProgress.worldBossDefeated === 'object') ? Object.assign({}, savedProgress.worldBossDefeated) : ((savedGame && savedGame.worldBossDefeated && typeof savedGame.worldBossDefeated === 'object') ? Object.assign({}, savedGame.worldBossDefeated) : {}),
     // 撃破したボス(国コード)のリスト。周をまたいでも記録として残す。
     worldAllies: (savedProgress && Array.isArray(savedProgress.worldAllies)) ? savedProgress.worldAllies.slice() : ((savedGame && Array.isArray(savedGame.worldAllies)) ? savedGame.worldAllies.slice() : []),
+    // 宝箱・鍵・指輪(2026-08-28〜)の所持数。{chestBronze,keyBronze,ringBronze,...}
+    // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
+    treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
     worldBossActiveStage: null,
@@ -14450,6 +14487,20 @@
         collectionGainedHtml = `<div class="item-gain-banner">🎖️ レアキャラ「${RARE_TYPES.thinker.name}」をコレクションにゲットした！🎖️</div>`;
       }
 
+      // 宝箱ドロップ(2026-08-28〜)：レアキャラ撃破時のみ5分の1の確率で、
+      // その時解いていた問題の学年に応じたティアの宝箱を1個手に入れる。
+      let treasureChestGainedHtml = '';
+      if (wasRareType && isTreasureChestActive_() && Math.random() < TREASURE_CHEST_DROP_CHANCE) {
+        const treasureTier = treasureTierForGrade_(categoryGrade[catId]);
+        if (treasureTier) {
+          const chestKey = treasureItemKey_('chest', treasureTier);
+          state.treasureItems = state.treasureItems || {};
+          state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+          treasureChestGainedHtml = `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[treasureTier]} ${TREASURE_TIER_LABEL_[treasureTier]}の宝箱を見つけた！（なんでも屋で${TREASURE_TIER_LABEL_[treasureTier]}の鍵を買うと開けられる）</div>`;
+          if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        }
+      }
+
       const prevPrefectureCount = state.prefectureCount;
       state.prefectureCount = Math.min(47, state.prefectureCount + 1);
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
@@ -14515,7 +14566,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -14944,6 +14995,12 @@
       hp: state.hp,
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
+      treasureChests: {
+        bronze: (state.treasureItems && state.treasureItems.chestBronze) || 0,
+        silver: (state.treasureItems && state.treasureItems.chestSilver) || 0,
+        gold: (state.treasureItems && state.treasureItems.chestGold) || 0,
+        rainbow: (state.treasureItems && state.treasureItems.chestRainbow) || 0,
+      },
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
       ironWallCharges: state.ironWallCharges,
@@ -14990,6 +15047,7 @@
     var sWorldBossDefeated = (server.worldBossDefeated && typeof server.worldBossDefeated === 'object') ? server.worldBossDefeated : {};
     var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
     var sMathGodTitleEarned = !!server.mathGodTitleEarned;
+    var sTreasureItems = (server.treasureItems && typeof server.treasureItems === 'object') ? server.treasureItems : {};
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -15032,6 +15090,18 @@
     sWorldAllies.forEach(function (code) {
       if (state.worldAllies.indexOf(code) === -1) { state.worldAllies.push(code); changed = true; }
     });
+    // 宝箱(chestXxx)はレアキャラ撃破で無償に増える端末ローカルな戦利品なので、
+    // 他のコレクション系と同じく大きい方を採用する。鍵(keyXxx)・指輪(ringXxx)は
+    // 専用エンドポイント(購入・売却・開封)でしかサーバー側の数が動かないため、
+    // 常にサーバー側の値をそのまま採用する(端末側の値は信用しない)。
+    ['chestBronze', 'chestSilver', 'chestGold', 'chestRainbow'].forEach(function (k) {
+      var sv = Number(sTreasureItems[k]) || 0;
+      if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
+    });
+    ['keyBronze', 'keySilver', 'keyGold', 'keyRainbow', 'ringBronze', 'ringSilver', 'ringGold', 'ringRainbow'].forEach(function (k) {
+      var sv = Number(sTreasureItems[k]) || 0;
+      if (sv !== (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
+    });
 
     if (changed) {
       saveGameState(state);
@@ -15048,7 +15118,8 @@
       || (Number(state.hp) || 0) > sHp
       || localWorldLap > sWorldLap
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
-      || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; });
+      || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
+      || ['chestBronze', 'chestSilver', 'chestGold', 'chestRainbow'].some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); });
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -15749,7 +15820,18 @@
     }
     var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.png" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml;
+    var treasureRowsHtml = treasureShopRowsHtml_();
+
+    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml;
+    els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
+    });
+    els.shopList.querySelectorAll('[data-treasure-open]').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleOpenTreasureChestClick(btn.getAttribute('data-treasure-open'), btn); });
+    });
+    els.shopList.querySelectorAll('[data-treasure-sell-ring]').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleSellTreasureRingClick(btn.getAttribute('data-treasure-sell-ring'), btn); });
+    });
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
@@ -15764,6 +15846,136 @@
     if (ironWallBtn) ironWallBtn.addEventListener('click', function () { handleBuyIronWallClick(ironWallBtn); });
     var steelArmorBtn = document.getElementById('buySteelArmorBtn');
     if (steelArmorBtn) steelArmorBtn.addEventListener('click', function () { handleBuySteelArmorClick(steelArmorBtn); });
+  }
+
+  // 宝箱・鍵・指輪(2026-08-28〜)のなんでも屋UI。ティアごとに「鍵を買う」
+  // 「宝箱を開ける」「指輪を売る」の3行を並べる。日付ゲート前は何も表示しない。
+  function treasureShopRowsHtml_() {
+    if (!isTreasureChestActive_()) return '';
+    var items = state.treasureItems || {};
+    var rowsHtml = ['bronze', 'silver', 'gold', 'rainbow'].map(function (tier) {
+      var label = TREASURE_TIER_LABEL_[tier];
+      var emoji = TREASURE_TIER_EMOJI_[tier];
+      var chestCount = Number(items[treasureItemKey_('chest', tier)]) || 0;
+      var keyCount = Number(items[treasureItemKey_('key', tier)]) || 0;
+      var ringCount = Number(items[treasureItemKey_('ring', tier)]) || 0;
+      var keyCost = TREASURE_KEY_COST_MP_[tier];
+      var ringSell = TREASURE_RING_SELL_MP_[tier];
+      var reward = TREASURE_CHEST_REWARD_[tier];
+
+      var keyActionHtml = state.points >= keyCost
+        ? `<button type="button" class="gift-redeem-btn" data-treasure-buy-key="${tier}">購入する</button>`
+        : `<span class="gift-insufficient">MP不足</span>`;
+      var keyRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の鍵（所持: ${keyCount}個）</span><span class="gift-cost">${keyCost}MP</span></div>${keyActionHtml}</div>`;
+
+      var openActionHtml = (chestCount > 0 && keyCount > 0)
+        ? `<button type="button" class="gift-redeem-btn" data-treasure-open="${tier}">開ける</button>`
+        : `<span class="gift-insufficient">${chestCount > 0 ? '鍵が必要' : '宝箱なし'}</span>`;
+      var openRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の宝箱（所持: ${chestCount}個）</span><span class="gift-cost">開けると+${reward.mp}MP・+${reward.hp}HP・${label}の指輪</span></div>${openActionHtml}</div>`;
+
+      var sellActionHtml = ringCount > 0
+        ? `<button type="button" class="gift-redeem-btn" data-treasure-sell-ring="${tier}">売却する</button>`
+        : `<span class="gift-insufficient">未所持</span>`;
+      var sellRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span></div>${sellActionHtml}</div>`;
+
+      return keyRowHtml + openRowHtml + sellRowHtml;
+    }).join('');
+    return `<div class="shop-section-title">🗝️ 宝箱・鍵・指輪（レアキャラを倒すと5分の1の確率で宝箱ゲット！）</div>` + rowsHtml;
+  }
+
+  function handleBuyTreasureKeyClick(tier, btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var cost = TREASURE_KEY_COST_MP_[tier];
+    var label = TREASURE_TIER_LABEL_[tier];
+    if (!window.confirm(`${label}の鍵を購入します（${cost}MP）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyTreasureKey', { id: session.id, tier: tier }).then(function (res) {
+      if (!res.ok) {
+        var msg = res.error === 'insufficient_points' ? 'MPが不足しています。' : '購入に失敗しました。もう一度お試しください。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.treasureItems = res.treasureItems;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`🗝️ ${label}の鍵を手に入れた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleSellTreasureRingClick(tier, btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var gain = TREASURE_RING_SELL_MP_[tier];
+    var label = TREASURE_TIER_LABEL_[tier];
+    if (!window.confirm(`${label}の指輪を売却します（+${gain}MP）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('sellTreasureRing', { id: session.id, tier: tier }).then(function (res) {
+      if (!res.ok) {
+        var msg = res.error === 'no_ring' ? '指輪を持っていません。' : '売却に失敗しました。もう一度お試しください。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.treasureItems = res.treasureItems;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`💰 ${label}の指輪を売って+${gain}MP手に入れた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleOpenTreasureChestClick(tier, btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var label = TREASURE_TIER_LABEL_[tier];
+    if (!window.confirm(`${label}の宝箱を開けます（${label}の鍵を1個使います）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    var today = todayKey();
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+    var reward = TREASURE_CHEST_REWARD_[tier];
+    // 宝箱のMP報酬は(指輪の売却と違って)1日の上限100MP(計算50+文章題50)に
+    // 含める。今日まだ獲得できる分だけをmpGrantとしてサーバーに伝える。
+    var headroom = Math.max(0, (POINTS_DAILY_CAP_CALC + POINTS_DAILY_CAP_WORD) - (Number(state.pointsToday) || 0));
+    var mpGrant = Math.min(reward.mp, headroom);
+    apiPost('openTreasureChest', { id: session.id, tier: tier, mpGrant: mpGrant }).then(function (res) {
+      if (!res.ok) {
+        var msg = res.error === 'no_key' ? `${label}の鍵がありません。`
+          : res.error === 'no_chest' ? `${label}の宝箱がありません。`
+          : '宝箱を開けられませんでした。もう一度お試しください。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      var granted = Number(res.mpGranted) || 0;
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      state.treasureItems = res.treasureItems;
+      state.pointsToday = (Number(state.pointsToday) || 0) + granted;
+      state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + granted;
+      state.pointsDate = today;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      var mpNote = granted < reward.mp ? `+${granted}MP（本日のMP上限のため一部のみ）` : `+${granted}MP`;
+      window.alert(`🎁 ${label}の宝箱を開けた！ ${mpNote}・+${reward.hp}HP・${label}の指輪をゲット！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
   }
 
   function handleAkrPrayerClick(btn) {

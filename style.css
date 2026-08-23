@@ -969,6 +969,14 @@ h1 {
   flex-direction: column;
   gap: 8px;
 }
+.shop-section-title {
+  margin: 4px 0 -2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-ink);
+  border-top: 1px solid var(--c-line);
+  padding-top: 12px;
+}
 .gift-row {
   display: flex;
   align-items: center;
