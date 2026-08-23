@@ -13335,6 +13335,10 @@
     // 魔法の書(2周目/9月のボス戦専用消費アイテム)の所持冊数。{fire,ice,thunder,...}
     // のように属性ごとに数える。treasureItemsと同じ「端末を信頼してSET」方式。
     spellbooks: (savedProgress && savedProgress.spellbooks && typeof savedProgress.spellbooks === 'object') ? Object.assign({}, savedProgress.spellbooks) : ((savedGame && savedGame.spellbooks && typeof savedGame.spellbooks === 'object') ? Object.assign({}, savedGame.spellbooks) : {}),
+    // 詠唱済みで結果待ちの魔法(属性名、無ければnull)。次の問題に正解すればボスに
+    // ダメージが入り、不正解だとかわされて不発になる。worldBossActiveStageと同様に
+    // 端末セッション限定、あえて永続化しない。
+    worldPendingSpell: null,
   };
   applyWorldDataForLap_(state.worldLap);
 
@@ -14228,6 +14232,19 @@
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.streak++;
       state.wrongStreak = 0;
+      // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
+      // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
+      if (state.worldBossActiveStage && state.worldPendingSpell) {
+        const spellInfo = SPELLBOOK_INFO_[state.worldPendingSpell];
+        state.worldPendingSpell = null;
+        if (spellInfo) {
+          const subForSpell = worldBossCurrentSubBoss(state.worldBossActiveStage, state.worldBossSubIndex[state.worldBossActiveStage] || 0);
+          if (subForSpell) {
+            state.streak = Math.min(subForSpell.streak, state.streak + spellInfo.dmg);
+          }
+          missLineHtml += `<div class="item-gain-banner">${spellInfo.emoji} ${spellInfo.label}が命中！ボスに${spellInfo.dmg}ダメージ！</div>`;
+        }
+      }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
@@ -14348,6 +14365,15 @@
       if (state.worldBossActiveStage) {
         const bossMissDisplay = worldBossEnemyDisplay(state.worldBossActiveStage, state.worldBossSubIndex[state.worldBossActiveStage] || 0);
         const bossMissQuoteHtml = (bossMissDisplay.lines && bossMissDisplay.lines.miss) ? `<div class="enemy-quote-banner">${bossMissDisplay.lines.miss}</div>` : '';
+        // 魔法を詠唱した直後の問題を間違えると、ダメージは入らずボスにかわされる
+        // (詠唱時のHP減少はそのまま。ここではダメージが不発になったことだけ伝える)。
+        if (state.worldPendingSpell) {
+          const dodgedSpellInfo = SPELLBOOK_INFO_[state.worldPendingSpell];
+          state.worldPendingSpell = null;
+          if (dodgedSpellInfo) {
+            missLineHtml += `<div class="enemy-quote-banner">💨 ${dodgedSpellInfo.label}はボスにかわされた…！攻撃は当たらなかった。</div>`;
+          }
+        }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
         // 指輪の護り：銀・金・虹色の指輪を持っていれば、鉄壁の盾より優先して
@@ -14369,6 +14395,7 @@
         if (state.hp <= 0) {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
+          state.worldPendingSpell = null;
         } else {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
@@ -16040,8 +16067,7 @@
       var actionHtml = canAfford
         ? `<button type="button" class="gift-redeem-btn" data-spellbook-buy="${el}">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      var selfDamageNote = info.selfDamage > 0 ? `。ただし使うと自分も${info.selfDamage}HP減る` : '';
-      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${info.emoji} 魔法の書「${info.label}」（所持: ${count}冊）</span><span class="gift-cost">${SPELLBOOK_COST_MP_}MP</span><span class="shop-item-note">ステージ${info.stageId}のボスに有効。使うと相手のHPを${info.dmg}減らす${selfDamageNote}</span></div>${actionHtml}</div>`;
+      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${info.emoji} 魔法の書「${info.label}」（所持: ${count}冊）</span><span class="gift-cost">${SPELLBOOK_COST_MP_}MP</span><span class="shop-item-note">ステージ${info.stageId}のボスに有効。詠唱すると自分のHPが${SPELLBOOK_SELF_DAMAGE_}減り、次の問題に正解すると相手のHPを${info.dmg}減らす（不正解だとボスにかわされて不発）</span></div>${actionHtml}</div>`;
     }).join('');
     return `<div class="shop-section-title">📖 魔法の書（00001限定プレビュー中）</div>` + rowsHtml;
   }
@@ -16495,14 +16521,16 @@
   // 9月ステージ(2周目)のボスを倒すとMPは増えない代わりに+300HP。
   const WORLD_BOSS_LAP2_HP_BONUS_ = 300;
   // 魔法の書(2周目のボス戦専用消費アイテム)。なんでも屋で100MPで購入し、対応する
-  // 属性のボス戦で1冊消費してボスのHPを削る(アイスランス・サンダーは自分も
-  // HPが減る)。ステージ4(大地・自然・光闇)の書は未実装。
+  // 属性のボス戦で1冊消費して詠唱する。詠唱すると自分のHPが常に10減り、その直後の
+  // 問題に正解して初めてボスにダメージが入る(不正解だとボスにかわされて不発になる)。
+  // ステージ4(大地・自然・光闇)の書は未実装。
   const SPELLBOOK_ELEMENTS_ = ['fire', 'ice', 'thunder'];
   const SPELLBOOK_COST_MP_ = 100;
+  const SPELLBOOK_SELF_DAMAGE_ = 10;
   const SPELLBOOK_INFO_ = {
-    fire: { label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDamage: 0, stageId: 1 },
-    ice: { label: 'アイスランス', emoji: '❄️', dmg: 50, selfDamage: 10, stageId: 2 },
-    thunder: { label: 'サンダー', emoji: '⚡', dmg: 50, selfDamage: 10, stageId: 3 },
+    fire: { label: 'ファイアボール', emoji: '🔥', dmg: 50, stageId: 1 },
+    ice: { label: 'アイスランス', emoji: '❄️', dmg: 50, stageId: 2 },
+    thunder: { label: 'サンダー', emoji: '⚡', dmg: 50, stageId: 3 },
   };
   // 現在挑戦中のボスの属性(ステージ1〜3のみ対応、ステージ4は未定でnullを返す)。
   function currentWorldBossElement_() {
@@ -16581,10 +16609,11 @@
   }
 
   // 「魔法を使う」ボタンの表示可否(ボス戦中・今のボスに対応する魔法の書を
-  // 1冊以上持っている場合だけ表示する)。
+  // 1冊以上持っている場合だけ表示する。詠唱済みで結果待ちの間は非表示)。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellBtn) return;
     if (!isAdminSession_()) { els.worldSpellBtn.hidden = true; return; }
+    if (state.worldPendingSpell) { els.worldSpellBtn.hidden = true; return; }
     const element = currentWorldBossElement_();
     const info = element ? SPELLBOOK_INFO_[element] : null;
     const count = info ? (Number((state.spellbooks || {})[element]) || 0) : 0;
@@ -16596,44 +16625,28 @@
     }
   }
 
-  // 魔法の書を1冊消費してボスに直接ダメージを与える(=連続正解数をinfo.dmg問分
-  // 進める)。アイスランス・サンダーは自分もHPが減る。所持数の分だけ何度でも
-  // 使える。倒しきった場合はfinishWorldBossWin_を呼んで通常の撃破と同じ演出にする。
+  // 魔法の書を1冊消費して詠唱する。ダメージはすぐには入らず、自分のHPが
+  // SPELLBOOK_SELF_DAMAGE_だけ先に減る。次に答える問題に正解して初めてボスに
+  // ダメージが入り(handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて
+  // 不発になる(handleAnswerの不正解側で解決)。
   function castWorldSpell_() {
+    if (state.worldPendingSpell) return;
     const element = currentWorldBossElement_();
     if (!element) return;
     const info = SPELLBOOK_INFO_[element];
     const count = Number((state.spellbooks || {})[element]) || 0;
     if (count <= 0) return;
-    const stageId = state.worldBossActiveStage;
-    const subIndex = state.worldBossSubIndex[stageId] || 0;
-    const sub = worldBossCurrentSubBoss(stageId, subIndex);
-    if (!sub) return;
     state.spellbooks[element] = count - 1;
-    state.streak = Math.min(sub.streak, (Number(state.streak) || 0) + info.dmg);
-    let selfDamageHtml = '';
-    if (info.selfDamage > 0) {
-      state.hp = Math.max(0, (Number(state.hp) || 0) - info.selfDamage);
-      selfDamageHtml = `（自分も${info.selfDamage}HP減った。残りHP: ${state.hp}）`;
+    state.worldPendingSpell = element;
+    state.hp = Math.max(0, (Number(state.hp) || 0) - SPELLBOOK_SELF_DAMAGE_);
+    saveGameState(state);
+    const session = loadSession();
+    if (session && session.id) {
+      apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     }
-    const attackLineHtml = `<span class="fb-result">${info.emoji} ${info.label}で攻撃！ボスに${info.dmg}ダメージ！${selfDamageHtml}</span>`;
-    if (state.streak >= sub.streak) {
-      const winHtml = finishWorldBossWin_(stageId, subIndex);
-      Array.from(els.choices.children).forEach(function (b) { b.disabled = true; });
-      els.feedback.innerHTML = attackLineHtml + winHtml;
-      els.feedback.classList.remove('incorrect');
-      els.feedback.classList.add('correct');
-      els.nextBtn.disabled = false;
-    } else {
-      saveGameState(state);
-      const session = loadSession();
-      if (session && session.id) {
-        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-      }
-      els.feedback.innerHTML = attackLineHtml;
-      els.feedback.classList.remove('incorrect');
-      els.feedback.classList.add('correct');
-    }
+    els.feedback.innerHTML = `<span class="fb-result">${info.emoji} ${info.label}を詠唱！（自分のHPが${SPELLBOOK_SELF_DAMAGE_}減った。残りHP: ${state.hp}）次の問題に正解すればボスに${info.dmg}ダメージ！不正解だとかわされてしまう…</span>`;
+    els.feedback.classList.remove('incorrect');
+    els.feedback.classList.add('correct');
     updateGameHud();
     if (!els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
   }
@@ -16906,6 +16919,7 @@
       if (cancelBtn) cancelBtn.addEventListener('click', function () {
         state.worldBossActiveStage = null;
         state.streak = 0;
+        state.worldPendingSpell = null;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
@@ -16934,6 +16948,7 @@
     if (challengeBtn) challengeBtn.addEventListener('click', function () {
       state.worldBossActiveStage = stage.id;
       state.streak = 0;
+      state.worldPendingSpell = null;
       saveGameState(state);
       renderWorldPanel();
       updateGameHud();
