@@ -175,6 +175,11 @@
 
       <button type="button" class="settings-bulk-btn" id="addChildBtn">＋ お子様を追加（最大4人まで）</button>
 
+      <label class="login-checkbox-row" for="photoAvatarConsent">
+        <input type="checkbox" id="photoAvatarConsent" />
+        写真アバター機能（お子様の顔写真をアバターとして使う機能）の利用に同意します（任意）
+      </label>
+
       <p class="login-error" id="guardianError" hidden></p>
 
       <button class="primary-btn" id="guardianSubmit" type="submit">保護者として登録する</button>
@@ -486,6 +491,15 @@
         <p class="history-summary" id="avatarLockedText">レベル300、またはMP10000でアバターが作れるようになります。</p>
       </div>
       <div id="avatarBuilder" hidden>
+        <div class="avatar-mode-tabs" id="avatarModeTabs" hidden>
+          <button type="button" class="avatar-mode-tab" id="avatarModePresetBtn">🖼️ イラストから選ぶ</button>
+          <button type="button" class="avatar-mode-tab" id="avatarModePartsBtn">🧩 パーツを組み合わせる</button>
+        </div>
+        <div id="avatarPresetSection" hidden>
+          <div class="avatar-preview-wrap"><div class="avatar-preview avatar-preview-preset" id="avatarPresetPreview"></div></div>
+          <div class="avatar-preset-grid" id="avatarPresetGrid"></div>
+        </div>
+        <div id="avatarPartsSection">
         <div class="avatar-preview-wrap"><div class="avatar-preview" id="avatarPreview"></div></div>
         <div class="avatar-picker" data-group="hair">
           <p class="avatar-picker-label">髪型</p>
@@ -506,6 +520,7 @@
         <div class="avatar-picker" data-group="outfitColor">
           <p class="avatar-picker-label">服の色</p>
           <div class="avatar-swatch-row" id="avatarOutfitColorRow"></div>
+        </div>
         </div>
         <button class="primary-btn" id="avatarSaveBtn" type="button">保存する</button>
         <p class="avatar-save-msg" id="avatarSaveMsg" hidden></p>

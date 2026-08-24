@@ -1754,6 +1754,17 @@ h1 {
   font-weight: 700;
   cursor: pointer;
 }
+.login-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--c-ink-soft);
+  cursor: pointer;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+.login-checkbox-row input { margin-top: 3px; flex-shrink: 0; }
 
 /* 週替わりクイズ */
 .weekly-quiz-panel {
@@ -1850,6 +1861,16 @@ h1 {
 .avatar-swatch.is-color { }
 .avatar-swatch.is-selected { border-color: var(--c-positive); box-shadow: 0 0 0 2px var(--c-positive-soft); }
 .avatar-save-msg { margin: 12px 0 0; font-size: 13px; font-weight: 700; color: var(--c-correct); }
+.avatar-mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.avatar-mode-tab { flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 700; border-radius: var(--radius); border: 1.5px solid var(--c-line); background: var(--c-bg); color: var(--c-ink-soft); cursor: pointer; }
+.avatar-mode-tab.is-active { border-color: var(--c-accent, #4f6df5); color: var(--c-accent, #4f6df5); }
+.avatar-preview-preset { width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 2px solid var(--c-line); background: var(--c-surface); }
+.avatar-preview-preset img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.avatar-preset-item { border-radius: var(--radius); border: 2px solid var(--c-line); background: var(--c-bg); cursor: pointer; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.avatar-preset-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.avatar-preset-item-label { font-size: 11px; font-weight: 700; color: var(--c-ink-soft); }
+.avatar-preset-item.is-selected { border-color: var(--c-positive); box-shadow: 0 0 0 2px var(--c-positive-soft); }
 .cal-header {
   display: flex;
   align-items: center;

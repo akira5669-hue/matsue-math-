@@ -38,6 +38,31 @@
   var AVATAR_LEVEL_THRESHOLD = 300;
   var AVATAR_MP_THRESHOLD = 10000;
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
+  // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
+  // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
+  // 順次追加していく(現時点ではプレースホルダー)。
+  var AVATAR_PRESETS = [
+    { id: 'boy1', img: 'images/avatar_preset_boy1.png', label: '男の子1' },
+    { id: 'boy2', img: 'images/avatar_preset_boy2.png', label: '男の子2' },
+    { id: 'boy3', img: 'images/avatar_preset_boy3.png', label: '男の子3' },
+    { id: 'boy4', img: 'images/avatar_preset_boy4.png', label: '男の子4' },
+    { id: 'boy5', img: 'images/avatar_preset_boy5.png', label: '男の子5' },
+    { id: 'boy6', img: 'images/avatar_preset_boy6.png', label: '男の子6' },
+    { id: 'girl1', img: 'images/avatar_preset_girl1.png', label: '女の子1' },
+    { id: 'girl2', img: 'images/avatar_preset_girl2.png', label: '女の子2' },
+    { id: 'girl3', img: 'images/avatar_preset_girl3.png', label: '女の子3' },
+    { id: 'girl4', img: 'images/avatar_preset_girl4.png', label: '女の子4' },
+    { id: 'girl5', img: 'images/avatar_preset_girl5.png', label: '女の子5' },
+    { id: 'girl6', img: 'images/avatar_preset_girl6.png', label: '女の子6' },
+  ];
+  // アバター表示の共通ヘルパー。preset方式ならイラスト画像、従来方式ならSVGパーツを返す。
+  function avatarDisplayHtml_(sel) {
+    if (sel && sel.preset) {
+      var preset = AVATAR_PRESETS.find(function (p) { return p.id === sel.preset; });
+      if (preset) return `<img src="${preset.img}" alt="${preset.label}">`;
+    }
+    return buildAvatarSvgSafe(sel);
+  }
   function parseAvatarJson(raw) {
     if (!raw) return null;
     try {
@@ -13431,6 +13456,7 @@
     guardianName: document.getElementById('guardianName'),
     guardianError: document.getElementById('guardianError'),
     guardianSubmit: document.getElementById('guardianSubmit'),
+    photoAvatarConsent: document.getElementById('photoAvatarConsent'),
     guardianBackBtn: document.getElementById('guardianBackBtn'),
     addChildBtn: document.getElementById('addChildBtn'),
     appMain: document.getElementById('appMain'),
@@ -13535,6 +13561,13 @@
     avatarOutfitColorRow: document.getElementById('avatarOutfitColorRow'),
     avatarSaveBtn: document.getElementById('avatarSaveBtn'),
     avatarSaveMsg: document.getElementById('avatarSaveMsg'),
+    avatarModeTabs: document.getElementById('avatarModeTabs'),
+    avatarModePresetBtn: document.getElementById('avatarModePresetBtn'),
+    avatarModePartsBtn: document.getElementById('avatarModePartsBtn'),
+    avatarPresetSection: document.getElementById('avatarPresetSection'),
+    avatarPartsSection: document.getElementById('avatarPartsSection'),
+    avatarPresetPreview: document.getElementById('avatarPresetPreview'),
+    avatarPresetGrid: document.getElementById('avatarPresetGrid'),
     worldToggle: document.getElementById('worldToggle'),
     worldPanel: document.getElementById('worldPanel'),
     worldProgress: document.getElementById('worldProgress'),
@@ -14092,7 +14125,7 @@
     if (els.battleVsRow) {
       if (isBossFight && isAdminSession_()) {
         els.battleVsRow.hidden = false;
-        els.battlePlayerAvatar.innerHTML = (state.avatar && AVATAR_HAIR_SAFE.length > 0) ? buildAvatarSvgSafe(state.avatar) : '🧑';
+        els.battlePlayerAvatar.innerHTML = (state.avatar && (state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) ? avatarDisplayHtml_(state.avatar) : '🧑';
         els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
         els.battleEnemyCaption.textContent = enemy.name;
         els.battlePlayerHpText.textContent = Number(state.hp) || 0;
@@ -14130,8 +14163,8 @@
   }
 
   function updateUserAvatarBadge() {
-    if (state.avatar && AVATAR_HAIR_SAFE.length > 0) {
-      els.userAvatarBadge.innerHTML = buildAvatarSvgSafe(state.avatar);
+    if (state.avatar && (state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) {
+      els.userAvatarBadge.innerHTML = avatarDisplayHtml_(state.avatar);
       els.userAvatarBadge.hidden = false;
     } else {
       els.userAvatarBadge.hidden = true;
@@ -15344,8 +15377,9 @@
       children.push({ name: name, id: id, password: password });
     }
 
+    var photoAvatarConsent = !!(els.photoAvatarConsent && els.photoAvatarConsent.checked);
     els.guardianSubmit.disabled = true;
-    apiPost('registerGuardian', { guardianName: guardianName, children: children }).then(function (res) {
+    apiPost('registerGuardian', { guardianName: guardianName, children: children, photoAvatarConsent: photoAvatarConsent }).then(function (res) {
       els.guardianSubmit.disabled = false;
       if (!res.ok) {
         var msg = '登録に失敗しました。もう一度お試しください。';
@@ -16375,6 +16409,32 @@
   }
 
   var avatarDraft = null;
+  var avatarPresetDraft = null;
+  var avatarMode = 'parts';
+
+  function setAvatarMode_(mode) {
+    avatarMode = mode;
+    els.avatarPresetSection.hidden = mode !== 'preset';
+    els.avatarPartsSection.hidden = mode !== 'parts';
+    els.avatarModePresetBtn.classList.toggle('is-active', mode === 'preset');
+    els.avatarModePartsBtn.classList.toggle('is-active', mode === 'parts');
+  }
+
+  function renderAvatarPresetGrid() {
+    els.avatarPresetPreview.innerHTML = avatarPresetDraft ? avatarDisplayHtml_({ preset: avatarPresetDraft }) : '';
+    els.avatarPresetGrid.innerHTML = '';
+    AVATAR_PRESETS.forEach(function (preset) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'avatar-preset-item' + (avatarPresetDraft === preset.id ? ' is-selected' : '');
+      item.innerHTML = `<img src="${preset.img}" alt="${preset.label}"><span class="avatar-preset-item-label">${preset.label}</span>`;
+      item.addEventListener('click', function () {
+        avatarPresetDraft = preset.id;
+        renderAvatarPresetGrid();
+      });
+      els.avatarPresetGrid.appendChild(item);
+    });
+  }
 
   function renderAvatarSwatchRow(rowEl, group, options, isColor) {
     rowEl.innerHTML = '';
@@ -16423,7 +16483,13 @@
       return;
     }
     avatarDraft = Object.assign({}, AVATAR_DEFAULT_SELECTION, state.avatar || {});
+    avatarPresetDraft = (state.avatar && state.avatar.preset) ? state.avatar.preset : null;
     els.avatarSaveMsg.hidden = true;
+    // イラストプリセット方式は画像素材がまだ揃っていないため00001限定プレビュー中。
+    // 本番公開時にこのisAdminSession_()チェックを外す。
+    els.avatarModeTabs.hidden = !isAdminSession_();
+    setAvatarMode_((isAdminSession_() && avatarPresetDraft) ? 'preset' : 'parts');
+    renderAvatarPresetGrid();
     renderAvatarBuilder();
   }
 
@@ -17953,8 +18019,14 @@
       els.avatarSaveMsg.textContent = 'この機能は生徒登録した方のみご利用いただけます。';
       return;
     }
+    if (avatarMode === 'preset' && !avatarPresetDraft) {
+      els.avatarSaveMsg.hidden = false;
+      els.avatarSaveMsg.textContent = 'イラストを1つ選んでください。';
+      return;
+    }
+    var payload = avatarMode === 'preset' ? { preset: avatarPresetDraft } : avatarDraft;
     els.avatarSaveBtn.disabled = true;
-    apiPost('saveAvatar', { id: session.id, avatar: avatarDraft }).then(function (res) {
+    apiPost('saveAvatar', { id: session.id, avatar: payload }).then(function (res) {
       els.avatarSaveBtn.disabled = false;
       if (!res.ok) {
         els.avatarSaveMsg.hidden = false;
@@ -17963,7 +18035,7 @@
           : '保存に失敗しました。もう一度お試しください。';
         return;
       }
-      state.avatar = Object.assign({}, avatarDraft);
+      state.avatar = Object.assign({}, payload);
       saveGameState(state);
       updateUserAvatarBadge();
       els.avatarSaveMsg.hidden = false;
@@ -18029,6 +18101,8 @@
   els.grantToggle.addEventListener('click', toggleGrant);
   els.grantForm.addEventListener('submit', handleGrantSubmit);
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
+  els.avatarModePresetBtn.addEventListener('click', function () { setAvatarMode_('preset'); });
+  els.avatarModePartsBtn.addEventListener('click', function () { setAvatarMode_('parts'); });
   els.testPhotoToggle.addEventListener('click', toggleTestPhoto);
   els.penaTestFileInput.addEventListener('change', function () {
     els.penaTestSubmitBtn.disabled = !(els.penaTestFileInput.files && els.penaTestFileInput.files[0]);
