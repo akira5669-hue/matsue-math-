@@ -23,6 +23,13 @@
 
 * { box-sizing: border-box; }
 
+/* hidden属性はブラウザ標準のdisplay:noneで効くが、クラス側にdisplay:flex等を
+   書くとそちらが勝ってしまい、hiddenを付けても表示されたままになる。実際に
+   ボス戦のVS表示とアバターのタブでこれが起きていた(常に表示され、中身は
+   HTMLに書いた初期値のままだった)。個別に打ち消しルールを書き足す運用は
+   書き忘れが起きるため、ここで一括して確実に隠す。 */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--c-bg);
