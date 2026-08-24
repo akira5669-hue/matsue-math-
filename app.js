@@ -87,6 +87,10 @@
   }
   function parseAvatarJson(raw) {
     if (!raw) return null;
+    // サーバーのavatar列はJSONB。APIからは既にオブジェクトとして返ってくるので、
+    // それをJSON.parseに通すと必ず失敗してnullになってしまっていた(ログインの
+    // たびにアバター設定が消える原因だった)。オブジェクトはそのまま採用する。
+    if (typeof raw === 'object') return raw;
     try {
       var obj = JSON.parse(raw);
       return (obj && typeof obj === 'object') ? obj : null;
@@ -14156,11 +14160,7 @@
           if (els.battleEnemyAvatar) {
             els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
           }
-          // 00001のみ、原因調査用に周・ステージ・必要連続正解数を併記する。
-          if (els.battleEnemyCaption) {
-            els.battleEnemyCaption.textContent = enemy.name
-              + `［周${Number(state.worldLap) || 1} / ステージ${String(state.worldBossActiveStage)} / 必要${requiredStreak}］`;
-          }
+          if (els.battleEnemyCaption) els.battleEnemyCaption.textContent = enemy.name;
           if (els.battlePlayerHpText) els.battlePlayerHpText.textContent = Number(state.hp) || 0;
           if (els.battleEnemyHpBarInner) {
             const battleHpPct = Math.round((hp / requiredStreak) * 100);
@@ -15104,7 +15104,10 @@
       // 付与直後のMPを消してしまう恐れがある。
       if (res.apologyBonusAwarded > 0) state.points += res.apologyBonusAwarded;
       state.enabled = (progress && Array.isArray(progress.enabled) && progress.enabled.length > 0) ? new Set(progress.enabled) : new Set(defaultEnabledIds(res.grade));
-      state.avatar = parseAvatarJson(res.avatar);
+      // サーバーにアバターが無い(まだ作っていない)場合に、端末に保存済みの
+      // アバターを消してしまわないよう、取得できた時だけ上書きする。
+      var parsedAvatarOnLogin = parseAvatarJson(res.avatar);
+      if (parsedAvatarOnLogin) state.avatar = parsedAvatarOnLogin;
       saveGameState(state);
       reconcilePoints(id, res);
       if (isLoginGateActive_()) {
