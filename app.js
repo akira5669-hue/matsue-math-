@@ -13361,6 +13361,9 @@
     battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
     battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
     battleEnemyCaption: document.getElementById('battleEnemyCaption'),
+    battlePlayerHpText: document.getElementById('battlePlayerHpText'),
+    battleEnemyHpBarInner: document.getElementById('battleEnemyHpBarInner'),
+    battleEnemyHpText: document.getElementById('battleEnemyHpText'),
     memoPanel: document.getElementById('memoPanel'),
     memoCanvas: document.getElementById('memoCanvas'),
     memoPenBtn: document.getElementById('memoPenBtn'),
@@ -14092,6 +14095,11 @@
         els.battlePlayerAvatar.innerHTML = (state.avatar && AVATAR_HAIR_SAFE.length > 0) ? buildAvatarSvgSafe(state.avatar) : '🧑';
         els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
         els.battleEnemyCaption.textContent = enemy.name;
+        els.battlePlayerHpText.textContent = Number(state.hp) || 0;
+        const battleHpPct = Math.round((hp / requiredStreak) * 100);
+        els.battleEnemyHpBarInner.style.width = `${battleHpPct}%`;
+        els.battleEnemyHpBarInner.style.background = hp <= requiredStreak * 0.3 ? '#ef4444' : hp <= requiredStreak * 0.6 ? '#f59e0b' : '#22c55e';
+        els.battleEnemyHpText.textContent = `${hp}/${requiredStreak}`;
       } else {
         els.battleVsRow.hidden = true;
       }
