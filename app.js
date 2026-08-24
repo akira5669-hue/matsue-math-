@@ -55,6 +55,28 @@
     { id: 'girl5', img: 'images/avatar_preset_girl5.png', label: '女の子5' },
     { id: 'girl6', img: 'images/avatar_preset_girl6.png', label: '女の子6' },
   ];
+  // 00001でログイン中のときだけ、JavaScriptエラーを画面上部に表示する開発用バナー。
+  // 端末側でしか再現しない不具合(実際にボス戦のVS表示で発生した)の原因を、
+  // スクリーンショットだけで特定できるようにするためのもの。
+  function reportAdminError_(where, err) {
+    try {
+      if (!isAdminSession_()) return;
+      var box = document.getElementById('adminErrorBox');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'adminErrorBox';
+        box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;font-size:12px;padding:8px 10px;white-space:pre-wrap;word-break:break-all;max-height:45vh;overflow:auto;';
+        box.addEventListener('click', function () { box.remove(); });
+        document.body.appendChild(box);
+      }
+      var msg = (err && (err.stack || err.message)) ? (err.stack || err.message) : String(err);
+      box.textContent = '⚠️ ' + where + ': ' + msg + '\n（タップで閉じる）';
+    } catch (ignored) { /* エラー表示自体で落ちないように */ }
+  }
+  window.addEventListener('error', function (ev) {
+    reportAdminError_('JSエラー', ev.error || ev.message);
+  });
+
   // アバター表示の共通ヘルパー。preset方式ならイラスト画像、従来方式ならSVGパーツを返す。
   function avatarDisplayHtml_(sel) {
     if (sel && sel.preset) {
@@ -14125,14 +14147,30 @@
     if (els.battleVsRow) {
       if (isBossFight && isAdminSession_()) {
         els.battleVsRow.hidden = false;
-        els.battlePlayerAvatar.innerHTML = (state.avatar && (state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) ? avatarDisplayHtml_(state.avatar) : '🧑';
-        els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
-        els.battleEnemyCaption.textContent = enemy.name;
-        els.battlePlayerHpText.textContent = Number(state.hp) || 0;
-        const battleHpPct = Math.round((hp / requiredStreak) * 100);
-        els.battleEnemyHpBarInner.style.width = `${battleHpPct}%`;
-        els.battleEnemyHpBarInner.style.background = hp <= requiredStreak * 0.3 ? '#ef4444' : hp <= requiredStreak * 0.6 ? '#f59e0b' : '#22c55e';
-        els.battleEnemyHpText.textContent = `${hp}/${requiredStreak}`;
+        // 1箇所で例外が出てもHUD全体(この後のMP/HP/レベル表示)が巻き添えで
+        // 止まらないよう、この区画だけは個別にガードする。
+        try {
+          if (els.battlePlayerAvatar) {
+            els.battlePlayerAvatar.innerHTML = (state.avatar && (state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) ? avatarDisplayHtml_(state.avatar) : '🧑';
+          }
+          if (els.battleEnemyAvatar) {
+            els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
+          }
+          // 00001のみ、原因調査用に周・ステージ・必要連続正解数を併記する。
+          if (els.battleEnemyCaption) {
+            els.battleEnemyCaption.textContent = enemy.name
+              + `［周${Number(state.worldLap) || 1} / ステージ${String(state.worldBossActiveStage)} / 必要${requiredStreak}］`;
+          }
+          if (els.battlePlayerHpText) els.battlePlayerHpText.textContent = Number(state.hp) || 0;
+          if (els.battleEnemyHpBarInner) {
+            const battleHpPct = Math.round((hp / requiredStreak) * 100);
+            els.battleEnemyHpBarInner.style.width = `${battleHpPct}%`;
+            els.battleEnemyHpBarInner.style.background = hp <= requiredStreak * 0.3 ? '#ef4444' : hp <= requiredStreak * 0.6 ? '#f59e0b' : '#22c55e';
+          }
+          if (els.battleEnemyHpText) els.battleEnemyHpText.textContent = `${hp}/${requiredStreak}`;
+        } catch (e) {
+          reportAdminError_('VS表示', e);
+        }
       } else {
         els.battleVsRow.hidden = true;
       }
