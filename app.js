@@ -13390,9 +13390,10 @@
     // ダメージが入り、不正解だとかわされて不発になる。worldBossActiveStageと同様に
     // 端末セッション限定、あえて永続化しない。
     worldPendingSpell: null,
-    // 今のボスに魔法で与えた累計ダメージ。連続正解による通常ダメージとは別枠で
-    // 数え、worldBossRemainingHp_で合算する。これも端末セッション限定。
-    worldBossSpellDamage: 0,
+    // 今のボスに与えた累計ダメージ(正解1問ごとの通常ダメージ＋魔法のダメージ)。
+    // 連続正解数(streak)とは切り離して数えるので、不正解でもボスのHPは戻らない。
+    // worldBossActiveStageと同様に端末セッション限定。
+    worldBossDamage: 0,
   };
   applyWorldDataForLap_(state.worldLap);
 
@@ -14319,13 +14320,18 @@
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.streak++;
       state.wrongStreak = 0;
+      // ボス戦は1問正解するごとに累積でダメージを与える(不正解で連続正解数が
+      // 0に戻っても、ここまで削ったボスのHPは戻らない)。
+      if (state.worldBossActiveStage) {
+        state.worldBossDamage = (Number(state.worldBossDamage) || 0) + worldBossDamagePerHit_();
+      }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
       if (state.worldBossActiveStage && state.worldPendingSpell) {
         const spellInfo = SPELLBOOK_INFO_[state.worldPendingSpell];
         state.worldPendingSpell = null;
         if (spellInfo) {
-          state.worldBossSpellDamage = (Number(state.worldBossSpellDamage) || 0) + spellInfo.dmg;
+          state.worldBossDamage = (Number(state.worldBossDamage) || 0) + spellInfo.dmg;
           missLineHtml += `<div class="item-gain-banner">${spellInfo.emoji} ${spellInfo.label}が命中！ボスに${spellInfo.dmg}ダメージ！</div>`;
         }
       }
@@ -14480,7 +14486,7 @@
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
           state.worldPendingSpell = null;
-          state.worldBossSpellDamage = 0;
+          state.worldBossDamage = 0;
         } else {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
@@ -16650,13 +16656,12 @@
   function worldBossDamagePerHit_() {
     return (Number(state.worldLap) || 1) >= 2 ? WORLD_BOSS_DAMAGE_PER_HIT_LAP2_ : 1;
   }
-  // 今のボスの残りHP。連続正解による通常ダメージと、魔法で与えた分の合計を引く。
+  // 今のボスの残りHP。与えたダメージは累積で、不正解で連続正解数が0に戻っても
+  // ボスのHPは戻らない(state.worldBossDamageに貯めていく)。
   function worldBossRemainingHp_(stageId, subIndex) {
     const sub = worldBossCurrentSubBoss(stageId, subIndex);
     if (!sub) return 0;
-    const dealt = (Number(state.streak) || 0) * worldBossDamagePerHit_()
-      + (Number(state.worldBossSpellDamage) || 0);
-    return Math.max(0, sub.streak - dealt);
+    return Math.max(0, sub.streak - (Number(state.worldBossDamage) || 0));
   }
   // 魔法の書(2周目のボス戦専用消費アイテム)。なんでも屋で100MPで購入し、対応する
   // 属性のボス戦で1冊消費して詠唱する。詠唱すると自分のHPが常に10減り、その直後の
@@ -16717,7 +16722,7 @@
     // 次のボスへは持ち越さない(魔法で与えたダメージも撃破と同時にリセット)。
     state.streak = 0;
     state.worldPendingSpell = null;
-    state.worldBossSpellDamage = 0;
+    state.worldBossDamage = 0;
     const nextSubIndex = subIndex + 1;
     let winHtml;
     if (nextSubIndex >= sequence.length) {
@@ -17053,7 +17058,7 @@
       els.worldBossSection.innerHTML =
         '<div class="world-boss-card is-fighting">'
         + '<p class="world-boss-title">👑 ボス「' + bossDisplay.name + '」' + seqLabel + 'に挑戦中！</p>'
-        + '<p class="world-boss-desc">画面上のクイズに正解するたびにボスへ' + worldBossDamagePerHit_() + 'ダメージ。ボスのHP' + requiredStreak + 'を削り切るとクリア（' + Math.ceil(requiredStreak / worldBossDamagePerHit_()) + '問連続正解）。不正解になると自分のHPが' + worldBossHpPenalty(stageId) + '減る。</p>'
+        + '<p class="world-boss-desc">画面上のクイズに正解するたびにボスへ' + worldBossDamagePerHit_() + 'ダメージ。ボスのHP' + requiredStreak + 'を削り切るとクリア（' + Math.ceil(requiredStreak / worldBossDamagePerHit_()) + '問正解）。不正解になっても削ったHPは戻らないが、自分のHPが' + worldBossHpPenalty(stageId) + '減る。</p>'
         + '<button type="button" class="ghost-btn" id="worldBossCancelBtn">挑戦をやめる</button>'
         + '</div>';
       const cancelBtn = document.getElementById('worldBossCancelBtn');
@@ -17061,7 +17066,7 @@
         state.worldBossActiveStage = null;
         state.streak = 0;
         state.worldPendingSpell = null;
-        state.worldBossSpellDamage = 0;
+        state.worldBossDamage = 0;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
@@ -17082,7 +17087,7 @@
     els.worldBossSection.innerHTML =
       '<div class="world-boss-card">'
       + '<p class="world-boss-title">👑 ボス出現！「' + bossDisplay.name + '」' + seqLabel + '</p>'
-      + '<p class="world-boss-desc">正解するたびにボスへ' + worldBossDamagePerHit_() + 'ダメージ。ボスのHP' + requiredStreak + 'を削り切ればクリア（' + Math.ceil(requiredStreak / worldBossDamagePerHit_()) + '問連続正解）。不正解になると自分のHPが' + penalty + '減り、自分のHPが0になるとボスのHPは全回復してやり直しになる。倒すと仲間になる！</p>'
+      + '<p class="world-boss-desc">正解するたびにボスへ' + worldBossDamagePerHit_() + 'ダメージ。ボスのHP' + requiredStreak + 'を削り切ればクリア（' + Math.ceil(requiredStreak / worldBossDamagePerHit_()) + '問正解）。不正解になっても削ったHPは戻らないが、自分のHPが' + penalty + '減る。自分のHPが0になるとボスのHPは全回復してやり直しになる。倒すと仲間になる！</p>'
       + condHtml
       + '<button type="button" class="primary-btn" id="worldBossChallengeBtn"' + (elig.ok ? '' : ' disabled') + '>挑戦する（現在HP: ' + (Number(state.hp) || 0) + '）</button>'
       + '</div>';
@@ -17091,7 +17096,7 @@
       state.worldBossActiveStage = stage.id;
       state.streak = 0;
       state.worldPendingSpell = null;
-      state.worldBossSpellDamage = 0;
+      state.worldBossDamage = 0;
       saveGameState(state);
       renderWorldPanel();
       updateGameHud();
@@ -18168,7 +18173,7 @@
         state.worldBossSubIndex[stageId] = 0;
         state.streak = 0;
         state.worldPendingSpell = null;
-        state.worldBossSpellDamage = 0;
+        state.worldBossDamage = 0;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
