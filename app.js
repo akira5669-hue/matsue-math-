@@ -13390,6 +13390,9 @@
     // ダメージが入り、不正解だとかわされて不発になる。worldBossActiveStageと同様に
     // 端末セッション限定、あえて永続化しない。
     worldPendingSpell: null,
+    // 今のボスに魔法で与えた累計ダメージ。連続正解による通常ダメージとは別枠で
+    // 数え、worldBossRemainingHp_で合算する。これも端末セッション限定。
+    worldBossSpellDamage: 0,
   };
   applyWorldDataForLap_(state.worldLap);
 
@@ -14129,8 +14132,12 @@
   function updateGameHud() {
     const isBossFight = !!state.worldBossActiveStage;
     const bossSubIndex = isBossFight ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
+    // requiredStreakは「敵のHP」。通常の敵・レアキャラは1問1ダメージなので
+    // 「あと何問」とHPが一致するが、ボス戦は周ごとのダメージ量(と魔法)で削る。
     const requiredStreak = isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
-    const hp = Math.max(0, requiredStreak - state.streak);
+    const hp = isBossFight
+      ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
+      : Math.max(0, requiredStreak - state.streak);
     const enemy = isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
     const isRare = !isBossFight && !!state.rareType;
     if (enemy.img) {
@@ -14318,10 +14325,7 @@
         const spellInfo = SPELLBOOK_INFO_[state.worldPendingSpell];
         state.worldPendingSpell = null;
         if (spellInfo) {
-          const subForSpell = worldBossCurrentSubBoss(state.worldBossActiveStage, state.worldBossSubIndex[state.worldBossActiveStage] || 0);
-          if (subForSpell) {
-            state.streak = Math.min(subForSpell.streak, state.streak + spellInfo.dmg);
-          }
+          state.worldBossSpellDamage = (Number(state.worldBossSpellDamage) || 0) + spellInfo.dmg;
           missLineHtml += `<div class="item-gain-banner">${spellInfo.emoji} ${spellInfo.label}が命中！ボスに${spellInfo.dmg}ダメージ！</div>`;
         }
       }
@@ -14476,6 +14480,7 @@
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
           state.worldPendingSpell = null;
+          state.worldBossSpellDamage = 0;
         } else {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 ボスの反撃！HPが${penalty}減った！（残りHP: ${state.hp}）</div>`;
         }
@@ -14540,7 +14545,7 @@
     let winHtml = '';
     const bossSubIndexForWin = state.worldBossActiveStage ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
     const requiredStreak = state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
-    if (isCorrect && state.worldBossActiveStage && state.streak >= requiredStreak) {
+    if (isCorrect && state.worldBossActiveStage && worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndexForWin) <= 0) {
       // 世界一周のボス撃破：MP/経験値の通常報酬ではなく、ボスが仲間になる特別演出。
       // ステージ4のように複数体を順番に倒すステージでは、途中のボスを倒しても
       // ステージ自体はまだクリアにならず、そのまま次のボスへ続く。
@@ -16637,6 +16642,22 @@
   }
   // 9月ステージ(2周目)のボスを倒すとMPは増えない代わりに+300HP。
   const WORLD_BOSS_LAP2_HP_BONUS_ = 300;
+  // WORLD_BOSS_SEQUENCES(_LAP2)のstreakは「ボスのHP」。1問正解するたびに
+  // 与えるダメージは周によって変わる。1周目は1ダメージ(HP30=30問)、
+  // 2周目は10ダメージ(HP300=30問)で、必要な問題数は同じだが、2周目は
+  // 魔法の書(1冊50ダメージ=5問分)でHPを直接削れるようになっている。
+  const WORLD_BOSS_DAMAGE_PER_HIT_LAP2_ = 10;
+  function worldBossDamagePerHit_() {
+    return (Number(state.worldLap) || 1) >= 2 ? WORLD_BOSS_DAMAGE_PER_HIT_LAP2_ : 1;
+  }
+  // 今のボスの残りHP。連続正解による通常ダメージと、魔法で与えた分の合計を引く。
+  function worldBossRemainingHp_(stageId, subIndex) {
+    const sub = worldBossCurrentSubBoss(stageId, subIndex);
+    if (!sub) return 0;
+    const dealt = (Number(state.streak) || 0) * worldBossDamagePerHit_()
+      + (Number(state.worldBossSpellDamage) || 0);
+    return Math.max(0, sub.streak - dealt);
+  }
   // 魔法の書(2周目のボス戦専用消費アイテム)。なんでも屋で100MPで購入し、対応する
   // 属性のボス戦で1冊消費して詠唱する。詠唱すると自分のHPが常に10減り、その直後の
   // 問題に正解して初めてボスにダメージが入る(不正解だとボスにかわされて不発になる)。
@@ -16693,7 +16714,10 @@
       state.hp = (Number(state.hp) || 0) + WORLD_BOSS_LAP2_HP_BONUS_;
       hpBonusGainedHtml = `<div class="item-gain-banner">💚 +${WORLD_BOSS_LAP2_HP_BONUS_}HP！</div>`;
     }
+    // 次のボスへは持ち越さない(魔法で与えたダメージも撃破と同時にリセット)。
     state.streak = 0;
+    state.worldPendingSpell = null;
+    state.worldBossSpellDamage = 0;
     const nextSubIndex = subIndex + 1;
     let winHtml;
     if (nextSubIndex >= sequence.length) {
@@ -17029,7 +17053,7 @@
       els.worldBossSection.innerHTML =
         '<div class="world-boss-card is-fighting">'
         + '<p class="world-boss-title">👑 ボス「' + bossDisplay.name + '」' + seqLabel + 'に挑戦中！</p>'
-        + '<p class="world-boss-desc">画面上のクイズで' + requiredStreak + '問連続正解するとクリア。不正解になるとHPが' + worldBossHpPenalty(stageId) + '減る。</p>'
+        + '<p class="world-boss-desc">画面上のクイズに正解するたびにボスへ' + worldBossDamagePerHit_() + 'ダメージ。ボスのHP' + requiredStreak + 'を削り切るとクリア（' + Math.ceil(requiredStreak / worldBossDamagePerHit_()) + '問連続正解）。不正解になると自分のHPが' + worldBossHpPenalty(stageId) + '減る。</p>'
         + '<button type="button" class="ghost-btn" id="worldBossCancelBtn">挑戦をやめる</button>'
         + '</div>';
       const cancelBtn = document.getElementById('worldBossCancelBtn');
@@ -17037,6 +17061,7 @@
         state.worldBossActiveStage = null;
         state.streak = 0;
         state.worldPendingSpell = null;
+        state.worldBossSpellDamage = 0;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
@@ -17057,7 +17082,7 @@
     els.worldBossSection.innerHTML =
       '<div class="world-boss-card">'
       + '<p class="world-boss-title">👑 ボス出現！「' + bossDisplay.name + '」' + seqLabel + '</p>'
-      + '<p class="world-boss-desc">' + requiredStreak + '問連続正解でクリア。不正解になるとHPが' + penalty + '減り、HPが0になると最初(0/' + requiredStreak + ')からやり直しになる。倒すと仲間になる！</p>'
+      + '<p class="world-boss-desc">正解するたびにボスへ' + worldBossDamagePerHit_() + 'ダメージ。ボスのHP' + requiredStreak + 'を削り切ればクリア（' + Math.ceil(requiredStreak / worldBossDamagePerHit_()) + '問連続正解）。不正解になると自分のHPが' + penalty + '減り、自分のHPが0になるとボスのHPは全回復してやり直しになる。倒すと仲間になる！</p>'
       + condHtml
       + '<button type="button" class="primary-btn" id="worldBossChallengeBtn"' + (elig.ok ? '' : ' disabled') + '>挑戦する（現在HP: ' + (Number(state.hp) || 0) + '）</button>'
       + '</div>';
@@ -17066,6 +17091,7 @@
       state.worldBossActiveStage = stage.id;
       state.streak = 0;
       state.worldPendingSpell = null;
+      state.worldBossSpellDamage = 0;
       saveGameState(state);
       renderWorldPanel();
       updateGameHud();
@@ -18142,6 +18168,7 @@
         state.worldBossSubIndex[stageId] = 0;
         state.streak = 0;
         state.worldPendingSpell = null;
+        state.worldBossSpellDamage = 0;
         saveGameState(state);
         renderWorldPanel();
         updateGameHud();
