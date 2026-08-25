@@ -13048,18 +13048,18 @@
   var TREASURE_EVENT_END_ = '2026-08-30';
   const TREASURE_CHEST_EVENT_CHANCE = 1 / 5;
   const TREASURE_CHEST_NORMAL_CHANCE = 1 / 20;
+  // 宝箱・鍵・指輪は2026-08-26に全生徒へ公開済み(それ以前は00001のみの事前確認
+  // 期間だった)。イベントデー(8/29・30)より前から遊べるが、高確率になるのは
+  // イベントデーだけ(treasureChestDropChance_を参照)。
+  var TREASURE_RELEASE_START_ = '2026-08-26';
   function isTreasureChestActive_() {
-    // 本番公開前に00001だけで動作確認できるよう、日付前でも00001アカウントなら
-    // 有効にする(理科の新単元と同じisAdminSession_の仕組み)。
-    return todayKey() >= TREASURE_EVENT_START_ || isAdminSession_();
+    return todayKey() >= TREASURE_RELEASE_START_;
   }
-  // イベント日(8/29・30)は高確率、それ以外(8/31以降、または00001の事前確認時)は
-  // 低確率。日付前に00001が確認する場合は、イベント本来の確率(5分の1)で見せる。
+  // イベント日(8/29・30)だけ高確率、それ以外の日は通常確率。
   function treasureChestDropChance_() {
     var today = todayKey();
     if (today >= TREASURE_EVENT_START_ && today <= TREASURE_EVENT_END_) return TREASURE_CHEST_EVENT_CHANCE;
-    if (today > TREASURE_EVENT_END_) return TREASURE_CHEST_NORMAL_CHANCE;
-    return TREASURE_CHEST_EVENT_CHANCE; // 00001の事前プレビュー用
+    return TREASURE_CHEST_NORMAL_CHANCE;
   }
   const TREASURE_TIER_LABEL_ = { bronze: '銅', silver: '銀', gold: '金', rainbow: '虹色' };
   const TREASURE_TIER_EMOJI_ = { bronze: '🥉', silver: '🥈', gold: '🥇', rainbow: '🌈' };
