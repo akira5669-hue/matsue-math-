@@ -1868,6 +1868,8 @@ h1 {
 .avatar-swatch.is-color { }
 .avatar-swatch.is-selected { border-color: var(--c-positive); box-shadow: 0 0 0 2px var(--c-positive-soft); }
 .avatar-save-msg { margin: 12px 0 0; font-size: 13px; font-weight: 700; color: var(--c-correct); }
+.world-boss-test-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.world-boss-test-label { width: 100%; margin: 0; font-size: 12px; font-weight: 700; color: var(--c-ink-soft); }
 .avatar-mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .avatar-mode-tab { flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 700; border-radius: var(--radius); border: 1.5px solid var(--c-line); background: var(--c-bg); color: var(--c-ink-soft); cursor: pointer; }
 .avatar-mode-tab.is-active { border-color: var(--c-accent, #4f6df5); color: var(--c-accent, #4f6df5); }

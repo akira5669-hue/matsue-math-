@@ -13606,6 +13606,7 @@
     worldLapRestart: document.getElementById('worldLapRestart'),
     worldDiceModal: document.getElementById('worldDiceModal'),
     worldDiceTestBtn: document.getElementById('worldDiceTestBtn'),
+    worldBossTestRow: document.getElementById('worldBossTestRow'),
     worldDiceFace: document.getElementById('worldDiceFace'),
     worldDiceResultText: document.getElementById('worldDiceResultText'),
     worldDiceCloseBtn: document.getElementById('worldDiceCloseBtn'),
@@ -15021,6 +15022,7 @@
     els.worldPanel.hidden = true;
     els.grantToggle.hidden = !(session && session.id === '00001');
     if (els.worldDiceTestBtn) els.worldDiceTestBtn.hidden = !(session && session.id === '00001');
+    if (els.worldBossTestRow) els.worldBossTestRow.hidden = !(session && session.id === '00001');
     els.grantPanel.hidden = true;
     els.testPhotoToggle.hidden = !!isGuest;
     els.testPhotoPanel.hidden = true;
@@ -18127,6 +18129,25 @@
       var session = loadSession();
       if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       showNextWorldDiceRoll_();
+    });
+  }
+  // 00001限定のボス戦テスト。世界一周の進行状況(worldCountry等)には一切触れず、
+  // 挑戦中フラグだけを立てて、その場でボス戦を始める(挑戦中フラグは端末セッション
+  // 限定なので、ページを再読み込みすれば元に戻る)。
+  if (els.worldBossTestRow) {
+    els.worldBossTestRow.querySelectorAll('[data-boss-test]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var stageId = Number(btn.getAttribute('data-boss-test')) || 1;
+        state.worldBossActiveStage = stageId;
+        state.worldBossSubIndex[stageId] = 0;
+        state.streak = 0;
+        state.worldPendingSpell = null;
+        saveGameState(state);
+        renderWorldPanel();
+        updateGameHud();
+        nextQuestion();
+        els.worldPanel.setAttribute('hidden', '');
+      });
     });
   }
   if (els.worldDiceCloseBtn) {
