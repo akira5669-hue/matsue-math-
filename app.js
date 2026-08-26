@@ -42,18 +42,18 @@
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
   // 順次追加していく(現時点ではプレースホルダー)。
   var AVATAR_PRESETS = [
-    { id: 'boy1', img: 'images/avatar_preset_boy1.png', label: '男の子1' },
-    { id: 'boy2', img: 'images/avatar_preset_boy2.png', label: '男の子2' },
-    { id: 'boy3', img: 'images/avatar_preset_boy3.png', label: '男の子3' },
-    { id: 'boy4', img: 'images/avatar_preset_boy4.png', label: '男の子4' },
-    { id: 'boy5', img: 'images/avatar_preset_boy5.png', label: '男の子5' },
-    { id: 'boy6', img: 'images/avatar_preset_boy6.png', label: '男の子6' },
-    { id: 'girl1', img: 'images/avatar_preset_girl1.png', label: '女の子1' },
-    { id: 'girl2', img: 'images/avatar_preset_girl2.png', label: '女の子2' },
-    { id: 'girl3', img: 'images/avatar_preset_girl3.png', label: '女の子3' },
-    { id: 'girl4', img: 'images/avatar_preset_girl4.png', label: '女の子4' },
-    { id: 'girl5', img: 'images/avatar_preset_girl5.png', label: '女の子5' },
-    { id: 'girl6', img: 'images/avatar_preset_girl6.png', label: '女の子6' },
+    { id: 'boy1', img: 'images/avatar_preset_boy1.jpg', label: '男の子1' },
+    { id: 'boy2', img: 'images/avatar_preset_boy2.jpg', label: '男の子2' },
+    { id: 'boy3', img: 'images/avatar_preset_boy3.jpg', label: '男の子3' },
+    { id: 'boy4', img: 'images/avatar_preset_boy4.jpg', label: '男の子4' },
+    { id: 'boy5', img: 'images/avatar_preset_boy5.jpg', label: '男の子5' },
+    { id: 'boy6', img: 'images/avatar_preset_boy6.jpg', label: '男の子6' },
+    { id: 'girl1', img: 'images/avatar_preset_girl1.jpg', label: '女の子1' },
+    { id: 'girl2', img: 'images/avatar_preset_girl2.jpg', label: '女の子2' },
+    { id: 'girl3', img: 'images/avatar_preset_girl3.jpg', label: '女の子3' },
+    { id: 'girl4', img: 'images/avatar_preset_girl4.jpg', label: '女の子4' },
+    { id: 'girl5', img: 'images/avatar_preset_girl5.jpg', label: '女の子5' },
+    { id: 'girl6', img: 'images/avatar_preset_girl6.jpg', label: '女の子6' },
   ];
   // 00001でログイン中のときだけ、JavaScriptエラーを画面上部に表示する開発用バナー。
   // 端末側でしか再現しない不具合(実際にボス戦のVS表示で発生した)の原因を、
@@ -12694,7 +12694,7 @@
     { name: 'ケアレスミス',    emoji: '😅' },
     { name: 'ボンミスコ',      emoji: '💥', img: 'images/bonmisuko.png' },
     { name: 'チンカイトウ',    emoji: '❌' },
-    { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.png' },
+    { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.jpg' },
     { name: 'アキラメタル',    emoji: '🤘' },
     { name: 'ゴーマジンガー',  emoji: '🤖' },
     { name: 'キラキラアキラ',  emoji: '⭐' },
@@ -12702,7 +12702,7 @@
     { name: 'ハナマルオ',      emoji: '⭕' },
     { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
     { name: 'かっこっこ',      emoji: '🐤', img: 'images/kakkokko.jpg' },
-    { name: 'イコールくん',    emoji: '🟰', img: 'images/ikorukun.png' },
+    { name: 'イコールくん',    emoji: '🟰', img: 'images/ikorukun.jpg' },
   ];
 
   const RARE_TYPES = {
@@ -12773,7 +12773,7 @@
       },
     },
     doubleorhalf: {
-      id: 'doubleorhalf', name: 'ダブルorハーフ', img: 'images/doubleorhalf.png',
+      id: 'doubleorhalf', name: 'ダブルorハーフ', img: 'images/doubleorhalf.jpg',
       lines: {
         appear: '今日獲得したMP、2倍にするか半分にするか勝負だ！1問でも間違えたら逃げるぞ！',
         defeat: 'やったな！今日のMPが2倍になったぞ！',
@@ -12781,7 +12781,7 @@
       },
     },
     soubusen: {
-      id: 'soubusen', name: 'ゆうかんそうぶせん戦士', img: 'images/soubusen.png',
+      id: 'soubusen', name: 'ゆうかんそうぶせん戦士', img: 'images/soubusen.jpg',
       lines: {
         appear: '勇敢そうぶせん戦士、参上！1問でも間違えたら撤退するぞ！',
         defeat: 'よくやった！ボーナスMPをあげよう！',
@@ -12789,7 +12789,7 @@
       },
     },
     nattoman: {
-      id: 'nattoman', name: 'ナットマン', img: 'images/nattoman.png',
+      id: 'nattoman', name: 'ナットマン', img: 'images/nattoman.jpg',
       lines: {
         appear: '納豆の鮮度が…1問でも間違えたら去るぞ！',
         defeat: 'よくやったな！納豆心をあげよう！ボーナスMPもだ！',
@@ -12797,7 +12797,7 @@
       },
     },
     fugoupakkun: {
-      id: 'fugoupakkun', name: '不等号パックン', img: 'images/fugoupakkun.png',
+      id: 'fugoupakkun', name: '不等号パックン', img: 'images/fugoupakkun.jpg',
       lines: {
         appear: 'くらべっこ勝負だ！こっちがおおきいぞ！1問でも間違えたら逃げるぞ！',
         defeat: 'やったー！よくくらべられたな！',
@@ -12818,7 +12818,7 @@
     // 含めていない)。その代わり不正解のたびにHPを2つ奪ってくる特別なレアキャラ
     // (HP処理はhandleAnswer内でstate.rareType==='gyoshi'を見て行う)。
     gyoshi: {
-      id: 'gyoshi', name: '漁師AKR', img: 'images/gyoshi_akr.png',
+      id: 'gyoshi', name: '漁師AKR', img: 'images/gyoshi_akr.jpg',
       lines: {
         appear: '海の男は逃げも隠れもしねぇ！1問間違えるごとに、HPを2つもらっていくぜ！',
         defeat: 'やるじゃねぇか！今日イチの大物はお前だったな！',
@@ -12828,7 +12828,7 @@
     // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選(rollRareType)とは
     // 完全に独立した仕組みで、文章題の問題が出た瞬間に別枠で5%の確率で登場する。
     sutoboke: {
-      id: 'sutoboke', name: 'スットボケAKR', img: 'images/sutoboke.png',
+      id: 'sutoboke', name: 'スットボケAKR', img: 'images/sutoboke.jpg',
       lines: {
         appear: 'ん…？あれ、なんの問題だっけ…でも解けるぜ！',
         defeat: 'おっと正解！たまには決めるもんだな！',
@@ -12846,7 +12846,7 @@
     // (nextQuestion内でmistakekingと一緒に判定している)。イジワルっぽい性格の設定に
     // 合わせ、ミスしても逃げずにその場でイジワルを続ける(mistakekingと同じ非フリー仕様)。
     sansudevil: {
-      id: 'sansudevil', name: '算数デビルちゃん', img: 'images/sansudevil.png',
+      id: 'sansudevil', name: '算数デビルちゃん', img: 'images/sansudevil.jpg',
       lines: {
         appear: 'イジワルが大すき〜♪ 算数デビルちゃん参上！前に間違えた問題、もう一度見せちゃうぞ〜！',
         defeat: 'むむっ、やられちゃった〜！でも正体はまだヒミツだよ〜？またイジワルしに来るからね〜♪',
@@ -12858,7 +12858,7 @@
     // 天使の涙に変わる(handleAnswer内でwrongStreakを見て判定)。間違えても逃げず、
     // 他のレアキャラと同じ10問連続正解で撃破するとずかんに載る。
     angelTears: {
-      id: 'angelTears', name: '天使の涙', img: 'images/angeltears.png',
+      id: 'angelTears', name: '天使の涙', img: 'images/angeltears.jpg',
       lines: {
         appear: '私をこんなに泣かせたのは、あなたしかいないわ。もう、計算で間違わないでね。',
         defeat: '涙が止まった…ありがとう。あなたのおかげで、また笑顔になれたよ。',
@@ -13244,7 +13244,7 @@
     { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
     { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）' },
     { id: SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA, icon: '👀', name: 'ゴーマジの目力', desc: 'ごーまじを撃破して手に入れた特別なアイテム（5分の1の確率）' },
-    { id: SPECIAL_ITEM_AKR_STAFF, icon: '<img src="images/akr_staff.png" alt="">', name: 'AKRの杖', desc: 'ゾンビAKRを撃破して手に入れた不思議な杖' },
+    { id: SPECIAL_ITEM_AKR_STAFF, icon: '<img src="images/akr_staff.jpg" alt="">', name: 'AKRの杖', desc: 'ゾンビAKRを撃破して手に入れた不思議な杖' },
   ];
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
@@ -13291,13 +13291,13 @@
   const FRACTION_KUN = { name: '分数くん', img: 'images/bunsukun.png' };
   // 通常キャラ「かけちゃん」：かけ算だけを扱う単元を解いている時だけ表示される。
   const KAKE_CATEGORY_IDS = ['mul2', 'decMul4', 'mul3x2_4', 'decMul5', 'mulWritten3'];
-  const KAKE_CHAN = { name: 'かけちゃん', img: 'images/kakechan.png' };
+  const KAKE_CHAN = { name: 'かけちゃん', img: 'images/kakechan.jpg' };
   // 通常キャラ「わるくん」：わり算だけを扱う単元を解いている時だけ表示される。
   const WARU_CATEGORY_IDS = ['div2', 'divRemainder4', 'div2by1_4', 'div2by2_4', 'div3by1_4', 'div3by2_4', 'div3by3_4', 'decDiv5', 'decDivRemainder5'];
   const WARU_KUN = { name: 'わるくん', img: 'images/warukun.png' };
   // 通常キャラ「しすうくん」：累乗（指数）を扱う単元を解いている時だけ表示される。
   const POWER_CATEGORY_IDS = ['power'];
-  const SHISUU_KUN = { name: 'しすうくん', img: 'images/shisuukun.png' };
+  const SHISUU_KUN = { name: 'しすうくん', img: 'images/shisuukun.jpg' };
   function currentEnemyDisplay(st) {
     if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
     if (st.current && FRACTION_CATEGORY_IDS.indexOf(st.current.category) !== -1) return FRACTION_KUN;
@@ -15581,17 +15581,17 @@
     // 表示し、使い切って0個になったら図鑑から消える。
     var speedSeedCount = Number(state.speedSeedCount) || 0;
     if (speedSeedCount > 0) {
-      html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.png" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
+      html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.jpg" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
     if (ironWallCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.png" alt=""></span><span class="badge-name">鉄壁の盾（残り${ironWallCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.jpg" alt=""></span><span class="badge-name">鉄壁の盾（残り${ironWallCharges}回）</span></div>`;
     }
     // 鋼の鎧も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     if (steelArmorCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.png" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.jpg" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span></div>`;
     }
     els.historyItems.innerHTML = html;
   }
@@ -15964,7 +15964,7 @@
     } else {
       prayerActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var prayerRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.png" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${prayerActionHtml}</div>`;
+    var prayerRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.jpg" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${prayerActionHtml}</div>`;
 
     var herbCanAfford = state.points >= HERB_COST_MP;
     var herbActionHtml = herbCanAfford
@@ -15976,19 +15976,19 @@
     var bakuHerbActionHtml = bakuHerbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyBakuHerbBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var bakuHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/bakuretsu_herb.png" alt="爆裂薬草"><div class="gift-info"><span class="gift-label">💥 爆裂薬草（HPを${BAKUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${BAKUHERB_COST_MP}MP</span></div>${bakuHerbActionHtml}</div>`;
+    var bakuHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/bakuretsu_herb.jpg" alt="爆裂薬草"><div class="gift-info"><span class="gift-label">💥 爆裂薬草（HPを${BAKUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${BAKUHERB_COST_MP}MP</span></div>${bakuHerbActionHtml}</div>`;
 
     var chouHerbCanAfford = state.points >= CHOUHERB_COST_MP;
     var chouHerbActionHtml = chouHerbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyChouHerbBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.png" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span></div>${chouHerbActionHtml}</div>`;
+    var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.jpg" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span></div>${chouHerbActionHtml}</div>`;
 
     var speedSeedCanAfford = state.points >= SPEEDSEED_COST_MP;
     var speedSeedActionHtml = speedSeedCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buySpeedSeedBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.png" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span></div>${speedSeedActionHtml}</div>`;
+    var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span></div>${speedSeedActionHtml}</div>`;
 
     var ironWallCharges = Number(state.ironWallCharges) || 0;
     var ironWallCanAfford = state.points >= IRONWALL_COST_MP;
@@ -16000,7 +16000,7 @@
     } else {
       ironWallActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.png" alt="鉄壁の盾"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
+    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.jpg" alt="鉄壁の盾"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
 
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     var steelArmorCanAfford = state.points >= STEELARMOR_COST_MP;
@@ -16012,7 +16012,7 @@
     } else {
       steelArmorActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.png" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
+    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.jpg" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
 
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
