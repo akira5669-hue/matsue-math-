@@ -13411,7 +13411,7 @@
     questionText: document.getElementById('questionText'),
     categoryTag: document.getElementById('categoryTag'),
     memoToggle: document.getElementById('memoToggle'),
-    worldSpellBtn: document.getElementById('worldSpellBtn'),
+    worldSpellRow: document.getElementById('worldSpellRow'),
     battleVsRow: document.getElementById('battleVsRow'),
     battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
     battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
@@ -13893,7 +13893,6 @@
   }
 
   els.memoToggle.addEventListener('click', toggleMemo);
-  els.worldSpellBtn.addEventListener('click', castWorldSpell_);
   els.memoPenBtn.addEventListener('click', () => setMemoTool('pen'));
   els.memoEraserBtn.addEventListener('click', () => setMemoTool('eraser'));
   els.memoClearBtn.addEventListener('click', clearMemoCanvas);
@@ -14328,7 +14327,7 @@
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
       if (state.worldBossActiveStage && state.worldPendingSpell) {
-        const spellInfo = SPELLBOOK_INFO_[state.worldPendingSpell];
+        const spellInfo = spellbookById_(state.worldPendingSpell);
         state.worldPendingSpell = null;
         if (spellInfo) {
           state.worldBossDamage = (Number(state.worldBossDamage) || 0) + spellInfo.dmg;
@@ -14458,7 +14457,7 @@
         // 魔法を詠唱した直後の問題を間違えると、ダメージは入らずボスにかわされる
         // (詠唱時のHP減少はそのまま。ここではダメージが不発になったことだけ伝える)。
         if (state.worldPendingSpell) {
-          const dodgedSpellInfo = SPELLBOOK_INFO_[state.worldPendingSpell];
+          const dodgedSpellInfo = spellbookById_(state.worldPendingSpell);
           state.worldPendingSpell = null;
           if (dodgedSpellInfo) {
             missLineHtml += `<div class="enemy-quote-banner">💨 ${dodgedSpellInfo.label}はボスにかわされた…！攻撃は当たらなかった。</div>`;
@@ -15259,7 +15258,7 @@
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
     });
-    SPELLBOOK_ELEMENTS_.forEach(function (el) {
+    SPELLBOOK_IDS_.forEach(function (el) {
       var sv = Number(sSpellbooks[el]) || 0;
       if (sv > (Number(state.spellbooks[el]) || 0)) { state.spellbooks[el] = sv; changed = true; }
     });
@@ -15281,7 +15280,7 @@
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
       || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
       || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); })
-      || SPELLBOOK_ELEMENTS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); });
+      || SPELLBOOK_IDS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); });
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -16156,27 +16155,25 @@
   function spellbookShopRowsHtml_() {
     if (!isAdminSession_()) return '';
     var books = state.spellbooks || {};
-    var rowsHtml = SPELLBOOK_ELEMENTS_.map(function (el) {
-      var info = SPELLBOOK_INFO_[el];
-      var count = Number(books[el]) || 0;
-      var canAfford = state.points >= SPELLBOOK_COST_MP_;
-      var actionHtml = canAfford
-        ? `<button type="button" class="gift-redeem-btn" data-spellbook-buy="${el}">購入する</button>`
+    var rowsHtml = SPELLBOOKS_.map(function (b) {
+      var count = Number(books[b.id]) || 0;
+      var actionHtml = state.points >= b.cost
+        ? `<button type="button" class="gift-redeem-btn" data-spellbook-buy="${b.id}">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${info.emoji} 魔法の書「${info.label}」（所持: ${count}冊）</span><span class="gift-cost">${SPELLBOOK_COST_MP_}MP</span><span class="shop-item-note">ステージ${info.stageId}のボスに有効。詠唱すると自分のHPが${SPELLBOOK_SELF_DAMAGE_}減り、次の問題に正解すると相手のHPを${info.dmg}減らす（不正解だとボスにかわされて不発）</span></div>${actionHtml}</div>`;
+      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${b.emoji} 魔法の書「${b.label}」（所持: ${count}冊）</span><span class="gift-cost">${b.cost}MP</span><span class="shop-item-note">${b.target}のボスに有効。詠唱すると自分のHPが${b.selfDmg}減り、次の問題に正解すると相手のHPを${b.dmg}減らす（不正解だとボスにかわされて不発）</span></div>${actionHtml}</div>`;
     }).join('');
     return `<div class="shop-section-title">📖 魔法の書（00001限定プレビュー中）</div>` + rowsHtml;
   }
 
-  function handleBuySpellbookClick(element, btn) {
+  function handleBuySpellbookClick(bookId, btn) {
     var session = loadSession();
     if (!session || !session.id) return;
-    var info = SPELLBOOK_INFO_[element];
+    var info = spellbookById_(bookId);
     if (!info) return;
-    if (!window.confirm(`魔法の書「${info.label}」を購入します（${SPELLBOOK_COST_MP_}MP）。よろしいですか？`)) return;
+    if (!window.confirm(`魔法の書「${info.label}」を購入します（${info.cost}MP）。よろしいですか？`)) return;
 
     btn.disabled = true;
-    apiPost('buySpellbook', { id: session.id, element: element }).then(function (res) {
+    apiPost('buySpellbook', { id: session.id, element: bookId }).then(function (res) {
       if (!res.ok) {
         var msg = res.error === 'insufficient_points' ? 'MPが不足しています。' : '購入に失敗しました。もう一度お試しください。';
         window.alert(msg);
@@ -16630,7 +16627,7 @@
   };
   // 世界一周2周目(9月〜)専用のボス撃破に必要な連続正解数(=ボスのHP)。ボスキャラ自体は
   // 1周目と共通(wboss_*)だが、9月ステージでは各ボスに属性が設定され、対応する
-  // 魔法の書(SPELLBOOK_INFO_)でダメージを与えられる。ステージ4(大地・自然・光闇)の
+  // 魔法の書(SPELLBOOKS_)でダメージを与えられる。ステージ4-3(光闇系)の
   // 書はまだ未実装(2026-08-24時点、追って追加予定)。
   const WORLD_BOSS_SEQUENCES_LAP2 = {
     1: [{ streak: 300, id: 'wboss_baby' }],
@@ -16663,26 +16660,38 @@
     if (!sub) return 0;
     return Math.max(0, sub.streak - (Number(state.worldBossDamage) || 0));
   }
-  // 魔法の書(2周目のボス戦専用消費アイテム)。なんでも屋で100MPで購入し、対応する
-  // 属性のボス戦で1冊消費して詠唱する。詠唱すると自分のHPが常に10減り、その直後の
-  // 問題に正解して初めてボスにダメージが入る(不正解だとボスにかわされて不発になる)。
-  // ステージ4(大地・自然・光闇)の書は未実装。
-  const SPELLBOOK_ELEMENTS_ = ['fire', 'ice', 'thunder'];
-  const SPELLBOOK_COST_MP_ = 100;
-  const SPELLBOOK_SELF_DAMAGE_ = 10;
-  const SPELLBOOK_INFO_ = {
-    fire: { label: 'ファイアボール', emoji: '🔥', dmg: 50, stageId: 1 },
-    ice: { label: 'アイスランス', emoji: '❄️', dmg: 50, stageId: 2 },
-    thunder: { label: 'サンダー', emoji: '⚡', dmg: 50, stageId: 3 },
-  };
-  // 現在挑戦中のボスの属性(ステージ1〜3のみ対応、ステージ4は未定でnullを返す)。
-  function currentWorldBossElement_() {
-    if (!state.worldBossActiveStage || (Number(state.worldLap) || 1) < 2) return null;
-    var el = null;
-    SPELLBOOK_ELEMENTS_.forEach(function (key) {
-      if (SPELLBOOK_INFO_[key].stageId === state.worldBossActiveStage) el = key;
+  // 魔法の書(2周目のボス戦専用消費アイテム)。なんでも屋で購入し、対応するボスとの
+  // 戦いで1冊消費して詠唱する。詠唱するとまず自分のHPがselfDmgだけ減り、その直後の
+  // 問題に正解して初めてボスにdmgのダメージが入る(不正解だとかわされて不発になる)。
+  // stageId/subIndexで「どのボスに有効か」を指定する(ステージ4は3体それぞれに
+  // 別の属性があるためsubIndexまで見る)。1体のボスに複数の書を用意してよい。
+  // ステージ4-2(自然系)・4-3(光闇系)の書は未定のため、決まり次第ここに追加する。
+  const SPELLBOOKS_ = [
+    { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 100, stageId: 1, subIndex: 0, target: 'ステージ1（火炎系）' },
+    { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 100, stageId: 2, subIndex: 0, target: 'ステージ2（氷系）' },
+    { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 100, stageId: 3, subIndex: 0, target: 'ステージ3（雷系）' },
+    { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
+    { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
+    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, target: 'ステージ4の2体目' },
+    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目' },
+  ];
+  const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
+  function spellbookById_(id) {
+    for (var i = 0; i < SPELLBOOKS_.length; i++) {
+      if (SPELLBOOKS_[i].id === id) return SPELLBOOKS_[i];
+    }
+    return null;
+  }
+  // 今戦っているボスに有効な魔法の書のうち、実際に所持しているものを返す。
+  function usableSpellbooksForCurrentBoss_() {
+    if (!state.worldBossActiveStage || (Number(state.worldLap) || 1) < 2) return [];
+    var subIndex = state.worldBossSubIndex[state.worldBossActiveStage] || 0;
+    var books = state.spellbooks || {};
+    return SPELLBOOKS_.filter(function (b) {
+      return b.stageId === state.worldBossActiveStage
+        && b.subIndex === subIndex
+        && (Number(books[b.id]) || 0) > 0;
     });
-    return el;
   }
   function worldBossCurrentSubBoss(stageId, subIndex) {
     const seq = worldBossSequenceForStage(stageId);
@@ -16754,43 +16763,52 @@
     return winHtml;
   }
 
-  // 「魔法を使う」ボタンの表示可否(ボス戦中・今のボスに対応する魔法の書を
-  // 1冊以上持っている場合だけ表示する。詠唱済みで結果待ちの間は非表示)。
+  // 今のボスに使える魔法の書を、1冊ごとにボタンとして並べる(1体のボスに複数の
+  // 書があるため)。詠唱済みで結果待ちの間は、二重詠唱を防ぐため全部隠す。
   function updateWorldSpellBtnVisibility_() {
-    if (!els.worldSpellBtn) return;
-    if (!isAdminSession_()) { els.worldSpellBtn.hidden = true; return; }
-    if (state.worldPendingSpell) { els.worldSpellBtn.hidden = true; return; }
-    const element = currentWorldBossElement_();
-    const info = element ? SPELLBOOK_INFO_[element] : null;
-    const count = info ? (Number((state.spellbooks || {})[element]) || 0) : 0;
-    if (info && count > 0) {
-      els.worldSpellBtn.hidden = false;
-      els.worldSpellBtn.textContent = `${info.emoji} ${info.label}を使う（残り${count}冊）`;
-    } else {
-      els.worldSpellBtn.hidden = true;
+    if (!els.worldSpellRow) return;
+    if (!isAdminSession_() || state.worldPendingSpell) {
+      els.worldSpellRow.hidden = true;
+      els.worldSpellRow.innerHTML = '';
+      return;
     }
+    const books = usableSpellbooksForCurrentBoss_();
+    if (books.length === 0) {
+      els.worldSpellRow.hidden = true;
+      els.worldSpellRow.innerHTML = '';
+      return;
+    }
+    els.worldSpellRow.hidden = false;
+    els.worldSpellRow.innerHTML = books.map(function (b) {
+      const count = Number((state.spellbooks || {})[b.id]) || 0;
+      return `<button type="button" class="ghost-btn world-spell-btn" data-spell-cast="${b.id}">${b.emoji} ${b.label}（${b.dmg}ダメージ・残り${count}冊）</button>`;
+    }).join('');
+    els.worldSpellRow.querySelectorAll('[data-spell-cast]').forEach(function (btn) {
+      btn.addEventListener('click', function () { castWorldSpell_(btn.getAttribute('data-spell-cast')); });
+    });
   }
 
   // 魔法の書を1冊消費して詠唱する。ダメージはすぐには入らず、自分のHPが
-  // SPELLBOOK_SELF_DAMAGE_だけ先に減る。次に答える問題に正解して初めてボスに
-  // ダメージが入り(handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて
-  // 不発になる(handleAnswerの不正解側で解決)。
-  function castWorldSpell_() {
+  // selfDmgだけ先に減る。次に答える問題に正解して初めてボスにダメージが入り
+  // (handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて不発になる
+  // (handleAnswerの不正解側で解決)。
+  function castWorldSpell_(bookId) {
     if (state.worldPendingSpell) return;
-    const element = currentWorldBossElement_();
-    if (!element) return;
-    const info = SPELLBOOK_INFO_[element];
-    const count = Number((state.spellbooks || {})[element]) || 0;
+    const book = spellbookById_(bookId);
+    if (!book) return;
+    // 今のボスに有効な書かどうかを、ここでも必ず確認する。
+    if (usableSpellbooksForCurrentBoss_().indexOf(book) === -1) return;
+    const count = Number((state.spellbooks || {})[book.id]) || 0;
     if (count <= 0) return;
-    state.spellbooks[element] = count - 1;
-    state.worldPendingSpell = element;
-    state.hp = Math.max(0, (Number(state.hp) || 0) - SPELLBOOK_SELF_DAMAGE_);
+    state.spellbooks[book.id] = count - 1;
+    state.worldPendingSpell = book.id;
+    state.hp = Math.max(0, (Number(state.hp) || 0) - book.selfDmg);
     saveGameState(state);
     const session = loadSession();
     if (session && session.id) {
       apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     }
-    els.feedback.innerHTML = `<span class="fb-result">${info.emoji} ${info.label}を詠唱！（自分のHPが${SPELLBOOK_SELF_DAMAGE_}減った。残りHP: ${state.hp}）次の問題に正解すればボスに${info.dmg}ダメージ！不正解だとかわされてしまう…</span>`;
+    els.feedback.innerHTML = `<span class="fb-result">${book.emoji} ${book.label}を詠唱！（自分のHPが${book.selfDmg}減った。残りHP: ${state.hp}）次の問題に正解すればボスに${book.dmg}ダメージ！不正解だとかわされてしまう…</span>`;
     els.feedback.classList.remove('incorrect');
     els.feedback.classList.add('correct');
     updateGameHud();
