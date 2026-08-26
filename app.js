@@ -14364,6 +14364,7 @@
         if (spellInfo) {
           state.worldBossDamage = (Number(state.worldBossDamage) || 0) + spellInfo.dmg;
           missLineHtml += `<div class="item-gain-banner">${spellInfo.emoji} ${spellInfo.label}が命中！ボスに${spellInfo.dmg}ダメージ！</div>`;
+          spellFxPending_ = { book: spellInfo, phase: 'hit' };
         }
       }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
@@ -14493,6 +14494,7 @@
           state.worldPendingSpell = null;
           if (dodgedSpellInfo) {
             missLineHtml += `<div class="enemy-quote-banner">💨 ${dodgedSpellInfo.label}はボスにかわされた…！攻撃は当たらなかった。</div>`;
+            spellFxPending_ = { book: dodgedSpellInfo, phase: 'miss' };
           }
         }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
@@ -14791,6 +14793,12 @@
     renderMissionBanner();
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
     if (!els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
+    // 画面の更新が終わってから魔法の演出を再生する(位置ずれ防止)。
+    if (spellFxPending_) {
+      const fx = spellFxPending_;
+      spellFxPending_ = null;
+      playSpellFx_(fx.book, fx.phase);
+    }
   }
 
   function resetStats() {
@@ -16701,19 +16709,19 @@
   // 必要になる(火炎のボスには雷、氷のボスには炎、雷のボスには氷)。
   // 配列の順序はなんでも屋での表示順なので、対象ステージ順に並べておく。
   const SPELLBOOKS_ = [
-    { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 100, stageId: 1, subIndex: 0, target: 'ステージ1（火炎系）' },
-    { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 100, stageId: 2, subIndex: 0, target: 'ステージ2（氷系）' },
-    { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 100, stageId: 3, subIndex: 0, target: 'ステージ3（雷系）' },
-    { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
-    { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
-    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 400, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'holyburst', label: '聖光爆発', emoji: '🌟', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 100, stageId: 1, subIndex: 0, fx: '#facc15', target: 'ステージ1（火炎系）' },
+    { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 100, stageId: 2, subIndex: 0, fx: '#f97316', target: 'ステージ2（氷系）' },
+    { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 100, stageId: 3, subIndex: 0, fx: '#38bdf8', target: 'ステージ3（雷系）' },
+    { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 0, fx: '#a16207', target: 'ステージ4の1体目（大地系）' },
+    { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 0, fx: '#b45309', target: 'ステージ4の1体目（大地系）' },
+    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, fx: '#8b5cf6', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 1, fx: '#7c3aed', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 300, stageId: 4, subIndex: 1, fx: '#6d28d9', target: 'ステージ4の2体目（光系）' },
+    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 400, stageId: 4, subIndex: 1, fx: '#a21caf', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 1, fx: '#c026d3', target: 'ステージ4の2体目（光系）' },
+    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, fx: '#fde047', target: 'ステージ4の3体目（闇系）' },
+    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, fx: '#fbbf24', target: 'ステージ4の3体目（闇系）' },
+    { id: 'holyburst', label: '聖光爆発', emoji: '🌟', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, fx: '#fff7ae', target: 'ステージ4の3体目（闇系）' },
   ];
   const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
   function spellbookById_(id) {
@@ -16828,6 +16836,82 @@
     });
   }
 
+  // 解答処理の中で決まった演出を、画面の再描画が終わってから再生するための予約。
+  // (HPバー等の更新前に位置を測ると、ずれた場所へ飛んでしまうため)
+  var spellFxPending_ = null;
+  // 魔法の攻撃演出。詠唱(cast)は自分の手元で光を溜め、命中(hit)は魔法弾がボスへ
+  // 飛んでいって着弾・画面フラッシュ・ボスが揺れる、回避(miss)はボスの手前で
+  // かき消える。VS表示が出ていない時と、視差効果を減らす設定の端末では何もしない。
+  function playSpellFx_(book, phase) {
+    try {
+      if (!book || !els.battleVsRow || els.battleVsRow.hidden) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!els.battlePlayerAvatar || !els.battleEnemyAvatar) return;
+      const from = els.battlePlayerAvatar.getBoundingClientRect();
+      const to = els.battleEnemyAvatar.getBoundingClientRect();
+      const sx = from.left + from.width / 2;
+      const sy = from.top + from.height / 2;
+      const orb = document.createElement('div');
+      orb.className = 'spell-fx-orb';
+      orb.textContent = book.emoji;
+      orb.style.left = sx + 'px';
+      orb.style.top = sy + 'px';
+      orb.style.setProperty('--fx', book.fx || '#a855f7');
+      document.body.appendChild(orb);
+
+      if (phase === 'cast') {
+        els.battlePlayerAvatar.classList.add('is-charging');
+        window.setTimeout(function () { els.battlePlayerAvatar.classList.remove('is-charging'); }, 900);
+        const a = orb.animate([
+          { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 0 },
+          { transform: 'translate(-50%,-50%) scale(1.25)', opacity: 1 },
+          { transform: 'translate(-50%,-50%) scale(0.85)', opacity: 0 },
+        ], { duration: 800, easing: 'ease-out' });
+        a.onfinish = function () { orb.remove(); };
+        return;
+      }
+
+      const dx = (to.left + to.width / 2) - sx;
+      const dy = (to.top + to.height / 2) - sy;
+      const reach = phase === 'hit' ? 1 : 0.62; // かわされた時はボスの手前で消える
+      const a = orb.animate([
+        { transform: 'translate(-50%,-50%) scale(0.7)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx * reach * 0.5}px), calc(-50% + ${dy * reach * 0.5 - 50}px)) scale(1.35)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(calc(-50% + ${dx * reach}px), calc(-50% + ${dy * reach}px)) scale(${phase === 'hit' ? 1.9 : 0.6})`, opacity: phase === 'hit' ? 1 : 0 },
+      ], { duration: 560, easing: 'cubic-bezier(.45,0,.75,1)' });
+      a.onfinish = function () {
+        orb.remove();
+        if (phase !== 'hit') return;
+        // 着弾：ボスを揺らし、属性色で画面を一瞬光らせ、ダメージ量を飛び出させる
+        els.battleEnemyAvatar.classList.remove('is-hit');
+        void els.battleEnemyAvatar.offsetWidth; // 連続ヒットでも再生し直すため
+        els.battleEnemyAvatar.classList.add('is-hit');
+        window.setTimeout(function () { els.battleEnemyAvatar.classList.remove('is-hit'); }, 620);
+
+        const flash = document.createElement('div');
+        flash.className = 'spell-fx-flash';
+        flash.style.setProperty('--fx', book.fx || '#a855f7');
+        document.body.appendChild(flash);
+        flash.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 380, easing: 'ease-out' })
+          .onfinish = function () { flash.remove(); };
+
+        const pop = document.createElement('div');
+        pop.className = 'spell-fx-damage';
+        pop.textContent = '-' + book.dmg;
+        pop.style.left = (to.left + to.width / 2) + 'px';
+        pop.style.top = (to.top + to.height * 0.35) + 'px';
+        document.body.appendChild(pop);
+        pop.animate([
+          { transform: 'translate(-50%,-50%) scale(0.6)', opacity: 0 },
+          { transform: 'translate(-50%,-115%) scale(1.15)', opacity: 1, offset: 0.35 },
+          { transform: 'translate(-50%,-190%) scale(1)', opacity: 0 },
+        ], { duration: 1000, easing: 'ease-out' }).onfinish = function () { pop.remove(); };
+      };
+    } catch (e) {
+      reportAdminError_('魔法エフェクト', e);
+    }
+  }
+
   // 魔法の書を1冊消費して詠唱する。ダメージはすぐには入らず、自分のHPが
   // selfDmgだけ先に減る。次に答える問題に正解して初めてボスにダメージが入り
   // (handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて不発になる
@@ -16852,6 +16936,7 @@
     els.feedback.classList.remove('incorrect');
     els.feedback.classList.add('correct');
     updateGameHud();
+    playSpellFx_(book, 'cast');
     if (!els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
   }
 

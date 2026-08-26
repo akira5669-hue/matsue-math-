@@ -402,6 +402,54 @@ h1 {
 }
 
 .memo-toggle-btn { margin: 0 0 16px; }
+/* 魔法の攻撃演出 */
+.spell-fx-orb {
+  position: fixed;
+  z-index: 9998;
+  font-size: 46px;
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 14px var(--fx)) drop-shadow(0 0 28px var(--fx));
+}
+.spell-fx-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  background: radial-gradient(circle at center, var(--fx) 0%, transparent 70%);
+}
+.spell-fx-damage {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 8px #ef4444, 0 0 16px #ef4444, 0 2px 3px rgba(0,0,0,0.5);
+  will-change: transform, opacity;
+}
+.battle-avatar-box.is-charging {
+  animation: spell-charge 0.9s ease-out;
+}
+@keyframes spell-charge {
+  0%   { box-shadow: 0 0 0 0 rgba(168,85,247,0); }
+  55%  { box-shadow: 0 0 22px 8px rgba(168,85,247,0.75); }
+  100% { box-shadow: 0 0 0 0 rgba(168,85,247,0); }
+}
+.battle-avatar-box.is-hit {
+  animation: spell-hit-shake 0.6s cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes spell-hit-shake {
+  0%, 100% { transform: translateX(0) rotate(0); filter: none; }
+  10% { transform: translateX(-9px) rotate(-3deg); filter: brightness(2.4) saturate(0.4); }
+  25% { transform: translateX(8px) rotate(3deg); filter: brightness(1.9); }
+  40% { transform: translateX(-6px) rotate(-2deg); filter: brightness(1.5); }
+  60% { transform: translateX(5px) rotate(2deg); }
+  80% { transform: translateX(-3px) rotate(-1deg); }
+}
+
 .world-spell-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
 .world-spell-btn { margin: 0; background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; border: none; }
 .world-spell-btn:disabled { opacity: 0.5; }
