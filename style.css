@@ -419,6 +419,17 @@ h1 {
   pointer-events: none;
   background: radial-gradient(circle at center, var(--fx) 0%, transparent 70%);
 }
+.spell-fx-ring {
+  position: fixed;
+  z-index: 9998;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 6px solid var(--fx);
+  box-shadow: 0 0 24px var(--fx), inset 0 0 24px var(--fx);
+  will-change: transform, opacity;
+}
 .spell-fx-damage {
   position: fixed;
   z-index: 9999;

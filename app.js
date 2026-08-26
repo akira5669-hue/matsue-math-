@@ -16841,16 +16841,25 @@
   var spellFxPending_ = null;
   // 魔法の攻撃演出。詠唱(cast)は自分の手元で光を溜め、命中(hit)は魔法弾がボスへ
   // 飛んでいって着弾・画面フラッシュ・ボスが揺れる、回避(miss)はボスの手前で
-  // かき消える。VS表示が出ていない時と、視差効果を減らす設定の端末では何もしない。
+  // かき消える。視差効果を減らす設定の端末では、動きのある部分だけを省いて
+  // 光とダメージ表示は出す(何も起きないと当たったのか分からないため)。
   function playSpellFx_(book, phase) {
     try {
       if (!book || !els.battleVsRow || els.battleVsRow.hidden) return;
-      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       if (!els.battlePlayerAvatar || !els.battleEnemyAvatar) return;
+      const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       const from = els.battlePlayerAvatar.getBoundingClientRect();
       const to = els.battleEnemyAvatar.getBoundingClientRect();
-      const sx = from.left + from.width / 2;
-      const sy = from.top + from.height / 2;
+      // VS表示はページ上部にあるため、問題に答えている時は画面外にいることが多い。
+      // その場合は画面中央で演出する(そうしないと見えない位置で再生されてしまう)。
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const visible = function (r) { return r.bottom > 48 && r.top < vh - 48; };
+      const onScreen = visible(from) && visible(to);
+      const sx = onScreen ? (from.left + from.width / 2) : vw / 2;
+      const sy = onScreen ? (from.top + from.height / 2) : vh * 0.80;
+      const tx = onScreen ? (to.left + to.width / 2) : vw / 2;
+      const ty = onScreen ? (to.top + to.height / 2) : vh * 0.34;
       const orb = document.createElement('div');
       orb.className = 'spell-fx-orb';
       orb.textContent = book.emoji;
@@ -16860,46 +16869,64 @@
       document.body.appendChild(orb);
 
       if (phase === 'cast') {
-        els.battlePlayerAvatar.classList.add('is-charging');
-        window.setTimeout(function () { els.battlePlayerAvatar.classList.remove('is-charging'); }, 900);
+        if (!reduced) {
+          els.battlePlayerAvatar.classList.add('is-charging');
+          window.setTimeout(function () { els.battlePlayerAvatar.classList.remove('is-charging'); }, 900);
+        }
         const a = orb.animate([
           { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 0 },
-          { transform: 'translate(-50%,-50%) scale(1.25)', opacity: 1 },
-          { transform: 'translate(-50%,-50%) scale(0.85)', opacity: 0 },
+          { transform: `translate(-50%,-50%) scale(${reduced ? 1 : 1.25})`, opacity: 1 },
+          { transform: `translate(-50%,-50%) scale(${reduced ? 1 : 0.85})`, opacity: 0 },
         ], { duration: 800, easing: 'ease-out' });
         a.onfinish = function () { orb.remove(); };
         return;
       }
 
-      const dx = (to.left + to.width / 2) - sx;
-      const dy = (to.top + to.height / 2) - sy;
+      const dx = tx - sx;
+      const dy = ty - sy;
       const reach = phase === 'hit' ? 1 : 0.62; // かわされた時はボスの手前で消える
-      const a = orb.animate([
-        { transform: 'translate(-50%,-50%) scale(0.7)', opacity: 1 },
-        { transform: `translate(calc(-50% + ${dx * reach * 0.5}px), calc(-50% + ${dy * reach * 0.5 - 50}px)) scale(1.35)`, opacity: 1, offset: 0.55 },
-        { transform: `translate(calc(-50% + ${dx * reach}px), calc(-50% + ${dy * reach}px)) scale(${phase === 'hit' ? 1.9 : 0.6})`, opacity: phase === 'hit' ? 1 : 0 },
-      ], { duration: 560, easing: 'cubic-bezier(.45,0,.75,1)' });
+      const a = reduced
+        ? orb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' })
+        : orb.animate([
+          { transform: 'translate(-50%,-50%) scale(0.7)', opacity: 1 },
+          { transform: `translate(calc(-50% + ${dx * reach * 0.5}px), calc(-50% + ${dy * reach * 0.5 - 50}px)) scale(1.35)`, opacity: 1, offset: 0.55 },
+          { transform: `translate(calc(-50% + ${dx * reach}px), calc(-50% + ${dy * reach}px)) scale(${phase === 'hit' ? 1.9 : 0.6})`, opacity: phase === 'hit' ? 1 : 0 },
+        ], { duration: 560, easing: 'cubic-bezier(.45,0,.75,1)' });
       a.onfinish = function () {
         orb.remove();
         if (phase !== 'hit') return;
         // 着弾：ボスを揺らし、属性色で画面を一瞬光らせ、ダメージ量を飛び出させる
-        els.battleEnemyAvatar.classList.remove('is-hit');
-        void els.battleEnemyAvatar.offsetWidth; // 連続ヒットでも再生し直すため
-        els.battleEnemyAvatar.classList.add('is-hit');
-        window.setTimeout(function () { els.battleEnemyAvatar.classList.remove('is-hit'); }, 620);
+        if (!reduced) {
+          els.battleEnemyAvatar.classList.remove('is-hit');
+          void els.battleEnemyAvatar.offsetWidth; // 連続ヒットでも再生し直すため
+          els.battleEnemyAvatar.classList.add('is-hit');
+          window.setTimeout(function () { els.battleEnemyAvatar.classList.remove('is-hit'); }, 620);
+        }
 
         const flash = document.createElement('div');
         flash.className = 'spell-fx-flash';
         flash.style.setProperty('--fx', book.fx || '#a855f7');
         document.body.appendChild(flash);
-        flash.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 380, easing: 'ease-out' })
+        flash.animate([{ opacity: 0.6 }, { opacity: 0 }], { duration: 420, easing: 'ease-out' })
           .onfinish = function () { flash.remove(); };
+
+        // 着弾点から広がる衝撃波(VS表示が画面外でも、当たったことが分かるように)
+        const ring = document.createElement('div');
+        ring.className = 'spell-fx-ring';
+        ring.style.left = tx + 'px';
+        ring.style.top = ty + 'px';
+        ring.style.setProperty('--fx', book.fx || '#a855f7');
+        document.body.appendChild(ring);
+        ring.animate([
+          { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 0.9 },
+          { transform: 'translate(-50%,-50%) scale(2.6)', opacity: 0 },
+        ], { duration: 620, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = function () { ring.remove(); };
 
         const pop = document.createElement('div');
         pop.className = 'spell-fx-damage';
         pop.textContent = '-' + book.dmg;
-        pop.style.left = (to.left + to.width / 2) + 'px';
-        pop.style.top = (to.top + to.height * 0.35) + 'px';
+        pop.style.left = tx + 'px';
+        pop.style.top = (onScreen ? (to.top + to.height * 0.35) : ty) + 'px';
         document.body.appendChild(pop);
         pop.animate([
           { transform: 'translate(-50%,-50%) scale(0.6)', opacity: 0 },
