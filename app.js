@@ -16676,8 +16676,8 @@
     { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
     { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
     { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 250, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 400, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
     { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
   ];
   const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
