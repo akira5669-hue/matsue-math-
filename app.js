@@ -13643,6 +13643,7 @@
     worldDiceModal: document.getElementById('worldDiceModal'),
     worldDiceTestBtn: document.getElementById('worldDiceTestBtn'),
     worldBossTestRow: document.getElementById('worldBossTestRow'),
+    spellFxTestBtn: document.getElementById('spellFxTestBtn'),
     worldDiceFace: document.getElementById('worldDiceFace'),
     worldDiceResultText: document.getElementById('worldDiceResultText'),
     worldDiceCloseBtn: document.getElementById('worldDiceCloseBtn'),
@@ -16845,7 +16846,7 @@
   // 光とダメージ表示は出す(何も起きないと当たったのか分からないため)。
   function playSpellFx_(book, phase) {
     try {
-      if (!book || !els.battleVsRow || els.battleVsRow.hidden) return;
+      if (!book) return;
       if (!els.battlePlayerAvatar || !els.battleEnemyAvatar) return;
       const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       const from = els.battlePlayerAvatar.getBoundingClientRect();
@@ -18360,6 +18361,15 @@
         nextQuestion();
         els.worldPanel.setAttribute('hidden', '');
       });
+    });
+  }
+  // 演出だけを単独で確認するための00001限定ボタン。ボス戦や魔法の所持を問わず、
+  // 「詠唱→命中」をその場で再生する(演出が出ない原因の切り分け用)。
+  if (els.spellFxTestBtn) {
+    els.spellFxTestBtn.addEventListener('click', function () {
+      const sample = spellbookById_('holyburst') || SPELLBOOKS_[0];
+      playSpellFx_(sample, 'cast');
+      window.setTimeout(function () { playSpellFx_(sample, 'hit'); }, 900);
     });
   }
   if (els.worldDiceCloseBtn) {
