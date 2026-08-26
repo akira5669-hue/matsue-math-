@@ -16873,28 +16873,33 @@
           els.battlePlayerAvatar.classList.add('is-charging');
           window.setTimeout(function () { els.battlePlayerAvatar.classList.remove('is-charging'); }, 900);
         }
-        const a = orb.animate([
+        orb.animate([
           { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 0 },
           { transform: `translate(-50%,-50%) scale(${reduced ? 1 : 1.25})`, opacity: 1 },
           { transform: `translate(-50%,-50%) scale(${reduced ? 1 : 0.85})`, opacity: 0 },
         ], { duration: 800, easing: 'ease-out' });
-        a.onfinish = function () { orb.remove(); };
+        window.setTimeout(function () { if (orb.parentNode) orb.remove(); }, 800);
         return;
       }
 
       const dx = tx - sx;
       const dy = ty - sy;
       const reach = phase === 'hit' ? 1 : 0.62; // かわされた時はボスの手前で消える
+      // transform内でcalc()を使うとSafariで解釈されないことがあるため、
+      // translate(-50%,-50%)とtranslate(Xpx,Ypx)を並べて合成する形にしている。
       const a = reduced
         ? orb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' })
         : orb.animate([
-          { transform: 'translate(-50%,-50%) scale(0.7)', opacity: 1 },
-          { transform: `translate(calc(-50% + ${dx * reach * 0.5}px), calc(-50% + ${dy * reach * 0.5 - 50}px)) scale(1.35)`, opacity: 1, offset: 0.55 },
-          { transform: `translate(calc(-50% + ${dx * reach}px), calc(-50% + ${dy * reach}px)) scale(${phase === 'hit' ? 1.9 : 0.6})`, opacity: phase === 'hit' ? 1 : 0 },
+          { transform: 'translate(-50%,-50%) translate(0px,0px) scale(0.7)', opacity: 1 },
+          { transform: `translate(-50%,-50%) translate(${dx * reach * 0.5}px, ${dy * reach * 0.5 - 50}px) scale(1.35)`, opacity: 1, offset: 0.55 },
+          { transform: `translate(-50%,-50%) translate(${dx * reach}px, ${dy * reach}px) scale(${phase === 'hit' ? 1.9 : 0.6})`, opacity: phase === 'hit' ? 1 : 0 },
         ], { duration: 560, easing: 'cubic-bezier(.45,0,.75,1)' });
-      a.onfinish = function () {
-        orb.remove();
-        if (phase !== 'hit') return;
+      // 着弾演出は必ずタイマーで起動する。animate()のonfinishに任せると、
+      // アニメーションが動かない環境では着弾演出ごと出なくなってしまうため。
+      const flightMs = reduced ? 200 : 560;
+      window.setTimeout(function () { if (orb.parentNode) orb.remove(); }, flightMs);
+      if (phase !== 'hit') return;
+      window.setTimeout(function () {
         // 着弾：ボスを揺らし、属性色で画面を一瞬光らせ、ダメージ量を飛び出させる
         if (!reduced) {
           els.battleEnemyAvatar.classList.remove('is-hit');
@@ -16907,8 +16912,7 @@
         flash.className = 'spell-fx-flash';
         flash.style.setProperty('--fx', book.fx || '#a855f7');
         document.body.appendChild(flash);
-        flash.animate([{ opacity: 0.6 }, { opacity: 0 }], { duration: 420, easing: 'ease-out' })
-          .onfinish = function () { flash.remove(); };
+        flash.animate([{ opacity: 0.6 }, { opacity: 0 }], { duration: 420, easing: 'ease-out' });
 
         // 着弾点から広がる衝撃波(VS表示が画面外でも、当たったことが分かるように)
         const ring = document.createElement('div');
@@ -16920,7 +16924,7 @@
         ring.animate([
           { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 0.9 },
           { transform: 'translate(-50%,-50%) scale(2.6)', opacity: 0 },
-        ], { duration: 620, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = function () { ring.remove(); };
+        ], { duration: 620, easing: 'cubic-bezier(.2,.7,.4,1)' });
 
         const pop = document.createElement('div');
         pop.className = 'spell-fx-damage';
@@ -16932,8 +16936,14 @@
           { transform: 'translate(-50%,-50%) scale(0.6)', opacity: 0 },
           { transform: 'translate(-50%,-115%) scale(1.15)', opacity: 1, offset: 0.35 },
           { transform: 'translate(-50%,-190%) scale(1)', opacity: 0 },
-        ], { duration: 1000, easing: 'ease-out' }).onfinish = function () { pop.remove(); };
-      };
+        ], { duration: 1000, easing: 'ease-out' });
+        // 後片付けもタイマーで行う(onfinish頼みにしない)
+        window.setTimeout(function () {
+          if (flash.parentNode) flash.remove();
+          if (ring.parentNode) ring.remove();
+          if (pop.parentNode) pop.remove();
+        }, 1100);
+      }, flightMs);
     } catch (e) {
       reportAdminError_('魔法エフェクト', e);
     }
