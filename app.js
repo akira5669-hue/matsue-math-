@@ -12982,10 +12982,42 @@
         defeat: '君の勝利だ！これは、ただの勝利ではない！君は、これまでに10000題以上の問題に正解してきた！努力したからこそ、ここまで来れた！自信を持っていい！今後は、【数学の神】の称号をさずけよう！是非、今の気持ちを先生にLINEで聞かせてくれ！',
       },
     },
+    // 世界一周2周目(9月)の属性ボス。1周目のAKRシリーズとは別の、属性を持った
+    // 強敵として登場する(火炎→氷→雷→大地→光→闇の順に強くなる)。
+    wboss2_volcanus: {
+      id: 'wboss2_volcanus', name: '炎の覇者 ヴォルカヌス', img: 'images/wboss2_volcanus.jpg',
+      lines: { appear: '我が炎、耐えられるか！燃え尽きる前に、その手を動かし続けろ！' },
+    },
+    wboss2_glacia: {
+      id: 'wboss2_glacia', name: '氷の女王 グレイシア', img: 'images/wboss2_glacia.jpg',
+      lines: { appear: '凍てつく静寂の中で、冷静に解けるかしら？焦った者から凍りつくわ。' },
+    },
+    wboss2_zeularion: {
+      id: 'wboss2_zeularion', name: '雷神王 ゼウラリオン', img: 'images/wboss2_zeularion.jpg',
+      lines: { appear: '雷光のごとき速さで解いてみせよ！迷いは、雷に打たれるぞ！' },
+    },
+    wboss2_gaiadon: {
+      id: 'wboss2_gaiadon', name: '大地の巨神 ガイアドン', img: 'images/wboss2_gaiadon.jpg',
+      lines: { appear: '大地のごとく、どっしりと構えよ。焦らず一問ずつ積み上げる者だけが、我を崩せる。' },
+    },
+    wboss2_luminas: {
+      id: 'wboss2_luminas', name: '光の支配者 ルミナスロード', img: 'images/wboss2_luminas.jpg',
+      lines: { appear: 'その努力、光の下ですべて見えている。眩しさに目を閉じるな、最後まで見据えよ！' },
+    },
+    wboss2_darknos: {
+      id: 'wboss2_darknos', name: '闇の王 ダークノス', img: 'images/wboss2_darknos.jpg',
+      lines: {
+        appear: 'ここまで来たか…だが闇は深い。お前の心が折れるまで、何度でも立ちはだかろう。',
+        defeat: '見事だ…闇さえも、お前の積み重ねた努力の前には消え去るか。よくぞここまで来た。',
+      },
+    },
   };
   // 世界一周のボスは通常のレアキャラ(5回撃破でコレクション入り)と違い、1回倒すだけで
   // コレクション入りする特別枠。
-  const WORLD_BOSS_COLLECTIBLE_IDS = ['wboss_baby', 'wboss_hebitsukai', 'wboss_suijobike', 'wboss_fullswing', 'wboss_chuni', 'wboss_sensei'];
+  const WORLD_BOSS_COLLECTIBLE_IDS = [
+    'wboss_baby', 'wboss_hebitsukai', 'wboss_suijobike', 'wboss_fullswing', 'wboss_chuni', 'wboss_sensei',
+    'wboss2_volcanus', 'wboss2_glacia', 'wboss2_zeularion', 'wboss2_gaiadon', 'wboss2_luminas', 'wboss2_darknos',
+  ];
 
   const WARLORD_IDS = [
     'warlord_nobunaga', 'warlord_hideyoshi', 'warlord_ieyasu', 'warlord_shingen',
@@ -16630,13 +16662,13 @@
   // 魔法の書(SPELLBOOKS_)でダメージを与えられる。属性は順に
   // 1=火炎 / 2=氷 / 3=雷 / 4-1=大地 / 4-2=光 / 4-3=闇。
   const WORLD_BOSS_SEQUENCES_LAP2 = {
-    1: [{ streak: 300, id: 'wboss_baby' }],
-    2: [{ streak: 400, id: 'wboss_hebitsukai' }],
-    3: [{ streak: 500, id: 'wboss_suijobike' }],
+    1: [{ streak: 300, id: 'wboss2_volcanus' }],
+    2: [{ streak: 400, id: 'wboss2_glacia' }],
+    3: [{ streak: 500, id: 'wboss2_zeularion' }],
     4: [
-      { streak: 500, id: 'wboss_fullswing' },
-      { streak: 1000, id: 'wboss_chuni' },
-      { streak: 2000, id: 'wboss_sensei' },
+      { streak: 500, id: 'wboss2_gaiadon' },
+      { streak: 1000, id: 'wboss2_luminas' },
+      { streak: 2000, id: 'wboss2_darknos' },
     ],
   };
   function worldBossSequenceForStage(stageId) {
