@@ -16627,8 +16627,8 @@
   };
   // 世界一周2周目(9月〜)専用のボス撃破に必要な連続正解数(=ボスのHP)。ボスキャラ自体は
   // 1周目と共通(wboss_*)だが、9月ステージでは各ボスに属性が設定され、対応する
-  // 魔法の書(SPELLBOOKS_)でダメージを与えられる。ステージ4-3(光闇系)の
-  // 書はまだ未実装(2026-08-24時点、追って追加予定)。
+  // 魔法の書(SPELLBOOKS_)でダメージを与えられる。属性は順に
+  // 1=火炎 / 2=氷 / 3=雷 / 4-1=大地 / 4-2=光 / 4-3=闇。
   const WORLD_BOSS_SEQUENCES_LAP2 = {
     1: [{ streak: 300, id: 'wboss_baby' }],
     2: [{ streak: 400, id: 'wboss_hebitsukai' }],
@@ -16672,8 +16672,13 @@
     { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 100, stageId: 3, subIndex: 0, target: 'ステージ3（雷系）' },
     { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
     { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
-    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, target: 'ステージ4の2体目' },
-    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目' },
+    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 250, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
   ];
   const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
   function spellbookById_(id) {
