@@ -16697,20 +16697,22 @@
   // 問題に正解して初めてボスにdmgのダメージが入る(不正解だとかわされて不発になる)。
   // stageId/subIndexで「どのボスに有効か」を指定する(ステージ4は3体それぞれに
   // 別の属性があるためsubIndexまで見る)。1体のボスに複数の書を用意してよい。
-  // ステージ4-2(自然系)・4-3(光闇系)の書は未定のため、決まり次第ここに追加する。
+  // ステージ1〜3は属性の相性で決まっていて、同じ属性ではなく「効く属性」の書が
+  // 必要になる(火炎のボスには雷、氷のボスには炎、雷のボスには氷)。
+  // 配列の順序はなんでも屋での表示順なので、対象ステージ順に並べておく。
   const SPELLBOOKS_ = [
-    { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 100, stageId: 1, subIndex: 0, target: 'ステージ1（火炎系）' },
-    { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 100, stageId: 2, subIndex: 0, target: 'ステージ2（氷系）' },
-    { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 100, stageId: 3, subIndex: 0, target: 'ステージ3（雷系）' },
+    { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 100, stageId: 1, subIndex: 0, target: 'ステージ1（火炎系）' },
+    { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 100, stageId: 2, subIndex: 0, target: 'ステージ2（氷系）' },
+    { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 100, stageId: 3, subIndex: 0, target: 'ステージ3（雷系）' },
     { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
     { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 0, target: 'ステージ4の1体目（大地系）' },
-    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
-    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 400, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
-    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 300, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 400, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
+    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
   ];
   const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
   function spellbookById_(id) {
