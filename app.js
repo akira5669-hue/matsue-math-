@@ -35,6 +35,9 @@
       WORLD_STAGES = (typeof WORLD_STAGES_LAP1 !== 'undefined') ? WORLD_STAGES_LAP1 : [];
     }
   }
+  // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
+  // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
+  var APP_BUILD_ = '20260827g';
   var AVATAR_LEVEL_THRESHOLD = 300;
   var AVATAR_MP_THRESHOLD = 10000;
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
@@ -15074,6 +15077,9 @@
     els.grantToggle.hidden = !(session && session.id === '00001');
     if (els.worldDiceTestBtn) els.worldDiceTestBtn.hidden = !(session && session.id === '00001');
     if (els.worldBossTestRow) els.worldBossTestRow.hidden = !(session && session.id === '00001');
+    // 今この端末で動いている版を表示しておく(反映漏れの切り分け用)。
+    var buildLabel = document.getElementById('appBuildLabel');
+    if (buildLabel) buildLabel.textContent = '　【版 ' + APP_BUILD_ + '】';
     els.grantPanel.hidden = true;
     els.testPhotoToggle.hidden = !!isGuest;
     els.testPhotoPanel.hidden = true;
