@@ -16713,6 +16713,7 @@
     { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 1, target: 'ステージ4の2体目（光系）' },
     { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
     { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
+    { id: 'holyburst', label: '聖光爆発', emoji: '🌟', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, target: 'ステージ4の3体目（闇系）' },
   ];
   const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
   function spellbookById_(id) {
