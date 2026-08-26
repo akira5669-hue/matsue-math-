@@ -12690,7 +12690,7 @@
 
   const ENEMIES = [
     { name: 'マチガール',      emoji: '😤', img: 'images/machigairu.png' },
-    { name: 'マチガイオ',      emoji: '👺', img: 'images/machigaio.png' },
+    { name: 'マチガイオ',      emoji: '👺', img: 'images/machigaio.jpg' },
     { name: 'ケアレスミス',    emoji: '😅' },
     { name: 'ボンミスコ',      emoji: '💥', img: 'images/bonmisuko.png' },
     { name: 'チンカイトウ',    emoji: '❌' },
