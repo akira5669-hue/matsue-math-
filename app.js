@@ -37,9 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827h';
-  var AVATAR_LEVEL_THRESHOLD = 300;
-  var AVATAR_MP_THRESHOLD = 10000;
+  var APP_BUILD_ = '20260827i';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -16509,8 +16507,10 @@
 
   /* ---------- アバター作成 ---------- */
 
+  // アバター作成は2026-08-27から全生徒に開放(以前はレベル300またはMP10000が条件
+  // だった)。MPの消費も無く、誰でも自由に作り直せる。
   function avatarUnlocked() {
-    return state.level >= AVATAR_LEVEL_THRESHOLD || state.points >= AVATAR_MP_THRESHOLD;
+    return true;
   }
 
   var avatarDraft = null;
@@ -16629,13 +16629,9 @@
   }
 
   function renderAvatarPanel() {
-    var unlocked = avatarUnlocked();
-    els.avatarLocked.hidden = unlocked;
-    els.avatarBuilder.hidden = !unlocked;
-    if (!unlocked) {
-      els.avatarLockedText.textContent = `レベル${AVATAR_LEVEL_THRESHOLD}、またはMP${AVATAR_MP_THRESHOLD}でアバターが作れるようになります。（現在: レベル${state.level} / MP${state.points}）`;
-      return;
-    }
+    els.avatarLocked.hidden = true;
+    els.avatarBuilder.hidden = false;
+    // 解放条件は撤廃したので、ここで案内を出すのはデータ読み込みに失敗した時だけ。
     if (AVATAR_HAIR_SAFE.length === 0) {
       els.avatarLocked.hidden = false;
       els.avatarBuilder.hidden = true;
