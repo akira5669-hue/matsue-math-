@@ -1,7 +1,7 @@
 {
-  "name": "正負の数トレーニング",
-  "short_name": "正負の数",
-  "description": "中学1年「正負の数」の4択計算ドリル",
+  "name": "松江計算アプリ",
+  "short_name": "松江計算アプリ",
+  "description": "小4〜中3の算数・数学の4択計算ドリル",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
