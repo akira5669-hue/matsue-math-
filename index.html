@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827i" />
+<link rel="stylesheet" href="style.css?v=20260827j" />
 </head>
 <body>
 
@@ -199,7 +199,7 @@
         <button id="rankingToggle" class="ghost-btn" type="button">ランキング</button>
         <button id="historyToggle" class="ghost-btn" type="button">学習記録</button>
         <button id="prefectureToggle" class="ghost-btn" type="button">🗾都道府県制覇</button>
-        <button id="avatarToggle" class="ghost-btn" type="button">🎨アバター作成</button>
+        <button id="avatarToggle" class="ghost-btn is-new" type="button">🎨アバター作成<span class="new-badge">NEW</span></button>
         <button id="worldToggle" class="ghost-btn" type="button" hidden>🌍世界制覇</button>
         <button id="grantToggle" class="ghost-btn" type="button" hidden>🎁アイテム付与</button>
         <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
@@ -494,7 +494,8 @@
     </section>
 
     <section class="avatar-panel" id="avatarPanel" hidden>
-      <h3 class="history-title">🎨 アバター作成</h3>
+      <h3 class="history-title">🎨 アバター作成<span class="new-badge">NEW</span></h3>
+      <p class="avatar-new-lead">✨ 誰でも自由に作れるようになりました！レベルやMPは必要ありません。イラストから選ぶ・パーツを組み合わせる、どちらでもOK。何度でも作り直せます。</p>
       <div id="avatarLocked" hidden>
         <p class="history-summary" id="avatarLockedText">アバターデータの読み込みに失敗しました。ページを再読み込みしてください。</p>
       </div>
@@ -503,6 +504,18 @@
           <button type="button" class="avatar-mode-tab" id="avatarModePresetBtn">🖼️ イラストから選ぶ</button>
           <button type="button" class="avatar-mode-tab" id="avatarModePartsBtn">🧩 パーツを組み合わせる</button>
           <button type="button" class="avatar-mode-tab" id="avatarModePhotoBtn" hidden>📷 写真を使う</button>
+        </div>
+        <div class="avatar-consent-info" id="avatarConsentInfo" hidden>
+          <p class="avatar-consent-title">📷 写真をアバターにすることもできます（保護者の方の同意が必要です）</p>
+          <p class="avatar-consent-text">自分の写真をアバターにする機能は、保護者の方の同意をいただいたご家庭のみご利用いただけます。写真はこのアプリの中だけで使われ、他の生徒やランキングには表示されません。いつでも削除できます。</p>
+          <p class="avatar-consent-title">同意の方法（保護者の方へ）</p>
+          <ol class="avatar-consent-steps">
+            <li>一度「ログアウト」する</li>
+            <li>ログイン画面の下にある「保護者の方はこちら」を開く</li>
+            <li>保護者名と、お子様のID・パスワードを入力する</li>
+            <li>「写真アバター機能…の利用に同意します」にチェックを入れて登録する</li>
+          </ol>
+          <p class="avatar-consent-text">登録後、お子様が次にログインすると、この画面に「📷 写真を使う」が表示されます。</p>
         </div>
         <div id="avatarPhotoSection" hidden>
           <div class="avatar-preview-wrap"><div class="avatar-preview avatar-preview-preset" id="avatarPhotoPreview"></div></div>
@@ -707,11 +720,11 @@
 <!-- ?v=... はキャッシュ対策。index.htmlだけが新しくなってapp.jsが古いまま、という
      ちぐはぐな状態(実際に発生し、HTMLに書いた初期値がそのまま表示され続けた)を防ぐ。
      app.js等を更新したら、必ずこのバージョン文字列も一緒に更新すること。 -->
-<script src="japan-map-data.js?v=20260827i"></script>
-<script src="avatar-data.js?v=20260827i"></script>
-<script src="world-data.js?v=20260827i"></script>
-<script src="world-data-2.js?v=20260827i"></script>
-<script src="app.js?v=20260827i"></script>
+<script src="japan-map-data.js?v=20260827j"></script>
+<script src="avatar-data.js?v=20260827j"></script>
+<script src="world-data.js?v=20260827j"></script>
+<script src="world-data-2.js?v=20260827j"></script>
+<script src="app.js?v=20260827j"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // 新しいデプロイ後もPWA/ホーム画面アイコンから開いた端末が古いJSのまま動き

@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827i';
+  var APP_BUILD_ = '20260827j';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -13635,6 +13635,7 @@
     avatarPhotoPreview: document.getElementById('avatarPhotoPreview'),
     avatarPhotoInput: document.getElementById('avatarPhotoInput'),
     avatarPhotoDeleteBtn: document.getElementById('avatarPhotoDeleteBtn'),
+    avatarConsentInfo: document.getElementById('avatarConsentInfo'),
     avatarPresetPreview: document.getElementById('avatarPresetPreview'),
     avatarPresetGrid: document.getElementById('avatarPresetGrid'),
     worldToggle: document.getElementById('worldToggle'),
@@ -16646,6 +16647,8 @@
     // 生徒にしか出さない(photoAvatarConsent_)。
     els.avatarModeTabs.hidden = false;
     if (els.avatarModePhotoBtn) els.avatarModePhotoBtn.hidden = !photoAvatarConsent_;
+    // 同意がまだの生徒には、写真アバターの存在と同意の取り方を案内する。
+    if (els.avatarConsentInfo) els.avatarConsentInfo.hidden = !!photoAvatarConsent_;
     setAvatarMode_(avatarPhotoDraft ? 'photo' : (avatarPresetDraft ? 'preset' : 'parts'));
     renderAvatarPresetGrid();
     renderAvatarPhotoSection_();
