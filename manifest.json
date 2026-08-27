@@ -1,6 +1,6 @@
 {
-  "name": "松江計算アプリ",
-  "short_name": "松江計算アプリ",
+  "name": "松江塾理系アプリ",
+  "short_name": "松江塾理系アプリ",
   "description": "小4〜中3の算数・数学の4択計算ドリル",
   "start_url": "/",
   "scope": "/",
