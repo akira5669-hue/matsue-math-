@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827g';
+  var APP_BUILD_ = '20260827h';
   var AVATAR_LEVEL_THRESHOLD = 300;
   var AVATAR_MP_THRESHOLD = 10000;
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
@@ -82,6 +82,7 @@
 
   // アバター表示の共通ヘルパー。preset方式ならイラスト画像、従来方式ならSVGパーツを返す。
   function avatarDisplayHtml_(sel) {
+    if (sel && sel.photo) return `<img src="${sel.photo}" alt="写真アバター">`;
     if (sel && sel.preset) {
       var preset = AVATAR_PRESETS.find(function (p) { return p.id === sel.preset; });
       if (preset) return `<img src="${preset.img}" alt="${preset.label}">`;
@@ -13629,8 +13630,13 @@
     avatarModeTabs: document.getElementById('avatarModeTabs'),
     avatarModePresetBtn: document.getElementById('avatarModePresetBtn'),
     avatarModePartsBtn: document.getElementById('avatarModePartsBtn'),
+    avatarModePhotoBtn: document.getElementById('avatarModePhotoBtn'),
     avatarPresetSection: document.getElementById('avatarPresetSection'),
     avatarPartsSection: document.getElementById('avatarPartsSection'),
+    avatarPhotoSection: document.getElementById('avatarPhotoSection'),
+    avatarPhotoPreview: document.getElementById('avatarPhotoPreview'),
+    avatarPhotoInput: document.getElementById('avatarPhotoInput'),
+    avatarPhotoDeleteBtn: document.getElementById('avatarPhotoDeleteBtn'),
     avatarPresetPreview: document.getElementById('avatarPresetPreview'),
     avatarPresetGrid: document.getElementById('avatarPresetGrid'),
     worldToggle: document.getElementById('worldToggle'),
@@ -14199,7 +14205,7 @@
         // 止まらないよう、この区画だけは個別にガードする。
         try {
           if (els.battlePlayerAvatar) {
-            els.battlePlayerAvatar.innerHTML = (state.avatar && (state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) ? avatarDisplayHtml_(state.avatar) : '🧑';
+            els.battlePlayerAvatar.innerHTML = (state.avatar && (state.avatar.photo || state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) ? avatarDisplayHtml_(state.avatar) : '🧑';
           }
           if (els.battleEnemyAvatar) {
             els.battleEnemyAvatar.innerHTML = enemy.img ? `<img src="${enemy.img}" alt="${enemy.name}">` : (enemy.emoji || '👑');
@@ -14245,7 +14251,7 @@
   }
 
   function updateUserAvatarBadge() {
-    if (state.avatar && (state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) {
+    if (state.avatar && (state.avatar.photo || state.avatar.preset || AVATAR_HAIR_SAFE.length > 0)) {
       els.userAvatarBadge.innerHTML = avatarDisplayHtml_(state.avatar);
       els.userAvatarBadge.hidden = false;
     } else {
@@ -15165,6 +15171,7 @@
       state.enabled = (progress && Array.isArray(progress.enabled) && progress.enabled.length > 0) ? new Set(progress.enabled) : new Set(defaultEnabledIds(res.grade));
       // サーバーにアバターが無い(まだ作っていない)場合に、端末に保存済みの
       // アバターを消してしまわないよう、取得できた時だけ上書きする。
+      photoAvatarConsent_ = !!res.photoAvatarConsent;
       var parsedAvatarOnLogin = parseAvatarJson(res.avatar);
       if (parsedAvatarOnLogin) state.avatar = parsedAvatarOnLogin;
       saveGameState(state);
@@ -16508,14 +16515,69 @@
 
   var avatarDraft = null;
   var avatarPresetDraft = null;
+  var avatarPhotoDraft = null;
   var avatarMode = 'parts';
+  // 保護者が写真アバターの利用に同意しているか(サーバーから取得。端末には保存しない)。
+  var photoAvatarConsent_ = false;
 
   function setAvatarMode_(mode) {
     avatarMode = mode;
     els.avatarPresetSection.hidden = mode !== 'preset';
     els.avatarPartsSection.hidden = mode !== 'parts';
+    if (els.avatarPhotoSection) els.avatarPhotoSection.hidden = mode !== 'photo';
     els.avatarModePresetBtn.classList.toggle('is-active', mode === 'preset');
     els.avatarModePartsBtn.classList.toggle('is-active', mode === 'parts');
+    if (els.avatarModePhotoBtn) els.avatarModePhotoBtn.classList.toggle('is-active', mode === 'photo');
+  }
+
+  function renderAvatarPhotoSection_() {
+    if (!els.avatarPhotoPreview) return;
+    els.avatarPhotoPreview.innerHTML = avatarPhotoDraft ? `<img src="${avatarPhotoDraft}" alt="写真アバター">` : '';
+    if (els.avatarPhotoDeleteBtn) els.avatarPhotoDeleteBtn.hidden = !avatarPhotoDraft;
+  }
+
+  // 選んだ写真を正方形に切り出して小さくし、データそのもの(データURL)にして扱う。
+  // 外部に公開URLを作らないので、写真がURLで出回ることがない。
+  var AVATAR_PHOTO_SIZE_ = 320;
+  function loadAvatarPhotoFile_(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width - side) / 2;
+          const sy = (img.height - side) / 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = AVATAR_PHOTO_SIZE_;
+          canvas.height = AVATAR_PHOTO_SIZE_;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_PHOTO_SIZE_, AVATAR_PHOTO_SIZE_);
+          let quality = 0.82;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+          // 保存できる大きさに収まるまで画質を落とす
+          while (dataUrl.length > 200000 && quality > 0.4) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          if (dataUrl.length > 200000) {
+            window.alert('この写真は大きすぎて使えませんでした。別の写真でお試しください。');
+            return;
+          }
+          avatarPhotoDraft = dataUrl;
+          renderAvatarPhotoSection_();
+          els.avatarSaveMsg.hidden = false;
+          els.avatarSaveMsg.textContent = '写真を読み込みました。「保存する」を押すと決定します。';
+        } catch (e) {
+          window.alert('写真を読み込めませんでした。別の写真でお試しください。');
+        }
+      };
+      img.onerror = function () { window.alert('写真を読み込めませんでした。別の写真でお試しください。'); };
+      img.src = reader.result;
+    };
+    reader.onerror = function () { window.alert('写真を読み込めませんでした。別の写真でお試しください。'); };
+    reader.readAsDataURL(file);
   }
 
   function renderAvatarPresetGrid() {
@@ -16582,12 +16644,15 @@
     }
     avatarDraft = Object.assign({}, AVATAR_DEFAULT_SELECTION, state.avatar || {});
     avatarPresetDraft = (state.avatar && state.avatar.preset) ? state.avatar.preset : null;
+    avatarPhotoDraft = (state.avatar && state.avatar.photo) ? state.avatar.photo : null;
     els.avatarSaveMsg.hidden = true;
-    // イラストプリセット方式は画像素材がまだ揃っていないため00001限定プレビュー中。
-    // 本番公開時にこのisAdminSession_()チェックを外す。
-    els.avatarModeTabs.hidden = !isAdminSession_();
-    setAvatarMode_((isAdminSession_() && avatarPresetDraft) ? 'preset' : 'parts');
+    // 方式の切り替えタブは全生徒に公開済み。写真タブだけは保護者の同意がある
+    // 生徒にしか出さない(photoAvatarConsent_)。
+    els.avatarModeTabs.hidden = false;
+    if (els.avatarModePhotoBtn) els.avatarModePhotoBtn.hidden = !photoAvatarConsent_;
+    setAvatarMode_(avatarPhotoDraft ? 'photo' : (avatarPresetDraft ? 'preset' : 'parts'));
     renderAvatarPresetGrid();
+    renderAvatarPhotoSection_();
     renderAvatarBuilder();
   }
 
@@ -18285,7 +18350,14 @@
       els.avatarSaveMsg.textContent = 'イラストを1つ選んでください。';
       return;
     }
-    var payload = avatarMode === 'preset' ? { preset: avatarPresetDraft } : avatarDraft;
+    if (avatarMode === 'photo' && !avatarPhotoDraft) {
+      els.avatarSaveMsg.hidden = false;
+      els.avatarSaveMsg.textContent = '写真を選んでください。';
+      return;
+    }
+    var payload = avatarMode === 'photo' ? { photo: avatarPhotoDraft }
+      : avatarMode === 'preset' ? { preset: avatarPresetDraft }
+      : avatarDraft;
     els.avatarSaveBtn.disabled = true;
     apiPost('saveAvatar', { id: session.id, avatar: payload }).then(function (res) {
       els.avatarSaveBtn.disabled = false;
@@ -18293,7 +18365,11 @@
         els.avatarSaveMsg.hidden = false;
         els.avatarSaveMsg.textContent = res.error === 'not_unlocked'
           ? 'まだアバター作成が解放されていません。'
-          : '保存に失敗しました。もう一度お試しください。';
+          : res.error === 'photo_not_allowed'
+            ? '写真アバターは、保護者の方の同意が確認できている場合のみ使えます。'
+            : res.error === 'photo_too_large'
+              ? '写真のデータが大きすぎました。別の写真でお試しください。'
+              : '保存に失敗しました。もう一度お試しください。';
         return;
       }
       state.avatar = Object.assign({}, payload);
@@ -18393,6 +18469,26 @@
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
   els.avatarModePresetBtn.addEventListener('click', function () { setAvatarMode_('preset'); });
   els.avatarModePartsBtn.addEventListener('click', function () { setAvatarMode_('parts'); });
+  if (els.avatarModePhotoBtn) {
+    els.avatarModePhotoBtn.addEventListener('click', function () { setAvatarMode_('photo'); });
+  }
+  if (els.avatarPhotoInput) {
+    els.avatarPhotoInput.addEventListener('change', function () {
+      loadAvatarPhotoFile_(els.avatarPhotoInput.files && els.avatarPhotoInput.files[0]);
+      els.avatarPhotoInput.value = '';
+    });
+  }
+  if (els.avatarPhotoDeleteBtn) {
+    els.avatarPhotoDeleteBtn.addEventListener('click', function () {
+      if (!window.confirm('写真アバターを削除します。よろしいですか？')) return;
+      avatarPhotoDraft = null;
+      renderAvatarPhotoSection_();
+      // 削除したら、イラストを選んでいればそれに、無ければパーツに戻す。
+      setAvatarMode_(avatarPresetDraft ? 'preset' : 'parts');
+      els.avatarSaveMsg.hidden = false;
+      els.avatarSaveMsg.textContent = '写真を削除しました。「保存する」を押すと反映されます。';
+    });
+  }
   els.testPhotoToggle.addEventListener('click', toggleTestPhoto);
   els.penaTestFileInput.addEventListener('change', function () {
     els.penaTestSubmitBtn.disabled = !(els.penaTestFileInput.files && els.penaTestFileInput.files[0]);
@@ -18447,6 +18543,7 @@
     if (existingSession.id) {
       apiPost('getPoints', { id: existingSession.id }).then(function (res) {
         if (res.ok) {
+          photoAvatarConsent_ = !!res.photoAvatarConsent;
           var parsedAvatar = parseAvatarJson(res.avatar);
           if (parsedAvatar) { state.avatar = parsedAvatar; saveGameState(state); updateUserAvatarBadge(); }
           if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);

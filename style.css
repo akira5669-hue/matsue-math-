@@ -1935,6 +1935,20 @@ h1 {
 .avatar-mode-tab.is-active { border-color: var(--c-accent, #4f6df5); color: var(--c-accent, #4f6df5); }
 .avatar-preview-preset { width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 2px solid var(--c-line); background: var(--c-surface); }
 .avatar-preview-preset img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-photo-note { margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: var(--c-ink-soft); }
+.avatar-photo-pick {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: var(--radius);
+  border: 1.5px dashed var(--c-line);
+  background: var(--c-bg);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-ink);
+  cursor: pointer;
+}
 .avatar-preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .avatar-preset-item { border-radius: var(--radius); border: 2px solid var(--c-line); background: var(--c-bg); cursor: pointer; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .avatar-preset-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }

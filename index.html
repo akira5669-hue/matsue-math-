@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827g" />
+<link rel="stylesheet" href="style.css?v=20260827h" />
 </head>
 <body>
 
@@ -502,6 +502,14 @@
         <div class="avatar-mode-tabs" id="avatarModeTabs" hidden>
           <button type="button" class="avatar-mode-tab" id="avatarModePresetBtn">🖼️ イラストから選ぶ</button>
           <button type="button" class="avatar-mode-tab" id="avatarModePartsBtn">🧩 パーツを組み合わせる</button>
+          <button type="button" class="avatar-mode-tab" id="avatarModePhotoBtn" hidden>📷 写真を使う</button>
+        </div>
+        <div id="avatarPhotoSection" hidden>
+          <div class="avatar-preview-wrap"><div class="avatar-preview avatar-preview-preset" id="avatarPhotoPreview"></div></div>
+          <p class="avatar-photo-note">保護者の方の同意をいただいているので、写真をアバターにできます。写真はこのアプリの中だけで使われ、他の生徒やランキングには表示されません。いつでも削除できます。</p>
+          <label class="avatar-photo-pick" for="avatarPhotoInput">📷 写真を選ぶ（撮影もできます）</label>
+          <input type="file" id="avatarPhotoInput" accept="image/*" hidden>
+          <button type="button" class="ghost-btn" id="avatarPhotoDeleteBtn" hidden>写真を削除する</button>
         </div>
         <div id="avatarPresetSection" hidden>
           <div class="avatar-preview-wrap"><div class="avatar-preview avatar-preview-preset" id="avatarPresetPreview"></div></div>
@@ -699,11 +707,11 @@
 <!-- ?v=... はキャッシュ対策。index.htmlだけが新しくなってapp.jsが古いまま、という
      ちぐはぐな状態(実際に発生し、HTMLに書いた初期値がそのまま表示され続けた)を防ぐ。
      app.js等を更新したら、必ずこのバージョン文字列も一緒に更新すること。 -->
-<script src="japan-map-data.js?v=20260827g"></script>
-<script src="avatar-data.js?v=20260827g"></script>
-<script src="world-data.js?v=20260827g"></script>
-<script src="world-data-2.js?v=20260827g"></script>
-<script src="app.js?v=20260827g"></script>
+<script src="japan-map-data.js?v=20260827h"></script>
+<script src="avatar-data.js?v=20260827h"></script>
+<script src="world-data.js?v=20260827h"></script>
+<script src="world-data-2.js?v=20260827h"></script>
+<script src="app.js?v=20260827h"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // 新しいデプロイ後もPWA/ホーム画面アイコンから開いた端末が古いJSのまま動き
