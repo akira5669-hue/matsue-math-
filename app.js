@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827t';
+  var APP_BUILD_ = '20260827u';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2285,6 +2285,8 @@
     { id: 'decWordProblem4',   label: '小数の文章題（小4）',               gen: genDecWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'fracType4',         label: '真分数・仮分数・帯分数（小4）',     gen: genFracType4, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'sumDiffWordProblem4', label: '文章題特訓：和差算（小4）',       gen: genSumDiffWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
+    { id: 'lineGraphRead4',    label: '折れ線グラフの読み取り（小4）',     gen: genLineGraphRead4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'crossTab4',         label: '整理のしかた：2つのことがらの表（小4）', gen: genCrossTab4, defaultOff: true , addedDate: '2026-08-29' },
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
@@ -6033,6 +6035,134 @@
       }
     }
     return { category: 'largeNum4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 折れ線グラフの読み取り（小4）：時こく×気温の表を折れ線グラフの表として提示し、
+  // 値の読み取り・最大最小・変わり方(上がり方/下がり方)がいちばん大きい区間・
+  // 2時点の差を問う。実際のグラフ描画はせず、教科書と同じ「時こく・気温」の
+  // 表として提示する(このアプリの出題形式はテキスト/表ベースのため)。
+  function genLineGraphRead4() {
+    const timeLabel = (h) => (h < 12 ? `午前${h}時` : `午後${h - 12}時`);
+    const n = 8;
+    let times, temps, deltas;
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const startHour = randInt(7, 9);
+      times = [];
+      for (let i = 0; i < n; i++) times.push(startHour + i);
+      temps = [randInt(3, 12)];
+      for (let i = 1; i < n; i++) {
+        const delta = randNonZero(-6, 6);
+        temps.push(Math.max(0, Math.min(30, temps[i - 1] + delta)));
+      }
+      deltas = [];
+      for (let i = 0; i < n - 1; i++) deltas.push(temps[i + 1] - temps[i]);
+      if (deltas.some((d) => d > 0) && deltas.some((d) => d < 0)) break;
+    }
+    const tableHtml = `<table class="q-table"><tbody>` +
+      `<tr><th>時こく</th>${times.map((t) => `<td>${timeLabel(t)}</td>`).join('')}</tr>` +
+      `<tr><th>気温(度)</th>${temps.map((v) => `<td>${v}</td>`).join('')}</tr>` +
+      `</tbody></table>`;
+    const lead = '上の表は、ある日の気温の変わり方を調べたものです。';
+
+    const pat = randInt(0, 4);
+    let question, answer, candidates, steps;
+    if (pat === 0) {
+      const i = randInt(0, n - 1);
+      question = `${lead}${timeLabel(times[i])}の気温は何度ですか。`;
+      answer = `${temps[i]}度`;
+      candidates = [`${temps[i] + 1}度`, `${Math.max(0, temps[i] - 1)}度`, `${temps[i] + 2}度`];
+      steps = [`表から${timeLabel(times[i])}の気温を読み取る`, `= ${answer}`];
+    } else if (pat === 1 || pat === 2) {
+      const isMax = pat === 1;
+      let idx = 0;
+      for (let i = 1; i < n; i++) {
+        if (isMax ? temps[i] > temps[idx] : temps[i] < temps[idx]) idx = i;
+      }
+      const otherIdx = isMax
+        ? temps.indexOf(Math.min(...temps))
+        : temps.indexOf(Math.max(...temps));
+      question = `${lead}気温が${isMax ? 'いちばん高かった' : 'いちばん低かった'}のは、何時で何度ですか。`;
+      answer = `${timeLabel(times[idx])}で${temps[idx]}度`;
+      candidates = [
+        `${timeLabel(times[otherIdx])}で${temps[otherIdx]}度`,
+        `${timeLabel(times[idx])}で${temps[idx] + 1}度`,
+        `${timeLabel(times[idx === 0 ? 1 : idx - 1])}で${temps[idx]}度`,
+      ];
+      steps = [`表の中で気温が${isMax ? '最大' : '最小'}になっている時こくをさがす`, `= ${answer}`];
+    } else if (pat === 3) {
+      const isRise = Math.random() < 0.5;
+      let idx = 0;
+      for (let i = 1; i < deltas.length; i++) {
+        if (isRise ? deltas[i] > deltas[idx] : deltas[i] < deltas[idx]) idx = i;
+      }
+      question = `${lead}気温の${isRise ? '上がり方' : '下がり方'}がいちばん大きかったのは、何時と何時の間ですか。`;
+      answer = `${timeLabel(times[idx])}と${timeLabel(times[idx + 1])}の間`;
+      const otherIdxs = deltas.map((_, i) => i).filter((i) => i !== idx);
+      const wrongIdxs = shuffle(otherIdxs).slice(0, 3);
+      candidates = wrongIdxs.map((i) => `${timeLabel(times[i])}と${timeLabel(times[i + 1])}の間`);
+      steps = [`となり合う時こくどうしの気温の差を比べる`, `いちばん${isRise ? '大きく増えた' : '大きく減った'}のは ${answer}`];
+    } else {
+      let i = randInt(0, n - 1);
+      let j = randInt(0, n - 1);
+      while (j === i) j = randInt(0, n - 1);
+      if (i > j) { const t = i; i = j; j = t; }
+      const diff = Math.abs(temps[i] - temps[j]);
+      question = `${lead}${timeLabel(times[i])}と${timeLabel(times[j])}の気温のちがいは何度ですか。`;
+      answer = `${diff}度`;
+      candidates = [`${diff + 1}度`, `${Math.max(0, diff - 1)}度`, `${diff + 2}度`];
+      steps = [`${Math.max(temps[i], temps[j])} − ${Math.min(temps[i], temps[j])} = ${diff}`, `= ${answer}`];
+    }
+    return { category: 'lineGraphRead4', question, questionHtml: tableHtml + `<span style="display:block;font-size:20px">${escHtml(question)}</span>`, answer, choices: buildChoicesFromList(answer, candidates), steps };
+  }
+
+  // 整理のしかた：2つのことがらを1つにまとめた表（小4）。2つの二択の観点
+  // (例: 朝みがいた/みがかない × 夜みがいた/みがかない)を組み合わせたクロス集計表を
+  // 数値だけ提示し、特定のマス・行合計・列合計・合計を求めさせる。
+  function genCrossTab4() {
+    const themes = [
+      { row: '朝', rowYes: 'みがいた', rowNo: 'みがかなかった', col: '夜', colYes: 'みがいた', colNo: 'みがかなかった' },
+      { row: '海', rowYes: '行った', rowNo: '行かなかった', col: '山', colYes: '行った', colNo: '行かなかった' },
+      { row: '長方形', rowYes: '白', rowNo: '黒', col: '正方形', colYes: '白', colNo: '黒' },
+    ];
+    const t = themes[randInt(0, themes.length - 1)];
+    // a: 行Yes×列Yes, b: 行Yes×列No, c: 行No×列Yes, d: 行No×列No
+    const a = randInt(2, 15), b = randInt(2, 15), c = randInt(2, 15), d = randInt(2, 15);
+    const rowYesTotal = a + b, rowNoTotal = c + d;
+    const colYesTotal = a + c, colNoTotal = b + d;
+    const grandTotal = a + b + c + d;
+
+    const tableHtml = `<table class="q-table"><tbody>` +
+      `<tr><th></th><th>${t.col}${t.colYes}</th><th>${t.col}${t.colNo}</th><th>合計</th></tr>` +
+      `<tr><th>${t.row}${t.rowYes}</th><td>${a}</td><td>${b}</td><td>${rowYesTotal}</td></tr>` +
+      `<tr><th>${t.row}${t.rowNo}</th><td>${c}</td><td>${d}</td><td>${rowNoTotal}</td></tr>` +
+      `<tr><th>合計</th><td>${colYesTotal}</td><td>${colNoTotal}</td><td>${grandTotal}</td></tr>` +
+      `</tbody></table>`;
+    const lead = '上の表は、2つのことがらを1つにまとめた表です。';
+
+    const pat = randInt(0, 3);
+    let question, answer, wrongs;
+    if (pat === 0) {
+      question = `${lead}${t.row}は${t.rowYes}が、${t.col}は${t.colNo}だった人は何人いますか。`;
+      answer = b;
+      wrongs = [a, c, d].filter((v) => v !== answer);
+    } else if (pat === 1) {
+      question = `${lead}${t.row}は${t.rowNo}が、${t.col}は${t.colYes}だった人は何人いますか。`;
+      answer = c;
+      wrongs = [a, b, d].filter((v) => v !== answer);
+    } else if (pat === 2) {
+      const askRow = Math.random() < 0.5;
+      question = askRow
+        ? `${lead}${t.row}${t.rowYes}の人は、全部で何人いますか。`
+        : `${lead}${t.col}${t.colYes}の人は、全部で何人いますか。`;
+      answer = askRow ? rowYesTotal : colYesTotal;
+      wrongs = [rowNoTotal, colNoTotal, grandTotal].filter((v) => v !== answer);
+    } else {
+      question = `${lead}調べた人は、全部で何人いますか。`;
+      answer = grandTotal;
+      wrongs = [rowYesTotal + colYesTotal, rowNoTotal + colNoTotal, grandTotal + 1].filter((v) => v !== answer);
+    }
+    const steps = [`表の対応するマス・合計を読み取る`, `= ${answer}`];
+    return { category: 'crossTab4', question, questionHtml: tableHtml + `<span style="display:block;font-size:20px">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   // 三角じょうぎの角度（小4）：30-60-90と45-45-90の三角じょうぎの角を求める
