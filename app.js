@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827n';
+  var APP_BUILD_ = '20260827r';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -15339,6 +15339,15 @@
     }
   }
 
+  function finishRegisterSuccess_(res, grade) {
+    saveSession({ id: res.id, name: res.name, grade: grade });
+    clearGameState();
+    window.alert('登録が完了しました！\n\nあなたのID: ' + res.id + '\n\n次回からは、このIDとパスワードでログインします。忘れずに控えておいてください。');
+    // 同じ端末で以前に別の生徒が使っていた場合、ポイント等がメモリ上に
+    // 残らないよう、ページごと再読み込みしてまっさらな状態から始める。
+    window.location.reload();
+  }
+
   function handleRegisterSubmit(ev) {
     ev.preventDefault();
     hideFieldError(els.registerError);
@@ -15356,18 +15365,32 @@
     apiPost('register', { name: name, grade: grade, guardian: guardian, password: pw }).then(function (res) {
       els.registerSubmit.disabled = false;
       if (!res.ok) {
+        if (res.error === 'duplicate_name') {
+          var wantsNew = window.confirm(
+            '同じ名前・学年ですでに登録があるようです。\n' +
+            '以前に登録してIDを忘れてしまった場合は、いったんキャンセルして先生に確認してください。\n\n' +
+            '（同姓同名の別の生徒などで）このまま新しく登録する場合は「OK」を押してください。'
+          );
+          if (wantsNew) {
+            els.registerSubmit.disabled = true;
+            apiPost('register', { name: name, grade: grade, guardian: guardian, password: pw, confirmDuplicate: true }).then(function (res2) {
+              els.registerSubmit.disabled = false;
+              if (!res2.ok) { showFieldError(els.registerError, '登録に失敗しました。もう一度お試しください。'); return; }
+              finishRegisterSuccess_(res2, grade);
+            }).catch(function () {
+              els.registerSubmit.disabled = false;
+              showFieldError(els.registerError, '通信に失敗しました。もう一度お試しください。');
+            });
+          }
+          return;
+        }
         var msg = '登録に失敗しました。もう一度お試しください。';
         if (res.error === 'missing_fields') msg = 'お名前とパスワードを入力してください。';
         else if (res.error === 'invalid_password') msg = 'パスワードは英数字4桁で入力してください。';
         showFieldError(els.registerError, msg);
         return;
       }
-      saveSession({ id: res.id, name: res.name, grade: grade });
-      clearGameState();
-      window.alert('登録が完了しました！\n\nあなたのID: ' + res.id + '\n\n次回からは、このIDとパスワードでログインします。忘れずに控えておいてください。');
-      // 同じ端末で以前に別の生徒が使っていた場合、ポイント等がメモリ上に
-      // 残らないよう、ページごと再読み込みしてまっさらな状態から始める。
-      window.location.reload();
+      finishRegisterSuccess_(res, grade);
     }).catch(function () {
       els.registerSubmit.disabled = false;
       showFieldError(els.registerError, '通信に失敗しました。もう一度お試しください。');
@@ -16784,15 +16807,15 @@
     { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 20, stageId: 2, subIndex: 0, fx: '#f97316', target: 'ステージ2（氷系）' },
     { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 30, stageId: 3, subIndex: 0, fx: '#38bdf8', target: 'ステージ3（雷系）' },
     { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 40, stageId: 4, subIndex: 0, fx: '#a16207', target: 'ステージ4の1体目（大地系）' },
-    { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 0, fx: '#b45309', target: 'ステージ4の1体目（大地系）' },
-    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 1, fx: '#8b5cf6', target: 'ステージ4の2体目（光系）' },
-    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 20, cost: 200, stageId: 4, subIndex: 1, fx: '#7c3aed', target: 'ステージ4の2体目（光系）' },
-    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 30, cost: 300, stageId: 4, subIndex: 1, fx: '#6d28d9', target: 'ステージ4の2体目（光系）' },
-    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 40, cost: 400, stageId: 4, subIndex: 1, fx: '#a21caf', target: 'ステージ4の2体目（光系）' },
-    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 1, fx: '#c026d3', target: 'ステージ4の2体目（光系）' },
-    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 100, stageId: 4, subIndex: 2, fx: '#fde047', target: 'ステージ4の3体目（闇系）' },
-    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 40, cost: 300, stageId: 4, subIndex: 2, fx: '#fbbf24', target: 'ステージ4の3体目（闇系）' },
-    { id: 'holyburst', label: '聖光爆発', emoji: '🌟', dmg: 300, selfDmg: 60, cost: 500, stageId: 4, subIndex: 2, fx: '#fff7ae', target: 'ステージ4の3体目（闇系）' },
+    { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 0, fx: '#b45309', target: 'ステージ4の1体目（大地系）' },
+    { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 10, stageId: 4, subIndex: 1, fx: '#8b5cf6', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 1, fx: '#7c3aed', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 10, cost: 30, stageId: 4, subIndex: 1, fx: '#6d28d9', target: 'ステージ4の2体目（光系）' },
+    { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 10, cost: 40, stageId: 4, subIndex: 1, fx: '#a21caf', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 10, cost: 50, stageId: 4, subIndex: 1, fx: '#c026d3', target: 'ステージ4の2体目（光系）' },
+    { id: 'lightarrow', label: '光の矢', emoji: '🏹', dmg: 50, selfDmg: 10, cost: 10, stageId: 4, subIndex: 2, fx: '#fde047', target: 'ステージ4の3体目（闇系）' },
+    { id: 'angellight', label: '天使の光', emoji: '👼', dmg: 200, selfDmg: 10, cost: 40, stageId: 4, subIndex: 2, fx: '#fbbf24', target: 'ステージ4の3体目（闇系）' },
+    { id: 'holyburst', label: '聖光爆発', emoji: '🌟', dmg: 300, selfDmg: 10, cost: 50, stageId: 4, subIndex: 2, fx: '#fff7ae', target: 'ステージ4の3体目（闇系）' },
   ];
   const SPELLBOOK_IDS_ = SPELLBOOKS_.map(function (b) { return b.id; });
   function spellbookById_(id) {
@@ -18174,11 +18197,16 @@
     if (els.teamEventToggle) els.teamEventToggle.hidden = false;
     var ev = teamEventCache.event;
     var my = teamEventCache.myTeam;
+    els.teamEventBanner.hidden = false;
     if (!my) {
-      els.teamEventBanner.hidden = true;
+      // チーム編成は開催開始前の直近ログイン者から作るため、開催中に新規登録・
+      // 復帰した生徒はチームに入っていない。バナーごと消すと「なぜ何も出ない
+      // のか分からない」になるので、未参加である旨を明示する。
+      els.teamEventBannerText.textContent =
+        `🤝 チーム対抗経験値バトル開催中！（${ev.startDate}〜${ev.endDate}）\n` +
+        `今月のチームは開催開始前の時点で編成済みのため、あなたは今月は参加対象外です。来月の開始時にログインしていれば、次回は自動的にチームに入ります。`;
       return;
     }
-    els.teamEventBanner.hidden = false;
     els.teamEventBannerText.textContent =
       `🤝 チーム対抗経験値バトル開催中！（${ev.startDate}〜${ev.endDate}）\n` +
       `5〜6人1組のチームで、期間中にどれだけ経験値を上げられるかを競います。\n` +
@@ -18222,7 +18250,12 @@
         return teamMemberRowHtml_(m, m.id === myId);
       }).join('');
     } else {
-      els.teamEventMyTeamBox.hidden = true;
+      // チーム編成は開催開始前の直近ログイン者から作るため、開催中に新規登録・
+      // 復帰した生徒はチームに入っていない(renderTeamEventBanner_と同じ理由)。
+      els.teamEventMyTeamBox.hidden = false;
+      els.teamEventMyTeamTitle.textContent = 'あなたのチーム：今月は参加対象外です';
+      els.teamEventMyRank.textContent = '今月のチームは開催開始前に編成済みのため、参加できません。来月の開始時にログインしていれば、次回は自動的にチームに入ります。';
+      els.teamEventMyMembersList.innerHTML = '';
     }
 
     els.teamEventAllTeamsList.innerHTML = teamEventCache.allTeams.map(function (t) {
