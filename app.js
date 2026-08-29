@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828d';
+  var APP_BUILD_ = '20260828e';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -18248,8 +18248,8 @@
     return todayKey() >= WORLD_DICE_MODE_START_;
   }
   // 世界旅行編：2026-09-01以降はレベルが10上がるごとにサイコロ(1〜6)を振って、
-  // 偶数ならその数だけヵ国を進め、奇数ならその数だけ戻る(state.worldCountryが
-  // サイコロで増減する実際の位置。rollWorldCountryDice_を参照)。それまでは
+  // 出た目の数だけヵ国を進める(偶数・奇数どちらでも進む。state.worldCountryが
+  // サイコロで増える実際の位置。rollWorldCountryDice_を参照)。それまでは
   // 従来どおりレベルから毎回自動計算する。
   // 2周目以降はworldLapStartLevelがその周の開始レベルになる(レベル自体はリセットしない)。
   // また各ステージの最後の国(ボス)は、ボスを撃破する(worldBossDefeated)までは
@@ -18327,13 +18327,11 @@
   // 両方から呼ばれる共通処理。
   function rollOnceWorldCountryDice_() {
     var die = randInt(1, 6);
-    var isEven = die % 2 === 0;
-    var delta = isEven ? die : -die;
     var before = Number(state.worldCountry) || 0;
     var floor = worldCountryFloor_();
-    var after = Math.max(floor, Math.min((typeof WORLD_DATA !== 'undefined' ? WORLD_DATA.length : 100), before + delta));
+    var after = Math.max(floor, Math.min((typeof WORLD_DATA !== 'undefined' ? WORLD_DATA.length : 100), before + die));
     state.worldCountry = after;
-    enqueueWorldDiceRoll_({ die: die, isEven: isEven, before: before, after: after });
+    enqueueWorldDiceRoll_({ die: die, before: before, after: after });
   }
   // サイコロを振った結果を1件ずつ順番に見せるためのキュー。1回のレベルアップで
   // 複数回サイコロを振ることがあるため(例: 一気に20レベル上がった等)、
@@ -18344,12 +18342,7 @@
     worldDiceRollQueue_.push(info);
   }
   function worldDiceResultText_(info) {
-    if (info.isEven) {
-      return `出た目：${info.die}（偶数）\n${info.die}ヵ国分すすんだ！`;
-    } else if (info.after < info.before) {
-      return `出た目：${info.die}（奇数）\n${info.before - info.after}ヵ国分もどってしまった…`;
-    }
-    return `出た目：${info.die}（奇数）\nでも、倒したボスより手前にはもどらなかった！`;
+    return `出た目：${info.die}\n${info.after - info.before}ヵ国分すすんだ！`;
   }
   var WORLD_DICE_FACES_ = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
   function showNextWorldDiceRoll_() {
