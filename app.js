@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827y';
+  var APP_BUILD_ = '20260827z';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2291,6 +2291,9 @@
     { id: 'diffFocus4',        label: 'ちがいに注目して（小4）',           gen: genDiffFocus4, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'roundEstimateWordProblem4', label: 'がい数を使った計算：文章題（小4）', gen: genRoundEstimateWordProblem4, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'calcRulesTricks4',  label: '計算のきまりとくふう（小4）',       gen: genCalcRulesTricks4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'quadShapes4',       label: 'いろいろな四角形（小4）',           gen: genQuadShapes4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'compositeRectArea4', label: '長方形・正方形の面積の応用（小4）', gen: genCompositeRectArea4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'functionTable4',    label: '変わり方調べ（小4）',               gen: genFunctionTable4, defaultOff: true , addedDate: '2026-08-29' },
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
@@ -6169,6 +6172,79 @@
     return { category: 'crossTab4', question, questionHtml: tableHtml + `<span style="display:block;font-size:20px">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  // いろいろな四角形（小4）：台形・平行四辺形・ひし形・長方形・正方形の性質、
+  // 平行四辺形の性質(向かい合う辺の長さ・角の大きさが等しい)を使った計算
+  const QUAD_PROPERTY_MATRIX_ = [
+    { prop: '向かい合った2組の辺が平行', shapes: { 平行四辺形: true, ひし形: true, 長方形: true, 正方形: true } },
+    { prop: '4つの辺の長さがすべて等しい', shapes: { 平行四辺形: false, ひし形: true, 長方形: false, 正方形: true } },
+    { prop: '4つの角の大きさがすべて等しい', shapes: { 平行四辺形: false, ひし形: false, 長方形: true, 正方形: true } },
+    { prop: '2本の対角線の長さが等しい', shapes: { 平行四辺形: false, ひし形: false, 長方形: true, 正方形: true } },
+    { prop: '2本の対角線が垂直に交わる', shapes: { 平行四辺形: false, ひし形: true, 長方形: false, 正方形: true } },
+  ];
+  function genQuadShapes4() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 正しい文/まちがっている文を選ぶ(形×性質の組み合わせ)
+      const trueStatements = [];
+      const falseStatements = [];
+      QUAD_PROPERTY_MATRIX_.forEach((row) => {
+        Object.keys(row.shapes).forEach((shape) => {
+          const text = `${shape}は、${row.prop}。`;
+          (row.shapes[shape] ? trueStatements : falseStatements).push(text);
+        });
+      });
+      const askTrue = Math.random() < 0.5;
+      const pool = askTrue ? trueStatements : falseStatements;
+      const otherPool = askTrue ? falseStatements : trueStatements;
+      answer = pool[randInt(0, pool.length - 1)];
+      question = `次のうち、${askTrue ? '正しい文' : 'まちがっている文'}はどれですか。`;
+      const candidates = shuffle(otherPool.slice()).slice(0, 3);
+      return { category: 'quadShapes4', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`四角形の性質の表にあてはめて考える`, `= ${answer}`] };
+    } else if (pat === 1) {
+      // 用語：台形・平行四辺形の定義
+      const isTrap = Math.random() < 0.5;
+      question = isTrap
+        ? '向かい合った1組の辺だけが平行な四角形を何といいますか。'
+        : '向かい合った2組の辺が、それぞれ平行な四角形を何といいますか。';
+      answer = isTrap ? '台形' : '平行四辺形';
+      const wrongsList = shuffle(['ひし形', '長方形', '正方形', isTrap ? '平行四辺形' : '台形']).slice(0, 3);
+      return { category: 'quadShapes4', question, answer, choices: shuffle([answer, ...wrongsList]), steps: [`平行な辺の組の数に注目する`, `= ${answer}`] };
+    } else if (pat === 2) {
+      // 平行四辺形の性質：向かい合う辺の長さは等しい
+      const ab = randInt(3, 15);
+      const bc = randInt(3, 15);
+      const askCD = Math.random() < 0.5;
+      const askPerimeter = Math.random() < 0.3;
+      if (askPerimeter) {
+        question = `平行四辺形ABCDがあります。辺ABが${ab}cm、辺BCが${bc}cmのとき、平行四辺形ABCDのまわりの長さは何cmですか。`;
+        answer = 2 * (ab + bc);
+        wrongs = [ab + bc, ab * bc, answer + 2].filter((v) => v !== answer);
+        steps = [`平行四辺形では、向かい合う辺の長さが等しい → CD=${ab}cm、DA=${bc}cm`, `(${ab}+${bc})×2 = ${answer}`];
+      } else {
+        question = `平行四辺形ABCDがあります。辺ABが${ab}cm、辺BCが${bc}cmのとき、辺${askCD ? 'CD' : 'DA'}の長さは何cmですか。`;
+        answer = askCD ? ab : bc;
+        wrongs = [askCD ? bc : ab, ab + bc, Math.abs(ab - bc)].filter((v) => v !== answer && v > 0);
+        steps = [`平行四辺形では、向かい合う辺の長さが等しい`, `辺${askCD ? 'CD' : 'DA'}は辺${askCD ? 'AB' : 'BC'}と向かい合っているので ${answer}cm`];
+      }
+      return { category: 'quadShapes4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 平行四辺形の性質：向かい合う角は等しい、となり合う角の和は180°
+      let angleA = randInt(30, 150);
+      if (angleA === 90) angleA = 80;
+      const angleB = 180 - angleA;
+      const target = shuffle(['B', 'C', 'D'])[0];
+      const angleMap = { B: angleB, C: angleA, D: angleB };
+      answer = angleMap[target];
+      question = `平行四辺形ABCDで、角Aが${angleA}°のとき、角${target}は何度ですか。`;
+      wrongs = [angleA, 180 - answer, answer + 10].filter((v) => v !== answer && v > 0 && v < 180);
+      steps = target === 'C'
+        ? [`平行四辺形では、向かい合う角の大きさが等しい`, `角Cは角Aと向かい合っているので ${answer}°`]
+        : [`平行四辺形では、となり合う角の和が180°`, `180 − ${angleA} = ${answer}`];
+      return { category: 'quadShapes4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   // 三角じょうぎの角度（小4）：30-60-90と45-45-90の三角じょうぎの角を求める
   function genSetSquareAngle4() {
     const pat = randInt(0, 2);
@@ -8985,6 +9061,46 @@
   function genDiv3by3_4() { return genCleanDivision('div3by3_4', 100, 499, 100, 999); }
 
   // 長方形・正方形の面積（小4）
+  // 変わり方調べ（小4）：ともなって変わる2つの数量の関係を表・式で調べる
+  function genFunctionTable4() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 全体の数が一定：一方が決まればもう一方も決まる(兄弟でテープ・あめを分ける等)
+      const pairs = [
+        { a: '兄', b: '弟', obj: 'あめ', unit: 'こ' },
+        { a: '姉', b: '妹', obj: 'テープ', unit: 'cm' },
+      ];
+      const p = pairs[randInt(0, pairs.length - 1)];
+      const total = randInt(15, 40);
+      const given = randInt(1, total - 1);
+      const askB = Math.random() < 0.5;
+      question = `${p.obj}が全部で${total}${p.unit}あります。${p.a}と${p.b}の2人で分けるとき、${p.a}が${given}${p.unit}のとき、${p.b}は何${p.unit}になりますか。`;
+      answer = total - given;
+      wrongs = [given, total, total - given + 1].filter((v) => v !== answer && v > 0);
+      steps = [`${p.b} = 全体 − ${p.a}`, `${total} − ${given} = ${answer}`];
+      return { category: 'functionTable4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 1辺1cmの正方形をn枚1列に並べたときの、まわりの長さ(2n+2)
+      const n = randInt(1, 20);
+      answer = 2 * n + 2;
+      question = `1辺が1cmの正方形を、1列に${n}まいならべます。まわりの長さは何cmですか。`;
+      wrongs = [4 * n, 2 * n, answer + 2].filter((v) => v !== answer);
+      steps = [`正方形が1まい増えるごとに、まわりの長さは2cmずつ増える`, `2×${n}+2 = ${answer}`];
+      return { category: 'functionTable4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // たてh cm、横w cmの長方形をn個、横方向につないだときの、まわりの長さ
+      const h = randInt(2, 5);
+      const w = randInt(1, 3);
+      const n = randInt(1, 20);
+      answer = 2 * (h + n * w);
+      question = `たてが${h}cm、横が${w}cmの長方形を、下の図のように横に${n}こつないでいきます。まわりの長さは何cmですか。`;
+      wrongs = [2 * h + 2 * w * n + 2, h * w * n, answer + 2 * w].filter((v) => v !== answer);
+      steps = [`つないだ形のたては${h}cm、横は${w}×${n}=${w * n}cm`, `(${h}+${w * n})×2 = ${answer}`];
+      return { category: 'functionTable4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   function genRectArea4() {
     const isSquare = Math.random() < 0.4;
     let question, answer, wrongs, steps;
@@ -9002,6 +9118,45 @@
       steps = [`長方形の面積 = 縦 × 横 = ${h} × ${w} = ${answer} cm²`];
     }
     return { category: 'rectArea4', question, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 長方形・正方形の面積の応用（小4）：面積と1辺から残りの辺を求める、
+  // 長方形を組み合わせた(L字形などの)複合図形の面積(たし算・ひき算どちらも)
+  function genCompositeRectArea4() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 面積と1辺から、もう一方の辺を求める
+      const h = randInt(3, 20);
+      const w = randInt(3, 20);
+      const area = h * w;
+      const askW = Math.random() < 0.5;
+      question = `面積が${area}cm²で、${askW ? 'たて' : '横'}の長さが${askW ? h : w}cmの長方形の${askW ? '横' : 'たて'}の長さは何cmですか。`;
+      answer = askW ? w : h;
+      wrongs = [answer + 1, Math.max(1, answer - 1), area].filter((v) => v !== answer);
+      steps = [`${askW ? '横' : 'たて'} = 面積 ÷ ${askW ? 'たて' : '横'}`, `${area} ÷ ${askW ? h : w} = ${answer}`];
+      return { category: 'compositeRectArea4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 大きい長方形から小さい長方形を切り取った形(L字形)の面積
+      const bigH = randInt(8, 20);
+      const bigW = randInt(8, 20);
+      const notchH = randInt(2, bigH - 3);
+      const notchW = randInt(2, bigW - 3);
+      question = `たて${bigH}cm、横${bigW}cmの長方形から、すみにあるたて${notchH}cm、横${notchW}cmの長方形を切り取ったL字形があります。この図形の面積は何cm²ですか。`;
+      answer = bigH * bigW - notchH * notchW;
+      wrongs = [bigH * bigW, bigH * bigW + notchH * notchW, answer + notchW].filter((v) => v !== answer);
+      steps = [`大きい長方形の面積 = ${bigH} × ${bigW} = ${bigH * bigW}`, `切り取った長方形の面積 = ${notchH} × ${notchW} = ${notchH * notchW}`, `${bigH * bigW} − ${notchH * notchW} = ${answer}`];
+      return { category: 'compositeRectArea4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 2つの長方形を組み合わせた形(合わせて考える)の面積
+      const h1 = randInt(3, 15), w1 = randInt(3, 15);
+      const h2 = randInt(3, 15), w2 = randInt(3, 15);
+      question = `たて${h1}cm、横${w1}cmの長方形と、たて${h2}cm、横${w2}cmの長方形を合わせた形があります。この図形の面積は何cm²ですか。`;
+      answer = h1 * w1 + h2 * w2;
+      wrongs = [h1 * w1, h2 * w2, answer + w1].filter((v) => v !== answer);
+      steps = [`1つ目の長方形の面積 = ${h1} × ${w1} = ${h1 * w1}`, `2つ目の長方形の面積 = ${h2} × ${w2} = ${h2 * w2}`, `${h1 * w1} + ${h2 * w2} = ${answer}`];
+      return { category: 'compositeRectArea4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    }
   }
 
   // 単位量あたりの大きさ・速さ（小5）
@@ -13651,7 +13806,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
