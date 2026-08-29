@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827x';
+  var APP_BUILD_ = '20260827y';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2290,6 +2290,7 @@
     { id: 'crossTab4',         label: '整理のしかた：2つのことがらの表（小4）', gen: genCrossTab4, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'diffFocus4',        label: 'ちがいに注目して（小4）',           gen: genDiffFocus4, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'roundEstimateWordProblem4', label: 'がい数を使った計算：文章題（小4）', gen: genRoundEstimateWordProblem4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'calcRulesTricks4',  label: '計算のきまりとくふう（小4）',       gen: genCalcRulesTricks4, defaultOff: true , addedDate: '2026-08-29' },
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
@@ -7413,6 +7414,72 @@
         ? [`(${total} + ${diff}) ÷ 2 = ${answer}`]
         : [`(${total} - ${diff}) ÷ 2 = ${answer}`];
       return { category: 'sumDiffWordProblem4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // 計算のきまりとくふう（小4）：分配のきまり、交かん・結合のきまり、
+  // かけ算のせいしつ(一方の数を10倍・100倍すると積も10倍・100倍になる)
+  function genCalcRulesTricks4() {
+    const pat = randInt(0, 4);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 分配のきまり：□×△+○×△ = (□+○)×△ (和が10や100になるよう選ぶ)
+      const c = randInt(2, 20);
+      const a = randInt(11, 98);
+      const roundUpTo = (Math.floor(a / 10) + 1) * 10;
+      const b = roundUpTo - a;
+      question = `くふうして計算しましょう。${a}×${c}+${b}×${c}`;
+      answer = (a + b) * c;
+      wrongs = [a * c, b * c, answer + c].filter((v) => v !== answer);
+      steps = [`${a}×${c} + ${b}×${c} = (${a}+${b})×${c}`, `= ${a + b}×${c} = ${answer}`];
+      return { category: 'calcRulesTricks4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 分配のきまり：(100−△)×○ の形で計算(97×8のような、100に近い数のかけ算)
+      const c = randInt(2, 20);
+      const d = randInt(1, 9);
+      const a = 100 - d;
+      question = `くふうして計算しましょう。${a}×${c}`;
+      answer = a * c;
+      wrongs = [100 * c, d * c, answer + c].filter((v) => v !== answer);
+      steps = [`${a} = 100−${d} と考える`, `100×${c} − ${d}×${c} = ${100 * c} − ${d * c} = ${answer}`];
+      return { category: 'calcRulesTricks4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      // 交かん・結合のきまり(たし算)：2つを組み合わせるとキリのよい数になる3つの数
+      const x = randInt(11, 69);
+      const roundUpTo = (Math.floor(x / 10) + 1) * 10;
+      const y = roundUpTo - x;
+      const z = randInt(10, 90);
+      question = `くふうして計算しましょう。${x}+${z}+${y}`;
+      answer = x + y + z;
+      wrongs = [x + z, y + z, answer + 10].filter((v) => v !== answer);
+      steps = [`${x}+${z}+${y} = ${x}+${y}+${z}（たし算は順番を変えても答えは同じ）`, `= ${x + y}+${z} = ${answer}`];
+      return { category: 'calcRulesTricks4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      // 交かん・結合のきまり(かけ算)：2つの積がキリのよい数になる組み合わせ
+      const nicePairs = [[25, 4, 100], [4, 25, 100], [8, 125, 1000], [125, 8, 1000], [2, 50, 100], [50, 2, 100], [5, 20, 100], [20, 5, 100]];
+      const pair = nicePairs[randInt(0, nicePairs.length - 1)];
+      const [a, b, niceProduct] = pair;
+      const m = randInt(2, 60);
+      question = `くふうして計算しましょう。${a}×${m}×${b}`;
+      answer = niceProduct * m;
+      wrongs = [a * m, b * m, answer + m].filter((v) => v !== answer);
+      steps = [`${a}×${m}×${b} = ${a}×${b}×${m}（かけ算は順番を変えても答えは同じ）`, `= ${niceProduct}×${m} = ${answer}`];
+      return { category: 'calcRulesTricks4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // かけ算のせいしつ：もとの式(1けた×1けた)をもとに、10倍・100倍した式の積を求める
+      const a = randInt(2, 9), b = randInt(2, 9);
+      const base = a * b;
+      const variants = [
+        { label: `${a}×${b * 10}`, mult: 10 },
+        { label: `${a}×${b * 100}`, mult: 100 },
+        { label: `${a * 10}×${b * 10}`, mult: 100 },
+      ];
+      const v = variants[randInt(0, variants.length - 1)];
+      question = `${a}×${b}=${base} をもとにして、${v.label} を求めましょう。`;
+      answer = base * v.mult;
+      wrongs = [base * v.mult * 10, Math.round(base * v.mult / 10), base].filter((val) => val !== answer && val > 0);
+      steps = [`${a}×${b}=${base}`, `${v.label} は ${base} の${v.mult}倍`, `${base}×${v.mult} = ${answer}`];
+      return { category: 'calcRulesTricks4', question, answer, choices: buildChoices(answer, wrongs), steps };
     }
   }
 
