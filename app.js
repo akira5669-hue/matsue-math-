@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828c';
+  var APP_BUILD_ = '20260828d';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -466,9 +466,23 @@
 
   function genEquation() {
     let ans = randNonZero(-9, 9);
-    const pat = randInt(0, 7);
+    const pat = randInt(0, 8);
     let q, questionHtml, steps;
-    if (pat === 6) {
+    if (pat === 8) {
+      // 小数係数の方程式（両辺に小数）: ax + b = cx + d (a, c は小数)
+      const aOptions = [0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 1.2, 1.5];
+      let a, c;
+      do { a = aOptions[randInt(0, aOptions.length - 1)]; c = aOptions[randInt(0, aOptions.length - 1)]; } while (a === c);
+      ans = randNonZero(-6, 6);
+      const b = randNonZero(-9, 9);
+      const d = Math.round((a * ans + b - c * ans) * 10) / 10;
+      const bS = b < 0 ? ` − ${Math.abs(b)}` : `+ ${b}`;
+      const dS = d < 0 ? ` − ${Math.abs(d)}` : `+ ${d}`;
+      q = `${a}x ${bS} = ${c}x ${dS} を解け。x = ?`;
+      const lc = Math.round((a - c) * 10) / 10;
+      const rhs = Math.round((d - b) * 10) / 10;
+      steps = [`移項: ${a}x − ${c}x = ${fmtNum(d)} − ${fmtNum(b)}`, `${fmtNum(lc)}x = ${fmtNum(rhs)}`, `x = ${fmtNum(rhs)} ÷ ${fmtNum(lc)} = ${ans}`];
+    } else if (pat === 6) {
       // 分数係数の方程式（両辺に分数）: (n1/d1)x + b1 = (n2/d2)x + b2
       const fracs = [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 5], [2, 5], [1, 6], [5, 6]];
       let f1, f2;
@@ -1758,7 +1772,7 @@
     } else if (pat === 2) {
       const x = randNonZero(-6, 6), y = randNonZero(-6, 6), a = x*y;
       question = `y = ${a}/x で x = ${x} のとき y = ?`;
-      questionHtml = `y = <span class="frac"><span class="num">${a}</span><span class="den">x</span></span> で x = ${x} のとき y = ?`;
+      questionHtml = `y = ${negFracHtml(Math.abs(a), 'x', a < 0)} で x = ${x} のとき y = ?`;
       steps = [`y = ${a} ÷ ${fmtNum(x)} = ${y}`];
       answer = y; wrongs = [-y, a, y+1];
     } else if (pat === 3) {
@@ -2317,6 +2331,7 @@
     { id: 'figureArea5',     label: '図形の面積（小5）',                   gen: genFigureArea5,     defaultOff: true , addedDate: '2026-08-12' },
     { id: 'percentConvert5', label: '割合の表し方：小数・百分率・歩合（小5）', gen: genPercentConvert5, defaultOff: true },
     { id: 'multiples5',      label: '倍数と約数（小5）',                   gen: genMultiples5,      defaultOff: true },
+    { id: 'divisorMultipleAdvanced5', label: '約数と倍数：中学入試レベル（小5）', gen: genDivisorMultipleAdvanced5, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'multiplesDivisorsWordProblem5', label: '倍数・約数の文章題（小5）', gen: genMultiplesDivisorsWordProblem5, defaultOff: true , addedDate: '2026-08-11' },
     { id: 'polygonAngle5',   label: '図形の角（小5）',                     gen: genPolygonAngle5,   defaultOff: true },
     { id: 'fracDecConvert5', label: '分数と小数、整数の関係（小5）',       gen: genFracDecConvert5, defaultOff: true },
@@ -10133,6 +10148,70 @@
   }
 
   // 倍数・約数の文章題（小5）：範囲内の倍数の個数、最も近い倍数、最小公倍数・最大公約数の応用
+  // 約数と倍数：中学入試レベル（小5）。教科書レベルより上の発展的な出題形式：
+  // ①わると等しい「不足」だけ余る2条件を満たす整数(LCMを使い、目標値に最も
+  // 近いものを探す)、②周期の異なる2つの現象が同時に起こる(LCM)、③長方形の
+  // 周りに木を植える/正方形タイルをしきつめる(GCDで間隔・タイルの大きさを最大化)。
+  function genDivisorMultipleAdvanced5() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 「わる数-あまり」が共通(不足が等しい)2条件を満たす整数のうち、目標値に最も近いもの
+      const d1 = randInt(4, 9);
+      let d2 = randInt(4, 12);
+      while (d2 === d1) d2 = randInt(4, 12);
+      const s = randInt(1, Math.min(d1, d2) - 1);
+      const r1 = d1 - s, r2 = d2 - s;
+      const L = lcmFrac(d1, d2);
+      let target = randInt(200, 500);
+      // (target+s)がLのちょうど半分だけずれていると、上下の候補が同じ距離になり
+      // 「もっとも近い整数」が一意に決まらない。その場合はtargetを1ずらして回避する。
+      if (L % 2 === 0 && (target + s) % L === L / 2) target += 1;
+      const k = Math.round((target + s) / L);
+      answer = Math.max(L - s, L * k - s);
+      question = `${d1}でわると${r1}あまり、${d2}でわると${r2}あまる整数があります。このような整数のうち、${target}にもっとも近い整数を求めなさい。`;
+      wrongs = [answer + L, Math.max(1, answer - L), target].filter((v) => v !== answer);
+      steps = [`${d1}も${d2}も、わる数より${s}小さい数だけあまる → 求める数に${s}を加えると${d1}と${d2}の公倍数になる`, `${d1}と${d2}の最小公倍数は${L}`, `${target}に近い${L}の倍数から${s}をひくと ${answer}`];
+      return { category: 'divisorMultipleAdvanced5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 周期の異なる2つの現象が、同時にスタートしたあと次に同時に起こるのは何分後か(LCM)
+      const themes = [
+        { a: 'Aの花火', b: 'Bの花火', verb: '打ち上げられ', dict: '打ち上げられる', unit: '分' },
+        { a: 'A町行きのバス', b: 'B町行きのバス', verb: '発車し', dict: '発車する', unit: '分' },
+        { a: '赤い水', b: '青い水', verb: 'ふき出し', dict: 'ふき出す', unit: '秒' },
+      ];
+      const t = themes[randInt(0, themes.length - 1)];
+      const a = randInt(2, 12);
+      let b = randInt(2, 15);
+      while (b === a) b = randInt(2, 15);
+      const L = lcmFrac(a, b);
+      question = `${t.a}は${a}${t.unit}ごとに、${t.b}は${b}${t.unit}ごとに${t.verb}ます。ある時刻に同時に${t.verb}たとすると、次に同時に${t.verb}るのは何${t.unit}後ですか。`;
+      answer = L;
+      wrongs = [a * b, a + b, Math.max(1, L - a)].filter((v) => v !== answer);
+      steps = [`${a}と${b}の最小公倍数を求める`, `= ${L}${t.unit}後`];
+      return { category: 'divisorMultipleAdvanced5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 長方形の周りに木を植える/正方形タイルをしきつめる(GCDで最大の間隔・大きさを求める)
+      const isTree = Math.random() < 0.5;
+      const g = randInt(3, 15);
+      let ra = randInt(3, 20), rb = randInt(3, 20);
+      while (gcdFrac(ra, rb) !== 1) { ra = randInt(3, 20); rb = randInt(3, 20); }
+      const H = g * ra, W = g * rb;
+      if (isTree) {
+        question = `たて${H}m、横${W}mの長方形の土地のまわりに、4つのかどには必ず木を植え、たても横も同じ間かくで、木の間かくをできるだけ広くするように木を植えます。木は全部で何本必要ですか。`;
+        answer = 2 * (H + W) / g;
+        wrongs = [g, Math.max(1, answer - 4), answer + 4].filter((v) => v !== answer);
+        steps = [`たて${H}と横${W}の最大公約数 = ${g}(m) が、木の間かくの最大値`, `まわりの長さ = (${H}+${W})×2 = ${2 * (H + W)}`, `${2 * (H + W)} ÷ ${g} = ${answer}本`];
+      } else {
+        question = `たて${H}cm、横${W}cmの長方形の板の上に、すきまなく同じ大きさの正方形のタイルをしきつめます。タイルをできるだけ大きくするとき、タイルの1辺の長さは何cmですか。`;
+        answer = g;
+        wrongs = [H, W, Math.max(1, g - 1), g + 1].filter((v) => v !== answer);
+        steps = [`たて${H}と横${W}の最大公約数を求める`, `= ${g}cm`];
+      }
+      return { category: 'divisorMultipleAdvanced5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   function genMultiplesDivisorsWordProblem5() {
     const pat = randInt(0, 5);
     let question, answer, wrongs, steps;
@@ -13153,9 +13232,60 @@
   /* ---------- 空間図形（中1） ---------- */
 
   function genSolidFigure() {
-    const pat = randInt(0, 9);
+    const pat = randInt(0, 14);
     let question, answer, choices, steps;
-    if (pat === 6) {
+    if (pat === 10) {
+      // 角柱・円柱の体積：底面積Sが直接与えられている場合(V=Sh)
+      const isPrism = Math.random() < 0.5;
+      const S = randInt(10, 40);
+      const h = randInt(3, 15);
+      const v = S * h;
+      const shapeName = isPrism ? ['三角柱', '四角柱', '五角柱', '六角柱'][randInt(0, 3)] : '円柱';
+      question = `底面積 ${S} cm²、高さ ${h} cm の${shapeName}の体積は？`;
+      answer = v;
+      choices = buildChoices(v, [S + h, v + S, Math.max(1, v - h)]);
+      steps = [`体積 = 底面積 × 高さ`, `${S} × ${h} = ${v} cm³`];
+    } else if (pat === 11) {
+      // 角錐・円錐の体積：底面積Sが直接与えられている場合(V=1/3 Sh)、割り切れる組合せのみ使う
+      const isPyramid = Math.random() < 0.5;
+      let S, h;
+      do { S = randInt(9, 40); h = randInt(3, 15); } while ((S * h) % 3 !== 0);
+      const v = (S * h) / 3;
+      const shapeName = isPyramid ? ['三角錐', '四角錐', '五角錐', '六角錐'][randInt(0, 3)] : '円錐';
+      question = `底面積 ${S} cm²、高さ ${h} cm の${shapeName}の体積は？`;
+      answer = v;
+      choices = buildChoices(v, [S * h, v + S, Math.max(1, v - h)]);
+      steps = [`体積 = (1/3) × 底面積 × 高さ`, `${S} × ${h} ÷ 3 = ${v} cm³`];
+    } else if (pat === 12) {
+      // 円錐の体積：母線と底面の半径から、ピタゴラスの定理で高さを求めてから計算(π形式)
+      const conePairs = [
+        { r: 3, l: 5, h: 4 }, { r: 6, l: 10, h: 8 }, { r: 8, l: 10, h: 6 },
+        { r: 9, l: 15, h: 12 }, { r: 12, l: 15, h: 9 }, { r: 5, l: 13, h: 12 }, { r: 12, l: 13, h: 5 },
+      ];
+      const c = conePairs[randInt(0, conePairs.length - 1)];
+      const v = (c.r * c.r * c.h) / 3;
+      question = `底面の半径 ${c.r} cm、母線の長さ ${c.l} cm の円錐の体積は？`;
+      answer = `${v}π`;
+      choices = piCh(v);
+      steps = [`高さ = √(${c.l}² − ${c.r}²) = √${c.l * c.l - c.r * c.r} = ${c.h} cm（三平方の定理）`, `体積 = (1/3)πr²h = (1/3) × π × ${c.r}² × ${c.h} = ${v}π cm³`];
+    } else if (pat === 13) {
+      // 円柱の表面積：S = 底面積×2 + 側面積(2πr×h)
+      const r = randInt(2, 12), h = randInt(3, 20);
+      const v = 2 * r * r + 2 * r * h;
+      question = `底面の半径 ${r} cm、高さ ${h} cm の円柱の表面積は？`;
+      answer = `${v}π`;
+      choices = piCh(v);
+      steps = [`底面積×2 = πr²×2 = ${2 * r * r}π cm²`, `側面積 = 2πr×h = ${2 * r}π×${h} = ${2 * r * h}π cm²`, `表面積 = ${2 * r * r}π + ${2 * r * h}π = ${v}π cm²`];
+    } else if (pat === 14) {
+      // 円錐の表面積：S = 底面積(πr²) + 側面積(πrl、l=母線)
+      const r = randInt(2, 12);
+      const l = randInt(r + 2, r + 20);
+      const v = r * r + r * l;
+      question = `底面の半径 ${r} cm、母線の長さ ${l} cm の円錐の表面積は？`;
+      answer = `${v}π`;
+      choices = piCh(v);
+      steps = [`底面積 = πr² = ${r * r}π cm²`, `側面積 = π × 母線 × 半径 = π × ${l} × ${r} = ${r * l}π cm²`, `表面積 = ${r * r}π + ${r * l}π = ${v}π cm²`];
+    } else if (pat === 6) {
       // 立体の名前あてクイズ
       const solids = [
         { name: '円錐', desc: '底面が円で、側面が曲面になっていて、頂点が1つある立体' },
@@ -14231,6 +14361,9 @@
   // 新ステータス「HP」も+10稼げる。
   const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'eqWordProblemAdv1', 'simulEqWordProblem2', 'simulEqWordProblemAdv2', 'quadEqWordProblem3'];
   const WORD_PROBLEM_FIXED_MP = 50;
+  // 約数と倍数：中学入試レベル(小5)は、文章題グループには入れず(HPは付与しない)、
+  // 勝利報酬のMPだけ学年に関わらず固定20とする。
+  const DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP = 20;
   const WORD_PROBLEM_HP_GAIN = 10;
   const WORD_PROBLEM_HP_GAIN_MIDDLE = 20;
   function wordProblemHpGainForGrade_(grade) {
@@ -15647,7 +15780,7 @@
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
       // ボーナスは10MPで、2倍の比率は維持)。
-      const rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
+      const rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : catId === 'divisorMultipleAdvanced5' ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
       // ボン・ミスコの呪いにかかっている間は、どんな組み合わせでもMP報酬が上限
       // BONMISUKO_CURSE_MP_CAPに制限される。
       const basePoints = state.cursed ? Math.min(rawBasePoints, BONMISUKO_CURSE_MP_CAP) : rawBasePoints;
