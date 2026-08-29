@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828e';
+  var APP_BUILD_ = '20260828f';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -13495,7 +13495,7 @@
       let digits, evenDigits, oddDigits;
       do {
         const pool = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3);
-        digits = pool;
+        digits = pool.sort((a, b) => a - b);
         evenDigits = digits.filter(d => d % 2 === 0);
         oddDigits = digits.filter(d => d % 2 !== 0);
       } while (evenDigits.length === 0 || oddDigits.length === 0);
