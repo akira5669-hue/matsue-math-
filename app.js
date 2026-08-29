@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828a';
+  var APP_BUILD_ = '20260828b';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2307,6 +2307,7 @@
     { id: 'decDivRemainder5', label: '小数のわり算：あまり・がい数（小5）', gen: genDecDivRemainder5, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'decWordProblem5', label: '小数の文章題（小5）',                 gen: genDecWordProblem5, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'speedRate5',      label: '単位量あたりの大きさ・速さ（小5）',   gen: genSpeedRate5,      defaultOff: true },
+    { id: 'speedCompare5',   label: '速さの計算（基本・標準）（小5）',     gen: genSpeedCompare5,   defaultOff: true , addedDate: '2026-08-29' },
     { id: 'speedApp5',       label: '速さの計算の応用（小5）',             gen: genSpeedApp5,       defaultOff: true , addedDate: '2026-08-08' },
     { id: 'unitRateWordProblem5', label: '単位量あたりの大きさの文章題（小5）', gen: genUnitRateWordProblem5, defaultOff: true , addedDate: '2026-08-03' },
     { id: 'timeFraction5',   label: '時間と分数（小5）',                   gen: genTimeFraction5,   defaultOff: true , addedDate: '2026-08-03' },
@@ -9282,6 +9283,65 @@
   }
 
   // 単位量あたりの大きさ・速さ（小5）
+  // 速さの計算(基本・標準)（小5）：km⇄mの単位換算を伴う道のり・時間・速さの
+  // 基本計算、複数の人/乗り物の速さを比べていちばん速い/おそいものを答える
+  function genSpeedCompare5() {
+    const pat = randInt(0, 1);
+    if (pat === 0) {
+      const sub = randInt(0, 2);
+      let question, answer, wrongs, steps;
+      if (sub === 0) {
+        // 道のり(km単位の速さ×時間) 例: 時速50kmの自動車は8時間で何km走るか
+        const v = randInt(2, 9) * 10;
+        const t = randInt(2, 9);
+        answer = v * t;
+        question = `時速${v}kmの自動車は、${t}時間で何km走りますか。`;
+        wrongs = [v + t, Math.max(1, answer - v), answer + v].filter((x) => x !== answer);
+        steps = [`道のり = 速さ × 時間`, `${v} × ${t} = ${answer}`];
+      } else if (sub === 1) {
+        // 分速(km→mの換算が必要) 例: 1.2kmの道のりを20分間で歩く人の速さは分速何mか
+        const minutes = randInt(1, 4) * 10;
+        const speedPerMin = randInt(4, 9) * 10;
+        const meters = speedPerMin * minutes;
+        const km = meters / 1000;
+        question = `${km}kmの道のりを${minutes}分間で歩く人の速さは、分速何mですか。`;
+        answer = speedPerMin;
+        wrongs = [meters, speedPerMin + 10, Math.max(1, speedPerMin - 10)].filter((x) => x !== answer);
+        steps = [`${km}km = ${meters}m`, `速さ = 道のり ÷ 時間`, `${meters} ÷ ${minutes} = ${answer}`];
+      } else {
+        // 秒速(距離・時間とも秒/mそのまま) 例: 500mの道のりを40秒で走る自動車の速さは秒速何mか
+        const t = randInt(20, 60);
+        const v = randInt(5, 20);
+        const d = v * t;
+        question = `${d}mの道のりを${t}秒で走る自動車の速さは、秒速何mですか。`;
+        answer = v;
+        wrongs = [d, v + 5, Math.max(1, v - 5)].filter((x) => x !== answer);
+        steps = [`速さ = 道のり ÷ 時間`, `${d} ÷ ${t} = ${answer}`];
+      }
+      return { category: 'speedCompare5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 4人(4台)の速さを比べて、いちばん速い/おそいものを答える
+      const names = shuffle(['A', 'B', 'C', 'D']);
+      let entries;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        entries = names.map((name) => ({ name, d: randInt(50, 400), t: randInt(10, 60) }));
+        const ratios = entries.map((e) => e.d / e.t);
+        if (new Set(ratios.map((r) => r.toFixed(4))).size === 4) break;
+      }
+      const sorted = entries.slice().sort((a, b) => (b.d / b.t) - (a.d / a.t));
+      const askFastest = Math.random() < 0.5;
+      const target = askFastest ? sorted[0] : sorted[3];
+      const tableHtml = `<table class="q-table"><tbody>` +
+        `<tr><th></th>${entries.map((e) => `<th>${e.name}</th>`).join('')}</tr>` +
+        `<tr><th>道のり(m)</th>${entries.map((e) => `<td>${e.d}</td>`).join('')}</tr>` +
+        `<tr><th>時間(秒)</th>${entries.map((e) => `<td>${e.t}</td>`).join('')}</tr>` +
+        `</tbody></table>`;
+      const question = `上の表は、A〜Dの4人が走った道のりとかかった時間を表したものです。いちばん${askFastest ? '速い' : 'おそい'}人はだれですか。`;
+      const answer = target.name;
+      return { category: 'speedCompare5', question, questionHtml: tableHtml + `<span style="display:block;font-size:20px">${escHtml(question)}</span>`, answer, choices: shuffle(names), steps: [`それぞれの速さ = 道のり ÷ 時間 で比べる`, `= ${answer}さん`] };
+    }
+  }
+
   function genSpeedRate5() {
     const pat = randInt(0, 2);
     const v = randInt(2, 9) * 10;
