@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828f';
+  var APP_BUILD_ = '20260828g';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -9044,6 +9044,60 @@
     return { category: 'arrangeCombine6', question, answer, choices, steps };
   }
 
+  // 正方形をn個(n=1,2,3)1列に並べた見本図(マッチ棒パターンの説明用)
+  function squaresRowSampleSvg_() {
+    const unit = 16;
+    let x = 10;
+    const parts = [];
+    for (let n = 1; n <= 3; n++) {
+      let cells = '';
+      for (let i = 0; i < n; i++) {
+        cells += `<rect x="${x + i * unit}" y="10" width="${unit}" height="${unit}" fill="none" stroke="#1c2127" stroke-width="1.5"/>`;
+      }
+      parts.push(cells);
+      parts.push(`<text x="${x + (n * unit) / 2}" y="42" font-size="10" text-anchor="middle" fill="#555">${n}こ</text>`);
+      x += n * unit + 16;
+    }
+    const w = x + 4;
+    return `<svg width="${w}" height="50" viewBox="0 0 ${w} 50" style="display:block;margin:0 auto 8px">${parts.join('')}</svg>`;
+  }
+  // 正方形の板をn段(n=1,2,3)階段状に並べた見本図(1段めn枚+右列n-1枚の形)
+  function staircaseSampleSvg_() {
+    const unit = 14;
+    let x = 10;
+    const parts = [];
+    const baseY = 10 + 2 * unit;
+    for (let n = 1; n <= 3; n++) {
+      let cells = '';
+      for (let i = 0; i < n; i++) {
+        cells += `<rect x="${x + i * unit}" y="${baseY}" width="${unit}" height="${unit}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`;
+      }
+      for (let i = 1; i < n; i++) {
+        cells += `<rect x="${x + (n - 1) * unit}" y="${baseY - i * unit}" width="${unit}" height="${unit}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`;
+      }
+      parts.push(cells);
+      parts.push(`<text x="${x + (n * unit) / 2}" y="${baseY + unit + 14}" font-size="10" text-anchor="middle" fill="#555">${n}段め</text>`);
+      x += n * unit + 18;
+    }
+    const w = x + 4;
+    const h = baseY + unit + 22;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;margin:0 auto 8px">${parts.join('')}</svg>`;
+  }
+  // たてh・横wの長方形を3個横につないだ見本図(変わり方調べ用、実際のn個ではなく
+  // 3個固定のミニ見本で「つなぎ方」を示す)
+  function rectChainSampleSvg_(h, w) {
+    const unitPx = 12;
+    const rw = w * unitPx, rh = h * unitPx;
+    const count = 3;
+    let cells = '';
+    for (let i = 0; i < count; i++) {
+      cells += `<rect x="${10 + i * rw}" y="10" width="${rw}" height="${rh}" fill="none" stroke="#1c2127" stroke-width="1.5"/>`;
+    }
+    const totalW = 10 + count * rw + 10;
+    const totalH = 10 + rh + 10;
+    return `<svg width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" style="display:block;margin:0 auto 8px">${cells}</svg>`;
+  }
+
   // 関係に注目して：規則性（小6）。図形を規則的に並べていったときの、
   // 個数どうしの関係(比例ではなく、△=□×a+bの一次関係)を見つけて計算する。
   function genPatternRelation6() {
@@ -9065,7 +9119,7 @@
         wrongs = [x + 1, Math.max(1, x - 1), Math.round(y / 4)].filter((v) => v !== answer);
         steps = [`4 + 3 × (□ − 1) = ${y}`, `□ = (${y} − 4) ÷ 3 + 1 = ${answer}`];
       }
-      return { category: 'patternRelation6', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+      return { category: 'patternRelation6', question, questionHtml: squaresRowSampleSvg_() + `<span style="display:block">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
     } else {
       // 正方形の板をx段の階段状に並べたときの、板の数(y=2x-1、奇数個)
       const askY = Math.random() < 0.5;
@@ -9082,7 +9136,7 @@
         wrongs = [y, x + 1, Math.max(1, x - 1)].filter((v) => v !== answer);
         steps = [`1 + 2 × (□ − 1) = ${y}`, `□ = (${y} − 1) ÷ 2 + 1 = ${answer}`];
       }
-      return { category: 'patternRelation6', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+      return { category: 'patternRelation6', question, questionHtml: staircaseSampleSvg_() + `<span style="display:block">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
     }
   }
 
@@ -9183,7 +9237,7 @@
       question = `たてが${h}cm、横が${w}cmの長方形を、下の図のように横に${n}こつないでいきます。まわりの長さは何cmですか。`;
       wrongs = [2 * h + 2 * w * n + 2, h * w * n, answer + 2 * w].filter((v) => v !== answer);
       steps = [`つないだ形のたては${h}cm、横は${w}×${n}=${w * n}cm`, `(${h}+${w * n})×2 = ${answer}`];
-      return { category: 'functionTable4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+      return { category: 'functionTable4', question, questionHtml: rectChainSampleSvg_(h, w) + `<span style="display:block">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
     }
   }
 
