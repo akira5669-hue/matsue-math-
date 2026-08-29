@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827z';
+  var APP_BUILD_ = '20260828a';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2297,6 +2297,7 @@
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'volumeRect5',     label: '直方体・立方体の体積（小5）',         gen: genVolumeRect5,     defaultOff: true , addedDate: '2026-08-29' },
     { id: 'evenOdd5',        label: '偶数と奇数（小5）',                   gen: genEvenOdd5,        defaultOff: true , addedDate: '2026-08-02' },
     { id: 'fracAddSub5',     label: '分数のたし算・ひき算（小5）',         gen: genFracAddSub5,     defaultOff: true },
     { id: 'decFracAddSub5',  label: '小数と分数のたし算・ひき算（小5）',   gen: genDecFracAddSub5,  defaultOff: true , addedDate: '2026-08-01' },
@@ -9159,6 +9160,127 @@
     }
   }
 
+  // 直方体・立方体の体積（小5）：基本公式、面積と2辺から残りの辺、
+  // 直方体を組み合わせた(たし算・ひき算)複合図形の体積
+  function genVolumeRect5() {
+    const pat = randInt(0, 5);
+    let question, answer, wrongs, steps;
+    if (pat === 4) {
+      // 大きな体積の単位(m³)、cm³との換算(1m³=1000000cm³)
+      const sub = randInt(0, 2);
+      if (sub === 0) {
+        const h = randInt(2, 9), w = randInt(2, 9), d = randInt(2, 9);
+        answer = h * w * d;
+        question = `たてが${h}m、横が${w}m、高さが${d}mの直方体の体積は何m³ですか。`;
+        wrongs = [h * w, answer * 1000000, answer + h].filter((v) => v !== answer);
+        steps = [`たて × 横 × 高さ`, `${h} × ${w} × ${d} = ${answer}`];
+      } else if (sub === 1) {
+        const m3 = randInt(2, 20);
+        answer = m3 * 1000000;
+        question = `体積が${m3}m³の物は、何cm³ですか。`;
+        wrongs = [m3 * 100, m3 * 10000, m3 * 1000].filter((v) => v !== answer);
+        steps = [`1m³ = 1000000cm³`, `${m3} × 1000000 = ${answer}`];
+      } else {
+        const s = randInt(2, 9);
+        answer = s * s * s;
+        question = `1辺が${s}mの立方体の体積は何m³ですか。`;
+        wrongs = [s * s, s * 3, answer + s].filter((v) => v !== answer);
+        steps = [`1辺 × 1辺 × 1辺`, `${s} × ${s} × ${s} = ${answer}`];
+      }
+      return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 5) {
+      // 容積：厚さのある板でふたのない入れ物を作ったときの内側の体積、L⇔cm³の換算
+      const sub = randInt(0, 1);
+      if (sub === 0) {
+        const t = 1;
+        const outerD = randInt(10, 30), outerW = randInt(10, 30), outerH = randInt(10, 30);
+        const innerD = outerD - 2 * t, innerW = outerW - 2 * t, innerH = outerH - t;
+        const capacity = innerD * innerW * innerH;
+        const askLiters = Math.random() < 0.5 && capacity % 1000 === 0;
+        question = `厚さ${t}cmの板で、たて${outerD}cm、横${outerW}cm、高さ${outerH}cmのふたのない直方体の入れ物を作りました。この入れ物の容積は何${askLiters ? 'L' : 'cm³'}ですか。`;
+        answer = askLiters ? capacity / 1000 : capacity;
+        const outerVolume = outerD * outerW * outerH;
+        wrongs = [
+          askLiters ? outerVolume / 1000 : outerVolume,
+          askLiters ? answer + 1 : answer + t,
+          askLiters ? Math.max(1, answer - 1) : answer - t,
+          answer + 2,
+          Math.max(1, answer - 2),
+        ].filter((v) => v !== answer && v > 0 && Number.isInteger(v));
+        steps = [`内側のたて = ${outerD} − ${t}×2 = ${innerD}`, `内側の横 = ${outerW} − ${t}×2 = ${innerW}`, `内側の高さ(ふたなし) = ${outerH} − ${t} = ${innerH}`, `${innerD} × ${innerW} × ${innerH} = ${capacity}cm³` + (askLiters ? ` = ${answer}L` : '')];
+        return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+      } else {
+        const toLiters = Math.random() < 0.5;
+        if (toLiters) {
+          const liters = randInt(1, 30);
+          const cm3 = liters * 1000;
+          question = `${cm3}cm³は何Lですか。`;
+          answer = liters;
+          wrongs = [liters * 10, Math.max(1, Math.round(liters / 10)), liters + 1].filter((v) => v !== answer);
+          steps = [`1L = 1000cm³`, `${cm3} ÷ 1000 = ${answer}`];
+        } else {
+          const liters = randInt(1, 30);
+          answer = liters * 1000;
+          question = `${liters}Lは何cm³ですか。`;
+          wrongs = [liters * 100, liters, answer + 1000].filter((v) => v !== answer);
+          steps = [`1L = 1000cm³`, `${liters} × 1000 = ${answer}`];
+        }
+        return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+      }
+    } else if (pat === 0) {
+      // 基本：直方体または立方体の体積
+      const isCube = Math.random() < 0.35;
+      if (isCube) {
+        const s = randInt(2, 12);
+        answer = s * s * s;
+        question = `1辺が${s}cmの立方体の体積は何cm³ですか。`;
+        wrongs = [s * s, s * 3, answer + s * s].filter((v) => v !== answer);
+        steps = [`立方体の体積 = 1辺 × 1辺 × 1辺`, `${s} × ${s} × ${s} = ${answer}`];
+      } else {
+        const h = randInt(2, 15), w = randInt(2, 15), d = randInt(2, 15);
+        answer = h * w * d;
+        question = `たて${h}cm、横${w}cm、高さ${d}cmの直方体の体積は何cm³ですか。`;
+        wrongs = [h * w, h * w * d + h * w, 2 * (h + w) * d].filter((v) => v !== answer);
+        steps = [`直方体の体積 = たて × 横 × 高さ`, `${h} × ${w} × ${d} = ${answer}`];
+      }
+      return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 体積と2辺から残りの1辺を求める
+      const h = randInt(2, 12), w = randInt(2, 12), d = randInt(2, 12);
+      const volume = h * w * d;
+      const askWhich = ['たて', '横', '高さ'][randInt(0, 2)];
+      const known = { たて: h, 横: w, 高さ: d };
+      const targetVal = known[askWhich];
+      delete known[askWhich];
+      const knownEntries = Object.entries(known);
+      question = `体積が${volume}cm³で、${knownEntries[0][0]}が${knownEntries[0][1]}cm、${knownEntries[1][0]}が${knownEntries[1][1]}cmの直方体があります。${askWhich}は何cmですか。`;
+      answer = targetVal;
+      wrongs = [answer + 1, Math.max(1, answer - 1), volume].filter((v) => v !== answer);
+      steps = [`${askWhich} = 体積 ÷ (${knownEntries[0][0]} × ${knownEntries[1][0]})`, `${volume} ÷ (${knownEntries[0][1]} × ${knownEntries[1][1]}) = ${answer}`];
+      return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      // 2つの直方体を組み合わせた(たし算)立体の体積
+      const h1 = randInt(2, 10), w1 = randInt(2, 10), d1 = randInt(2, 10);
+      const h2 = randInt(2, 10), w2 = randInt(2, 10), d2 = randInt(2, 10);
+      const v1 = h1 * w1 * d1, v2 = h2 * w2 * d2;
+      question = `たて${h1}cm、横${w1}cm、高さ${d1}cmの直方体と、たて${h2}cm、横${w2}cm、高さ${d2}cmの直方体を組み合わせた立体があります。2つの体積をあわせると、全体の体積は何cm³ですか。`;
+      answer = v1 + v2;
+      wrongs = [v1, v2, answer + h1].filter((v) => v !== answer);
+      steps = [`1つ目の体積 = ${h1}×${w1}×${d1} = ${v1}`, `2つ目の体積 = ${h2}×${w2}×${d2} = ${v2}`, `${v1} + ${v2} = ${answer}`];
+      return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 大きい直方体から小さい直方体をくりぬいた(ひき算)立体の体積
+      const h = randInt(6, 15), w = randInt(6, 15), d = randInt(6, 15);
+      const nh = randInt(1, h - 2), nw = randInt(1, w - 2), nd = randInt(1, d - 2);
+      const big = h * w * d, notch = nh * nw * nd;
+      question = `たて${h}cm、横${w}cm、高さ${d}cmの直方体から、たて${nh}cm、横${nw}cm、高さ${nd}cmの小さい直方体をくりぬいた立体があります。残った部分の体積は何cm³ですか。`;
+      answer = big - notch;
+      wrongs = [big, big + notch, answer + nh].filter((v) => v !== answer);
+      steps = [`大きい直方体の体積 = ${h}×${w}×${d} = ${big}`, `くりぬいた直方体の体積 = ${nh}×${nw}×${nd} = ${notch}`, `${big} − ${notch} = ${answer}`];
+      return { category: 'volumeRect5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   // 単位量あたりの大きさ・速さ（小5）
   function genSpeedRate5() {
     const pat = randInt(0, 2);
@@ -13806,7 +13928,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4', 'volumeRect5'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
