@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827r';
+  var APP_BUILD_ = '20260827s';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -5962,11 +5962,12 @@
         candidates = [`${resultCount / 10}${b.label}`, `${resultCount * 10}${b.label}`, `${resultCount + k}${b.label}`];
         steps = [`${count} × ${k} = ${resultCount}`, `= ${answer}`];
       } else {
-        const bigCount = count * 10;
-        question = `${bigCount}${b.label} を 10分の1にすると？`;
+        const divK = [10, 100][randInt(0, 1)];
+        const bigCount = count * divK;
+        question = `${bigCount}${b.label} を ${divK}分の1にすると？`;
         answer = `${count}${b.label}`;
-        candidates = [`${count * 10}${b.label}`, `${count + 1}${b.label}`, `${Math.max(1, count - 1)}${b.label}`];
-        steps = [`${bigCount} ÷ 10 = ${count}`, `= ${answer}`];
+        candidates = [`${bigCount}${b.label}`, `${count + 1}${b.label}`, `${Math.max(1, count - 1)}${b.label}`];
+        steps = [`${bigCount} ÷ ${divK} = ${count}`, `= ${answer}`];
       }
       return { category: 'largeNum4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
     } else if (pat === 3) {
