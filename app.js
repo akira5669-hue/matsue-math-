@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828b';
+  var APP_BUILD_ = '20260828c';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2324,9 +2324,13 @@
     { id: 'average5',        label: '平均（小5）',                         gen: genAverage5,        defaultOff: true },
     { id: 'averageWordProblemAdvanced5', label: '平均の文章題：応用（小5）', gen: genAverageWordProblemAdvanced5, defaultOff: true , addedDate: '2026-08-11' },
     { id: 'circumference5',  label: '円周（小5）',                         gen: genCircumference5,  defaultOff: true },
+    { id: 'figureAreaInverse5', label: '面積の応用：高さや対角線を求める（小5）', gen: genFigureAreaInverse5, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'prismCylinder5',  label: '角柱・円柱（小5）',                   gen: genPrismCylinder5,  defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'baseAmountPercent5', label: 'もとにする大きさに注目して（小5）', gen: genBaseAmountPercent5, defaultOff: true , addedDate: '2026-08-29' },
 
     // ---------- 小6 ----------
     { id: 'fracMulDiv6',     label: '分数のかけ算・わり算（小6）',         gen: genFracMulDiv6,     defaultOff: true },
+    { id: 'symmetry6',       label: '線対称・点対称（小6）',               gen: genSymmetry6,       defaultOff: true , addedDate: '2026-08-29' },
     { id: 'fracDecIntMulDiv6', label: '分数、小数、整数のまじったかけ算・わり算（小6）', gen: genFracDecIntMulDiv6, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'fracWordProblem6', label: '分数のかけ算・わり算の文章題（小6）', gen: genFracWordProblem6, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'ratioWordProblem6', label: '比の文章題（小6）',                  gen: genRatioWordProblem6, defaultOff: true , addedDate: '2026-08-02' },
@@ -2334,6 +2338,7 @@
     { id: 'scale6',          label: '拡大図と縮図（小6）',                 gen: genScale6,          defaultOff: true },
     { id: 'dataValues6',     label: 'データの調べ方（小6）',               gen: genDataValues6,     defaultOff: true },
     { id: 'arrangeCombine6', label: '並べ方と組み合わせ方（小6）',        gen: genArrangeCombine6, defaultOff: true },
+    { id: 'patternRelation6', label: '関係に注目して：規則性（小6）',     gen: genPatternRelation6, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'circleArea6',     label: '円の面積（小6）',                     gen: genCircleArea6,     defaultOff: true },
     { id: 'circleSector6',   label: '円とおうぎ形（小6）',                 gen: genCircleSector6,   defaultOff: true , addedDate: '2026-08-11' },
     { id: 'speedFrac6',      label: '分数を含んだ速さの計算（小6）',       gen: genSpeedFrac6,      defaultOff: true , addedDate: '2026-08-12' },
@@ -8973,8 +8978,14 @@
   }
 
   // 並べ方と組み合わせ方（小6）
+  const COMBINE_THEMES_ = [
+    { obj: '人', verb: '選ぶ組み合わせ' },
+    { obj: '種類のコイン', verb: '選んで組み合わせてできる金額' },
+    { obj: '種類のくだもの', verb: '選んで、くだものかごをつくる組み合わせ' },
+    { obj: '色の色えん筆', verb: '選ぶ組み合わせ' },
+  ];
   function genArrangeCombine6() {
-    const pat = randInt(0, 1);
+    const pat = randInt(0, 2);
     let question, answer, wrongs, steps;
     if (pat === 0) {
       const n = randInt(3, 5);
@@ -8985,21 +8996,79 @@
       answer = answerVal;
       wrongs = [n * n, Math.max(1, Math.round(answerVal / n)), answerVal + n, Math.max(1, answerVal - n)];
       steps = [`${parts.join(' × ')} = ${answerVal}通り`];
-    } else {
+    } else if (pat === 1) {
+      const isTournament = Math.random() < 0.3;
       const n = randInt(4, 6);
-      const r = (n >= 5 && Math.random() < 0.5) ? 3 : 2;
+      const r = isTournament ? 2 : ((n >= 5 && Math.random() < 0.5) ? 3 : 2);
       let numerator = 1, denom = 1;
       for (let i = 0; i < r; i++) { numerator *= (n - i); denom *= (i + 1); }
       const answerVal = numerator / denom;
-      question = `${n}人の中から ${r}人を選ぶ組み合わせは何通り？`;
+      if (isTournament) {
+        question = `${n}チームで、どのチームとも1回ずつ試合をする総当たり戦をします。試合は全部で何通りありますか。`;
+      } else {
+        const t = COMBINE_THEMES_[randInt(0, COMBINE_THEMES_.length - 1)];
+        question = `${n}${t.obj}の中から ${r}${t.obj}を${t.verb}は何通り？`;
+      }
       answer = answerVal;
       wrongs = [numerator, answerVal + 1, Math.max(1, answerVal - 1), n * r];
       steps = r === 2
         ? [`${n} × ${n - 1} ÷ 2 = ${answerVal}通り`]
         : [`${n} × ${n - 1} × ${n - 2} ÷ (3 × 2 × 1) = ${answerVal}通り`];
+    } else {
+      // コインの表裏の出方(2^n通り)
+      const n = randInt(2, 4);
+      const answerVal = Math.pow(2, n);
+      question = `コインを${n}枚投げたとき、表・裏の出方は全部で何通りありますか。`;
+      answer = answerVal;
+      wrongs = [n * 2, Math.pow(2, n - 1), Math.pow(2, n + 1)].filter((v) => v !== answer);
+      const parts = [];
+      for (let i = 0; i < n; i++) parts.push(2);
+      steps = [`1枚ごとに表・裏の2通り`, `${parts.join(' × ')} = ${answerVal}通り`];
     }
     const choices = buildChoices(answer, wrongs);
     return { category: 'arrangeCombine6', question, answer, choices, steps };
+  }
+
+  // 関係に注目して：規則性（小6）。図形を規則的に並べていったときの、
+  // 個数どうしの関係(比例ではなく、△=□×a+bの一次関係)を見つけて計算する。
+  function genPatternRelation6() {
+    const pat = randInt(0, 1);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 1辺1cmの正方形をx個1列に並べたときの、使うマッチ棒の数(y=3x+1)
+      const askY = Math.random() < 0.5;
+      const x = randInt(1, 50);
+      const y = 3 * x + 1;
+      if (askY) {
+        question = `1辺が1cmの正方形を、下の図のように1列に${x}個並べていきます。このとき、使うマッチ棒の数は何本になりますか。`;
+        answer = y;
+        wrongs = [4 * x, y + 3, Math.max(1, y - 3)].filter((v) => v !== answer);
+        steps = [`正方形が1個増えるごとに、マッチ棒は3本ずつ増える`, `4 + 3 × (${x} − 1) = ${answer}`];
+      } else {
+        question = `1辺が1cmの正方形を、下の図のように1列に並べていったところ、マッチ棒を${y}本使いました。正方形はいくつ並べましたか。`;
+        answer = x;
+        wrongs = [x + 1, Math.max(1, x - 1), Math.round(y / 4)].filter((v) => v !== answer);
+        steps = [`4 + 3 × (□ − 1) = ${y}`, `□ = (${y} − 4) ÷ 3 + 1 = ${answer}`];
+      }
+      return { category: 'patternRelation6', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 正方形の板をx段の階段状に並べたときの、板の数(y=2x-1、奇数個)
+      const askY = Math.random() < 0.5;
+      const x = randInt(1, 30);
+      const y = 2 * x - 1;
+      if (askY) {
+        question = `正方形の板を、下の図のように階段状に並べていきます。${x}段めには、板が何枚ありますか。`;
+        answer = y;
+        wrongs = [x, y + 2, Math.max(1, y - 2)].filter((v) => v !== answer);
+        steps = [`段の数が1段増えるごとに、板は2枚ずつ増える(1段めは1枚)`, `1 + 2 × (${x} − 1) = ${answer}`];
+      } else {
+        question = `正方形の板を、下の図のように階段状に並べていったところ、ある段の板の数が${y}枚になりました。それは何段めですか。`;
+        answer = x;
+        wrongs = [y, x + 1, Math.max(1, x - 1)].filter((v) => v !== answer);
+        steps = [`1 + 2 × (□ − 1) = ${y}`, `□ = (${y} − 1) ÷ 2 + 1 = ${answer}`];
+      }
+      return { category: 'patternRelation6', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    }
   }
 
   // 小数のかけ算（小4）：小数×整数
@@ -9717,6 +9786,186 @@
       wrongs = [a + 2, a + 4, Math.max(1, a - 2), Math.max(1, a - 4)].filter(v => v !== answer && v > 0);
       steps = [`面積 = 対角線 × 対角線 ÷ 2 = ${d1} × ${d2} ÷ 2 = ${answer}cm²`];
       return { category: 'figureArea5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
+  // 面積の応用：高さや底辺・対角線を求める（小5）。三角形・ひし形・平行四辺形の
+  // 面積の公式を逆に使い、面積と一方の長さから、もう一方の長さ(高さ等)を求める。
+  function genFigureAreaInverse5() {
+    const shape = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (shape === 0) {
+      // 平行四辺形：面積 = 底辺 × 高さ
+      const base = randInt(2, 20), height = randInt(2, 20);
+      const area = base * height;
+      const askHeight = Math.random() < 0.5;
+      question = `面積が${area}cm²、底辺が${base}cmの平行四辺形があります。高さは何cmですか。`;
+      if (!askHeight) question = `面積が${area}cm²、高さが${height}cmの平行四辺形があります。底辺は何cmですか。`;
+      answer = askHeight ? height : base;
+      wrongs = [answer + 1, Math.max(1, answer - 1), area].filter((v) => v !== answer);
+      steps = [`${askHeight ? '高さ' : '底辺'} = 面積 ÷ ${askHeight ? '底辺' : '高さ'}`, `${area} ÷ ${askHeight ? base : height} = ${answer}`];
+    } else if (shape === 1) {
+      // 三角形：面積 = 底辺 × 高さ ÷ 2
+      const base = 2 * randInt(2, 12), height = randInt(2, 20);
+      const area = (base * height) / 2;
+      const askHeight = Math.random() < 0.5;
+      question = `面積が${area}cm²、底辺が${base}cmの三角形があります。高さは何cmですか。`;
+      if (!askHeight) question = `面積が${area}cm²、高さが${height}cmの三角形があります。底辺は何cmですか。`;
+      answer = askHeight ? height : base;
+      wrongs = [answer + 1, Math.max(1, answer - 1), area].filter((v) => v !== answer);
+      steps = [`${askHeight ? '高さ' : '底辺'} = 面積 × 2 ÷ ${askHeight ? '底辺' : '高さ'}`, `${area} × 2 ÷ ${askHeight ? base : height} = ${answer}`];
+    } else {
+      // ひし形：面積 = 対角線 × 対角線 ÷ 2
+      const d1 = 2 * randInt(2, 15), d2 = randInt(2, 20);
+      const area = (d1 * d2) / 2;
+      const askD2 = Math.random() < 0.5;
+      question = `面積が${area}cm²で、1本の対角線の長さが${askD2 ? d1 : d2}cmのひし形があります。もう1本の対角線の長さは何cmですか。`;
+      answer = askD2 ? d2 : d1;
+      const known = askD2 ? d1 : d2;
+      wrongs = [answer + 1, Math.max(1, answer - 1), area].filter((v) => v !== answer);
+      steps = [`もう1本の対角線 = 面積 × 2 ÷ わかっている対角線`, `${area} × 2 ÷ ${known} = ${answer}`];
+    }
+    return { category: 'figureAreaInverse5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 角柱・円柱（小5）：N角柱の頂点・辺・面の数、角柱/円柱の展開図の側面(長方形)の
+  // 横の長さ(角柱=底面のまわりの長さ、円柱=底面の円周)
+  const PRISM_NAMES_ = [{ n: 3, name: '三角柱' }, { n: 4, name: '四角柱' }, { n: 5, name: '五角柱' }, { n: 6, name: '六角柱' }];
+  function genPrismCylinder5() {
+    const pat = randInt(0, 2);
+    let question, answer, wrongs, candidates, steps;
+    if (pat === 0) {
+      // N角柱の頂点・辺・面の数(頂点=n×2、辺=n×3、面=n+2)
+      const p = PRISM_NAMES_[randInt(0, PRISM_NAMES_.length - 1)];
+      const target = ['頂点', '辺', '面'][randInt(0, 2)];
+      const values = { 頂点: p.n * 2, 辺: p.n * 3, 面: p.n + 2 };
+      answer = values[target];
+      question = `${p.name}の${target}の数はいくつですか。`;
+      wrongs = Object.values(values).filter((v) => v !== answer);
+      wrongs.push(answer + 1, Math.max(1, answer - 1));
+      wrongs = [...new Set(wrongs)].filter((v) => v !== answer);
+      steps = target === '頂点' ? [`頂点の数 = 底面の頂点の数 × 2 = ${p.n} × 2 = ${answer}`]
+        : target === '辺' ? [`辺の数 = 底面の辺の数 × 3 = ${p.n} × 3 = ${answer}`]
+        : [`面の数 = 底面の辺の数 + 2 = ${p.n} + 2 = ${answer}`];
+      return { category: 'prismCylinder5', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 角柱の展開図：側面の長方形の横の長さ(底面のまわりの長さ)
+      const p = PRISM_NAMES_[randInt(0, PRISM_NAMES_.length - 1)];
+      const sides = [];
+      for (let i = 0; i < p.n; i++) sides.push(randInt(2, 9));
+      const h = randInt(3, 15);
+      const perimeter = sides.reduce((s, v) => s + v, 0);
+      question = `底面が1辺${sides.join('cm、')}cmの${p.name}があります。高さが${h}cmのこの${p.name}の展開図をかくと、側面の長方形の横の長さは何cmになりますか。`;
+      answer = perimeter;
+      wrongs = [h, perimeter + sides[0], Math.max(1, perimeter - sides[0])].filter((v) => v !== answer);
+      steps = [`側面の長方形の横の長さ = 底面のまわりの長さ`, `${sides.join(' + ')} = ${answer}`];
+      return { category: 'prismCylinder5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 円柱の展開図：側面の長方形の横の長さ(底面の円周、円周率3.14)
+      const r = randInt(2, 10);
+      const h = randInt(3, 15);
+      const circumference = Math.round(2 * 3.14 * r * 100) / 100;
+      question = `底面の半径が${r}cm、高さが${h}cmの円柱があります。円周率を3.14として、この円柱の展開図の側面の長方形の横の長さは何cmになりますか。`;
+      answer = `${circumference}cm`;
+      candidates = [`${Math.round((circumference + 3.14) * 100) / 100}cm`, `${Math.round((3.14 * r) * 100) / 100}cm`, `${h}cm`];
+      steps = [`側面の長方形の横の長さ = 底面の円周 = 直径 × 円周率`, `${r * 2} × 3.14 = ${answer}`];
+      return { category: 'prismCylinder5', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    }
+  }
+
+  // もとにする大きさに注目して（小5）：増量・軽量化後の量と割合(%)から、
+  // もとにする量(増量・軽量化前の量)を求める(割合の文章題の逆算)。
+  function genBaseAmountPercent5() {
+    const themes = [
+      { obj: 'コーヒー牛にゅう', unit: 'mL', upWord: '増量', downWord: '容量が減' },
+      { obj: 'ポテトチップス', unit: 'g', upWord: '増量', downWord: '軽量化' },
+      { obj: 'スマートフォン', unit: 'g', upWord: '増量', downWord: '軽量化' },
+    ];
+    const t = themes[randInt(0, themes.length - 1)];
+    const isIncrease = Math.random() < 0.5;
+    const base = randInt(2, 50) * 20;
+    const percent = [5, 10, 15, 20, 25, 30, 35, 40][randInt(0, 7)];
+    const delta = (base * percent) / 100;
+    const result = isIncrease ? base + delta : base - delta;
+    const actionWord = isIncrease ? t.upWord : t.downWord;
+    const question = `ある${t.obj}が、${percent}%${actionWord}されました。${actionWord}後の${t.obj}の重さは${result}${t.unit}です。${actionWord}前の${t.obj}の重さは何${t.unit}ですか。`;
+    const answer = base;
+    const wrongs = [result, base + delta, Math.max(1, base - delta), base + 20].filter((v) => v !== answer);
+    const rateStr = isIncrease ? `(1+0.${String(percent).padStart(2, '0')})` : `(1−0.${String(percent).padStart(2, '0')})`;
+    const steps = [
+      `${actionWord}後の量 = もとにする量 × ${rateStr}`,
+      `もとにする量 = ${result} ÷ ${isIncrease ? 1 + percent / 100 : 1 - percent / 100} = ${answer}`,
+    ];
+    return { category: 'baseAmountPercent5', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 線対称・点対称（小6）：正多角形の対称の軸の本数、点対称かどうか、
+  // 対応する辺・角の性質(線対称・点対称とも対応する辺の長さ・角の大きさは等しい)、
+  // 基本図形(四角形・三角形)が線対称/点対称かどうかの正誤判定
+  const REGULAR_POLYGONS_ = [
+    { n: 3, name: '正三角形' }, { n: 4, name: '正方形' }, { n: 5, name: '正五角形' },
+    { n: 6, name: '正六角形' }, { n: 8, name: '正八角形' },
+  ];
+  const SYMMETRY_SHAPE_FACTS_ = [
+    { name: '台形', line: false, point: false },
+    { name: '平行四辺形', line: false, point: true },
+    { name: 'ひし形', line: true, point: true },
+    { name: '長方形', line: true, point: true },
+    { name: '正方形', line: true, point: true },
+    { name: '二等辺三角形', line: true, point: false },
+    { name: '正三角形', line: true, point: false },
+    { name: '直角三角形', line: false, point: false },
+  ];
+  function genSymmetry6() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, candidates, steps;
+    if (pat === 0) {
+      // 正多角形の対称の軸の本数(=n)
+      const p = REGULAR_POLYGONS_[randInt(0, REGULAR_POLYGONS_.length - 1)];
+      question = `${p.name}には、対称の軸は何本ありますか。`;
+      answer = p.n;
+      wrongs = [p.n + 1, Math.max(1, p.n - 1), p.n * 2].filter((v) => v !== answer);
+      steps = [`正多角形の対称の軸の本数は、辺の数と同じ`, `${p.name}は${p.n}角形 → ${answer}本`];
+      return { category: 'symmetry6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 正多角形が点対称かどうか(辺の数が偶数のときだけ点対称)
+      const p = REGULAR_POLYGONS_[randInt(0, REGULAR_POLYGONS_.length - 1)];
+      const isPointSym = p.n % 2 === 0;
+      question = `${p.name}は点対称な図形ですか。`;
+      answer = isPointSym ? '点対称である' : '点対称ではない';
+      const allOptions = ['点対称である', '点対称ではない', '線対称である', '線対称ではない'];
+      steps = [`正多角形は、辺の数が偶数のときだけ点対称になる`, `${p.name}は辺の数が${p.n % 2 === 0 ? '偶数' : '奇数'} → ${answer}`];
+      return { category: 'symmetry6', question, answer, choices: shuffle(allOptions), steps };
+    } else if (pat === 2) {
+      // 対応する辺・角の性質(値は等しい)
+      const isLine = Math.random() < 0.5;
+      const isLength = Math.random() < 0.5;
+      const val = isLength ? randInt(3, 30) : randInt(20, 160);
+      const label = isLength ? `辺${['AB', 'CD', 'EF', 'GH'][randInt(0, 3)]}` : `角${['A', 'B', 'C', 'D'][randInt(0, 3)]}`;
+      const corrLabel = isLength ? `辺${['IJ', 'KL', 'MN'][randInt(0, 2)]}` : `角${['E', 'F', 'G'][randInt(0, 2)]}`;
+      const unit = isLength ? 'cm' : '度';
+      question = `${isLine ? '線対称' : '点対称'}な図形で、${label}に対応する${isLength ? '辺' : '角'}は${corrLabel}です。${label}が${val}${unit}のとき、${corrLabel}は何${unit}ですか。`;
+      answer = val;
+      wrongs = [val + 10, Math.max(1, val - 10), val + 5].filter((v) => v !== answer);
+      steps = [`${isLine ? '線対称' : '点対称'}な図形では、対応する${isLength ? '辺の長さ' : '角の大きさ'}は等しい`, `${label} = ${corrLabel} = ${answer}${unit}`];
+      return { category: 'symmetry6', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 基本図形が線対称/点対称かどうかの正誤判定
+      const trueStatements = [];
+      const falseStatements = [];
+      SYMMETRY_SHAPE_FACTS_.forEach((s) => {
+        (s.line ? trueStatements : falseStatements).push(`${s.name}は、線対称な図形である。`);
+        (!s.line ? trueStatements : falseStatements).push(`${s.name}は、線対称な図形ではない。`);
+        (s.point ? trueStatements : falseStatements).push(`${s.name}は、点対称な図形である。`);
+        (!s.point ? trueStatements : falseStatements).push(`${s.name}は、点対称な図形ではない。`);
+      });
+      const askTrue = Math.random() < 0.5;
+      const pool = askTrue ? trueStatements : falseStatements;
+      const otherPool = askTrue ? falseStatements : trueStatements;
+      answer = pool[randInt(0, pool.length - 1)];
+      question = `次のうち、${askTrue ? '正しい文' : 'まちがっている文'}はどれですか。`;
+      candidates = shuffle(otherPool.slice()).slice(0, 3);
+      return { category: 'symmetry6', question, answer, choices: buildChoicesFromList(answer, candidates), steps: [`線対称・点対称の性質にあてはめて考える`, `= ${answer}`] };
     }
   }
 
@@ -13988,7 +14237,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4', 'volumeRect5'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4', 'volumeRect5', 'figureAreaInverse5', 'baseAmountPercent5', 'patternRelation6'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
