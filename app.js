@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260827u';
+  var APP_BUILD_ = '20260827x';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2286,7 +2286,10 @@
     { id: 'fracType4',         label: '真分数・仮分数・帯分数（小4）',     gen: genFracType4, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'sumDiffWordProblem4', label: '文章題特訓：和差算（小4）',       gen: genSumDiffWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'lineGraphRead4',    label: '折れ線グラフの読み取り（小4）',     gen: genLineGraphRead4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'decPlaceValue4',    label: '小数の表し方・しくみ（小4）',       gen: genDecPlaceValue4, defaultOff: true , addedDate: '2026-08-29' },
     { id: 'crossTab4',         label: '整理のしかた：2つのことがらの表（小4）', gen: genCrossTab4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'diffFocus4',        label: 'ちがいに注目して（小4）',           gen: genDiffFocus4, defaultOff: true , addedDate: '2026-08-29' },
+    { id: 'roundEstimateWordProblem4', label: 'がい数を使った計算：文章題（小4）', gen: genRoundEstimateWordProblem4, defaultOff: true , addedDate: '2026-08-29' },
 
     // ---------- 小5 ----------
     { id: 'decStructure5',   label: '整数と小数のしくみ（小5）',           gen: genDecStructure5,   defaultOff: true , addedDate: '2026-08-02' },
@@ -7165,6 +7168,152 @@
   }
 
   // 文章題特訓：和差算（小4）：和と差から2つの数量を求めるチャレンジ文章題
+  // ちがいに注目して（小4）：2つの数量の「倍」の関係での分配、3つの数量が
+  // 一定のちがいで並ぶ場合の分配。sumDiffWordProblem4(和差算・基本)とは別に、
+  // 「○倍になるように分ける」「3つのちがいに注目する」を扱う。
+  function genDiffFocus4() {
+    const pat = randInt(0, 2);
+    let question, answer, candidates, steps;
+    if (pat === 0) {
+      // 2量：一方が他方のk倍になるように分ける
+      const pairs = [
+        { a: 'まりさん', b: 'かなさん', obj: '折り紙', unit: 'まい' },
+        { a: '兄', b: '弟', obj: 'ビー玉', unit: 'こ' },
+        { a: 'お姉さん', b: '妹', obj: 'あめ', unit: 'こ' },
+      ];
+      const p = pairs[randInt(0, pairs.length - 1)];
+      const k = randInt(2, 3);
+      const small = randInt(5, 30);
+      const large = small * k;
+      const total = small + large;
+      question = `${total}${p.unit}の${p.obj}を、${p.a}と${p.b}の2人で分けます。${p.a}は、${p.b}の${k}倍になるようにします。${p.a}と${p.b}は、それぞれ何${p.unit}になりますか。`;
+      answer = `${p.a}${large}${p.unit}、${p.b}${small}${p.unit}`;
+      candidates = [
+        `${p.a}${small}${p.unit}、${p.b}${large}${p.unit}`,
+        `${p.a}${large + 1}${p.unit}、${p.b}${Math.max(1, small - 1)}${p.unit}`,
+        `${p.a}${Math.round(total / 2)}${p.unit}、${p.b}${total - Math.round(total / 2)}${p.unit}`,
+      ];
+      steps = [`${p.b}を1、${p.a}を${k}とすると、合わせて${k + 1}`, `${total} ÷ ${k + 1} = ${small}（${p.b}）`, `${small} × ${k} = ${large}（${p.a}）`];
+      return { category: 'diffFocus4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 1) {
+      // 3量：一定のちがいで大きくなる（例：ひもを3本に、○cmずつ長さがちがう）
+      const themes = [
+        { obj: 'ひも', unit: 'cm', small: 'いちばん短い', mid: '2番目に短い', large: 'いちばん長い' },
+        { obj: 'テープ', unit: 'cm', small: 'いちばん短い', mid: '2番目に短い', large: 'いちばん長い' },
+      ];
+      const t = themes[randInt(0, themes.length - 1)];
+      const d = randInt(5, 30);
+      const s = randInt(10, 60);
+      const mid = s + d;
+      const large = s + 2 * d;
+      const total = s + mid + large;
+      question = `${total}${t.unit}の${t.obj}を3本に切りました。3本の${t.obj}は${d}${t.unit}ずつ長さがちがっています。3本の${t.obj}の長さは、それぞれ何${t.unit}ですか。`;
+      answer = `${t.small}${s}${t.unit}、${t.mid}${mid}${t.unit}、${t.large}${large}${t.unit}`;
+      candidates = [
+        `${t.small}${s + 1}${t.unit}、${t.mid}${mid}${t.unit}、${t.large}${large - 1}${t.unit}`,
+        `${t.small}${Math.max(1, s - d)}${t.unit}、${t.mid}${s}${t.unit}、${t.large}${mid}${t.unit}`,
+        `${t.small}${s}${t.unit}、${t.mid}${mid + 1}${t.unit}、${t.large}${large + 1}${t.unit}`,
+      ];
+      steps = [`いちばん短い長さをxとすると、x, x+${d}, x+${2 * d}`, `x×3 + ${d * 3} = ${total}`, `x = (${total} − ${d * 3}) ÷ 3 = ${s}`];
+      return { category: 'diffFocus4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else {
+      // 3量：1人ずつ一定のちがいで軽く/少なくなっていく（例：3人の体重）
+      const themes = [
+        { names: ['ゆうきさん', 'そうたさん', 'あおいさん'], obj: '体重', unit: 'kg' },
+        { names: ['Aさん', 'Bさん', 'Cさん'], obj: 'お小づかい', unit: '円' },
+      ];
+      const t = themes[randInt(0, themes.length - 1)];
+      const d = t.unit === '円' ? randInt(50, 300) : randInt(3, 20);
+      const c = t.unit === '円' ? randInt(500, 3000) : randInt(30, 60);
+      const b = c + d;
+      const a = b + d;
+      const total = a + b + c;
+      question = `${t.names[0]}、${t.names[1]}、${t.names[2]}の3人の${t.obj}の合計は${total}${t.unit}です。${t.names[1]}は${t.names[0]}より${d}${t.unit}少なく、${t.names[2]}は${t.names[1]}より${d}${t.unit}少ないです。3人の${t.obj}は、それぞれ何${t.unit}ですか。`;
+      answer = `${t.names[0]}${a}${t.unit}、${t.names[1]}${b}${t.unit}、${t.names[2]}${c}${t.unit}`;
+      candidates = [
+        `${t.names[0]}${a + d}${t.unit}、${t.names[1]}${a}${t.unit}、${t.names[2]}${b}${t.unit}`,
+        `${t.names[0]}${a}${t.unit}、${t.names[1]}${b + 1}${t.unit}、${t.names[2]}${c - 1}${t.unit}`,
+        `${t.names[0]}${a - 1}${t.unit}、${t.names[1]}${b}${t.unit}、${t.names[2]}${c + 1}${t.unit}`,
+      ];
+      steps = [`${t.names[2]}をxとすると、${t.names[1]}はx+${d}、${t.names[0]}はx+${2 * d}`, `x×3 + ${d * 3} = ${total}`, `x = (${total} − ${d * 3}) ÷ 3 = ${c}`];
+      return { category: 'diffFocus4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    }
+  }
+
+  // 上から1けたのがい数(先頭の桁だけ残し、四捨五入する)。
+  // 例: roundToLeadingDigit(396) -> 400、roundToLeadingDigit(3293) -> 3000
+  function roundToLeadingDigit(n) {
+    const digits = String(n).length;
+    const unit = Math.pow(10, digits - 1);
+    return Math.round(n / unit) * unit;
+  }
+
+  // がい数を使った計算：文章題（小4）。和差の見積もり(百の位までの概数)、
+  // 積や商の見積もり(上から1けたの概数)、切り上げが必要な文章題(バス・箱の数)。
+  function genRoundEstimateWordProblem4() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 和や差の見積もり(百の位までの概数)
+      const items = [
+        { a: 'ノート', b: '筆箱' }, { a: 'りんご', b: 'パイナップル' }, { a: 'ボールペン', b: 'はさみ' },
+      ];
+      const it = items[randInt(0, items.length - 1)];
+      let priceA, priceB;
+      do { priceA = randInt(120, 980); } while (priceA % 100 === 0);
+      do { priceB = randInt(120, 980); } while (priceB % 100 === 0);
+      const isAdd = Math.random() < 0.5;
+      const roundA = Math.round(priceA / 100) * 100;
+      const roundB = Math.round(priceB / 100) * 100;
+      answer = isAdd ? roundA + roundB : Math.abs(roundA - roundB);
+      question = `${priceA}円の${it.a}と${priceB}円の${it.b}を買います。それぞれの値段を百の位までの概数にして、代金の${isAdd ? '合計' : 'ちがい'}を見積もると、およそ何円ですか。`;
+      wrongs = [roundA, roundB, answer + 100, Math.max(0, answer - 100)].filter((v) => v !== answer);
+      steps = [`${priceA}円 → およそ${roundA}円、${priceB}円 → およそ${roundB}円`, `${roundA} ${isAdd ? '+' : '−'} ${roundB} = ${answer}`];
+      return { category: 'roundEstimateWordProblem4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 積の見積もり(単価×個数、上から1けたの概数)
+      const items = ['バラ', 'マンゴー', 'ノート', 'えん筆'];
+      const item = items[randInt(0, items.length - 1)];
+      const unitPrice = randInt(105, 985);
+      const count = randInt(11, 98);
+      const roundPrice = roundToLeadingDigit(unitPrice);
+      const roundCount = roundToLeadingDigit(count);
+      answer = roundPrice * roundCount;
+      question = `1本${unitPrice}円の${item}を${count}本買います。それぞれの数を上から1けたのがい数にして、代金を見積もると、およそ何円ですか。`;
+      wrongs = [roundPrice * count, unitPrice * roundCount, answer * 10, Math.round(answer / 10)].filter((v) => v !== answer && v > 0);
+      steps = [`${unitPrice}円 → およそ${roundPrice}円、${count}本 → およそ${roundCount}本`, `${roundPrice} × ${roundCount} = ${answer}`];
+      return { category: 'roundEstimateWordProblem4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 2) {
+      // 商の見積もり(等分、上から1けたの概数)
+      const total = randInt(1050, 98500);
+      const count = randInt(11, 98);
+      const roundTotal = roundToLeadingDigit(total);
+      const roundCount = roundToLeadingDigit(count);
+      answer = Math.round(roundTotal / roundCount);
+      question = `${total}円を${count}人で等分します。それぞれの数を上から1けたのがい数にして、1人分の代金を見積もると、およそ何円ですか。`;
+      wrongs = [answer * 10, Math.max(1, Math.round(answer / 10)), answer + roundCount, Math.max(1, answer - roundCount)].filter((v) => v !== answer && v > 0);
+      steps = [`${total}円 → およそ${roundTotal}円、${count}人 → およそ${roundCount}人`, `${roundTotal} ÷ ${roundCount} = ${answer}`];
+      return { category: 'roundEstimateWordProblem4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      // 切り上げが必要な文章題(1台/1箱あたりの数で割って、あまりが出たら+1)
+      const themes = [
+        { total: (n) => `${n}人`, per: (n) => `${n}人`, vehicle: 'バス', vehicleUnit: '台', verb: '乗せて' },
+        { total: (n) => `${n}この画びょう`, per: (n) => `${n}こ`, vehicle: '箱', vehicleUnit: '箱', verb: '入れて' },
+        { total: (n) => `${n}本のえん筆`, per: (n) => `${n}本`, vehicle: '箱', vehicleUnit: '箱', verb: '入れて' },
+      ];
+      const t = themes[randInt(0, themes.length - 1)];
+      const capacity = randInt(15, 70);
+      const neededBoxes = randInt(3, 20);
+      const remainder = randInt(1, capacity - 1);
+      const total = capacity * (neededBoxes - 1) + remainder;
+      answer = neededBoxes;
+      question = `${t.total(total)}を、1${t.vehicle}に${t.per(capacity)}ずつ${t.verb}いきます。${t.vehicle}は何${t.vehicleUnit}必要ですか。`;
+      wrongs = [neededBoxes - 1, neededBoxes + 1, Math.floor(total / capacity)].filter((v) => v !== answer && v > 0);
+      steps = [`${total} ÷ ${capacity} = ${Math.floor(total / capacity)} あまり ${remainder}`, `あまりの分もあと1${t.unit}必要 → ${answer}${t.unit}`];
+      return { category: 'roundEstimateWordProblem4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+    }
+  }
+
   function genSumDiffWordProblem4() {
     const pat = randInt(0, 5);
     let question, answer, wrongs, steps;
@@ -10378,6 +10527,110 @@
     return parseInt(s, 10);
   }
 
+  // count(整数)を、右からdecimalPlaces桁を小数部分として小数表記の文字列にする。
+  // 例: decFromCount(123, 2) -> "1.23"、decFromCount(45, 2) -> "0.45"、
+  // decFromCount(7, 0) -> "7"(整数のまま、10倍・100倍の結果がちょうど整数になる場合用)。
+  function decFromCount(count, decimalPlaces) {
+    if (decimalPlaces <= 0) return String(count);
+    const s = String(count).padStart(decimalPlaces + 1, '0');
+    const intPart = s.slice(0, s.length - decimalPlaces);
+    const fracPart = s.slice(s.length - decimalPlaces);
+    return `${parseInt(intPart, 10)}.${fracPart}`;
+  }
+
+  // 小数の表し方・しくみ（小4）：位の数字、1/0.1/0.01の合成、○こ集めた数、
+  // kg・g⇔小数kg、10倍/100倍/10分の1/100分の1
+  function genDecPlaceValue4() {
+    const pat = randInt(0, 4);
+    let question, answer, candidates, wrongs, steps;
+    if (pat === 0) {
+      // 位の数字
+      const intPart = randInt(1, 9);
+      const d1 = randInt(0, 9), d2 = randInt(0, 9), d3 = randInt(0, 9);
+      const numStr = `${intPart}.${d1}${d2}${d3}`;
+      const places = [
+        { label: '一', digit: intPart },
+        { label: '十分の一', digit: d1 },
+        { label: '百分の一', digit: d2 },
+        { label: '千分の一', digit: d3 },
+      ];
+      const place = places[randInt(0, 3)];
+      question = `${numStr} という数の「${place.label}の位」の数字は？`;
+      answer = place.digit;
+      const wrongSet = new Set([answer]);
+      wrongs = [];
+      while (wrongs.length < 3) {
+        const d = randInt(0, 9);
+        if (!wrongSet.has(d)) { wrongSet.add(d); wrongs.push(d); }
+      }
+      steps = [`${numStr} の「${place.label}の位」を読み取る`, `= ${answer}`];
+      return { category: 'decPlaceValue4', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 1) {
+      // 1・0.1・0.01の合成
+      const a = randInt(1, 9), b = randInt(0, 9), c = randInt(0, 9);
+      question = `1を${a}こ、0.1を${b}こ、0.01を${c}こあわせた数は？`;
+      answer = `${a}.${b}${c}`;
+      candidates = [`${a}.${c}${b}`, `${Math.min(9, a + 1)}.${b}${c}`, `${Math.max(0, a - 1)}.${b}${c}`];
+      steps = [`1 × ${a} + 0.1 × ${b} + 0.01 × ${c}`, `= ${answer}`];
+      return { category: 'decPlaceValue4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else if (pat === 2) {
+      // ○こ集めた数(0.1または0.01の何こ分か)
+      const isTenths = Math.random() < 0.5;
+      const decimalPlaces = isTenths ? 1 : 2;
+      const unitLabel = isTenths ? '0.1' : '0.01';
+      const count = isTenths ? randInt(11, 99) : randInt(101, 999);
+      const valueStr = decFromCount(count, decimalPlaces);
+      const askCount = Math.random() < 0.5; // true: 数を求める、false: こ数を求める
+      if (askCount) {
+        question = `${unitLabel}を${count}こ集めた数は？`;
+        answer = valueStr;
+        candidates = [decFromCount(count + 1, decimalPlaces), decFromCount(Math.max(1, count - 1), decimalPlaces), decFromCount(count + 10, decimalPlaces)];
+        steps = [`${unitLabel} × ${count} = ${valueStr}`];
+        return { category: 'decPlaceValue4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+      } else {
+        question = `${valueStr} は、${unitLabel}を何こ集めた数ですか。`;
+        answer = count;
+        wrongs = [count + 1, Math.max(1, count - 1), count + 10].filter((v) => v !== answer);
+        steps = [`${valueStr} ÷ ${unitLabel} = ${count}`];
+        return { category: 'decPlaceValue4', question, questionHtml: escHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+      }
+    } else if (pat === 3) {
+      // 10倍・100倍・10分の1・100分の1
+      const startPlaces = randInt(1, 2);
+      const count = randInt(1, startPlaces === 1 ? 99 : 999);
+      const baseStr = decFromCount(count, startPlaces);
+      const ops = [
+        { label: '10倍', newPlaces: startPlaces - 1 },
+        { label: '100倍', newPlaces: startPlaces - 2 },
+        { label: '10分の1', newPlaces: startPlaces + 1 },
+        { label: '100分の1', newPlaces: startPlaces + 2 },
+      ].filter((o) => o.newPlaces >= 0);
+      const op = ops[randInt(0, ops.length - 1)];
+      question = `${baseStr} を ${op.label}にした数は？`;
+      answer = decFromCount(count, op.newPlaces);
+      candidates = ops.filter((o) => o !== op).map((o) => decFromCount(count, o.newPlaces));
+      candidates.push(decFromCount(count + 1, op.newPlaces));
+      const shiftDir = op.newPlaces < startPlaces ? '右' : '左';
+      const shiftAmount = Math.abs(op.newPlaces - startPlaces);
+      steps = [`小数点を${shiftDir}へ${shiftAmount}けたずらす`, `= ${answer}`];
+      return { category: 'decPlaceValue4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    } else {
+      // kg・gの変換
+      const kg = randInt(1, 9);
+      const g = randInt(1, 999);
+      const gStr = String(g).padStart(3, '0');
+      question = `${kg}kg${g}g を、kg単位で小数で表すと？`;
+      answer = `${kg}.${gStr}kg`;
+      candidates = [
+        `${kg}.${String(Math.min(999, g + 1)).padStart(3, '0')}kg`,
+        `${kg}.${String(Math.max(0, g - 1)).padStart(3, '0')}kg`,
+        `${kg + 1}.${gStr}kg`,
+      ];
+      steps = [`1000g = 1kg なので ${g}g = 0.${gStr}kg`, `${kg}kg + 0.${gStr}kg = ${answer}`];
+      return { category: 'decPlaceValue4', question, questionHtml: escHtml(question), answer, choices: buildChoicesFromList(answer, candidates), steps };
+    }
+  }
+
   // 小数のたし算・ひき算（小4）
   function genDecAddSub4() {
     const isAdd = Math.random() < 0.5;
@@ -13331,7 +13584,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
