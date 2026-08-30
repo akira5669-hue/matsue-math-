@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828g';
+  var APP_BUILD_ = '20260828h';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -18030,7 +18030,7 @@
     { id: 'thunder', label: 'サンダー', emoji: '⚡', dmg: 50, selfDmg: 10, cost: 10, stageId: 1, subIndex: 0, fx: '#facc15', target: 'ステージ1（火炎系）' },
     { id: 'fire', label: 'ファイアボール', emoji: '🔥', dmg: 50, selfDmg: 10, cost: 20, stageId: 2, subIndex: 0, fx: '#f97316', target: 'ステージ2（氷系）' },
     { id: 'ice', label: 'アイスランス', emoji: '❄️', dmg: 50, selfDmg: 10, cost: 30, stageId: 3, subIndex: 0, fx: '#38bdf8', target: 'ステージ3（雷系）' },
-    { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 40, stageId: 4, subIndex: 0, fx: '#a16207', target: 'ステージ4の1体目（大地系）' },
+    { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 10, stageId: 4, subIndex: 0, fx: '#a16207', target: 'ステージ4の1体目（大地系）' },
     { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 0, fx: '#b45309', target: 'ステージ4の1体目（大地系）' },
     { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 10, stageId: 4, subIndex: 1, fx: '#8b5cf6', target: 'ステージ4の2体目（光系）' },
     { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 1, fx: '#7c3aed', target: 'ステージ4の2体目（光系）' },
