@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260828h';
+  var APP_BUILD_ = '20260831a';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -16208,10 +16208,19 @@
   var LOGIN_GATE_START_ = '2026-08-10';
   var LOGIN_GATE_REQUIRED_STREAK_ = 3;
   var LOGIN_GATE_REWARD_MP_ = 10;
+  // 2026-09-01から、中学生だけは1問正解ですぐ入れるように短縮する代わりに、
+  // 間違えるたびにHPが1減るようにする(小学生は今までどおり3問連続正解・HP減少なし)。
+  var LOGIN_GATE_MIDDLE_SCHOOL_START_ = '2026-09-01';
+  var LOGIN_GATE_REQUIRED_STREAK_MIDDLE_ = 1;
   var GRADE_ORDER_ = ['小4', '小5', '小6', '中1', '中2', '中3'];
   var GRADE_WORD_PROBLEM_CATEGORY_ = { '小4': 'timesWordProblem4', '小5': 'decWordProblem5', '小6': 'fracWordProblem6', '中1': 'eqWordProblem1', '中2': 'simulEqWordProblem2', '中3': 'quadEqWordProblem3' };
   function isLoginGateActive_() {
     return todayKey() >= LOGIN_GATE_START_;
+  }
+  function loginGateRequiredStreakForGrade_(grade) {
+    var isMiddleSchool = String(grade || '').charAt(0) === '中';
+    if (isMiddleSchool && todayKey() >= LOGIN_GATE_MIDDLE_SCHOOL_START_) return LOGIN_GATE_REQUIRED_STREAK_MIDDLE_;
+    return LOGIN_GATE_REQUIRED_STREAK_;
   }
   // 自分の学年、および(小4以外は)1つ下の学年の文章題から出題する。
   function loginGateCategoryIdsForGrade_(grade) {
@@ -16221,10 +16230,11 @@
     if (idx > 0) ids.push(GRADE_WORD_PROBLEM_CATEGORY_[GRADE_ORDER_[idx - 1]]);
     return ids.filter(Boolean);
   }
-  var loginGate = { streak: 0, categories: [], current: null, pendingId: null, pendingName: null };
+  var loginGate = { streak: 0, requiredStreak: LOGIN_GATE_REQUIRED_STREAK_, categories: [], current: null, pendingId: null, pendingName: null };
 
   function startLoginGate(id, name, grade) {
     loginGate.streak = 0;
+    loginGate.requiredStreak = loginGateRequiredStreakForGrade_(grade);
     loginGate.categories = CATEGORIES.filter(function (c) { return loginGateCategoryIdsForGrade_(grade).indexOf(c.id) !== -1; });
     loginGate.pendingId = id;
     loginGate.pendingName = name;
@@ -16238,7 +16248,7 @@
     var cat = loginGate.categories[randInt(0, loginGate.categories.length - 1)];
     var q = cat.gen();
     loginGate.current = q;
-    els.loginGateProgress.textContent = loginGate.streak + '/' + LOGIN_GATE_REQUIRED_STREAK_;
+    els.loginGateProgress.textContent = loginGate.streak + '/' + loginGate.requiredStreak;
     els.loginGateQuestion.innerHTML = q.questionHtml || escHtml(String(q.question));
     els.loginGateResult.textContent = '';
     els.loginGateChoiceRow.innerHTML = '';
@@ -16257,9 +16267,10 @@
   function handleLoginGateAnswer(choiceStr) {
     Array.from(els.loginGateChoiceRow.children).forEach(function (btn) { btn.disabled = true; });
     var isCorrect = choiceStr === String(loginGate.current.answer);
+    var isFastMode = loginGate.requiredStreak === LOGIN_GATE_REQUIRED_STREAK_MIDDLE_;
     if (isCorrect) {
       loginGate.streak++;
-      if (loginGate.streak >= LOGIN_GATE_REQUIRED_STREAK_) {
+      if (loginGate.streak >= loginGate.requiredStreak) {
         finishLoginGate();
         return;
       }
@@ -16267,7 +16278,23 @@
       window.setTimeout(renderLoginGateQuestion, 700);
     } else {
       loginGate.streak = 0;
-      els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。最初からやり直しです。';
+      if (isFastMode) {
+        // 中学生の1問モードでは、間違えるたびにHPが1減る(鋼の鎧があれば代わりに1回分消費)。
+        var hpLostHtml = '';
+        if (isHpDamageActive_() && hasSteelArmorCharge_()) {
+          state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+          hpLostHtml = state.steelArmorCharges > 0
+            ? '🛡️ 鋼の鎧のおかげでHPは減りませんでした（残り' + state.steelArmorCharges + '回）。'
+            : '🛡️ 鋼の鎧を使い切りました。HPは減りませんでした。';
+        } else if (isHpDamageActive_()) {
+          state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
+          hpLostHtml = '💔 HPが' + HP_WRONG_ANSWER_PENALTY_ + '減りました（残りHP: ' + state.hp + '）。';
+        }
+        saveGameState(state);
+        els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。' + hpLostHtml;
+      } else {
+        els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。最初からやり直しです。';
+      }
       window.setTimeout(renderLoginGateQuestion, 1400);
     }
   }
@@ -16276,6 +16303,7 @@
     els.loginGatePanel.hidden = true;
     var id = loginGate.pendingId;
     var name = loginGate.pendingName;
+    var requiredStreak = loginGate.requiredStreak;
     state.points += LOGIN_GATE_REWARD_MP_;
     var hpBonusAwarded = 0;
     if (isHpDamageActive_()) {
@@ -16284,7 +16312,8 @@
     }
     saveGameState(state);
     showApp(name, false);
-    window.alert('🎉 3問連続正解！+' + LOGIN_GATE_REWARD_MP_ + 'MP獲得！' + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
+    var clearedText = requiredStreak <= 1 ? '1問正解！' : requiredStreak + '問連続正解！';
+    window.alert('🎉 ' + clearedText + '+' + LOGIN_GATE_REWARD_MP_ + 'MP獲得！' + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
     if (id) apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
   }
 
