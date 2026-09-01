@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260831a';
+  var APP_BUILD_ = '20260901a';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -15194,8 +15194,11 @@
 
   /* ---------- 理科モード ---------- */
 
-  const SCIENCE_STREAK_MP = 10;
-  const SCIENCE_EXP_PER_STREAK = 10;
+  // 2026-09-01から、理科は10問連続正解ではなく5問連続正解ごとに+5MP(+5理科経験値)に
+  // 変更(1問あたりの獲得レートは維持しつつ、より頻繁に・こまめに報酬を受け取れるように)。
+  const SCIENCE_STREAK_REQUIRED = 5;
+  const SCIENCE_STREAK_MP = 5;
+  const SCIENCE_EXP_PER_STREAK = 5;
 
   function pickScienceGenerator() {
     const allowed = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
@@ -15206,9 +15209,9 @@
 
   function updateScienceHud() {
     const streak = state.scienceStreak || 0;
-    const pct = Math.round((streak / 10) * 100);
+    const pct = Math.round((streak / SCIENCE_STREAK_REQUIRED) * 100);
     if (els.scienceStreakBarInner) els.scienceStreakBarInner.style.width = `${pct}%`;
-    if (els.scienceStreakText) els.scienceStreakText.textContent = `${streak}/10`;
+    if (els.scienceStreakText) els.scienceStreakText.textContent = `${streak}/${SCIENCE_STREAK_REQUIRED}`;
     if (els.scienceExpText) els.scienceExpText.textContent = state.scienceExp;
     if (els.statPoints) els.statPoints.textContent = state.points;
   }
@@ -15275,7 +15278,7 @@
       state.correct++;
       state.catStats[catId].correct++;
       state.scienceStreak = (state.scienceStreak || 0) + 1;
-      if (state.scienceStreak >= 10) {
+      if (state.scienceStreak >= SCIENCE_STREAK_REQUIRED) {
         const today = todayKey();
         if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
         // 理科は文章題ではないので「計算問題」側の1日上限(50MP)を共有する。
@@ -15292,8 +15295,8 @@
         state.level = newLevel;
         const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
         winHtml = (pointsToAdd > 0
-          ? `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
-          : `<div class="win-banner">${lvlMsg}🎉 10問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
+          ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
+          : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
       }
     } else {
       state.scienceStreak = 0;
@@ -16189,8 +16192,8 @@
   }
 
   // MP上限の分割ルール変更のお知らせを5日間だけ表示する(8/16〜8/20)。
-  var MP_CAP_BANNER_START_ = '2026-08-16';
-  var MP_CAP_BANNER_END_ = '2026-08-20';
+  var MP_CAP_BANNER_START_ = '2026-09-01';
+  var MP_CAP_BANNER_END_ = '2026-09-06';
   function renderMpCapBanner_() {
     if (!els.mpCapBanner) return;
     var today = todayKey();
@@ -16200,7 +16203,7 @@
     }
     els.mpCapBanner.hidden = false;
     if (els.mpCapBannerText) {
-      els.mpCapBannerText.textContent = '📢 MPのルール変更のお知らせ：計算問題（理科もふくむ）で稼げるMPは1日最大50MPまで、文章題で稼げるMPも1日最大50MPまで（今までと同じ）になりました。また、計算問題は10問連続正解ごとに+5MP（学年より上の単元に挑戦した場合は+10MP）です。';
+      els.mpCapBannerText.textContent = '📢 9月1日からのお知らせ：🔬理科は、10問連続正解ではなく5問連続正解ごとに+5MP（理科の経験値+5）がもらえるようになりました！ログイン時にもらえるMPも、1日最大100MP（計算50＋文章題50）の上限に含まれるようになりました（何度ログインし直しても増えません）。';
     }
   }
 
@@ -16304,7 +16307,15 @@
     var id = loginGate.pendingId;
     var name = loginGate.pendingName;
     var requiredStreak = loginGate.requiredStreak;
-    state.points += LOGIN_GATE_REWARD_MP_;
+    // ログイン時のMPも、文章題と同じ1日上限(POINTS_DAILY_CAP_WORD)の中に含める。
+    // 以前はここだけ無条件加算だったため、ログインし直すだけで際限なくMPを
+    // 稼げてしまっていた(中学生は1問正解ですぐ突破できるようになったため特に深刻)。
+    var today = todayKey();
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+    var pointsToAdd = Math.max(0, Math.min(LOGIN_GATE_REWARD_MP_, POINTS_DAILY_CAP_WORD - (Number(state.pointsTodayWord) || 0)));
+    state.points += pointsToAdd;
+    state.pointsToday += pointsToAdd;
+    state.pointsTodayWord += pointsToAdd;
     var hpBonusAwarded = 0;
     if (isHpDamageActive_()) {
       hpBonusAwarded = HP_LOGIN_GATE_BONUS_;
@@ -16313,7 +16324,8 @@
     saveGameState(state);
     showApp(name, false);
     var clearedText = requiredStreak <= 1 ? '1問正解！' : requiredStreak + '問連続正解！';
-    window.alert('🎉 ' + clearedText + '+' + LOGIN_GATE_REWARD_MP_ + 'MP獲得！' + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
+    var mpText = pointsToAdd > 0 ? '+' + pointsToAdd + 'MP獲得！' : '（本日のMP上限に達しているためMPはありません）';
+    window.alert('🎉 ' + clearedText + mpText + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
     if (id) apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
   }
 
@@ -19444,6 +19456,14 @@
     var ev = teamEventCache.event;
     var my = teamEventCache.myTeam;
     els.teamEventBanner.hidden = false;
+    if (!teamEventCache.started) {
+      // 5日夜の最終編成までチームは変わりうるので、詳細は見せず告知だけにする。
+      els.teamEventBannerText.textContent =
+        `🤝 9月のチーム対抗経験値バトルは、${ev.startDate}からスタート予定！お楽しみに！\n` +
+        `5〜6人1組のチームで、期間中の経験値の上がり方を競います。最終的なチーム編成は開始直前に確定するので、新しく登録した人・最近また遊び始めた人もどこかのチームに入ります。\n` +
+        `📌 MPは1日最大100MP（計算50＋文章題50）までで、ログイン時にもらえるMPもこの上限に含まれます（何度もログインし直しても増えません）。`;
+      return;
+    }
     if (!my) {
       // チーム編成は開催開始前の直近ログイン者から作るため、開催中に新規登録・
       // 復帰した生徒はチームに入っていない。バナーごと消すと「なぜ何も出ない
@@ -19482,6 +19502,12 @@
       return;
     }
     var ev = teamEventCache.event;
+    if (!teamEventCache.started) {
+      els.teamEventPeriod.textContent = `${ev.startDate}からスタート予定！最終的なチーム編成は開始直前に確定します。新しく登録した人・最近また遊び始めた人もどこかのチームに入ります。（MPは1日最大100MPまでで、ログイン時のMPもこの上限に含まれます）`;
+      els.teamEventMyTeamBox.hidden = true;
+      els.teamEventAllTeamsList.innerHTML = '';
+      return;
+    }
     els.teamEventPeriod.textContent = `期間：${ev.startDate}〜${ev.endDate}／チームの経験値上昇量で対決！順位ごとのMPは、チーム内で経験値を上げた量に比例して分配されます（全く上げていない人には分配されません）。`;
 
     var session = loadSession();

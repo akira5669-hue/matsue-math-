@@ -16,7 +16,7 @@ envText.split('\n').forEach((line) => {
 });
 const { neon } = require('../node_modules/@neondatabase/serverless');
 
-const TEAM_SIZE = 25;
+const TEAM_SIZE = 29; // 約30人×8チームになるよう調整(2026-09-01、参加者238人での実績値)
 const EVENT_NAME = '2026年9月 チーム対抗経験値バトル';
 const EVENT_START = '2026-09-01';
 const EVENT_END = '2026-09-30';

@@ -1,15 +1,15 @@
-const CACHE_NAME = 'seifukazu-quiz-v55';
+const CACHE_NAME = 'seifukazu-quiz-v56';
 // index.html側の?v=...と必ず揃えること(揃っていないとオフライン時に古い
 // app.jsが使われ、HTMLとJSがちぐはぐになる)。
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=20260831a',
-  './app.js?v=20260831a',
-  './japan-map-data.js?v=20260831a',
-  './avatar-data.js?v=20260831a',
-  './world-data.js?v=20260831a',
-  './world-data-2.js?v=20260831a',
+  './style.css?v=20260901a',
+  './app.js?v=20260901a',
+  './japan-map-data.js?v=20260901a',
+  './avatar-data.js?v=20260901a',
+  './world-data.js?v=20260901a',
+  './world-data-2.js?v=20260901a',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
