@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260905a';
+  var APP_BUILD_ = '20260905b';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2386,6 +2386,13 @@
     { id: 'stateChange1', label: '物質の状態変化（中1）', gen: genStateChange1, addedDate: '2026-08-13' },
     { id: 'meltingBoiling1', label: '状態変化が起こるときの温度とその利用（中1）', gen: genMeltingBoiling1, addedDate: '2026-08-13' },
     { id: 'distillation1', label: '蒸留（中1）', gen: genDistillation1, addedDate: '2026-08-13' },
+    { id: 'lightReflectionRefraction1', label: '光の反射と屈折（中1）', gen: genLightReflectionRefraction1, addedDate: '2026-09-04' },
+    { id: 'convexLens1', label: '凸レンズのはたらき（中1）', gen: genConvexLens1, addedDate: '2026-09-04' },
+    { id: 'sound1', label: '音の世界（中1）', gen: genSound1, addedDate: '2026-09-04' },
+    { id: 'forceBasics1', label: '力のはたらきと表し方（中1）', gen: genForceBasics1, addedDate: '2026-09-04' },
+    { id: 'volcano1', label: '火山の活動と火成岩（中1）', gen: genVolcano1, addedDate: '2026-09-04' },
+    { id: 'earthquake1', label: '地震のゆれの伝わり方（中1）', gen: genEarthquake1, addedDate: '2026-09-04' },
+    { id: 'strataFossil1', label: '地層のなり立ちと化石（中1）', gen: genStrataFossil1, addedDate: '2026-09-04' },
     { id: 'cellBiology2', label: '生物と細胞（中2）', gen: genCellBiology2, addedDate: '2026-08-13' },
     { id: 'photosynthesis2', label: '葉と光合成（中2）', gen: genPhotosynthesis2, addedDate: '2026-08-13' },
     { id: 'plantWater2', label: '植物と水（中2）', gen: genPlantWater2, addedDate: '2026-08-13' },
@@ -2425,13 +2432,6 @@
     { id: 'electricityUse6', label: '電気の利用（小6）', gen: genElectricityUse6, addedDate: '2026-08-21' },
     { id: 'aqueousSolution6', label: '水溶液の性質（小6）', gen: genAqueousSolution6, addedDate: '2026-08-21' },
     { id: 'moonSun6', label: '月と太陽（小6）', gen: genMoonSun6, addedDate: '2026-08-21' },
-    { id: 'lightReflectionRefraction1', label: '光の反射と屈折（中1）', gen: genLightReflectionRefraction1, addedDate: '2026-09-04' },
-    { id: 'convexLens1', label: '凸レンズのはたらき（中1）', gen: genConvexLens1, addedDate: '2026-09-04' },
-    { id: 'sound1', label: '音の世界（中1）', gen: genSound1, addedDate: '2026-09-04' },
-    { id: 'forceBasics1', label: '力のはたらきと表し方（中1）', gen: genForceBasics1, addedDate: '2026-09-04' },
-    { id: 'volcano1', label: '火山の活動と火成岩（中1）', gen: genVolcano1, addedDate: '2026-09-04' },
-    { id: 'earthquake1', label: '地震のゆれの伝わり方（中1）', gen: genEarthquake1, addedDate: '2026-09-04' },
-    { id: 'strataFossil1', label: '地層のなり立ちと化石（中1）', gen: genStrataFossil1, addedDate: '2026-09-04' },
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
