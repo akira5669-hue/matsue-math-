@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260905b';
+  var APP_BUILD_ = '20260905c';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2399,6 +2399,18 @@
     { id: 'digestion2', label: '消化と吸収のしくみ（中2）', gen: genDigestion2, addedDate: '2026-08-13' },
     { id: 'respiration2', label: '呼吸と血液のはたらき（中2）', gen: genRespiration2, addedDate: '2026-08-13' },
     { id: 'stimulusResponse2', label: '刺激と反応（中2）', gen: genStimulusResponse2, addedDate: '2026-08-13' },
+    { id: 'atmosphericPressureWind2', label: '圧力と大気圧、気圧と風（中2）', gen: genAtmosphericPressureWind2, addedDate: '2026-09-05' },
+    { id: 'weatherObservation2', label: '気象の観測（中2）', gen: genWeatherObservation2, addedDate: '2026-09-05' },
+    { id: 'humidity2', label: '水蒸気の変化と湿度（中2）', gen: genHumidity2, addedDate: '2026-09-05' },
+    { id: 'cloudWaterCycle2', label: '雲のでき方・水の循環（中2）', gen: genCloudWaterCycle2, addedDate: '2026-09-05' },
+    { id: 'airMassFront2', label: '気団と前線（中2）', gen: genAirMassFront2, addedDate: '2026-09-05' },
+    { id: 'atmosphericCirculation2', label: '大気の動きと天気の変化（中2）', gen: genAtmosphericCirculation2, addedDate: '2026-09-05' },
+    { id: 'japanWeather2', label: '日本の天気の特徴（中2）', gen: genJapanWeather2, addedDate: '2026-09-05' },
+    { id: 'staticElectricity2', label: '静電気と放電（中2）', gen: genStaticElectricity2, addedDate: '2026-09-05' },
+    { id: 'circuitCurrentVoltage2', label: '回路に流れる電流・電圧（中2）', gen: genCircuitCurrentVoltage2, addedDate: '2026-09-05' },
+    { id: 'electricalEnergy2', label: '電気エネルギー（中2）', gen: genElectricalEnergy2, addedDate: '2026-09-05' },
+    { id: 'ohmsLaw2', label: '電圧と電流の関係・オームの法則（中2）', gen: genOhmsLaw2, addedDate: '2026-09-05' },
+    { id: 'magneticFieldGeneration2', label: '磁界・電流と磁界・発電のしくみ（中2）', gen: genMagneticFieldGeneration2, addedDate: '2026-09-05' },
     { id: 'growthReproduction3', label: '生物の成長と生殖（中3）', gen: genGrowthReproduction3, addedDate: '2026-08-14' },
     { id: 'evolution3', label: '生物の多様性と進化（中3）', gen: genEvolution3, addedDate: '2026-08-14' },
     { id: 'motion3', label: '物体の運動（中3）', gen: genMotion3, addedDate: '2026-08-14' },
@@ -6090,6 +6102,865 @@
       steps = ['地層は下から順に積み重なっていくため、大きな地殻変動がなければ、下にある層ほど古く、上にある層ほど新しい'];
     }
     return { category: 'strataFossil1', question, answer, choices, steps };
+  }
+
+  // 圧力と大気圧、気圧と風（中2）：圧力の計算、大気圧の単位と高度による変化、
+  // 等圧線・高気圧・低気圧、風のふき方と気流。
+  function genAtmosphericPressureWind2() {
+    const pat = randInt(0, 13);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '面を垂直におす力の大きさを、その力がはたらく面の面積で割ったものを何といいますか。';
+      answer = '圧力';
+      choices = shuffle(['圧力', '浮力', '張力', '応力']);
+      steps = ['単位面積あたりにはたらく力の大きさを圧力という'];
+    } else if (pat === 1) {
+      question = '圧力を求める式として正しいものはどれですか。';
+      answer = '圧力 = 力の大きさ ÷ 力がはたらく面の面積';
+      choices = shuffle([answer, '圧力 = 力の大きさ × 力がはたらく面の面積', '圧力 = 力がはたらく面の面積 ÷ 力の大きさ', '圧力 = 力の大きさ + 力がはたらく面の面積']);
+      steps = ['圧力(Pa) = 力の大きさ(N) ÷ 力がはたらく面の面積(m²)'];
+    } else if (pat === 2) {
+      const p = randInt(1, 9);
+      const area = randInt(2, 10);
+      const forceN = p * area;
+      question = `重さ${forceN}Nの物体を、面積${area}cm²の面が下になるように置きました。この物体が面におよぼす圧力は何N/cm²ですか。`;
+      answer = p;
+      const wrongs = [p + 1, p + 2, Math.max(1, p - 1)].filter(w => w !== p);
+      steps = [`圧力 = 力 ÷ 面積 = ${forceN} ÷ ${area} = ${p}N/cm²`];
+      return { category: 'atmosphericPressureWind2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 3) {
+      question = '同じ大きさの力がはたらくとき、力がはたらく面の面積が小さいほど、圧力はどうなりますか。';
+      answer = '大きくなる';
+      choices = shuffle(['大きくなる', '小さくなる', '変わらない', '0になる']);
+      steps = ['力の大きさが同じでも、面積が小さいほど、単位面積あたりにはたらく力(圧力)は大きくなる'];
+    } else if (pat === 4) {
+      question = '上空にある空気(大気)の重さによって生じる圧力を何といいますか。';
+      answer = '大気圧（気圧）';
+      choices = shuffle(['大気圧（気圧）', '水圧', '浮力', '風圧']);
+      steps = ['上空にある大気の重さによって生じる圧力を大気圧(気圧)という'];
+    } else if (pat === 5) {
+      question = '気圧の単位として、天気予報などでよく使われるものは何ですか。また、海面上の標準的な大気圧(1気圧)はおよそ何hPaですか。';
+      answer = 'ヘクトパスカル（hPa）、約1013hPa';
+      choices = shuffle([answer, 'パスカル（Pa）、約10hPa', 'ニュートン（N）、約100N', 'ヘクトパスカル（hPa）、約100hPa']);
+      steps = ['気圧の単位にはヘクトパスカル(記号hPa)が使われる。海面上の標準的な大気圧(1気圧)は約1013hPaである'];
+    } else if (pat === 6) {
+      question = '高度が高くなるほど、大気圧はどうなりますか。';
+      answer = '小さくなる';
+      choices = shuffle(['小さくなる', '大きくなる', '変わらない', '0になる']);
+      steps = ['上空にある空気の量(重さ)が少なくなるため、高度が高くなるほど大気圧は小さくなる'];
+    } else if (pat === 7) {
+      question = '天気図上で、気圧の等しい地点を結んだなめらかな線を何といいますか。';
+      answer = '等圧線';
+      choices = shuffle(['等圧線', '等高線', '前線', '境界線']);
+      steps = ['気圧の等しい地点を結んだ線を等圧線という'];
+    } else if (pat === 8) {
+      question = '等圧線が閉じていて、まわりよりも中心部の気圧が高いところを何といいますか。';
+      answer = '高気圧';
+      choices = shuffle(['高気圧', '低気圧', '前線', '気団']);
+      steps = ['等圧線が閉じていて、中心部の気圧がまわりより高いところを高気圧という'];
+    } else if (pat === 9) {
+      question = '等圧線が閉じていて、まわりよりも中心部の気圧が低いところを何といいますか。';
+      answer = '低気圧';
+      choices = shuffle(['低気圧', '高気圧', '前線', '気団']);
+      steps = ['等圧線が閉じていて、中心部の気圧がまわりより低いところを低気圧という'];
+    } else if (pat === 10) {
+      question = '風は、気圧のどちらからどちらに向かってふきますか。';
+      answer = '気圧の高いところから、低いところに向かってふく';
+      choices = shuffle([answer, '気圧の低いところから、高いところに向かってふく', '気圧の高いところどうしの間だけをふく', '気圧に関係なく、常に同じ向きにふく']);
+      steps = ['風は、気圧の高いところから低いところに向かってふく'];
+    } else if (pat === 11) {
+      question = '北半球の高気圧の中心付近では、どのような気流が起こっていますか。';
+      answer = '下降気流';
+      choices = shuffle(['下降気流', '上昇気流', '水平気流', '対流圏気流']);
+      steps = ['高気圧の中心付近では下降気流が起こっており、地表付近では中心から周辺に向かって時計回りに風がふき出す'];
+    } else if (pat === 12) {
+      question = '北半球の低気圧の中心付近では、どのような気流が起こっていますか。';
+      answer = '上昇気流';
+      choices = shuffle(['上昇気流', '下降気流', '水平気流', '対流圏気流']);
+      steps = ['低気圧の中心付近では上昇気流が起こっており、地表付近では周辺から中心に向かって反時計回りに風がふきこむ'];
+    } else {
+      question = '高気圧・低気圧の付近では、それぞれどのような天気になりやすいですか。';
+      answer = '高気圧付近は晴れることが多く、低気圧付近はくもりや雨になることが多い';
+      choices = shuffle([answer, '高気圧付近はくもりや雨になることが多く、低気圧付近は晴れることが多い', 'どちらも必ず晴れになる', 'どちらも必ず雨になる']);
+      steps = ['高気圧の中心付近は下降気流のため雲ができにくく晴れることが多い。低気圧の中心付近は上昇気流のため雲ができやすく、くもりや雨になることが多い'];
+    }
+    return { category: 'atmosphericPressureWind2', question, answer, choices, steps };
+  }
+
+  // 気象の観測（中2）：気象要素、雲量と天気の判断、風向・風力、気温の測定方法、
+  // 乾湿計のしくみと湿度表の読み取り、いろいろな雲。
+  function genWeatherObservation2() {
+    const pat = randInt(0, 11);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '気温・湿度・気圧・風向・風速・風力・雲量など、大気中で起こるさまざまな現象を数値などで表したものを何といいますか。';
+      answer = '気象要素';
+      choices = shuffle(['気象要素', '気象条件', '天気図', '気象警報']);
+      steps = ['気温・湿度・気圧・風向・風速・風力・雲量などを気象要素という'];
+    } else if (pat === 1) {
+      const cloudAmt = shuffle([0, 1, 2, 5, 8, 9, 10])[0];
+      let w;
+      if (cloudAmt <= 1) w = '快晴'; else if (cloudAmt <= 8) w = '晴れ'; else w = 'くもり';
+      question = `空全体を10としたときの雲量が${cloudAmt}のとき、天気は何と判断しますか。`;
+      answer = w;
+      choices = shuffle(['快晴', '晴れ', 'くもり', '雨']);
+      steps = ['雲量0〜1は快晴、2〜8は晴れ、9〜10はくもりと判断する'];
+    } else if (pat === 2) {
+      question = '風向とは、風がふいてくる方向とふいていく方向のどちらを指しますか。';
+      answer = '風がふいてくる方向';
+      choices = shuffle(['風がふいてくる方向', '風がふいていく方向', '風が最も強くふく方向', '風向とは関係がない']);
+      steps = ['風向は、風がふいてくる方向を指し、16方位で表す'];
+    } else if (pat === 3) {
+      question = '風力は、風の強さの程度を表すもので、何段階に分けられていますか。';
+      answer = '0〜12の13階級';
+      choices = shuffle(['0〜12の13階級', '1〜10の10階級', '0〜7の8階級', '1〜16の16階級']);
+      steps = ['風力は風力階級表を用いて、0〜12の13階級に分けられている'];
+    } else if (pat === 4) {
+      question = '気温を正しく測定するための条件として、正しいものはどれですか。';
+      answer = '地上から約1.5mの高さで、温度計に直射日光が当たらないようにして測定する';
+      choices = shuffle([answer, '地面に温度計を直接置いて測定する', '温度計に直射日光を当てて測定する', '高さに関係なく、風通しの悪い場所で測定する']);
+      steps = ['気温は、地上から約1.5mの高さで、温度計に直射日光を当てないようにして測定する(百葉箱を利用することが多い)'];
+    } else if (pat === 5) {
+      question = '乾湿計で、湿球温度計の示度が乾球温度計の示度より低くなるのはなぜですか。';
+      answer = '湿球を包むしめらせたガーゼから水が蒸発するとき、まわりの熱をうばうから';
+      choices = shuffle([answer, '湿球の方が乾球よりも太陽光を多く受けるから', '湿球には特別な液体が入っているから', '単なる測定誤差である']);
+      steps = ['湿球のガーゼから水が蒸発するとき、まわりから熱(気化熱)をうばうため、湿球の示度は乾球より低くなる。空気が乾燥しているほど蒸発が盛んになり、その差は大きくなる'];
+    } else if (pat === 6) {
+      const table = [
+        { dry: 16, vals: [100, 89, 79, 69, 60] },
+        { dry: 17, vals: [100, 90, 80, 71, 61] },
+        { dry: 18, vals: [100, 90, 81, 71, 62] },
+        { dry: 19, vals: [100, 90, 81, 72, 63] },
+        { dry: 20, vals: [100, 91, 82, 73, 64] },
+      ];
+      const row = shuffle(table)[0];
+      const diffIdx = randInt(1, 4);
+      const humidity = row.vals[diffIdx];
+      question = `湿度表の一部：乾球の示度が${row.dry}℃のとき、乾球と湿球の示度の差によって湿度は次のようになる。差0℃→100%、差1℃→${row.vals[1]}%、差2℃→${row.vals[2]}%、差3℃→${row.vals[3]}%、差4℃→${row.vals[4]}%。乾球の示度が${row.dry}℃で、乾球と湿球の示度の差が${diffIdx}℃のとき、湿度は何％ですか。`;
+      answer = `${humidity}%`;
+      const wrongCands = row.vals.filter((v, i) => i !== diffIdx).map(v => `${v}%`);
+      steps = [`表より、乾球${row.dry}℃・差${diffIdx}℃のところを読む → 湿度${humidity}%`];
+      return { category: 'weatherObservation2', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 7) {
+      question = '気圧を測定する、アネロイド気圧計などで使われる気圧の単位は何ですか。';
+      answer = 'ヘクトパスカル（hPa）';
+      choices = shuffle(['ヘクトパスカル（hPa）', 'ニュートン（N）', 'パーセント（%）', 'ヘルツ（Hz）']);
+      steps = ['気圧は、アネロイド気圧計などで測定し、単位にはヘクトパスカル(hPa)が使われる'];
+    } else if (pat === 8) {
+      question = '降った雨がそのままたまったと考えたときの水の深さで表した量を何といいますか。また、その単位は何ですか。';
+      answer = '雨量、単位はミリメートル（mm）';
+      choices = shuffle([answer, '雨量、単位はリットル（L）', '降水確率、単位はパーセント（%）', '雨量、単位はグラム（g）']);
+      steps = ['降った雨がそのままたまったとしたときの水の深さを雨量といい、単位はミリメートル(mm)で表す'];
+    } else if (pat === 9) {
+      question = '雲ができる高さによって雲を分類したとき、最も高いところにできる雲(巻雲・巻積雲など)を何といいますか。';
+      answer = '上層雲';
+      choices = shuffle(['上層雲', '中層雲', '下層雲', '接地雲']);
+      steps = ['雲は高さによって上層雲(巻雲・巻積雲など)、中層雲(高積雲・高層雲など)、下層雲(積雲・層雲など)に分けられる'];
+    } else if (pat === 10) {
+      question = '強い上昇気流によって発達し、強い雨や雷をともなうことが多い、入道雲ともよばれる雲を何といいますか。';
+      answer = '積乱雲';
+      choices = shuffle(['積乱雲', '巻雲', '層雲', '高積雲']);
+      steps = ['強い上昇気流によって垂直に発達した雲を積乱雲(入道雲・かみなり雲)といい、強い雨や雷をともなうことが多い'];
+    } else {
+      question = '晴れの日、気温が最も高くなる時間帯の前後で、湿度はどのように変化することが多いですか。';
+      answer = '気温が高くなるほど、湿度は低くなる';
+      choices = shuffle(['気温が高くなるほど、湿度は低くなる', '気温が高くなるほど、湿度も高くなる', '気温と湿度は無関係に変化する', '気温と湿度はどちらも変化しない']);
+      steps = ['晴れの日は、気温と湿度がほぼ逆の変化をすることが多い(気温が上がると湿度は下がる)'];
+    }
+    return { category: 'weatherObservation2', question, answer, choices, steps };
+  }
+
+  // 水蒸気の変化と湿度（中2）：凝結・露点・飽和水蒸気量の定義、湿度の計算式と
+  // 湿度計算、露点から湿度を求める考え方。
+  const SATURATION_VAPOR_TABLE_2_ = [
+    { t: 5, sat: 6.8 }, { t: 10, sat: 9.4 }, { t: 15, sat: 12.8 },
+    { t: 20, sat: 17.3 }, { t: 25, sat: 23.1 }, { t: 30, sat: 30.4 },
+  ];
+  function genHumidity2() {
+    const pat = randInt(0, 7);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '空気中の水蒸気が冷やされて、水滴(液体の水)に変わる現象を何といいますか。';
+      answer = '凝結';
+      choices = shuffle(['凝結', '蒸発', '融解', '昇華']);
+      steps = ['空気が冷やされて、空気中の水蒸気の一部が水滴に変わる現象を凝結という'];
+    } else if (pat === 1) {
+      question = '空気を冷やしていったとき、空気中の水蒸気が凝結し始める温度を何といいますか。';
+      answer = '露点';
+      choices = shuffle(['露点', '沸点', '融点', '氷点']);
+      steps = ['空気が冷やされて、水蒸気が凝結し始める温度を露点という'];
+    } else if (pat === 2) {
+      question = '1m³の空気にふくむことのできる水蒸気の最大質量を何といいますか。';
+      answer = '飽和水蒸気量';
+      choices = shuffle(['飽和水蒸気量', '相対湿度', '露点温度', '水蒸気圧']);
+      steps = ['ある気温の空気1m³にふくむことのできる水蒸気の最大質量を、その気温での飽和水蒸気量という'];
+    } else if (pat === 3) {
+      question = '気温が高くなるほど、飽和水蒸気量はどうなりますか。';
+      answer = '大きくなる';
+      choices = shuffle(['大きくなる', '小さくなる', '変わらない', '0になる']);
+      steps = ['気温が高いほど、空気がふくむことのできる水蒸気の最大量(飽和水蒸気量)は大きくなる'];
+    } else if (pat === 4) {
+      question = '湿度(%)を求める式として正しいものはどれですか。';
+      answer = '湿度(%) = 空気にふくまれる水蒸気量 ÷ その気温での飽和水蒸気量 × 100';
+      choices = shuffle([answer, '湿度(%) = その気温での飽和水蒸気量 ÷ 空気にふくまれる水蒸気量 × 100', '湿度(%) = 空気にふくまれる水蒸気量 × その気温での飽和水蒸気量', '湿度(%) = 空気にふくまれる水蒸気量 − その気温での飽和水蒸気量']);
+      steps = ['湿度(%) = 空気1m³にふくまれる水蒸気量 ÷ その気温での飽和水蒸気量 × 100 で求める'];
+    } else if (pat === 5) {
+      const row = shuffle(SATURATION_VAPOR_TABLE_2_)[0];
+      const targetHumidity = shuffle([40, 50, 60, 70, 80, 90])[0];
+      const vaporAmt = Math.round(row.sat * targetHumidity / 100 * 10) / 10;
+      answer = Math.round((vaporAmt / row.sat) * 100);
+      question = `気温${row.t}℃での飽和水蒸気量は${row.sat}g/m³です。この気温で、1m³の空気中に${vaporAmt}gの水蒸気がふくまれているとき、この空気の湿度は何%ですか。（小数第1位を四捨五入して整数で答えなさい）`;
+      const wrongs = [answer + 10, Math.max(1, answer - 10), answer + 5].filter(w => w !== answer && w > 0 && w <= 100);
+      steps = ['湿度(%) = 空気にふくまれる水蒸気量 ÷ その気温での飽和水蒸気量 × 100', `= ${vaporAmt} ÷ ${row.sat} × 100 ≈ ${answer}%`];
+      return { category: 'humidity2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 6) {
+      const sorted = SATURATION_VAPOR_TABLE_2_;
+      const dewIdx = randInt(0, sorted.length - 2);
+      const curIdx = randInt(dewIdx + 1, sorted.length - 1);
+      const dewRow = sorted[dewIdx];
+      const curRow = sorted[curIdx];
+      question = `気温${curRow.t}℃の空気1m³に、${dewRow.sat}gの水蒸気がふくまれています。この空気を冷やしていくと、何℃で水滴ができ始めますか(下の表を参考にしなさい)。表：気温5℃→飽和水蒸気量6.8g/m³、10℃→9.4g/m³、15℃→12.8g/m³、20℃→17.3g/m³、25℃→23.1g/m³、30℃→30.4g/m³。`;
+      answer = dewRow.t;
+      const wrongCands = sorted.filter(r => r.t !== dewRow.t).map(r => r.t);
+      steps = [`空気にふくまれる水蒸気量(${dewRow.sat}g)と、飽和水蒸気量が等しくなる気温が露点である`, `表より、${dewRow.t}℃の飽和水蒸気量が${dewRow.sat}g/m³なので、露点は${dewRow.t}℃`];
+      return { category: 'humidity2', question, answer, choices: buildChoices(answer, wrongCands), steps };
+    } else {
+      question = '気温が下がっても、空気中にふくまれる水蒸気の量が変わらないとき、湿度はどうなりますか。';
+      answer = '高くなる';
+      choices = shuffle(['高くなる', '低くなる', '変わらない', '0になる']);
+      steps = ['気温が下がると飽和水蒸気量は小さくなるが、空気中の水蒸気量が変わらなければ、湿度(%) = 水蒸気量 ÷ 飽和水蒸気量 × 100 の分母が小さくなるため、湿度は高くなる'];
+    }
+    return { category: 'humidity2', question, answer, choices, steps };
+  }
+
+  // 雲のでき方・水の循環（中2）：空気の上昇と断熱膨張、雲・雨・雪のでき方、
+  // 上昇気流ができる原因、水の循環と太陽エネルギー。
+  function genCloudWaterCycle2() {
+    const pat = randInt(0, 10);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '空気のかたまりが上昇すると、上空ほど気圧が低いため、空気はどうなりますか。';
+      answer = '膨張する';
+      choices = shuffle(['膨張する', '収縮する', '変化しない', '密度が大きくなる']);
+      steps = ['上空ほど気圧が低いため、上昇した空気は膨張する'];
+    } else if (pat === 1) {
+      question = '上昇した空気が膨張すると、空気の温度はどうなりますか。';
+      answer = '下がる';
+      choices = shuffle(['下がる', '上がる', '変わらない', '0℃になる']);
+      steps = ['空気が膨張すると、温度が下がる(断熱膨張)'];
+    } else if (pat === 2) {
+      question = '上昇する空気の温度が露点以下になると、何が起こりますか。';
+      answer = '水蒸気の一部が凝結して水滴ができる';
+      choices = shuffle([answer, '水蒸気の量が急に増える', '空気の温度が急に上がる', '空気が下降し始める']);
+      steps = ['空気の温度が露点以下になると、水蒸気の一部が凝結し、細かい水滴(または氷の粒)ができる'];
+    } else if (pat === 3) {
+      question = '雲の正体は何ですか。';
+      answer = '空気中にできた、小さな水滴や氷の粒の集まり';
+      choices = shuffle([answer, '大量の水蒸気だけが集まったもの', '空気中のちりだけが集まったもの', '氷だけでできた大きな塊']);
+      steps = ['雲は、上空で空気が冷やされてできた小さな水滴や氷の粒が集まったものである'];
+    } else if (pat === 4) {
+      question = '雲をつくる水滴や氷の粒が成長して大きくなり、上昇気流で支えられなくなって落ちてくると、何ができますか。';
+      answer = '雨や雪';
+      choices = shuffle(['雨や雪', '霧だけ', '虹だけ', '雷だけ']);
+      steps = ['雲の粒が成長して大きくなり、支えられなくなって落下すると、水滴のまま(またはとけて)落ちれば雨、氷の粒のまま落ちれば雪になる'];
+    } else if (pat === 5) {
+      question = '雲ができるときの上昇気流の原因として、正しくないものはどれですか。';
+      answer = '空気が冷えて地表付近に下降するとき';
+      choices = shuffle([answer, '太陽の光であたためられた地表付近の空気が上昇するとき', '空気が山の斜面に沿って上へ移動するとき', 'あたたかい空気と冷たい空気がぶつかるとき']);
+      steps = ['上昇気流は、地表があたためられたとき、空気が山の斜面を上るとき、あたたかい空気と冷たい空気がぶつかるとき(前線)、低気圧の中心付近などで起こる。下降するときは上昇気流は起こらない'];
+    } else if (pat === 6) {
+      question = '地球上の水が、蒸発して大気中の水蒸気となり、雲となって雨や雪となり地表にもどる、というくり返しを何といいますか。';
+      answer = '水の循環';
+      choices = shuffle(['水の循環', '大気の循環', '炭素の循環', 'エネルギーの保存']);
+      steps = ['地球上の水は、蒸発して大気中に水蒸気としてふくまれ、雲となり、雨や雪となって地表にもどることをくり返している。これを水の循環という'];
+    } else if (pat === 7) {
+      question = '水の循環をもたらしている、大もとのエネルギー源は何ですか。';
+      answer = '太陽のエネルギー';
+      choices = shuffle(['太陽のエネルギー', '地球内部の熱エネルギー', '月の引力', '風力エネルギー']);
+      steps = ['地表の水は、太陽のエネルギーを受けて蒸発し、大気中に水蒸気としてふくまれる。水の循環をもたらしているのは太陽のエネルギーである'];
+    } else if (pat === 8) {
+      question = '地球上に存在する水のうち、最も大きな割合を占めているものは何ですか。';
+      answer = '海水';
+      choices = shuffle(['海水', '河川の水', '氷河・氷雪', '大気中の水蒸気']);
+      steps = ['地球上に存在する水は、海水が約97.4%と最も多くを占めている'];
+    } else {
+      question = '地球上の水のうち、陸地にある水(海水以外)で、最も多くの割合を占めているものは何ですか。';
+      answer = '氷河・氷雪';
+      choices = shuffle(['氷河・氷雪', '河川の水', '地下水', '大気中の水蒸気']);
+      steps = ['陸地にある水のうち、氷河や氷雪が占める割合が最も高く、次いで地下水が多い'];
+    }
+    return { category: 'cloudWaterCycle2', question, answer, choices, steps };
+  }
+
+  // 気団と前線（中2）：気団・前線面・前線の定義、寒冷前線と温暖前線のしくみと
+  // 天気の変化、閉塞前線・停滞前線、温帯低気圧の進む向き。
+  function genAirMassFront2() {
+    const pat = randInt(0, 11);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '広い範囲にわたって、気温や湿度がほぼ一様な空気のかたまりを何といいますか。';
+      answer = '気団';
+      choices = shuffle(['気団', '前線', '低気圧', '偏西風']);
+      steps = ['広い範囲で気温や湿度がほぼ一様な空気のかたまりを気団という'];
+    } else if (pat === 1) {
+      question = '性質の異なる気団が接したときにできる境界面を何といいますか。';
+      answer = '前線面';
+      choices = shuffle(['前線面', '前線', '等圧線', '気団面']);
+      steps = ['性質の異なる気団が接してできる境界面を前線面という'];
+    } else if (pat === 2) {
+      question = '前線面と地表が交わる線を何といいますか。';
+      answer = '前線';
+      choices = shuffle(['前線', '前線面', '等圧線', '境界線']);
+      steps = ['前線面と地表面が交わる線を前線という'];
+    } else if (pat === 3) {
+      question = '寒気が暖気の下にもぐりこみ、暖気を急激におし上げながら進む前線を何といいますか。';
+      answer = '寒冷前線';
+      choices = shuffle(['寒冷前線', '温暖前線', '停滞前線', '閉塞前線']);
+      steps = ['寒気が暖気の下にもぐりこみ、暖気をおし上げながら進む前線を寒冷前線という'];
+    } else if (pat === 4) {
+      question = '寒冷前線付近でよく発達する雲と、もたらされやすい雨のようすとして正しいものはどれですか。';
+      answer = '積乱雲が発達し、せまい範囲に強い雨が短時間降る';
+      choices = shuffle([answer, '乱層雲ができ、広い範囲に弱い雨が長時間降る', '巻雲だけができ、雨は降らない', '雲はできず、晴れることが多い']);
+      steps = ['寒冷前線付近では積乱雲が発達しやすく、せまい範囲に強い雨が短時間降ることが多い'];
+    } else if (pat === 5) {
+      question = '寒冷前線が通過した後、気温と風向はどのように変化しますか。';
+      answer = '気温が急に下がり、風向は北寄りに変わる';
+      choices = shuffle([answer, '気温が急に上がり、風向は南寄りに変わる', '気温は変化せず、風向だけ変わる', '気温は下がるが、風向は変化しない']);
+      steps = ['寒冷前線の通過後は、寒気におおわれるため気温が急に下がり、風向は南寄りから北寄りに変わることが多い'];
+    } else if (pat === 6) {
+      question = '暖気が寒気の上にはい上がりながら進む前線を何といいますか。';
+      answer = '温暖前線';
+      choices = shuffle(['温暖前線', '寒冷前線', '停滞前線', '閉塞前線']);
+      steps = ['暖気が寒気の上をはい上がるようにして進む前線を温暖前線という'];
+    } else if (pat === 7) {
+      question = '温暖前線付近でよく発達する雲と、もたらされやすい雨のようすとして正しいものはどれですか。';
+      answer = '乱層雲などができ、広い範囲に弱い雨が長時間降る';
+      choices = shuffle([answer, '積乱雲が発達し、せまい範囲に強い雨が短時間降る', '雲はできず、晴れることが多い', '雪だけが降り、雨は降らない']);
+      steps = ['温暖前線付近では乱層雲などが広い範囲にでき、弱い雨が長時間降ることが多い'];
+    } else if (pat === 8) {
+      question = '温暖前線が通過した後、気温と風向はどのように変化しますか。';
+      answer = '気温が上がり、風向は南寄りに変わる';
+      choices = shuffle([answer, '気温が下がり、風向は北寄りに変わる', '気温は変化せず、風向だけ変わる', '気温は上がるが、風向は変化しない']);
+      steps = ['温暖前線の通過後は、暖気におおわれるため気温が上がり、風向は南寄りに変わることが多い'];
+    } else if (pat === 9) {
+      question = '寒冷前線が温暖前線に追いついてできる前線を何といいますか。';
+      answer = '閉塞前線';
+      choices = shuffle(['閉塞前線', '停滞前線', '寒冷前線', '温暖前線']);
+      steps = ['寒冷前線が温暖前線に追いつくことでできる前線を閉塞前線という'];
+    } else if (pat === 10) {
+      question = '寒気と暖気の勢力がほぼ同じで、ほとんど動かない前線を何といいますか。梅雨の時期にできる梅雨前線はこの例です。';
+      answer = '停滞前線';
+      choices = shuffle(['停滞前線', '寒冷前線', '温暖前線', '閉塞前線']);
+      steps = ['寒気と暖気の勢力がつり合って、ほとんど動かない前線を停滞前線という(梅雨前線・秋雨前線など)'];
+    } else {
+      question = '中緯度帯で発生し、寒冷前線と温暖前線をともなう低気圧(温帯低気圧)は、日本付近ではおよそどちらからどちらへ移動しますか。';
+      answer = '西から東へ移動する';
+      choices = shuffle(['西から東へ移動する', '東から西へ移動する', '南から北へ移動する', '北から南へ移動する']);
+      steps = ['日本列島付近の温帯低気圧は、上空にふく偏西風の影響を受けて、西から東へ移動することが多い'];
+    }
+    return { category: 'airMassFront2', question, answer, choices, steps };
+  }
+
+  // 大気の動きと天気の変化（中2）：偏西風、季節風(モンスーン)、大陸と海洋の
+  // あたたまり方のちがい、海陸風のしくみ。
+  function genAtmosphericCirculation2() {
+    const pat = randInt(0, 8);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '中緯度帯の上空を、西から東へ向かってふく風を何といいますか。';
+      answer = '偏西風';
+      choices = shuffle(['偏西風', '季節風', '貿易風', '極東風']);
+      steps = ['中緯度帯の上空を、西から東へ向かってふく風を偏西風という'];
+    } else if (pat === 1) {
+      question = '日本付近の天気が、およそ西から東へ変わっていくことが多いのはなぜですか。';
+      answer = '上空を西から東へふく偏西風の影響を受けているから';
+      choices = shuffle([answer, '地球の自転の向きと逆に天気が動くから', '季節風が1年中同じ向きにふくから', '海流の向きによって決まるから']);
+      steps = ['日本付近の上空をふく偏西風の影響で、雲や低気圧・高気圧が西から東へ移動しやすいため、天気も西から東へ変わっていくことが多い'];
+    } else if (pat === 2) {
+      question = '大陸と海洋のあたたまり方・冷え方のちがいによって、季節ごとに特徴的な向きにふく風を何といいますか。';
+      answer = '季節風（モンスーン）';
+      choices = shuffle(['季節風（モンスーン）', '偏西風', '海陸風', '貿易風']);
+      steps = ['大陸と海洋のあたたまり方・冷え方のちがいによって、季節によって特徴的な向きにふく風を季節風(モンスーン)という'];
+    } else if (pat === 3) {
+      question = '日本付近で、冬に発達する季節風はどの方向からふきますか。';
+      answer = '北西の季節風（ユーラシア大陸から太平洋へ）';
+      choices = shuffle([answer, '南東の季節風（太平洋からユーラシア大陸へ）', '真北からの季節風', '真南からの季節風']);
+      steps = ['冬は、冷えて高気圧となったユーラシア大陸から、あたたかく低気圧となった太平洋へ向けて、北西の季節風がふく'];
+    } else if (pat === 4) {
+      question = '日本付近で、夏に発達する季節風はどの方向からふきますか。';
+      answer = '南東の季節風（太平洋からユーラシア大陸へ）';
+      choices = shuffle([answer, '北西の季節風（ユーラシア大陸から太平洋へ）', '真北からの季節風', '真南からの季節風']);
+      steps = ['夏は、あたたかく低気圧となったユーラシア大陸に向けて、高気圧となった太平洋から、南東の季節風がふく'];
+    } else if (pat === 5) {
+      question = '同じ面積の地表面が同じ量の太陽エネルギーを受けたとき、陸地(岩石)と海洋(水)では、どちらの方があたたまりやすく、冷えやすいですか。';
+      answer = '陸地（岩石）の方があたたまりやすく、冷えやすい';
+      choices = shuffle([answer, '海洋（水）の方があたたまりやすく、冷えやすい', 'どちらも同じようにあたたまり、冷える', '陸地はあたたまりやすいが、冷えにくい']);
+      steps = ['岩石(陸)は水(海)よりもあたたまりやすく、冷えやすい。水は岩石よりもあたたまりにくく、冷えにくい'];
+    } else if (pat === 6) {
+      question = '昼間、海に面した地域で、海から陸に向かってふく風を何といいますか。';
+      answer = '海風';
+      choices = shuffle(['海風', '陸風', '季節風', '偏西風']);
+      steps = ['昼間は陸の気温が海よりも高くなり、陸上の気圧が低くなるため、海から陸へ向かって風(海風)がふく'];
+    } else if (pat === 7) {
+      question = '夜間、海に面した地域で、陸から海に向かってふく風を何といいますか。';
+      answer = '陸風';
+      choices = shuffle(['陸風', '海風', '季節風', '偏西風']);
+      steps = ['夜間は陸の気温が海よりも低くなり、陸上の気圧が高くなるため、陸から海へ向かって風(陸風)がふく'];
+    } else {
+      question = '朝や夕方、海風と陸風が入れかわるときに、風がほとんど止まることを何といいますか。';
+      answer = '凪（なぎ）';
+      choices = shuffle(['凪（なぎ）', '無風帯', '静穏帯', '停滞風']);
+      steps = ['海風と陸風が入れかわる朝や夕方には、風向が変化する境目で風がほとんど止まる時間帯があり、これを凪という'];
+    }
+    return { category: 'atmosphericCirculation2', question, answer, choices, steps };
+  }
+
+  // 日本の天気の特徴（中2）：日本付近の気団(シベリア・オホーツク海・小笠原)、
+  // 冬(西高東低)・夏(南高北低)の気圧配置、梅雨・秋雨前線、台風。
+  function genJapanWeather2() {
+    const pat = randInt(0, 12);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '冬に発達し、冷たく乾燥した性質をもつ、シベリア大陸上にできる気団を何といいますか。';
+      answer = 'シベリア気団';
+      choices = shuffle(['シベリア気団', 'オホーツク海気団', '小笠原気団', '揚子江気団']);
+      steps = ['冬にシベリア大陸上で発達する、冷たく乾燥した気団をシベリア気団という'];
+    } else if (pat === 1) {
+      question = '初夏や秋に、日本の北東の海上に発達する、冷たくしめった性質をもつ気団を何といいますか。';
+      answer = 'オホーツク海気団';
+      choices = shuffle(['オホーツク海気団', 'シベリア気団', '小笠原気団', '揚子江気団']);
+      steps = ['初夏や秋に発達する、冷たくしめったオホーツク海上の気団をオホーツク海気団という'];
+    } else if (pat === 2) {
+      question = '夏に発達する、あたたかくしめった性質をもつ、太平洋上の気団を何といいますか。';
+      answer = '小笠原気団';
+      choices = shuffle(['小笠原気団', 'シベリア気団', 'オホーツク海気団', '揚子江気団']);
+      steps = ['夏に発達する、あたたかくしめった太平洋上の気団を小笠原気団という'];
+    } else if (pat === 3) {
+      question = '冬に、シベリア高気圧が日本の西に、低気圧が東にできる特徴的な気圧配置を何といいますか。';
+      answer = '西高東低';
+      choices = shuffle(['西高東低', '南高北低', '東高西低', '北高南低']);
+      steps = ['冬は、西のシベリア高気圧と東の低気圧による西高東低の気圧配置になり、南北に等圧線がせまい間隔で並ぶ'];
+    } else if (pat === 4) {
+      question = '夏に、太平洋高気圧が日本の南に発達し、北に低気圧がある特徴的な気圧配置を何といいますか。';
+      answer = '南高北低';
+      choices = shuffle(['南高北低', '西高東低', '北高南低', '東高西低']);
+      steps = ['夏は、南の太平洋高気圧(小笠原気団)が発達し、南高北低の気圧配置になる'];
+    } else if (pat === 5) {
+      question = '冬、日本海側で雪が多くなるのはなぜですか。';
+      answer = '北西の季節風が日本海の上で水蒸気を含み、山地にぶつかって上昇し、雪を降らせるから';
+      choices = shuffle([answer, '太平洋からしめった南東の風がふきこむから', '台風が日本海側を通ることが多いから', '日本海側だけ気温がとても低いから']);
+      steps = ['冷たく乾燥した北西の季節風が、あたたかい日本海の上で水蒸気を多くふくみ、日本列島の山地にぶつかって上昇することで、日本海側に雪を降らせる'];
+    } else if (pat === 6) {
+      question = '夏の季節風は、どのような性質をもち、どちらの方向からふきますか。';
+      answer = 'あたたかくしめった、南東の風';
+      choices = shuffle(['あたたかくしめった、南東の風', '冷たく乾燥した、北西の風', 'あたたかく乾燥した、北東の風', '冷たくしめった、南西の風']);
+      steps = ['夏は、あたたかくしめった小笠原気団から、南東の季節風がふく'];
+    } else if (pat === 7) {
+      question = '初夏に、冷たくしめったオホーツク海気団と、あたたかくしめった小笠原気団の勢力がぶつかりあってできる停滞前線を何といいますか。';
+      answer = '梅雨前線';
+      choices = shuffle(['梅雨前線', '秋雨前線', '寒冷前線', '温暖前線']);
+      steps = ['オホーツク海気団と小笠原気団の勢力がぶつかりあってできる停滞前線を梅雨前線といい、この時期を梅雨(つゆ)という'];
+    } else if (pat === 8) {
+      question = '夏の終わりから秋にかけて、梅雨前線と同じようなしくみでできる停滞前線を何といいますか。';
+      answer = '秋雨前線';
+      choices = shuffle(['秋雨前線', '梅雨前線', '寒冷前線', '温暖前線']);
+      steps = ['夏の終わりから秋にかけて、オホーツク海気団と小笠原気団の間に再びできる停滞前線を秋雨前線という'];
+    } else if (pat === 9) {
+      question = '春や秋の天気が周期的に変わりやすいのはなぜですか。';
+      answer = '移動性高気圧と低気圧が、交互に日本付近を西から東へ通過するから';
+      choices = shuffle([answer, '台風が次々に日本付近を通過するから', '梅雨前線が停滞し続けるから', '季節風の向きが毎日入れかわるから']);
+      steps = ['春や秋は、移動性高気圧と低気圧が交互に西から東へ通過するため、天気が数日の周期で変わりやすい'];
+    } else if (pat === 10) {
+      question = '熱帯の海上で発生した熱帯低気圧のうち、最大風速がおよそ何m/s以上に発達したものを台風とよびますか。';
+      answer = '約17m/s以上';
+      choices = shuffle(['約17m/s以上', '約5m/s以上', '約50m/s以上', '約100m/s以上']);
+      steps = ['熱帯の海上で発生した熱帯低気圧のうち、最大風速が約17m/s以上に発達したものを台風という'];
+    } else if (pat === 11) {
+      question = '台風は、夏から秋にかけて、日本付近ではおもにどのように進むことが多いですか。';
+      answer = '太平洋高気圧のへりに沿うように北上する';
+      choices = shuffle([answer, '常に真西へ直進する', 'シベリア高気圧に向かって南下する', '発生した場所からほとんど動かない']);
+      steps = ['台風は、夏から秋にかけて、太平洋高気圧(小笠原気団)のへりに沿うように北上し、日本付近に近づくことが多い'];
+    } else {
+      question = '気象災害に備えて、災害の予想される範囲や、避難経路・避難場所などをまとめた地図を何といいますか。';
+      answer = 'ハザードマップ';
+      choices = shuffle(['ハザードマップ', '天気図', '柱状図', '等圧線図']);
+      steps = ['災害に備えるために、予想される災害の範囲や避難経路・避難場所などをまとめた地図をハザードマップという'];
+    }
+    return { category: 'japanWeather2', question, answer, choices, steps };
+  }
+
+  // 静電気と放電（中2）：静電気が生じる理由(電子の移動)、電気の間にはたらく力、
+  // 放電・真空放電、陰極線(電子線)の正体、放射線の種類・性質・利用。
+  function genStaticElectricity2() {
+    const pat = randInt(0, 10);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '異なる種類の物体どうしをこすり合わせたときに生じる電気を何といいますか。';
+      answer = '静電気';
+      choices = shuffle(['静電気', '電流', '磁力', '放射線']);
+      steps = ['異なる種類の物体をこすり合わせたときに生じる電気を静電気という'];
+    } else if (pat === 1) {
+      question = '物体どうしをこすり合わせると静電気が生じるのはなぜですか。';
+      answer = '一方の物体から他方の物体へ、－の電気(電子)が移動するから';
+      choices = shuffle([answer, '摩擦によって新しい電気がつくられるから', '空気中の電気が物体に吸収されるから', '物体の質量が変化するから']);
+      steps = ['こすり合わせると、一方の物体から他方の物体へ電子(－の電気)が移動する。電子を受け取った方は－に、失った方は＋に帯電する'];
+    } else if (pat === 2) {
+      question = '同じ種類の電気(＋と＋、または－と－)どうしの間には、どのような力がはたらきますか。';
+      answer = '退け合う力（反発力）';
+      choices = shuffle(['退け合う力（反発力）', '引き合う力', '力ははたらかない', '常に0になる力']);
+      steps = ['同じ種類の電気どうしの間には退け合う力(反発力)、異なる種類の電気どうしの間には引き合う力がはたらく'];
+    } else if (pat === 3) {
+      question = 'たまっていた静電気が、空間を移動したり、たまっていた場所から流れ出したりする現象を何といいますか。';
+      answer = '放電';
+      choices = shuffle(['放電', '帯電', '感電', '発電']);
+      steps = ['たまっていた静電気が空間を移動したり流れ出したりする現象を放電という'];
+    } else if (pat === 4) {
+      question = '気圧を小さくした空間(放電管の中など)に電流が流れる現象を何といいますか。';
+      answer = '真空放電';
+      choices = shuffle(['真空放電', '帯電', '誘導放電', '接地']);
+      steps = ['気圧を小さくした空間に電流が流れる現象を真空放電という'];
+    } else if (pat === 5) {
+      question = '真空放電管の中で、－極から出て＋極に向かって進む線(電子線)の正体は何ですか。';
+      answer = '－の電気を帯びた小さな粒子（電子）の流れ';
+      choices = shuffle([answer, '＋の電気を帯びた小さな粒子の流れ', '目に見えない光の一種', '空気の振動']);
+      steps = ['真空放電管に見られる陰極線(電子線)の正体は、－の電気を帯びた小さな粒子である電子の流れである'];
+    } else if (pat === 6) {
+      question = '真空放電管の中の陰極線(電子線)は、－極と＋極のどちらから、どちらに向かって流れますか。';
+      answer = '－極から＋極に向かって流れる';
+      choices = shuffle(['－極から＋極に向かって流れる', '＋極から－極に向かって流れる', '両方の極から同時に出る', 'どちらの極からも出ない']);
+      steps = ['陰極線(電子線)は、－極(陰極)から出て、＋極(陽極)に向かって流れる'];
+    } else if (pat === 7) {
+      question = '陰極線(電子線)が流れている空間に電圧を加えると、陰極線はどちら側に曲がりますか。';
+      answer = '＋極側';
+      choices = shuffle(['＋極側', '－極側', '曲がらずに直進する', 'どちらにも曲がらず消える']);
+      steps = ['陰極線は－の電気を帯びた電子の流れなので、電圧を加えると＋極側に引き寄せられて曲がる'];
+    } else if (pat === 8) {
+      question = 'X線・α線・β線・γ線などのように、物質を通りぬける性質(透過性)などをもつ電磁波や粒子の流れの総称を何といいますか。';
+      answer = '放射線';
+      choices = shuffle(['放射線', '陰極線', '電子線', '偏西風']);
+      steps = ['X線・α線・β線・γ線などをまとめて放射線という'];
+    } else if (pat === 9) {
+      question = '放射線がもつ、物質を通りぬける性質を何といいますか。';
+      answer = '透過性';
+      choices = shuffle(['透過性', '放射能', '帯電性', '伝導性']);
+      steps = ['放射線が物質を通りぬける性質を透過性という'];
+    } else {
+      question = '放射線を出す物質や、放射線を出す性質(能力)そのものを何といいますか。また、放射線はどのようなことに利用されていますか。';
+      answer = '放射能といい、レントゲン検査などに利用される';
+      choices = shuffle([answer, '放射能といい、決して利用されることはない', '透過能といい、料理にのみ利用される', '放射能といい、天気予報にのみ利用される']);
+      steps = ['放射線を出す物質・性質を放射能という。放射線は、レントゲン検査や工業製品の改良など、医療や工業のさまざまな場面で利用されている'];
+    }
+    return { category: 'staticElectricity2', question, answer, choices, steps };
+  }
+
+  // 回路に流れる電流・電圧（中2）：直列回路と並列回路の定義、電流計・電圧計の
+  // 接続方法と単位、直列・並列回路での電流と電圧の規則。
+  function genCircuitCurrentVoltage2() {
+    const pat = randInt(0, 12);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '電流が流れる道筋を何といいますか。';
+      answer = '回路';
+      choices = shuffle(['回路', '回路図', '電源', '導線']);
+      steps = ['電流が流れる道筋を回路という'];
+    } else if (pat === 1) {
+      question = '電流の流れる道すじが、枝分かれせずに1本になっている回路を何といいますか。';
+      answer = '直列回路';
+      choices = shuffle(['直列回路', '並列回路', '開回路', '短絡回路']);
+      steps = ['電流の流れる道すじが枝分かれしない回路を直列回路という'];
+    } else if (pat === 2) {
+      question = '電流の流れる道すじが、枝分かれしている回路を何といいますか。';
+      answer = '並列回路';
+      choices = shuffle(['並列回路', '直列回路', '開回路', '短絡回路']);
+      steps = ['電流の流れる道すじが枝分かれしている回路を並列回路という'];
+    } else if (pat === 3) {
+      question = '電流の単位はアンペア(記号A)ですが、1A(アンペア)は何mA(ミリアンペア)ですか。';
+      answer = '1000mA';
+      choices = shuffle(['1000mA', '100mA', '10mA', '10000mA']);
+      steps = ['1A = 1000mA である'];
+    } else if (pat === 4) {
+      question = '電流計を回路につなぐときの正しいつなぎ方はどれですか。';
+      answer = '測定したい点に直列につなぎ、＋端子を電源の＋極側につなぐ';
+      choices = shuffle([answer, '測定したい点に並列につなぎ、＋端子を電源の＋極側につなぐ', '測定したい点に直列につなぎ、－端子を電源の＋極側につなぐ', 'どのようにつないでもよい']);
+      steps = ['電流計は、測定したい点に直列につなぎ、＋端子は電源の＋極側に、－端子は予想される電流の大きさに近いものからつなぐ'];
+    } else if (pat === 5) {
+      question = '電圧の単位は何ですか。また、その記号は何ですか。';
+      answer = 'ボルト（記号V）';
+      choices = shuffle(['ボルト（記号V）', 'アンペア（記号A）', 'ワット（記号W）', 'オーム（記号Ω）']);
+      steps = ['電圧の単位はボルトで、記号はVである'];
+    } else if (pat === 6) {
+      question = '電圧計を回路につなぐときの正しいつなぎ方はどれですか。';
+      answer = '測定したい区間に並列につなぎ、＋端子を電源の＋極側につなぐ';
+      choices = shuffle([answer, '測定したい区間に直列につなぎ、＋端子を電源の＋極側につなぐ', '測定したい区間に並列につなぎ、－端子を電源の＋極側につなぐ', 'どのようにつないでもよい']);
+      steps = ['電圧計は、測定したい区間に並列につなぎ、＋端子は電源の＋極側に、－端子は予想される電圧の大きさに近いものからつなぐ'];
+    } else if (pat === 7) {
+      question = '直列回路の各点を流れる電流の大きさには、どのような規則がありますか。';
+      answer = '回路のどこでも、電流の大きさは同じである';
+      choices = shuffle([answer, '電源から遠いほど、電流は小さくなる', '電源から遠いほど、電流は大きくなる', '電流の大きさは場所によってばらばらである']);
+      steps = ['直列回路では、回路のどこでも電流の大きさは同じになる'];
+    } else if (pat === 8) {
+      question = '並列回路で、電流が枝分かれする前の電流の大きさと、枝分かれした後の電流の大きさには、どのような関係がありますか。';
+      answer = '枝分かれする前の電流の大きさは、枝分かれした後の電流の大きさの和に等しい';
+      choices = shuffle([answer, '枝分かれする前の電流の大きさは、枝分かれした後のどちらか一方と同じになる', '枝分かれすると、電流の大きさの合計は半分になる', '枝分かれする前後で、電流の大きさに関係はない']);
+      steps = ['並列回路では、枝分かれする前の電流の大きさは、枝分かれした後の各電流の大きさの和に等しい(合流した後も同じ)'];
+    } else if (pat === 9) {
+      question = '直列回路で、各区間にかかる電圧の大きさと、全体に加わる電圧の大きさには、どのような関係がありますか。';
+      answer = '各区間にかかる電圧の和が、全体に加わる電圧に等しい';
+      choices = shuffle([answer, '各区間にかかる電圧は、全体に加わる電圧と同じ大きさである', '各区間にかかる電圧の和は、全体に加わる電圧より必ず小さい', '電圧の大きさに規則性はない']);
+      steps = ['直列回路では、各区間にかかる電圧の和(V1+V2+…)が、回路全体に加わる電圧に等しい'];
+    } else if (pat === 10) {
+      question = '並列回路で、枝分かれした各区間にかかる電圧の大きさには、どのような規則がありますか。';
+      answer = '枝分かれした各区間の電圧は、どれも電源の電圧に等しい';
+      choices = shuffle([answer, '枝分かれした各区間の電圧の和が、電源の電圧に等しい', '枝分かれした区間ごとに、電圧はばらばらである', '電圧は枝分かれの数だけ小さくなる']);
+      steps = ['並列回路では、枝分かれした各区間にかかる電圧の大きさは、どれも電源の電圧に等しい'];
+    } else if (pat === 11) {
+      const v1 = randInt(1, 9);
+      const v2 = randInt(1, 9);
+      const total = v1 + v2;
+      question = `直列回路で、ある豆電球に${v1}V、別の豆電球に${v2}Vの電圧が加わっていました。回路全体(電源)に加わる電圧は何Vですか。`;
+      answer = total;
+      const wrongs = [total + 1, total + 2, Math.max(1, total - 1)].filter(w => w !== total);
+      steps = [`直列回路では、各区間の電圧の和が全体の電圧に等しい`, `${v1} + ${v2} = ${total}V`];
+      return { category: 'circuitCurrentVoltage2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const i1 = randInt(1, 9) / 10;
+      const i2 = randInt(1, 9) / 10;
+      const total = Math.round((i1 + i2) * 100) / 100;
+      question = `並列回路で、枝分かれした2つの豆電球にそれぞれ${i1}A、${i2}Aの電流が流れていました。枝分かれする前の電流の大きさは何Aですか。`;
+      answer = total;
+      const wrongs = [Math.round((total + 0.1) * 100) / 100, Math.round((total + 0.2) * 100) / 100, Math.max(0.1, Math.round((total - 0.1) * 100) / 100)].filter(w => w !== total);
+      steps = [`並列回路では、枝分かれする前の電流 = 枝分かれした後の電流の和`, `${i1} + ${i2} = ${total}A`];
+      return { category: 'circuitCurrentVoltage2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+    return { category: 'circuitCurrentVoltage2', question, answer, choices, steps };
+  }
+
+  // 電気エネルギー（中2）：電力(消費電力)の定義と計算、熱量の定義と計算、
+  // 電力量の定義・単位(Wh・kWh)と計算。
+  function genElectricalEnergy2() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '1秒間あたりに消費される電気エネルギーの大きさを何といいますか。';
+      answer = '電力（消費電力）';
+      choices = shuffle(['電力（消費電力）', '電流', '電圧', '熱量']);
+      steps = ['1秒間あたりに消費される電気エネルギーの大きさを電力(消費電力)という'];
+    } else if (pat === 1) {
+      question = '電力の単位は何ですか。また、その記号は何ですか。';
+      answer = 'ワット（記号W）';
+      choices = shuffle(['ワット（記号W）', 'ジュール（記号J）', 'ボルト（記号V）', 'アンペア（記号A）']);
+      steps = ['電力の単位はワットで、記号はWである'];
+    } else if (pat === 2) {
+      question = '電力を求める式として正しいものはどれですか。';
+      answer = '電力(W) = 電圧(V) × 電流(A)';
+      choices = shuffle([answer, '電力(W) = 電圧(V) ÷ 電流(A)', '電力(W) = 電圧(V) − 電流(A)', '電力(W) = 電流(A) ÷ 電圧(V)']);
+      steps = ['電力(W) = 電圧(V) × 電流(A) で求められる'];
+    } else if (pat === 3) {
+      const v = randInt(2, 12);
+      const i = randInt(1, 5);
+      const p = v * i;
+      question = `電圧${v}V、電流${i}Aの電熱線があります。この電熱線が消費する電力は何Wですか。`;
+      answer = p;
+      const wrongs = [p + v, p + i, Math.max(1, p - v)].filter(w => w !== p);
+      steps = [`電力 = 電圧 × 電流 = ${v} × ${i} = ${p}W`];
+      return { category: 'electricalEnergy2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 4) {
+      question = '熱の量を表す物理量を熱量といいますが、その単位は何ですか。また、その記号は何ですか。';
+      answer = 'ジュール（記号J）';
+      choices = shuffle(['ジュール（記号J）', 'ワット（記号W）', 'カロリー（記号cal）のみ', 'ヘルツ（記号Hz）']);
+      steps = ['熱量の単位はジュールで、記号はJである(1cal ≒ 4.2Jという関係もある)'];
+    } else if (pat === 5) {
+      question = '電熱線から発生する熱量を求める式として正しいものはどれですか。';
+      answer = '熱量(J) = 電力(W) × 時間(s)';
+      choices = shuffle([answer, '熱量(J) = 電力(W) ÷ 時間(s)', '熱量(J) = 電力(W) − 時間(s)', '熱量(J) = 電圧(V) × 時間(s)']);
+      steps = ['熱量(J) = 電力(W) × 時間(s) で求められる'];
+    } else if (pat === 6) {
+      const p = randInt(5, 20) * 10;
+      const t = randInt(1, 10) * 10;
+      const q = p * t;
+      question = `${p}Wの電熱線に${t}秒間電流を流しました。発生する熱量は何Jですか。`;
+      answer = q;
+      const wrongs = [q + p, Math.max(1, q - p), q * 2].filter(w => w !== q);
+      steps = [`熱量 = 電力 × 時間 = ${p} × ${t} = ${q}J`];
+      return { category: 'electricalEnergy2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 7) {
+      question = '一定時間に消費した電気エネルギーの総量を何といいますか。また、Jの他によく使われる単位を1つ答えなさい。';
+      answer = '電力量（単位の例：Wh〈ワット時〉、kWh〈キロワット時〉）';
+      choices = shuffle([answer, '電力（単位の例：A〈アンペア〉）', '熱量（単位の例：℃〈度〉）', '電圧（単位の例：Ω〈オーム〉）']);
+      steps = ['一定時間に消費した電気エネルギーの総量を電力量といい、J(ジュール)の他にWh(ワット時)・kWh(キロワット時)という単位も使われる'];
+    } else if (pat === 8) {
+      const p = randInt(2, 15) * 100;
+      const t = randInt(1, 5);
+      const e = p * t;
+      question = `${p}Wの電気ストーブを${t}時間使用しました。消費した電力量は何Whですか。`;
+      answer = e;
+      const wrongs = [e + p, Math.max(1, e - p), e * 2].filter(w => w !== e);
+      steps = [`電力量(Wh) = 電力(W) × 時間(h) = ${p} × ${t} = ${e}Wh`];
+      return { category: 'electricalEnergy2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      const whVal = randInt(2, 9) * 1000;
+      const kwh = whVal / 1000;
+      question = `${whVal}Whは何kWhですか。`;
+      answer = kwh;
+      const wrongs = [kwh + 1, Math.max(1, kwh - 1), kwh * 10].filter(w => w !== kwh);
+      steps = [`1kWh = 1000Whなので、${whVal} ÷ 1000 = ${kwh}kWh`];
+      return { category: 'electricalEnergy2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    }
+    return { category: 'electricalEnergy2', question, answer, choices, steps };
+  }
+
+  // 電圧と電流の関係・オームの法則（中2）：抵抗の定義と単位、オームの法則の
+  // 計算(電流・電圧・抵抗を求める)、導体と不導体、直列回路の合成抵抗。
+  function genOhmsLaw2() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '電流の流れにくさを表す量を何といいますか。';
+      answer = '電気抵抗（抵抗）';
+      choices = shuffle(['電気抵抗（抵抗）', '電力', '電力量', '磁力']);
+      steps = ['電流の流れにくさを表す量を電気抵抗(抵抗)という'];
+    } else if (pat === 1) {
+      question = '抵抗の単位は何ですか。また、その記号は何ですか。';
+      answer = 'オーム（記号Ω）';
+      choices = shuffle(['オーム（記号Ω）', 'ワット（記号W）', 'ボルト（記号V）', 'アンペア（記号A）']);
+      steps = ['抵抗の単位はオームで、記号はΩである'];
+    } else if (pat === 2) {
+      question = '電熱線に流れる電流の大きさは、電熱線に加わる電圧の大きさとどのような関係にありますか。この関係を何といいますか。';
+      answer = '電圧に比例する（オームの法則）';
+      choices = shuffle([answer, '電圧に反比例する（オームの法則）', '電圧とは無関係である', '電圧の2乗に比例する']);
+      steps = ['電熱線に流れる電流は、電熱線に加わる電圧に比例する。この関係をオームの法則という(V=RI)'];
+    } else if (pat === 3) {
+      const r = randInt(2, 20);
+      const i = randInt(1, 9);
+      const v = r * i;
+      question = `抵抗${r}Ωの電熱線に${v}Vの電圧を加えました。流れる電流は何Aですか。`;
+      answer = i;
+      const wrongs = [i + 1, i + 2, Math.max(1, i - 1)].filter(w => w !== i);
+      steps = [`電流 = 電圧 ÷ 抵抗 = ${v} ÷ ${r} = ${i}A`];
+      return { category: 'ohmsLaw2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 4) {
+      const r = randInt(2, 20);
+      const i = randInt(1, 9);
+      const v = r * i;
+      question = `抵抗${r}Ωの電熱線に${i}Aの電流を流したいです。何Vの電圧を加えればよいですか。`;
+      answer = v;
+      const wrongs = [v + r, Math.max(1, v - r), v * 2].filter(w => w !== v);
+      steps = [`電圧 = 抵抗 × 電流 = ${r} × ${i} = ${v}V`];
+      return { category: 'ohmsLaw2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 5) {
+      const r = randInt(2, 20);
+      const i = randInt(1, 9);
+      const v = r * i;
+      question = `電熱線に${v}Vの電圧を加えたところ、${i}Aの電流が流れました。この電熱線の抵抗は何Ωですか。`;
+      answer = r;
+      const wrongs = [r + 1, r + 2, Math.max(1, r - 1)].filter(w => w !== r);
+      steps = [`抵抗 = 電圧 ÷ 電流 = ${v} ÷ ${i} = ${r}Ω`];
+      return { category: 'ohmsLaw2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 6) {
+      question = '金属のように、電流を通しやすい物質を何といいますか。';
+      answer = '導体';
+      choices = shuffle(['導体', '不導体（絶縁体）', '半導体', '誘導体']);
+      steps = ['金属のように電流を通しやすい物質を導体という'];
+    } else if (pat === 7) {
+      question = 'ガラスやゴムのように、電流をほとんど通さない物質を何といいますか。';
+      answer = '不導体（絶縁体）';
+      choices = shuffle(['不導体（絶縁体）', '導体', '半導体', '誘導体']);
+      steps = ['ガラスやゴムのように電流をほとんど通さない物質を不導体(絶縁体)という'];
+    } else if (pat === 8) {
+      const ra = randInt(2, 20);
+      const rb = randInt(2, 20);
+      const total = ra + rb;
+      question = `抵抗${ra}Ωと抵抗${rb}Ωを直列につなぎました。合成抵抗は何Ωですか。`;
+      answer = total;
+      const wrongs = [total + 2, Math.max(1, total - 2), Math.max(1, Math.abs(ra - rb))].filter(w => w !== total);
+      steps = [`直列回路の合成抵抗 = Ra + Rb = ${ra} + ${rb} = ${total}Ω`];
+      return { category: 'ohmsLaw2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else {
+      question = '2つの抵抗を並列につないだとき、合成抵抗の大きさは、それぞれの抵抗の大きさと比べてどうなりますか。';
+      answer = 'どちらの抵抗よりも小さくなる';
+      choices = shuffle(['どちらの抵抗よりも小さくなる', 'どちらの抵抗よりも大きくなる', '2つの抵抗の和と等しくなる', '2つの抵抗の平均と等しくなる']);
+      steps = ['並列回路の合成抵抗は、1/R = 1/Ra + 1/Rb の関係になり、どちらの抵抗よりも小さくなる'];
+    }
+    return { category: 'ohmsLaw2', question, answer, choices, steps };
+  }
+
+  // 磁界・電流と磁界・モーター・発電のしくみ（中2）：磁界と磁力線、導線・コイルの
+  // まわりの磁界、電流が磁界から受ける力とモーター、電磁誘導と発電、直流と交流。
+  function genMagneticFieldGeneration2() {
+    const pat = randInt(0, 13);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '磁力(磁石による力)がはたらく空間を何といいますか。';
+      answer = '磁界（磁場）';
+      choices = shuffle(['磁界（磁場）', '電界', '重力場', '力線']);
+      steps = ['磁力がはたらく空間を磁界(磁場)という'];
+    } else if (pat === 1) {
+      question = '磁界の中のある点での磁界の向きは、その点に置いた方位磁針のどちらの極が指す向きで表しますか。';
+      answer = 'N極が指す向き';
+      choices = shuffle(['N極が指す向き', 'S極が指す向き', 'N極とS極の中間', '磁針の向きとは無関係']);
+      steps = ['磁界の向きは、その点に置いた方位磁針のN極が指す向きで表す'];
+    } else if (pat === 2) {
+      question = '磁界のようすを、磁界の向きに沿って書いた線を何といいますか。また、この線の間隔がせまいところほど、磁界の強さはどうなりますか。';
+      answer = '磁力線といい、間隔がせまいほど磁界が強い';
+      choices = shuffle([answer, '磁力線といい、間隔がせまいほど磁界が弱い', '等圧線といい、間隔がせまいほど磁界が強い', '磁力線といい、間隔とは無関係である']);
+      steps = ['磁界のようすを表す線を磁力線といい、N極からS極に向かう向きに引く。磁力線の間隔がせまいところほど磁界が強い'];
+    } else if (pat === 3) {
+      question = '1本の直線状の導線に電流を流すと、そのまわりにはどのような形の磁界ができますか。';
+      answer = '導線を中心にした同心円状の磁界';
+      choices = shuffle([answer, '導線に平行な直線状の磁界', '導線の片側だけにできる磁界', '磁界はできない']);
+      steps = ['導線に電流を流すと、導線を中心とした同心円状の磁界ができる'];
+    } else if (pat === 4) {
+      question = '直線状の導線に電流を流したときにできる磁界の向きは、電流の向きに対してどのような法則で決まりますか。';
+      answer = '右ねじの法則（右ねじが進む向きを電流の向きに合わせると、右ねじを回す向きが磁界の向きになる）';
+      choices = shuffle([answer, '左手の法則（フレミングの法則）', '右手の法則のみで、ねじとは無関係', '磁界の向きは電流の向きと常に同じになる']);
+      steps = ['電流の向きと、そのまわりにできる磁界の向きの関係は、右ねじの法則で表される'];
+    } else if (pat === 5) {
+      question = 'コイルの中にできる磁界を強くするには、どうすればよいですか。';
+      answer = '電流を大きくする、またはコイルの巻数を増やす';
+      choices = shuffle([answer, '電流を小さくする、またはコイルの巻数を減らす', 'コイルの形を四角形にする', '導線を太くするだけでよい']);
+      steps = ['コイルに流す電流を大きくする、またはコイルの巻数を増やすと、コイル内部の磁界は強くなる'];
+    } else if (pat === 6) {
+      question = '磁界の中に置いた導線に電流を流すと、導線は力を受けます。この力の向きは、電流の向きと磁界の向きに対してどのような関係にありますか。';
+      answer = '電流の向きと磁界の向きの両方に垂直な向きになる';
+      choices = shuffle([answer, '電流の向きと同じ向きになる', '磁界の向きと同じ向きになる', '力の向きは常に一定で、電流や磁界の向きと無関係である']);
+      steps = ['磁界の中で電流を流した導線が受ける力の向きは、電流の向きと磁界の向きの両方に垂直な向きになる'];
+    } else if (pat === 7) {
+      question = '電流の向きか磁界の向きのどちらか一方だけを逆にすると、導線が磁界から受ける力の向きはどうなりますか。';
+      answer = '逆になる';
+      choices = shuffle(['逆になる', '変わらない', '0になる', '2倍になる']);
+      steps = ['電流の向き・磁界の向きのどちらか一方を逆にすると、導線が受ける力の向きも逆になる(両方を逆にすると、力の向きはもとにもどる)'];
+    } else if (pat === 8) {
+      question = 'モーターが同じ向きに回転し続けるために、コイルに流れる電流の向きを半回転ごとに切りかえるはたらきをする部品を何といいますか。';
+      answer = '整流子（とブラシ）';
+      choices = shuffle(['整流子（とブラシ）', '検流計', 'コンデンサー', '変圧器']);
+      steps = ['モーターでは、整流子とブラシのはたらきによって、半回転ごとにコイルに流れる電流の向きが切りかわり、同じ向きに回転し続ける'];
+    } else if (pat === 9) {
+      question = 'コイルの中の磁界が変化することで、コイルに電圧が生じて電流が流れる現象を何といいますか。';
+      answer = '電磁誘導';
+      choices = shuffle(['電磁誘導', '静電誘導', '電気分解', '磁力誘導']);
+      steps = ['コイルの中の磁界が変化することで、コイルに電圧が生じ、電流が流れる現象を電磁誘導という'];
+    } else if (pat === 10) {
+      question = '電磁誘導によってコイルに流れる電流を何といいますか。';
+      answer = '誘導電流';
+      choices = shuffle(['誘導電流', '交流電流', '静電流', '渦電流']);
+      steps = ['電磁誘導によってコイルに流れる電流を誘導電流という'];
+    } else if (pat === 11) {
+      question = '誘導電流を大きくする方法として、正しくないものはどれですか。';
+      answer = '磁石をコイルの中に入れたまま止めておく';
+      choices = shuffle([answer, '磁石を速く動かす', '磁石を強いものに変える', 'コイルの巻数を増やす']);
+      steps = ['誘導電流は、磁石を速く動かす、磁石を強くする、コイルの巻数を増やすと大きくなる。磁石を止めてしまうと、磁界が変化しないため誘導電流は流れない'];
+    } else if (pat === 12) {
+      question = '乾電池から流れる電流のように、一定の向きに流れる電流を何といいますか。また、家庭のコンセントから流れる電流のように、周期的に向きが変わる電流を何といいますか。';
+      answer = '前者を直流、後者を交流という';
+      choices = shuffle([answer, '前者を交流、後者を直流という', '両方とも直流という', '両方とも交流という']);
+      steps = ['乾電池のように一定の向きに流れる電流を直流、家庭のコンセントのように周期的に向きが変わる電流を交流という'];
+    } else {
+      question = '交流の1秒間あたりの波のくり返しの数を何といいますか。また、その単位は何ですか。';
+      answer = '周波数（単位：ヘルツ、記号Hz）';
+      choices = shuffle(['周波数（単位：ヘルツ、記号Hz）', '振動数（単位：メートル、記号m）', '電力量（単位：ワット時、記号Wh）', '波長（単位：秒、記号s）']);
+      steps = ['交流の1秒間あたりの波のくり返しの数を周波数といい、単位はヘルツ(記号Hz)である。東日本では50Hz、西日本では60Hzが使われている'];
+    }
+    return { category: 'magneticFieldGeneration2', question, answer, choices, steps };
   }
 
   // 遺伝の規則性と遺伝子（中3）：対立形質・純系・分離の法則・顕性形質と潜性形質・
@@ -15547,6 +16418,7 @@
 
   function renderSettings() {
     if (state.subject === 'science') {
+      els.settingsGrid.classList.add('settings-grid-single');
       els.settingsDailyLimitNote.textContent = '🔬理科の出題単元を選べます。チェックした単元からランダムに出題します。';
       els.settingsGrid.innerHTML = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_()).map(c => {
         const cs = state.catStats[c.id];
@@ -15575,6 +16447,7 @@
       });
       return;
     }
+    els.settingsGrid.classList.remove('settings-grid-single');
     els.settingsDailyLimitNote.textContent = !isDailyCategoryLimitActive()
       ? '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。'
       : todayKey() >= DAILY_CATEGORY_LIMIT_V2_START
