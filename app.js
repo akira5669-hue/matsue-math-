@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260904a';
+  var APP_BUILD_ = '20260905a';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -15387,6 +15387,8 @@
     hpRulesBannerText: document.getElementById('hpRulesBannerText'),
     mpCapBanner: document.getElementById('mpCapBanner'),
     mpCapBannerText: document.getElementById('mpCapBannerText'),
+    winterCourseBanner: document.getElementById('winterCourseBanner'),
+    winterCourseBannerText: document.getElementById('winterCourseBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -16039,6 +16041,7 @@
     renderCurseBanner();
     renderHpRulesBanner_();
     renderMpCapBanner_();
+    renderWinterCourseBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -16776,6 +16779,22 @@
     els.mpCapBanner.hidden = false;
     if (els.mpCapBannerText) {
       els.mpCapBannerText.textContent = '📢 9月1日からのお知らせ：🔬理科は、10問連続正解ではなく5問連続正解ごとに+5MP（理科の経験値+5）がもらえるようになりました！ログイン時にもらえるMPも、1日最大100MP（計算50＋文章題50）の上限に含まれるようになりました（何度ログインし直しても増えません）。';
+    }
+  }
+
+  // 冬期講習（小6対象の中学準備講座・算数総復習講座）のお知らせ。
+  var WINTER_COURSE_BANNER_START_ = '2026-09-05';
+  var WINTER_COURSE_BANNER_END_ = '2026-12-15';
+  function renderWinterCourseBanner_() {
+    if (!els.winterCourseBanner) return;
+    var today = todayKey();
+    if (today < WINTER_COURSE_BANNER_START_ || today > WINTER_COURSE_BANNER_END_) {
+      els.winterCourseBanner.hidden = true;
+      return;
+    }
+    els.winterCourseBanner.hidden = false;
+    if (els.winterCourseBannerText) {
+      els.winterCourseBannerText.textContent = '📢【冬期講習の講座のご案内】小6対象の中学準備講座と算数の総復習講座（無料）を、冬期講習から行います。対象は小6の外部生です。塾を検討している小6のお友達がいたら、ぜひご連絡ください。紹介したお友達が授業に参加された場合、紹介した生徒さんに1000MPを付与します。在籍している方は、小6の算数の授業が冬期講習から総復習になります。そのまま受講できます。';
     }
   }
 
