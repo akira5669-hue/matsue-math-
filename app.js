@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260905d';
+  var APP_BUILD_ = '20260905e';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -18023,12 +18023,20 @@
   });
 
   document.getElementById('selectAllBtn').addEventListener('click', () => {
-    CATEGORIES.forEach(c => state.enabled.add(c.id));
+    if (state.subject === 'science') {
+      SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_()).forEach(c => state.enabledScience.add(c.id));
+    } else {
+      CATEGORIES.forEach(c => state.enabled.add(c.id));
+    }
     renderSettings();
     saveGameState(state);
   });
   document.getElementById('deselectAllBtn').addEventListener('click', () => {
-    state.enabled.clear();
+    if (state.subject === 'science') {
+      state.enabledScience.clear();
+    } else {
+      state.enabled.clear();
+    }
     renderSettings();
     saveGameState(state);
   });
