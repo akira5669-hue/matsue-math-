@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260905c';
+  var APP_BUILD_ = '20260905d';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -2411,6 +2411,14 @@
     { id: 'electricalEnergy2', label: '電気エネルギー（中2）', gen: genElectricalEnergy2, addedDate: '2026-09-05' },
     { id: 'ohmsLaw2', label: '電圧と電流の関係・オームの法則（中2）', gen: genOhmsLaw2, addedDate: '2026-09-05' },
     { id: 'magneticFieldGeneration2', label: '磁界・電流と磁界・発電のしくみ（中2）', gen: genMagneticFieldGeneration2, addedDate: '2026-09-05' },
+    { id: 'atomsMolecules2', label: '原子・分子（中2）', gen: genAtomsMolecules2, addedDate: '2026-09-05' },
+    { id: 'chemicalDecomposition2', label: '化学変化と分解（中2）', gen: genChemicalDecomposition2, addedDate: '2026-09-05' },
+    { id: 'elementFormulaDrill2', label: '元素記号・化学式の暗記トレーニング（中2）', gen: genElementFormulaDrill2, addedDate: '2026-09-05' },
+    { id: 'chemicalCombination2', label: '異なる物質の結びつき・化学反応式（中2）', gen: genChemicalCombination2, addedDate: '2026-09-05' },
+    { id: 'massConservation2', label: '化学変化と質量の変化・質量保存の法則（中2）', gen: genMassConservation2, addedDate: '2026-09-05' },
+    { id: 'oxidationReduction2', label: '酸化と還元（中2）', gen: genOxidationReduction2, addedDate: '2026-09-05' },
+    { id: 'massRatioReaction2', label: '化学変化する物質どうしの質量の割合（中2）', gen: genMassRatioReaction2, addedDate: '2026-09-05' },
+    { id: 'chemicalHeat2', label: '化学変化と熱・化学エネルギー（中2）', gen: genChemicalHeat2, addedDate: '2026-09-05' },
     { id: 'growthReproduction3', label: '生物の成長と生殖（中3）', gen: genGrowthReproduction3, addedDate: '2026-08-14' },
     { id: 'evolution3', label: '生物の多様性と進化（中3）', gen: genEvolution3, addedDate: '2026-08-14' },
     { id: 'motion3', label: '物体の運動（中3）', gen: genMotion3, addedDate: '2026-08-14' },
@@ -6961,6 +6969,509 @@
       steps = ['交流の1秒間あたりの波のくり返しの数を周波数といい、単位はヘルツ(記号Hz)である。東日本では50Hz、西日本では60Hzが使われている'];
     }
     return { category: 'magneticFieldGeneration2', question, answer, choices, steps };
+  }
+
+  // 原子・分子（中2）：原子の定義と性質、元素・元素記号・周期表、分子の定義、
+  // 単体・化合物・混合物の分類、化学式。
+  const SUBSTANCE_CLASSIFY_2_ = [
+    { formula: 'O₂', name: '酸素', type: '単体' },
+    { formula: 'H₂', name: '水素', type: '単体' },
+    { formula: 'Cu', name: '銅', type: '単体' },
+    { formula: 'Mg', name: 'マグネシウム', type: '単体' },
+    { formula: 'Fe', name: '鉄', type: '単体' },
+    { formula: 'CO₂', name: '二酸化炭素', type: '化合物' },
+    { formula: 'H₂O', name: '水', type: '化合物' },
+    { formula: 'NaCl', name: '塩化ナトリウム', type: '化合物' },
+    { formula: 'CuO', name: '酸化銅', type: '化合物' },
+    { formula: '', name: '食塩水', type: '混合物' },
+    { formula: '', name: '空気', type: '混合物' },
+    { formula: '', name: '海水', type: '混合物' },
+  ];
+  function genAtomsMolecules2() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '物質をつくる、それ以上分割することができない最小の粒子を何といいますか。';
+      answer = '原子';
+      choices = shuffle(['原子', '分子', '元素', 'イオン']);
+      steps = ['物質をつくる、それ以上分割できない最小の粒子を原子という(ドルトンが提唱した)'];
+    } else if (pat === 1) {
+      question = '原子の性質として正しいものはどれですか。';
+      answer = '化学変化によって、それ以上分割することができない';
+      choices = shuffle([answer, '化学変化によって、いくつでも分割することができる', '化学変化のたびに、新しい原子ができる', '化学変化のたびに、原子の質量が変化する']);
+      steps = ['原子は、化学変化によってそれ以上分割することができない粒子である'];
+    } else if (pat === 2) {
+      question = '化学変化が起こっても、原子について変わらないこととして正しいものはどれですか。';
+      answer = '原子の種類が変わったり、新しくできたり、なくなったりしない';
+      choices = shuffle([answer, '原子の種類は変わらないが、数は自由に増減する', '原子は化学変化のたびに新しくつくられる', '原子は化学変化のたびに消えてなくなる']);
+      steps = ['化学変化によって、原子の種類が変わったり、新しくできたり、なくなったりすることはない'];
+    } else if (pat === 3) {
+      question = '原子について、種類ごとに決まっているものは何ですか。';
+      answer = '質量や大きさ';
+      choices = shuffle(['質量や大きさ', '色だけ', '味だけ', 'におい']);
+      steps = ['原子は、種類によって質量や大きさが決まっている'];
+    } else if (pat === 4) {
+      question = '原子の種類のことを何といいますか。現在、何種類が確認されていますか。';
+      answer = '元素、約118種類';
+      choices = shuffle([answer, '分子、約50種類', '化合物、約1000種類', '元素、約10種類']);
+      steps = ['原子の種類を元素といい、現在118種類が確認されている'];
+    } else if (pat === 5) {
+      question = '元素を表す記号(元素記号)は、どのように表されますか。';
+      answer = 'アルファベット1文字、または2文字で表す';
+      choices = shuffle([answer, '必ず漢字1文字で表す', '数字だけで表す', 'アルファベット3文字以上で表す']);
+      steps = ['元素記号は、全てアルファベット1文字または2文字で表される(1文字目は大文字、2文字目は小文字)'];
+    } else if (pat === 6) {
+      question = '元素を原子番号の順に並べ、性質のよく似た元素が縦の列に並ぶように整理した表を何といいますか。';
+      answer = '元素の周期表';
+      choices = shuffle(['元素の周期表', '化学式一覧表', '分子構造表', '原子番号表']);
+      steps = ['元素を原子番号順に並べ、性質の似た元素が縦の列にくるように整理した表を元素の周期表という'];
+    } else if (pat === 7) {
+      question = 'いくつかの原子が結びついてできた、物質の性質を示す最小の粒子を何といいますか。';
+      answer = '分子';
+      choices = shuffle(['分子', '原子', '元素', 'イオン']);
+      steps = ['いくつかの原子が結びついてできた、物質の性質を示す最小の粒子を分子という'];
+    } else if (pat === 8) {
+      const s = shuffle(SUBSTANCE_CLASSIFY_2_)[0];
+      const label = s.formula ? `${s.name}(${s.formula})` : s.name;
+      question = `${label}は、単体・化合物・混合物のどれに分類されますか。`;
+      answer = s.type;
+      choices = shuffle(['単体', '化合物', '混合物', '元素']);
+      steps = [s.type === '単体'
+        ? '1種類の元素だけからできている物質を単体という'
+        : s.type === '化合物'
+          ? '2種類以上の元素からできている、1種類の物質を化合物という'
+          : '2種類以上の物質が混じり合っているものを混合物という'];
+    } else {
+      question = '元素記号を使って、物質を表したものを何といいますか。';
+      answer = '化学式';
+      choices = shuffle(['化学式', '元素記号', '構造式', '分子式のみ']);
+      steps = ['元素記号を用いて物質を表したものを化学式という'];
+    }
+    return { category: 'atomsMolecules2', question, answer, choices, steps };
+  }
+
+  // 化学変化と分解（中2）：分解・熱分解・電気分解の定義、炭酸水素ナトリウムと
+  // 酸化銀の熱分解、水の電気分解(体積比・発生する気体の性質)。
+  function genChemicalDecomposition2() {
+    const pat = randInt(0, 11);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '物質が、もとの物質とは性質の異なる別の物質に変わる変化を何といいますか。';
+      answer = '化学変化（化学反応）';
+      choices = shuffle(['化学変化（化学反応）', '状態変化', '物理変化', '核変化']);
+      steps = ['物質がもとの物質とは異なる別の物質に変わる変化を化学変化(化学反応)という'];
+    } else if (pat === 1) {
+      question = '1種類の物質が、2種類以上の別の物質に分かれる化学変化を何といいますか。';
+      answer = '分解';
+      choices = shuffle(['分解', '化合', '中和', '燃焼']);
+      steps = ['1種類の物質が2種類以上の別の物質に分かれる化学変化を分解という'];
+    } else if (pat === 2) {
+      question = '加熱することによって物質を分解することを何といいますか。';
+      answer = '熱分解';
+      choices = shuffle(['熱分解', '電気分解', '光分解', '触媒分解']);
+      steps = ['加熱によって物質を分解することを熱分解という'];
+    } else if (pat === 3) {
+      question = '炭酸水素ナトリウムを加熱すると、熱分解して3種類の物質に分かれます。生じる物質として正しいものはどれですか。';
+      answer = '炭酸ナトリウム、水、二酸化炭素';
+      choices = shuffle([answer, '塩化ナトリウム、水素、酸素', '水酸化ナトリウム、二酸化炭素のみ', '炭酸ナトリウムと水のみ']);
+      steps = ['炭酸水素ナトリウムを熱分解すると、炭酸ナトリウム・水・二酸化炭素の3つの物質に分かれる'];
+    } else if (pat === 4) {
+      question = '炭酸水素ナトリウムを加熱するとき、試験管の口を少し下げて加熱するのはなぜですか。';
+      answer = '発生した水が加熱部に流れこんで、試験管が割れるのを防ぐため';
+      choices = shuffle([answer, '気体が発生しやすくするため', '反応の速さを遅くするため', '試験管の中の圧力を高くするため']);
+      steps = ['熱分解で生じた水が、加熱している部分に流れこんで急に冷やされ、試験管が割れるのを防ぐため、口を少し下げて加熱する'];
+    } else if (pat === 5) {
+      question = '炭酸水素ナトリウムの加熱で発生した気体を石灰水に通したところ、石灰水が白くにごりました。この気体は何ですか。';
+      answer = '二酸化炭素';
+      choices = shuffle(['二酸化炭素', '酸素', '水素', 'アンモニア']);
+      steps = ['石灰水を白くにごらせる気体は二酸化炭素である'];
+    } else if (pat === 6) {
+      question = '炭酸水素ナトリウムの加熱で試験管の内側についた液体に、青色の塩化コバルト紙をつけたところ、桃色(赤色)に変わりました。この液体は何ですか。';
+      answer = '水';
+      choices = shuffle(['水', '塩酸', 'エタノール', 'アンモニア水']);
+      steps = ['塩化コバルト紙は、水にふれると青色から桃色(赤色)に変化する。この性質を利用して水であることを確かめる'];
+    } else if (pat === 7) {
+      question = '酸化銀を加熱すると、熱分解して2種類の物質に分かれます。生じる物質として正しいものはどれですか。';
+      answer = '銀と酸素';
+      choices = shuffle(['銀と酸素', '銀と水素', '金と酸素', '銅と酸素']);
+      steps = ['酸化銀を熱分解すると、銀と酸素に分かれる'];
+    } else if (pat === 8) {
+      question = '電流を流すことによって物質を分解することを何といいますか。';
+      answer = '電気分解';
+      choices = shuffle(['電気分解', '熱分解', '光分解', '中和分解']);
+      steps = ['電流を流すことによって物質を分解することを電気分解という'];
+    } else if (pat === 9) {
+      question = '水に電流を流して電気分解すると、陰極(－極)側と陽極(＋極)側にはそれぞれ何が発生しますか。また、発生する体積比(水素：酸素)はどうなりますか。';
+      answer = '陰極側に水素、陽極側に酸素が発生し、体積比は水素：酸素＝2：1';
+      choices = shuffle([answer, '陰極側に酸素、陽極側に水素が発生し、体積比は水素：酸素＝2：1', '陰極側に水素、陽極側に酸素が発生し、体積比は水素：酸素＝1：2', '陰極・陽極どちらにも同じ気体（水素）が発生する']);
+      steps = ['水を電気分解すると、陰極側に水素、陽極側に酸素が発生し、発生する体積比は水素：酸素＝2：1になる'];
+    } else if (pat === 10) {
+      question = '水を電気分解するとき、純粋な水ではなく水酸化ナトリウムなどをとかした水溶液を使うのはなぜですか。';
+      answer = '純粋な水には電流がほとんど流れないため、電流を流れやすくするため';
+      choices = shuffle([answer, '発生する気体の量を減らすため', '水の温度を下げるため', '反応を遅くするため']);
+      steps = ['純粋な水はほとんど電流を流さないため、水酸化ナトリウムなどをとかして電流が流れやすいようにしてから電気分解を行う'];
+    } else {
+      question = '水の電気分解で発生した気体のうち、水素にはどのような性質がありますか。';
+      answer = '火を近づけると、音を立てて燃える';
+      choices = shuffle([answer, 'ものを燃やすはたらき（助燃性）がある', '石灰水を白くにごらせる', '刺激臭があり、有毒である']);
+      steps = ['水素は、火を近づけると音を立てて燃える性質がある。一方、酸素にはものを燃やすはたらき(助燃性)があり、火のついた線香を入れると激しく燃える'];
+    }
+    return { category: 'chemicalDecomposition2', question, answer, choices, steps };
+  }
+
+  // 元素記号・化学式の暗記トレーニング（中2）：元素記号⇄元素名、物質名⇄化学式の
+  // 一問一答形式の暗記ドリル。
+  const ELEMENT_PAIRS_2_ = [
+    { symbol: 'H', name: '水素' }, { symbol: 'He', name: 'ヘリウム' }, { symbol: 'C', name: '炭素' }, { symbol: 'N', name: '窒素' },
+    { symbol: 'O', name: '酸素' }, { symbol: 'Na', name: 'ナトリウム' }, { symbol: 'Mg', name: 'マグネシウム' }, { symbol: 'Al', name: 'アルミニウム' },
+    { symbol: 'S', name: '硫黄' }, { symbol: 'Cl', name: '塩素' }, { symbol: 'K', name: 'カリウム' }, { symbol: 'Ca', name: 'カルシウム' },
+    { symbol: 'Fe', name: '鉄' }, { symbol: 'Cu', name: '銅' }, { symbol: 'Zn', name: '亜鉛' }, { symbol: 'Ag', name: '銀' },
+    { symbol: 'Ba', name: 'バリウム' }, { symbol: 'Au', name: '金' },
+  ];
+  const FORMULA_PAIRS_2_ = [
+    { name: '水素', formula: 'H₂' }, { name: '窒素', formula: 'N₂' }, { name: '酸素', formula: 'O₂' }, { name: '塩素', formula: 'Cl₂' },
+    { name: '水', formula: 'H₂O' }, { name: 'アンモニア', formula: 'NH₃' }, { name: '炭酸水素ナトリウム', formula: 'NaHCO₃' },
+    { name: '炭酸ナトリウム', formula: 'Na₂CO₃' }, { name: '酸化銀', formula: 'Ag₂O' }, { name: '塩化ナトリウム', formula: 'NaCl' },
+    { name: '酸化銅', formula: 'CuO' }, { name: '硫化鉄', formula: 'FeS' }, { name: '硫化銅', formula: 'CuS' }, { name: '塩化水素（塩酸）', formula: 'HCl' },
+    { name: '二酸化炭素', formula: 'CO₂' },
+  ];
+  function genElementFormulaDrill2() {
+    const pat = randInt(0, 3);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      const e = shuffle(ELEMENT_PAIRS_2_)[0];
+      question = `元素記号「${e.symbol}」が表す元素の名称は何ですか。`;
+      answer = e.name;
+      const wrongCands = shuffle(ELEMENT_PAIRS_2_.filter(x => x.name !== e.name).map(x => x.name));
+      steps = [`元素記号${e.symbol}は${e.name}を表す`];
+      return { category: 'elementFormulaDrill2', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 1) {
+      const e = shuffle(ELEMENT_PAIRS_2_)[0];
+      question = `${e.name}を表す元素記号は何ですか。`;
+      answer = e.symbol;
+      const wrongCands = shuffle(ELEMENT_PAIRS_2_.filter(x => x.symbol !== e.symbol).map(x => x.symbol));
+      steps = [`${e.name}の元素記号は${e.symbol}である`];
+      return { category: 'elementFormulaDrill2', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else if (pat === 2) {
+      const f = shuffle(FORMULA_PAIRS_2_)[0];
+      question = `${f.name}を表す化学式は何ですか。`;
+      answer = f.formula;
+      const wrongCands = shuffle(FORMULA_PAIRS_2_.filter(x => x.formula !== f.formula).map(x => x.formula));
+      steps = [`${f.name}の化学式は${f.formula}である`];
+      return { category: 'elementFormulaDrill2', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    } else {
+      const f = shuffle(FORMULA_PAIRS_2_)[0];
+      question = `化学式「${f.formula}」が表す物質の名称は何ですか。`;
+      answer = f.name;
+      const wrongCands = shuffle(FORMULA_PAIRS_2_.filter(x => x.name !== f.name).map(x => x.name));
+      steps = [`化学式${f.formula}は${f.name}を表す`];
+      return { category: 'elementFormulaDrill2', question, answer, choices: buildChoicesFromList(answer, wrongCands), steps };
+    }
+  }
+
+  // 異なる物質の結びつき・化学反応式（中2）：化合の定義、鉄と硫黄の反応、
+  // 炭素・水素の燃焼、化学反応式の書き方、分解反応式(酸化銀・炭酸水素ナトリウム)。
+  function genChemicalCombination2() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '2種類以上の物質が結びついて、別の1種類の物質(化合物)ができる化学変化を何といいますか。';
+      answer = '化合';
+      choices = shuffle(['化合', '分解', '中和', '蒸留']);
+      steps = ['2種類以上の物質が結びついて、別の1種類の物質ができる化学変化を化合という'];
+    } else if (pat === 1) {
+      question = '鉄と硫黄の混合物を加熱すると、鉄と硫黄が化合して硫化鉄ができます。この化学変化を化学反応式で表すとどうなりますか。';
+      answer = 'Fe + S → FeS';
+      choices = shuffle([answer, 'Fe + S → Fe₂S', '2Fe + S → Fe₂S', 'Fe + S₂ → FeS₂']);
+      steps = ['鉄原子1個と硫黄原子1個が結びついて硫化鉄になるので、化学反応式は Fe + S → FeS となる'];
+    } else if (pat === 2) {
+      question = '鉄と、鉄と硫黄が化合してできた硫化鉄を比べたとき、磁石を近づけると、どちらが磁石につきますか。';
+      answer = '鉄（反応前の鉄）だけが磁石につく';
+      choices = shuffle([answer, '硫化鉄だけが磁石につく', 'どちらも磁石につく', 'どちらも磁石につかない']);
+      steps = ['鉄は磁石につくが、硫化鉄は鉄とは性質の異なる別の物質になっているため、磁石につかない'];
+    } else if (pat === 3) {
+      question = '鉄にうすい塩酸を加えたときと、硫化鉄にうすい塩酸を加えたときとでは、発生する気体のにおいにどのようなちがいがありますか。';
+      answer = '鉄からは無臭の気体（水素）、硫化鉄からは腐卵臭のある気体（硫化水素）が発生する';
+      choices = shuffle([answer, '鉄からは腐卵臭のある気体、硫化鉄からは無臭の気体が発生する', 'どちらからも無臭の気体だけが発生する', 'どちらからも腐卵臭のある気体だけが発生する']);
+      steps = ['鉄にうすい塩酸を加えると無臭の水素が発生するが、硫化鉄にうすい塩酸を加えると腐卵臭のある硫化水素が発生する。鉄と硫化鉄はまったく性質の異なる物質である'];
+    } else if (pat === 4) {
+      question = '炭素が酸素と化合して二酸化炭素ができる反応を、化学反応式で表すとどうなりますか。';
+      answer = 'C + O₂ → CO₂';
+      choices = shuffle([answer, '2C + O₂ → 2CO₂', 'C + O → CO', 'C + 2O₂ → CO₂']);
+      steps = ['炭素原子1個と酸素分子1個が結びついて二酸化炭素になるので、化学反応式は C + O₂ → CO₂ となる'];
+    } else if (pat === 5) {
+      question = '水素が酸素と化合して水ができる反応を、化学反応式で表すとどうなりますか。';
+      answer = '2H₂ + O₂ → 2H₂O';
+      choices = shuffle([answer, 'H₂ + O₂ → H₂O', 'H₂ + O₂ → H₂O₂', '2H₂ + O₂ → 2HO']);
+      steps = ['矢印の左右で原子の数が等しくなるように係数を合わせると、2H₂ + O₂ → 2H₂O となる'];
+    } else if (pat === 6) {
+      question = '化学反応式を書くときの正しいルールはどれですか。';
+      answer = '矢印の左右で、原子の種類と数がそれぞれ等しくなるようにする';
+      choices = shuffle([answer, '矢印の左右で、物質の種類の数だけそろえればよい', '矢印の右側の原子の数が、左側より多くなるようにする', '係数は常に1でそろえる']);
+      steps = ['化学反応式では、矢印の左右(反応前と反応後)で、原子の種類と数がそれぞれ等しくなるように係数をつける'];
+    } else if (pat === 7) {
+      question = '酸化銀を熱分解する反応を、化学反応式で表すとどうなりますか。';
+      answer = '2Ag₂O → 4Ag + O₂';
+      choices = shuffle([answer, 'Ag₂O → 2Ag + O', 'Ag₂O → Ag + O₂', '2Ag₂O → 2Ag + O₂']);
+      steps = ['矢印の左右で原子の数を合わせると、2Ag₂O → 4Ag + O₂ となる'];
+    } else if (pat === 8) {
+      question = '炭酸水素ナトリウムを熱分解する反応を、化学反応式で表すとどうなりますか。';
+      answer = '2NaHCO₃ → Na₂CO₃ + H₂O + CO₂';
+      choices = shuffle([answer, 'NaHCO₃ → NaCO₃ + H₂O', '2NaHCO₃ → 2Na₂CO₃ + H₂O + CO₂', 'NaHCO₃ → Na₂CO₃ + H₂ + CO₂']);
+      steps = ['矢印の左右で原子の数を合わせると、2NaHCO₃ → Na₂CO₃ + H₂O + CO₂ となる'];
+    } else {
+      question = '化学反応式の物質の前につける数字(係数)は、何の数の比を表していますか。';
+      answer = '反応する物質・生成する物質の、分子(または原子)の数の比';
+      choices = shuffle([answer, '反応する物質の質量の比', '反応する物質の体積の比（気体以外も含む）', '反応にかかる時間の比']);
+      steps = ['化学反応式の係数は、反応する物質や生成する物質の分子(または原子)の数の比を表している'];
+    }
+    return { category: 'chemicalCombination2', question, answer, choices, steps };
+  }
+
+  // 化学変化と質量の変化・質量保存の法則（中2）：沈殿・気体発生・金属酸化の
+  // 反応での質量の変化、質量保存の法則とその理由、物理変化での成立。
+  function genMassConservation2() {
+    const pat = randInt(0, 8);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '化学変化の前後で、反応に関わった物質全体の質量はどうなりますか。この関係を何といいますか。';
+      answer = '変化しない（質量保存の法則）';
+      choices = shuffle([answer, '必ず増加する（質量保存の法則）', '必ず減少する（質量保存の法則）', '反応によって増減はさまざまである']);
+      steps = ['化学変化の前後で、物質全体の質量は変わらない。これを質量保存の法則という'];
+    } else if (pat === 1) {
+      question = 'うすい硫酸とうすい塩化バリウム水溶液を混ぜると、白い沈殿(硫酸バリウム)ができます。この反応の前後で、全体の質量はどうなりますか。';
+      answer = '変化しない';
+      choices = shuffle(['変化しない', '沈殿の分だけ増加する', '沈殿の分だけ減少する', '半分になる']);
+      steps = ['沈殿ができる反応でも、質量保存の法則が成り立ち、反応の前後で全体の質量は変化しない'];
+    } else if (pat === 2) {
+      question = '密閉した容器の中で、炭酸水素ナトリウムとうすい塩酸を反応させ、二酸化炭素を発生させました。この反応の前後で、容器全体の質量はどうなりますか。';
+      answer = '変化しない';
+      choices = shuffle(['変化しない', '発生した気体の分だけ増加する', '発生した気体の分だけ減少する', '半分になる']);
+      steps = ['密閉した容器の中で気体が発生する反応でも、容器の外に何も出ていかないため、全体の質量は変化しない'];
+    } else if (pat === 3) {
+      question = '炭酸水素ナトリウムとうすい塩酸を反応させた後、密閉容器のふたをあけると、質量はどうなりますか。';
+      answer = '発生した二酸化炭素が容器の外に逃げるため、質量は減少する';
+      choices = shuffle([answer, 'ふたをあけても質量は変化しない', '空気が入りこむため、質量は増加する', '半分の質量になる']);
+      steps = ['ふたをあけると、それまで容器内にとどまっていた二酸化炭素が外に逃げてしまうため、その分だけ質量が減少する'];
+    } else if (pat === 4) {
+      question = '密閉した容器の中でスチールウール(鉄)を燃焼させ、酸素と結びつけました。この反応の前後で、容器全体の質量はどうなりますか。';
+      answer = '変化しない';
+      choices = shuffle(['変化しない', '結びついた酸素の分だけ増加する', '結びついた酸素の分だけ減少する', '燃えてなくなるので減少する']);
+      steps = ['密閉容器の中では、酸素も容器内にふくまれているため、鉄が酸素と結びついても容器全体の質量は変化しない'];
+    } else if (pat === 5) {
+      question = '密閉した容器の中でスチールウール(鉄)を燃焼させたとき、鉄(固体)自体の質量は、燃焼前後でどうなりますか。';
+      answer = '空気中の酸素と結びついた分だけ増加する';
+      choices = shuffle([answer, '酸素と結びついても質量は変化しない', '燃えて軽くなるので減少する', '半分の質量になる']);
+      steps = ['鉄が酸素と結びついて酸化鉄になるとき、結びついた酸素の分だけ、固体自体の質量は増加する(ただし容器全体で見れば、その分は空気中の酸素が減っているので、全体の質量は変わらない)'];
+    } else if (pat === 6) {
+      question = '化学変化の前後で質量保存の法則が成り立つのはなぜですか。';
+      answer = '化学変化では原子の組み合わせが変わるだけで、原子が新しくできたり、なくなったりしないから';
+      choices = shuffle([answer, '化学変化によって原子の質量が変化するから', '化学変化のたびに新しい原子がつくられるから', '化学変化では原子の数が半分になるから']);
+      steps = ['化学変化は、原子の組み合わせ(結びつき方)が変わるだけであり、原子そのものが新しくできたりなくなったりしないため、反応の前後で全体の質量は変わらない'];
+    } else if (pat === 7) {
+      question = '氷がとけて水になるような状態変化(物理変化)でも、質量保存の法則は成り立ちますか。';
+      answer = '成り立つ（状態が変わっても質量は変化しない）';
+      choices = shuffle([answer, '成り立たない（とけると質量が減る）', '成り立たない（とけると質量が増える）', '気体になるときだけ成り立つ']);
+      steps = ['質量保存の法則は化学変化だけでなく、状態変化のような物理変化に対しても成り立つ'];
+    } else {
+      question = 'うすい硫酸とうすい塩化バリウム水溶液を混ぜて硫酸バリウムの沈殿と塩酸ができる反応を、化学反応式で表すとどうなりますか。';
+      answer = 'H₂SO₄ + BaCl₂ → 2HCl + BaSO₄';
+      choices = shuffle([answer, 'H₂SO₄ + BaCl₂ → HCl + BaSO₄', '2H₂SO₄ + BaCl₂ → 2HCl + BaSO₄', 'H₂SO₄ + BaCl₂ → 2HCl + Ba₂SO₄']);
+      steps = ['矢印の左右で原子の数を合わせると、H₂SO₄ + BaCl₂ → 2HCl + BaSO₄ となる'];
+    }
+    return { category: 'massConservation2', question, answer, choices, steps };
+  }
+
+  // 酸化と還元（中2）：酸化・酸化物・燃焼の定義、金属の酸化の化学反応式、
+  // 還元の定義と酸化銅の還元(炭素・水素による)、酸化と還元の同時性。
+  function genOxidationReduction2() {
+    const pat = randInt(0, 11);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '物質が酸素と結びつく化学変化を何といいますか。';
+      answer = '酸化';
+      choices = shuffle(['酸化', '還元', '中和', '分解']);
+      steps = ['物質が酸素と結びつく化学変化を酸化という'];
+    } else if (pat === 1) {
+      question = '酸化によってできた物質を何といいますか。';
+      answer = '酸化物';
+      choices = shuffle(['酸化物', '還元物', '化合物のみ', '単体']);
+      steps = ['酸化によってできた物質を酸化物という'];
+    } else if (pat === 2) {
+      question = '物質が熱や光を出しながら、激しく酸素と結びつく化学変化を何といいますか。';
+      answer = '燃焼';
+      choices = shuffle(['燃焼', '還元', '中和', '蒸発']);
+      steps = ['物質が熱や光を出しながら激しく酸化される化学変化を燃焼という'];
+    } else if (pat === 3) {
+      question = '銅を空気中で加熱すると酸化銅になります。この反応を化学反応式で表すとどうなりますか。';
+      answer = '2Cu + O₂ → 2CuO';
+      choices = shuffle([answer, 'Cu + O₂ → CuO₂', 'Cu + O → CuO', '2Cu + O₂ → CuO']);
+      steps = ['矢印の左右で原子の数を合わせると、2Cu + O₂ → 2CuO となる'];
+    } else if (pat === 4) {
+      question = 'マグネシウムを空気中で燃焼させると酸化マグネシウムになります。この反応を化学反応式で表すとどうなりますか。';
+      answer = '2Mg + O₂ → 2MgO';
+      choices = shuffle([answer, 'Mg + O₂ → MgO₂', 'Mg + O → MgO', '2Mg + O₂ → MgO']);
+      steps = ['矢印の左右で原子の数を合わせると、2Mg + O₂ → 2MgO となる'];
+    } else if (pat === 5) {
+      question = '銅を加熱して酸化銅になると、加熱前の銅と比べて質量はどうなりますか。';
+      answer = '空気中の酸素と結びついた分だけ増加する';
+      choices = shuffle([answer, '酸素と結びついても質量は変化しない', '軽くなって質量は減少する', '半分の質量になる']);
+      steps = ['銅が酸素と結びついて酸化銅になるとき、結びついた酸素の分だけ質量が増加する'];
+    } else if (pat === 6) {
+      question = 'ロウやエタノールなど、炭素をふくむ有機物が燃焼すると、炭素と水素はそれぞれ何になりますか。';
+      answer = '炭素は二酸化炭素に、水素は水になる';
+      choices = shuffle([answer, '炭素は一酸化炭素に、水素は酸素になる', '炭素も水素も、そのまま気体として出てくる', '炭素は水に、水素は二酸化炭素になる']);
+      steps = ['有機物が燃焼すると、炭素は酸素と結びついて二酸化炭素になり、水素は酸素と結びついて水になる'];
+    } else if (pat === 7) {
+      question = '酸化物が酸素をうばわれる化学変化を何といいますか。';
+      answer = '還元';
+      choices = shuffle(['還元', '酸化', '中和', '燃焼']);
+      steps = ['酸化物が酸素をうばわれる化学変化を還元という'];
+    } else if (pat === 8) {
+      question = '酸化銅を炭素の粉末と混ぜて加熱すると、酸化銅は還元されて銅になり、炭素は酸化されて二酸化炭素になります。酸化と還元の関係として正しいものはどれですか。';
+      answer = '酸化と還元は同時に起こる';
+      choices = shuffle([answer, '酸化が起こった後に、時間をおいて還元が起こる', '還元が起こった後に、時間をおいて酸化が起こる', '酸化と還元は同時には起こらない']);
+      steps = ['酸化銅と炭素の反応のように、還元が起こるときには、必ず酸化も同時に起こっている(酸化と還元は同時に起こる)'];
+    } else if (pat === 9) {
+      question = '酸化銅を炭素で還元する反応を、化学反応式で表すとどうなりますか。';
+      answer = '2CuO + C → 2Cu + CO₂';
+      choices = shuffle([answer, 'CuO + C → Cu + CO', '2CuO + C → 2Cu + CO', 'CuO + C → Cu + CO₂']);
+      steps = ['矢印の左右で原子の数を合わせると、2CuO + C → 2Cu + CO₂ となる'];
+    } else if (pat === 10) {
+      question = '酸化銅を水素で還元する反応を、化学反応式で表すとどうなりますか。';
+      answer = 'CuO + H₂ → Cu + H₂O';
+      choices = shuffle([answer, '2CuO + H₂ → 2Cu + H₂O', 'CuO + H₂ → Cu + H₂O₂', 'CuO + 2H₂ → Cu + 2H₂O']);
+      steps = ['矢印の左右で原子の数を合わせると、CuO + H₂ → Cu + H₂O となる'];
+    } else {
+      question = '二酸化炭素で満たした容器の中でマグネシウムを燃やすと、マグネシウムは酸化されて酸化マグネシウムになり、二酸化炭素は還元されて炭素になります。これは何を示していますか。';
+      answer = 'マグネシウムは、炭素よりも酸素と結びつきやすい（酸化されやすい）こと';
+      choices = shuffle([answer, 'マグネシウムは、炭素よりも酸素と結びつきにくいこと', '二酸化炭素は酸化されない気体であること', 'マグネシウムは還元されやすい物質であること']);
+      steps = ['マグネシウムが二酸化炭素中の酸素をうばって酸化されることから、マグネシウムは炭素よりも酸素と結びつきやすい(酸化されやすい)ことがわかる'];
+    }
+    return { category: 'oxidationReduction2', question, answer, choices, steps };
+  }
+
+  // 化学変化する物質どうしの質量の割合（中2）：金属と結びつく酸素の質量比
+  // (マグネシウム:酸素=3:2、銅:酸素=4:1)とその計算、質量比が一定である理由。
+  function genMassRatioReaction2() {
+    const pat = randInt(0, 8);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '金属を繰り返し加熱していくと、やがて加熱しても質量が増えなくなります。これはなぜですか。';
+      answer = '金属の質量に対して、結びつくことができる酸素の質量には限度があるから';
+      choices = shuffle([answer, '金属が蒸発してなくなってしまうから', '加熱するほど質量は際限なく増え続けるから', '酸素の量には限度がないから']);
+      steps = ['ある量の金属と結びつくことができる酸素の質量には限度があり、金属がすべて酸化物に変化すると、それ以上加熱しても質量は増えなくなる'];
+    } else if (pat === 1) {
+      question = '金属の質量と、それに結びつく酸素の質量には、どのような関係がありますか。';
+      answer = '比例する';
+      choices = shuffle(['比例する', '反比例する', '関係はない', '金属の質量が2倍になると酸素は4倍になる']);
+      steps = ['金属の質量と、結びつく酸素の質量は比例する'];
+    } else if (pat === 2) {
+      question = 'マグネシウムと、それに結びつく酸素の質量の比(マグネシウム：酸素)は、およそどのようになりますか。';
+      answer = '3：2';
+      choices = shuffle(['3：2', '4：1', '1：1', '2：3']);
+      steps = ['マグネシウムと酸素は、質量の比3：2で結びついて酸化マグネシウムになる'];
+    } else if (pat === 3) {
+      question = '銅と、それに結びつく酸素の質量の比(銅：酸素)は、およそどのようになりますか。';
+      answer = '4：1';
+      choices = shuffle(['4：1', '3：2', '1：1', '2：3']);
+      steps = ['銅と酸素は、質量の比4：1で結びついて酸化銅になる'];
+    } else if (pat === 4) {
+      const mg = randInt(1, 9) * 3;
+      const o2 = Math.round(mg * 2 / 3 * 10) / 10;
+      question = `マグネシウムと酸素は、質量の比3：2で結びついて酸化マグネシウムになります。マグネシウム${mg}gと過不足なく反応する酸素は何gですか。`;
+      answer = o2;
+      const wrongs = [o2 + 1, Math.max(1, o2 - 1), Math.max(1, mg - o2)].filter(w => w !== o2);
+      steps = ['マグネシウム：酸素 = 3：2', `酸素の質量 = ${mg} × 2/3 = ${o2}g`];
+      return { category: 'massRatioReaction2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 5) {
+      const cu = randInt(1, 9) * 4;
+      const o2b = Math.round(cu / 4 * 10) / 10;
+      question = `銅と酸素は、質量の比4：1で結びついて酸化銅になります。銅${cu}gと過不足なく反応する酸素は何gですか。`;
+      answer = o2b;
+      const wrongs = [o2b + 1, Math.max(0.5, o2b - 1), Math.max(1, cu - o2b)].filter(w => w !== o2b);
+      steps = ['銅：酸素 = 4：1', `酸素の質量 = ${cu} × 1/4 = ${o2b}g`];
+      return { category: 'massRatioReaction2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 6) {
+      const mg = randInt(1, 9) * 3;
+      const o2 = Math.round(mg * 2 / 3 * 10) / 10;
+      const mgo = Math.round((mg + o2) * 10) / 10;
+      question = `マグネシウム${mg}gを空気中で加熱し、酸素と過不足なく反応させました(マグネシウム：酸素＝3：2)。できる酸化マグネシウムは何gですか。`;
+      answer = mgo;
+      const wrongs = [mgo + 1, Math.max(1, mgo - 1), mg * 2].filter(w => w !== mgo);
+      steps = [`結びつく酸素 = ${mg} × 2/3 = ${o2}g`, `酸化マグネシウムの質量 = ${mg} + ${o2} = ${mgo}g`];
+      return { category: 'massRatioReaction2', question, answer, choices: buildChoices(answer, wrongs), steps };
+    } else if (pat === 7) {
+      question = '化学変化する物質どうしの質量の割合(質量比)が、反応の組み合わせごとに一定の値に決まっているのはなぜですか。';
+      answer = '結びつく原子どうしの個数の割合が、決まっているから';
+      choices = shuffle([answer, '結びつく原子の質量が、反応のたびに変化するから', '原子の個数の割合は、反応のたびにランダムに変わるから', '質量比は測定するたびに変わるから']);
+      steps = ['化学変化で結びつく原子の個数の割合(比)が物質の組み合わせごとに決まっているため、反応する物質どうしの質量の割合も一定になる'];
+    } else {
+      question = '金属と、決まった量の酸素を反応させるとき、金属の量を増やしていくと、酸化物の質量はどうなりますか。';
+      answer = '酸素と過不足なく反応する量まではふえるが、それ以上金属を増やしても、酸化物の質量はふえない（反応していない金属が残る）';
+      choices = shuffle([answer, '金属の量に関係なく、酸化物の質量は常に一定である', '金属を増やした分だけ、酸化物の質量は際限なくふえ続ける', '金属を増やすと、酸化物の質量はかえって減る']);
+      steps = ['決まった量の酸素と過不足なく反応する量までは金属を増やすほど酸化物の質量もふえるが、それ以上金属を加えても酸素が足りないため、反応できずに金属が残り、酸化物の質量はふえない'];
+    }
+    return { category: 'massRatioReaction2', question, answer, choices, steps };
+  }
+
+  // 化学変化と熱・化学エネルギー（中2）：発熱反応と吸熱反応の定義と具体例、
+  // 化学かいろのしくみ、化学エネルギーの大小関係、メタンの燃焼の化学反応式。
+  function genChemicalHeat2() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '化学変化が起こるときに、熱を周囲に出す反応を何といいますか。';
+      answer = '発熱反応';
+      choices = shuffle(['発熱反応', '吸熱反応', '還元反応', '中和反応のみ']);
+      steps = ['化学変化にともなって、熱を周囲に出す反応を発熱反応という'];
+    } else if (pat === 1) {
+      question = '化学変化が起こるときに、周囲から熱を吸収する反応を何といいますか。この反応が起こると、まわりの温度はどうなりますか。';
+      answer = '吸熱反応といい、まわりの温度は下がる';
+      choices = shuffle([answer, '吸熱反応といい、まわりの温度は上がる', '発熱反応といい、まわりの温度は下がる', '中和反応といい、温度は変化しない']);
+      steps = ['化学変化にともなって周囲から熱を吸収する反応を吸熱反応といい、まわりの温度は下がる'];
+    } else if (pat === 2) {
+      question = '化学かいろは、鉄粉が空気中の酸素と結びつくときに熱を発生させています。この化学変化は何ですか。';
+      answer = '鉄の酸化（発熱反応）';
+      choices = shuffle([answer, '鉄の還元（吸熱反応）', '鉄の分解（発熱反応）', '鉄の中和（吸熱反応）']);
+      steps = ['化学かいろは、鉄粉が空気中の酸素と結びついて酸化する(酸化鉄になる)ときに熱を発生する発熱反応を利用している'];
+    } else if (pat === 3) {
+      question = '塩化アンモニウムと水酸化バリウムを混ぜ合わせる反応は、発熱反応と吸熱反応のどちらですか。';
+      answer = '吸熱反応（温度が下がる）';
+      choices = shuffle([answer, '発熱反応（温度が上がる）', 'どちらでもなく、温度は変化しない', '反応によって発熱にも吸熱にもなる']);
+      steps = ['塩化アンモニウムと水酸化バリウムを混ぜ合わせると、周囲から熱を吸収する吸熱反応が起こり、温度が下がる'];
+    } else if (pat === 4) {
+      question = '物質が燃焼するときの反応は、発熱反応と吸熱反応のどちらですか。';
+      answer = '発熱反応';
+      choices = shuffle(['発熱反応', '吸熱反応', '燃焼は化学変化ではない', '反応によって異なり、決まっていない']);
+      steps = ['物質が燃焼するときは、熱や光を周囲に出す発熱反応である'];
+    } else if (pat === 5) {
+      question = '物質がもっている、熱などとして周囲に取り出すことのできるエネルギーを何といいますか。';
+      answer = '化学エネルギー';
+      choices = shuffle(['化学エネルギー', '運動エネルギー', '位置エネルギー', '熱量']);
+      steps = ['物質がもっている、熱などとして取り出すことのできるエネルギーを化学エネルギーという'];
+    } else if (pat === 6) {
+      question = '発熱反応が起こるとき、反応前の物質がもつ化学エネルギーと、反応後の物質がもつ化学エネルギーでは、どちらが大きいですか。';
+      answer = '反応前の物質がもつ化学エネルギーの方が大きい';
+      choices = shuffle([answer, '反応後の物質がもつ化学エネルギーの方が大きい', '反応の前後で化学エネルギーは変化しない', 'どちらの化学エネルギーも0になる']);
+      steps = ['発熱反応では、反応前の物質がもつ化学エネルギーの方が反応後より大きく、その差の分だけ熱として周囲に放出される'];
+    } else if (pat === 7) {
+      question = '吸熱反応が起こるとき、反応前の物質がもつ化学エネルギーと、反応後の物質がもつ化学エネルギーでは、どちらが大きいですか。';
+      answer = '反応後の物質がもつ化学エネルギーの方が大きい';
+      choices = shuffle([answer, '反応前の物質がもつ化学エネルギーの方が大きい', '反応の前後で化学エネルギーは変化しない', 'どちらの化学エネルギーも0になる']);
+      steps = ['吸熱反応では、反応後の物質がもつ化学エネルギーの方が反応前より大きく、その差の分だけ周囲から熱を吸収する'];
+    } else if (pat === 8) {
+      question = '天然ガスの主成分であるメタン(CH₄)が燃焼する反応を、化学反応式で表すとどうなりますか。';
+      answer = 'CH₄ + 2O₂ → CO₂ + 2H₂O';
+      choices = shuffle([answer, 'CH₄ + O₂ → CO₂ + H₂O', 'CH₄ + 2O₂ → CO₂ + H₂O', '2CH₄ + 2O₂ → 2CO₂ + 2H₂O']);
+      steps = ['矢印の左右で原子の数を合わせると、CH₄ + 2O₂ → CO₂ + 2H₂O となる'];
+    } else {
+      question = 'ガスバーナーの空気調節ねじは、どのようなはたらきをしますか。';
+      answer = '燃焼に必要な空気(酸素)の量を調節して取り入れる';
+      choices = shuffle([answer, 'ガスの量だけを調節する', '炎の色を赤くするためだけに使う', '火を消すためだけに使う']);
+      steps = ['ガスバーナーの空気調節ねじは、燃焼に必要な空気(酸素)を取り入れる量を調節するはたらきをする'];
+    }
+    return { category: 'chemicalHeat2', question, answer, choices, steps };
   }
 
   // 遺伝の規則性と遺伝子（中3）：対立形質・純系・分離の法則・顕性形質と潜性形質・
