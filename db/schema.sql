@@ -42,7 +42,26 @@ CREATE TABLE students (
   world_continent_bonus JSONB NOT NULL DEFAULT '{}', -- 大陸制覇ボーナス(500MP)を今の周で既に受け取った大陸のID一覧(重複付与防止用、周が変わるとリセット)
   treasure_items JSONB NOT NULL DEFAULT '{}', -- 宝箱・鍵・指輪(2026-08-28〜)の所持数。{chestBronze,keyBronze,ringBronze,...}のようにティア(bronze/silver/gold/rainbow)ごとに数える。鍵の購入・指輪の売却・宝箱を開ける処理はサーバー側で検証してから更新する
   spellbooks JSONB NOT NULL DEFAULT '{}', -- なんでも屋で購入する魔法の書(2周目/9月のボス戦専用消費アイテム)の所持冊数。{fire,ice,thunder,...}のように属性ごとに数える。購入はサーバー側でMP検証してから実行する
-  photo_avatar_consent BOOLEAN NOT NULL DEFAULT false -- 写真アバター機能(顔写真をアバターにする機能)の保護者同意。保護者登録フォーム(handleRegisterGuardian)で、お子様のID・パスワードを検証したうえで同意チェックが入っていれば自動的にtrueになる(先生による手動フラグ付けは不要)
+  photo_avatar_consent BOOLEAN NOT NULL DEFAULT false, -- 写真アバター機能(顔写真をアバターにする機能)の保護者同意。保護者登録フォーム(handleRegisterGuardian)で、お子様のID・パスワードを検証したうえで同意チェックが入っていれば自動的にtrueになる(先生による手動フラグ付けは不要)
+  -- 1日のMP獲得上限のサーバー側管理(2026-09-07〜)。以前は端末のlocalStorageだけで
+  -- 「今日の獲得済みMP」を管理していたため、同じIDを複数端末で使うと、端末ごとに
+  -- 上限のカウントが0からリセットされ、端末の台数分だけ上限を超えて稼げてしまう
+  -- 不具合(生徒からの実報告あり)があった。points_today_calc/word/bonusは
+  -- handleSyncPointsで「サーバー保持値」と「端末申告値」のうち大きい方を採用する形で
+  -- 端末をまたいでマージし、実際にpointsへ加算してよい増分(legitDelta)をこの
+  -- マージ後の値の増分だけに制限することで、端末を何台使っても実際に加算される
+  -- MPの合計が1日の上限(計算50+文章題50+ボーナス系)を超えないようにする。
+  points_date TEXT,                        -- 上記カウンタの基準日(JST, 'yyyy-MM-dd')
+  points_today_calc INTEGER NOT NULL DEFAULT 0,  -- 当日、計算問題で加算されたMP(上限50)
+  points_today_word INTEGER NOT NULL DEFAULT 0,  -- 当日、文章題で加算されたMP(上限50)
+  points_today_bonus INTEGER NOT NULL DEFAULT 0, -- 当日、ダブル成功・今日のミッションなど上限を経由しない加算の合計(上限なし、端末間はマージのみ)
+  -- 今日のミッション(1日1回、10問正解で+20MP)も同様に端末ローカルでしか
+  -- 「達成済みか」を管理しておらず、複数端末で2回達成扱いにできてしまったため、
+  -- 「今日、既に達成したか」だけはサーバー側でも保持し、端末間でOR(一度でも
+  -- どこかの端末で達成していれば達成済み)としてマージする。
+  mission_date TEXT,                       -- ミッションの達成状況の基準日(JST, 'yyyy-MM-dd')
+  mission_correct INTEGER NOT NULL DEFAULT 0,
+  mission_claimed BOOLEAN NOT NULL DEFAULT false
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);

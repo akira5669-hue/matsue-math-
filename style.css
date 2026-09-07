@@ -697,6 +697,12 @@ h1 {
 @media (max-width: 420px) {
   .settings-grid { grid-template-columns: 1fr; }
 }
+.settings-grid-single {
+  grid-template-columns: 1fr;
+}
+.settings-grid-single .settings-item {
+  font-size: 15px;
+}
 .settings-item {
   display: flex;
   align-items: center;

@@ -37,7 +37,7 @@
   }
   // 端末が読み込んでいる版を画面で確認するための番号(index.htmlの?v=と揃える)。
   // 「直したはずの変更が反映されていない」の切り分けを推測に頼らないための目印。
-  var APP_BUILD_ = '20260906a';
+  var APP_BUILD_ = '20260907a';
   var AVATAR_DEFAULT_SELECTION = { hair: 'short', face: 'smile', skin: 'skin1', hairColor: 'hc1', outfitColor: 'oc2' };
   // イラストプリセット方式(2026-08〜、00001限定プレビュー)：組み合わせ式パーツの
   // 代わりに、完成イラストの一覧から1つ選ぶだけの形式。画像ファイルが用意でき次第
@@ -309,7 +309,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
-        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, enemyIdx: s.enemyIdx,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
@@ -327,7 +327,7 @@
     if (sess && sess.id) {
       saveAccountProgress_(sess.id, {
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
-        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus,
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
@@ -16922,6 +16922,9 @@
     // pointsDateが変わったタイミングでpointsTodayと一緒にリセットする。
     pointsTodayCalc: (savedProgress && Number(savedProgress.pointsTodayCalc)) || (savedGame && Number(savedGame.pointsTodayCalc)) || 0,
     pointsTodayWord: (savedProgress && Number(savedProgress.pointsTodayWord)) || (savedGame && Number(savedGame.pointsTodayWord)) || 0,
+    // ダブル成功・今日のミッションなど、1日上限を経由しない加算の当日合計
+    // (サーバー側でも保持し、複数端末で二重に加算されないようにする用)。
+    pointsTodayBonus: (savedProgress && Number(savedProgress.pointsTodayBonus)) || (savedGame && Number(savedGame.pointsTodayBonus)) || 0,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedProgress && Array.isArray(savedProgress.items)) ? savedProgress.items.slice() : ((savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : []),
@@ -17616,7 +17619,7 @@
       state.scienceStreak = (state.scienceStreak || 0) + 1;
       if (state.scienceStreak >= SCIENCE_STREAK_REQUIRED) {
         const today = todayKey();
-        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
         // 理科は文章題ではないので「計算問題」側の1日上限(50MP)を共有する。
         const pointsToAdd = Math.max(0, Math.min(SCIENCE_STREAK_MP, POINTS_DAILY_CAP_CALC - state.pointsTodayCalc));
         state.points += pointsToAdd;
@@ -18166,7 +18169,7 @@
       winHtml = finishWorldBossWin_(state.worldBossActiveStage, bossSubIndexForWin);
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
-      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : 0;
@@ -18195,6 +18198,9 @@
         const doubleBonusToAdd = Math.max(0, snapshot);
         state.points += doubleBonusToAdd;
         state.pointsToday += doubleBonusToAdd;
+        // サーバー側でも当日ボーナス合計として保持し、複数端末での二重加算を防ぐ
+        // (pointsTodayCalc/Wordと同じ仕組み。詳しくはlib/handlers/sync.js参照)。
+        state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + doubleBonusToAdd;
         doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${doubleBonusToAdd}MP）💰</div>`;
       }
       state.exp += 10;
@@ -18340,6 +18346,9 @@
       if (state.missionCorrect >= MISSION_TARGET) {
         state.missionClaimed = true;
         state.points += MISSION_REWARD_MP;
+        // サーバー側でも当日ボーナス合計・達成済みフラグとして保持し、複数端末で
+        // 2回達成扱いにできてしまわないようにする(詳しくはlib/handlers/sync.js参照)。
+        state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + MISSION_REWARD_MP;
         missionHtml = `<div class="win-banner">🎯 今日のミッション達成！ +${MISSION_REWARD_MP}MP 🎉</div>`;
         if (session && session.id) {
           apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
@@ -18672,7 +18681,7 @@
     // 以前はここだけ無条件加算だったため、ログインし直すだけで際限なくMPを
     // 稼げてしまっていた(中学生は1問正解ですぐ突破できるようになったため特に深刻)。
     var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
     var pointsToAdd = Math.max(0, Math.min(LOGIN_GATE_REWARD_MP_, POINTS_DAILY_CAP_WORD - (Number(state.pointsTodayWord) || 0)));
     state.points += pointsToAdd;
     state.pointsToday += pointsToAdd;
@@ -18763,6 +18772,7 @@
         state.pointsDate = progress.pointsDate || null;
         state.pointsTodayCalc = Number(progress.pointsTodayCalc) || 0;
         state.pointsTodayWord = Number(progress.pointsTodayWord) || 0;
+        state.pointsTodayBonus = Number(progress.pointsTodayBonus) || 0;
         state.items = Array.isArray(progress.items) ? progress.items.slice() : state.items;
         state.rareDefeats = (progress.rareDefeats && typeof progress.rareDefeats === 'object') ? Object.assign({}, progress.rareDefeats) : state.rareDefeats;
         state.rareCollected = Array.isArray(progress.rareCollected) ? progress.rareCollected.slice() : state.rareCollected;
@@ -18843,6 +18853,13 @@
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
       spellbooks: state.spellbooks || {},
+      // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
+      // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
+      // マージするため、端末を複数使っても実際に加算されるMPの合計が上限を
+      // 超えないようになる(詳しくはlib/handlers/sync.js参照)。
+      pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord,
+      pointsTodayBonus: state.pointsTodayBonus,
+      missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
     };
   }
 
@@ -18942,6 +18959,52 @@
       if (sv > (Number(state.spellbooks[el]) || 0)) { state.spellbooks[el] = sv; changed = true; }
     });
 
+    // 1日のMP獲得上限・今日のミッションの当日状態も、他の項目と同じく
+    // 「大きい方」でマージする(2026-09-07〜、詳しくはlib/handlers/sync.js参照)。
+    // これにより、他の端末が先に今日の分を稼いでいた場合、この端末もそれを
+    // 知った状態になり、合計で上限を超えて稼げてしまうことがなくなる。
+    var dailyLocalAhead = false;
+    if (server.pointsDate) {
+      var todayNow = todayKey();
+      var localTodayValid = state.pointsDate === todayNow;
+      var serverTodayValid = server.pointsDate === todayNow;
+      var localCalc = localTodayValid ? (Number(state.pointsTodayCalc) || 0) : 0;
+      var localWord = localTodayValid ? (Number(state.pointsTodayWord) || 0) : 0;
+      var localBonus = localTodayValid ? (Number(state.pointsTodayBonus) || 0) : 0;
+      var serverCalcD = serverTodayValid ? (Number(server.pointsTodayCalc) || 0) : 0;
+      var serverWordD = serverTodayValid ? (Number(server.pointsTodayWord) || 0) : 0;
+      var serverBonusD = serverTodayValid ? (Number(server.pointsTodayBonus) || 0) : 0;
+      var mergedCalc = Math.max(localCalc, serverCalcD);
+      var mergedWord = Math.max(localWord, serverWordD);
+      var mergedBonus = Math.max(localBonus, serverBonusD);
+      if (state.pointsDate !== todayNow || mergedCalc !== localCalc || mergedWord !== localWord || mergedBonus !== localBonus) {
+        state.pointsDate = todayNow;
+        state.pointsTodayCalc = mergedCalc;
+        state.pointsTodayWord = mergedWord;
+        state.pointsTodayBonus = mergedBonus;
+        state.pointsToday = mergedCalc + mergedWord + mergedBonus;
+        changed = true;
+      }
+      dailyLocalAhead = localCalc > serverCalcD || localWord > serverWordD || localBonus > serverBonusD;
+    }
+    if (server.missionDate) {
+      var todayNow2 = todayKey();
+      var localMissionValid = state.missionDate === todayNow2;
+      var serverMissionValid = server.missionDate === todayNow2;
+      var localMissionClaimed = localMissionValid && !!state.missionClaimed;
+      var serverMissionClaimed = serverMissionValid && !!server.missionClaimed;
+      if (serverMissionClaimed && !localMissionClaimed) {
+        // サーバー側で既に達成済み(=他の端末で先に達成済み)。この端末では
+        // 「今日のミッション」バナーを再提示しないよう、達成扱いに揃える。
+        state.missionDate = todayNow2;
+        state.missionClaimed = true;
+        state.missionCorrect = Math.max(MISSION_TARGET, Number(server.missionCorrect) || 0);
+        changed = true;
+      } else if (localMissionClaimed && !serverMissionClaimed) {
+        dailyLocalAhead = true;
+      }
+    }
+
     if (changed) {
       saveGameState(state);
       updateGameHud();
@@ -18959,7 +19022,8 @@
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
       || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
       || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); })
-      || SPELLBOOK_IDS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); });
+      || SPELLBOOK_IDS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); })
+      || dailyLocalAhead;
     if (localAhead) {
       apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
     }
@@ -19820,7 +19884,7 @@
 
     btn.disabled = true;
     var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; }
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
     var reward = TREASURE_CHEST_REWARD_[tier];
     // 宝箱のMP報酬は(指輪の売却と違って)1日の上限100MP(計算50+文章題50)に
     // 含める。今日まだ獲得できる分だけをmpGrantとしてサーバーに伝える。
