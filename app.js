@@ -17152,6 +17152,8 @@
     mpCapBannerText: document.getElementById('mpCapBannerText'),
     winterCourseBanner: document.getElementById('winterCourseBanner'),
     winterCourseBannerText: document.getElementById('winterCourseBannerText'),
+    quizPerfectBanner: document.getElementById('quizPerfectBanner'),
+    quizPerfectBannerText: document.getElementById('quizPerfectBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -17807,6 +17809,7 @@
     renderHpRulesBanner_();
     renderMpCapBanner_();
     renderWinterCourseBanner_();
+    renderQuizPerfectBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -18574,6 +18577,24 @@
     els.winterCourseBanner.hidden = false;
     if (els.winterCourseBannerText) {
       els.winterCourseBannerText.textContent = '📢【冬期講習の講座のご案内】小6対象の中学準備講座と算数の総復習講座（無料）を、冬期講習から行います。対象は小6の外部生です。塾を検討している小6のお友達がいたら、ぜひご連絡ください。紹介したお友達が授業に参加された場合、紹介した生徒さんに1000MPを付与します。在籍している方は、小6の算数の授業が冬期講習から総復習になります。そのまま受講できます。';
+    }
+  }
+
+  // 小6抜き打ちテストの満点報告告知(9/11〜9/15の5日間、小6のみ表示)。
+  var QUIZ_PERFECT_BANNER_START_ = '2026-09-11';
+  var QUIZ_PERFECT_BANNER_END_ = '2026-09-15';
+  function renderQuizPerfectBanner_() {
+    if (!els.quizPerfectBanner) return;
+    var session = loadSession();
+    var grade = session && session.grade;
+    var today = todayKey();
+    if (grade !== '小6' || today < QUIZ_PERFECT_BANNER_START_ || today > QUIZ_PERFECT_BANNER_END_) {
+      els.quizPerfectBanner.hidden = true;
+      return;
+    }
+    els.quizPerfectBanner.hidden = false;
+    if (els.quizPerfectBannerText) {
+      els.quizPerfectBannerText.textContent = '📢【小6 抜き打ちテストのお知らせ】満点だった生徒さんは、先生にIDを報告してね。満点の生徒さんには300MPを付与します。';
     }
   }
 
