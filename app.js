@@ -17154,6 +17154,8 @@
     winterCourseBannerText: document.getElementById('winterCourseBannerText'),
     quizPerfectBanner: document.getElementById('quizPerfectBanner'),
     quizPerfectBannerText: document.getElementById('quizPerfectBannerText'),
+    charArtBanner: document.getElementById('charArtBanner'),
+    charArtBannerText: document.getElementById('charArtBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -17810,6 +17812,7 @@
     renderMpCapBanner_();
     renderWinterCourseBanner_();
     renderQuizPerfectBanner_();
+    renderCharArtBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -18595,6 +18598,21 @@
     els.quizPerfectBanner.hidden = false;
     if (els.quizPerfectBannerText) {
       els.quizPerfectBannerText.textContent = '📢【小6 抜き打ちテストのお知らせ】満点だった生徒さんは、先生にIDを報告してね。満点の生徒さんには300MPを付与します。';
+    }
+  }
+
+  // キャラクターイラスト募集告知(まだ画像になっていないキャラを生徒に描いてもらう企画)。
+  // 採用/不採用に関わらず300MP付与。本番公開前のプレビューのため、まずは00001だけに表示。
+  var CHAR_ART_TARGETS_ = ['ケアレスミス', 'チンカイトウ', 'アキラメタル', 'ゴーマジンガー', 'キラキラアキラ', 'ナットウスライム', 'ハナマルオ'];
+  function renderCharArtBanner_() {
+    if (!els.charArtBanner) return;
+    if (!isAdminSession_()) {
+      els.charArtBanner.hidden = true;
+      return;
+    }
+    els.charArtBanner.hidden = false;
+    if (els.charArtBannerText) {
+      els.charArtBannerText.textContent = '📢【キャラクターイラスト募集】まだ絵になっていないキャラ（' + CHAR_ART_TARGETS_.join('・') + '）のイラストを描いて先生に見せてね！採用されたら300MP、採用されなくても参加してくれたら300MPプレゼント！';
     }
   }
 
