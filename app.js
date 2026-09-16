@@ -21067,24 +21067,16 @@
     els.worldAllySection.innerHTML = '<p class="world-ally-title">🤝 仲間になったボス</p><div class="world-ally-list">' + chips + '</div>';
   }
 
-  // 世界一周は3周まで(2026-09-16に2→3へ拡張。3周目は2周目と全く同じ仕様
+  // 世界一周は周回数の上限なし(2026-09-16に上限撤廃)。2周目以降はすべて同じ仕様
   // (WORLD_DATA_LAP2を再利用、ボスを倒してもMPは増えない代わりに+300HP)で、
   // applyWorldDataForLap_やworldBossSequenceForStageなど周回まわりの分岐は
-  // すべて「lap >= 2」で判定しているため、この上限値を上げるだけで3周目に
-  // そのまま対応できる)。100ヵ国制覇済みなら、周目終了時に次の周をスタートするか
-  // 確認(はい/いいえ)を表示する。上限に達したら完全制覇のお祝いを表示する。
-  var WORLD_LAP_MAX_ = 3;
+  // すべて「lap >= 2」で判定しているため、上限を設けず何周でもこのままスタート
+  // できる。100ヵ国制覇済みなら、周目終了時に次の周をスタートするか確認
+  // (はい/いいえ)を表示する。
   function renderWorldLapRestart(count, total) {
     if (count < total) { els.worldLapRestart.hidden = true; els.worldLapRestart.innerHTML = ''; return; }
     var currentLap = Number(state.worldLap) || 1;
     els.worldLapRestart.hidden = false;
-    if (currentLap >= WORLD_LAP_MAX_) {
-      els.worldLapRestart.innerHTML =
-        '<div class="world-lap-card">'
-        + '<p class="world-lap-question">🌍🎉 ' + currentLap + '周目も制覇！世界一周を完全制覇しました！おめでとう！ 🎉🌍</p>'
-        + '</div>';
-      return;
-    }
     els.worldLapRestart.innerHTML =
       '<div class="world-lap-card">'
       + '<p class="world-lap-question">🌍 ' + currentLap + '周目を制覇しました！' + (currentLap + 1) + '周目をスタートしますか？</p>'
