@@ -16327,14 +16327,6 @@
         miss: 'あちゃー、逃げちゃったぜ…また今度な！',
       },
     },
-    doubleorhalf: {
-      id: 'doubleorhalf', name: 'ダブルorハーフ', img: 'images/doubleorhalf.jpg',
-      lines: {
-        appear: '今日獲得したMP、2倍にするか半分にするか勝負だ！1問でも間違えたら逃げるぞ！',
-        defeat: 'やったな！今日のMPが2倍になったぞ！',
-        miss: '残念、逃げてしまった…今日のMPは半分になってしまった…',
-      },
-    },
     soubusen: {
       id: 'soubusen', name: 'ゆうかんそうぶせん戦士', img: 'images/soubusen.jpg',
       lines: {
@@ -16599,9 +16591,6 @@
   const RARE_CHANCE_MISTAKEKING = (1 / 10) * RARE_SCALE;
   const RARE_CHANCE_SANSUDEVIL = (1 / 15) * RARE_SCALE;
   const RARE_CHANCE_INUDA = (1 / 20) * RARE_SCALE;
-  // ダブルorハーフだけは他のレアキャラと違い、RARE_SCALEによる相対スケールを使わず
-  // 最終的な出現率を直接0.5%に固定する。
-  const RARE_CHANCE_DOUBLEORHALF = 0.005;
   const RARE_CHANCE_IINE = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_SOUBUSEN = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_NATTOMAN = (1 / 50) * RARE_SCALE;
@@ -16729,7 +16718,7 @@
   // 挑戦できる(使うと図鑑から減っていき、0個になると表示から消える)。
   const SPEEDSEED_COST_MP = 100;
   // 「逃げる」演出があるレアキャラのrareType一覧(handleAnswerの不正解分岐と一致させる)。
-  const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'doubleorhalf', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
+  const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
   // なんでも屋の消費アイテム「鉄壁の盾」：500MPで購入し、ボス戦で間違えるたびに
   // 自動で1チャージ消費して、そのミスのダメージを半分にする(最大3チャージ)。
   // すばやさの種と異なり複数個は保有できず、3回使い切ると壊れて消える。
@@ -16822,7 +16811,6 @@
       ['sansudevil', RARE_CHANCE_SANSUDEVIL],
       ['iine', RARE_CHANCE_IINE],
       ['inuda', chanceInuda],
-      ['doubleorhalf', RARE_CHANCE_DOUBLEORHALF],
       ['soubusen', chanceSoubusen],
       ['nattoman', chanceNattoman],
       ['fugoupakkun', RARE_CHANCE_FUGOUPAKKUN],
@@ -16836,12 +16824,8 @@
     }
     return null;
   }
-  // ダブルorハーフが新しく出現した瞬間の「本日の獲得MP(pointsToday)」を記録しておく。
-  // 撃破/失敗時にはこのスナップショットを2倍/半分にする（出現後に稼いだ分は対象外）。
   function assignRareType(state) {
-    const t = rollRareType();
-    if (t === 'doubleorhalf') state.doubleOrHalfSnapshot = state.pointsToday;
-    return t;
+    return rollRareType();
   }
   // 通常キャラ「分数くん」：分数を扱う単元を解いている時だけ、通常の敵の代わりに
   // 表示される(enemyIdxの進行自体には影響しない、見た目だけの差し替え)。
@@ -17980,7 +17964,6 @@
       const nekodaFled = !speedSeedSaved && state.rareType === 'nekoda';
       const warisuFled = !speedSeedSaved && state.rareType === 'warisu';
       const inudaFled = !speedSeedSaved && state.rareType === 'inuda';
-      const doubleOrHalfFled = !speedSeedSaved && state.rareType === 'doubleorhalf';
       const iineFled = !speedSeedSaved && state.rareType === 'iine';
       const soubusenFled = !speedSeedSaved && state.rareType === 'soubusen';
       const nattomanFled = !speedSeedSaved && state.rareType === 'nattoman';
@@ -18004,17 +17987,6 @@
         saveGameState(state);
       } else if (inudaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🐶💨 イヌダは逃げてしまった…</div>`;
-        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-        state.rareType = assignRareType(state);
-        saveGameState(state);
-      } else if (doubleOrHalfFled) {
-        // 「本日のMPが半分に」という演出どおり、減らすのはあくまで今日稼いだ分
-        // (pointsToday)だけにする。以前はstate.points(累計MP)も一緒に減らしてしまっており、
-        // 生徒の累計MPが意図せず目減りするバグになっていた。
-        const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
-        const halfAmount = Math.floor(snapshot / 2);
-        state.pointsToday = Math.max(0, state.pointsToday - halfAmount);
-        missLineHtml += `<div class="enemy-quote-banner">💦 ダブルorハーフは逃げてしまった…本日のMPが半分に（-${halfAmount}MP）</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
         saveGameState(state);
@@ -18195,20 +18167,6 @@
       state.pointsToday += pointsToAdd;
       if (isWordProblem) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
       let doubleGainedHtml = '';
-      if (wasRareType === 'doubleorhalf') {
-        // 「本日のMPが2倍」というボーナスの性質上、通常の1日の上限(POINTS_DAILY_CAP)で
-        // 頭打ちにしてしまうと、既に上限に達している時は+0になり「2倍」が成立しなく
-        // なってしまう(ハーフ側の減算は上限を経由せず無条件に効くのと非対称だった)。
-        // そのため、このボーナスだけは1日の上限を経由せず、そのまま加算する。
-        const snapshot = Number(state.doubleOrHalfSnapshot) || 0;
-        const doubleBonusToAdd = Math.max(0, snapshot);
-        state.points += doubleBonusToAdd;
-        state.pointsToday += doubleBonusToAdd;
-        // サーバー側でも当日ボーナス合計として保持し、複数端末での二重加算を防ぐ
-        // (pointsTodayCalc/Wordと同じ仕組み。詳しくはlib/handlers/sync.js参照)。
-        state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + doubleBonusToAdd;
-        doubleGainedHtml = `<div class="item-gain-banner">💰 ダブル成功！本日のMPが2倍に（+${doubleBonusToAdd}MP）💰</div>`;
-      }
       state.exp += 10;
       // レベルは算数・数学の経験値(exp)と理科の経験値(scienceExp)を合算して決まる。
       // 経験値そのものは科目ごとに別集計だが、レベルは1つに統一する。
@@ -18602,14 +18560,10 @@
   }
 
   // キャラクターイラスト募集告知(まだ画像になっていないキャラを生徒に描いてもらう企画)。
-  // 採用/不採用に関わらず300MP付与。本番公開前のプレビューのため、まずは00001だけに表示。
+  // 採用/不採用に関わらず300MP付与。2026-09-16に本番公開(全生徒に表示)。
   var CHAR_ART_TARGETS_ = ['ケアレスミス', 'チンカイトウ', 'アキラメタル', 'ゴーマジンガー', 'キラキラアキラ', 'ナットウスライム', 'ハナマルオ'];
   function renderCharArtBanner_() {
     if (!els.charArtBanner) return;
-    if (!isAdminSession_()) {
-      els.charArtBanner.hidden = true;
-      return;
-    }
     els.charArtBanner.hidden = false;
     if (els.charArtBannerText) {
       els.charArtBannerText.textContent = '📢【キャラクターイラスト募集】まだ絵になっていないキャラ（' + CHAR_ART_TARGETS_.join('・') + '）のイラストを描いて先生に見せてね！採用されたら300MP、採用されなくても参加してくれたら300MPプレゼント！';
