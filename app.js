@@ -18723,7 +18723,7 @@
       });
       return;
     }
-    els.settingsGrid.classList.remove('settings-grid-single');
+    els.settingsGrid.classList.add('settings-grid-single');
     els.settingsDailyLimitNote.textContent = !isDailyCategoryLimitActive()
       ? '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。'
       : todayKey() >= DAILY_CATEGORY_LIMIT_V2_START
@@ -19795,7 +19795,8 @@
     state.total = 0;
     state.correct = 0;
     state.streak = 0;
-    state.catStats = {};
+    // catStatsは単元別の級判定に使う生涯累積データ(2026-09-18〜)になったため、
+    // 「本日の出題数・正解数」のリセットで一緒に消してしまわないようにする。
     updateStats();
     updateGameHud();
   }
