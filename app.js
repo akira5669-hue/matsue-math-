@@ -17998,7 +17998,7 @@
   const TREASURE_KEY_COST_MP_ = { bronze: 50, silver: 100, gold: 200, rainbow: 500 };
   const TREASURE_RING_SELL_MP_ = { bronze: 50, silver: 100, gold: 200, rainbow: 500 };
   const TREASURE_CHEST_REWARD_ = {
-    bronze: { mp: 1, hp: 5 }, silver: { mp: 2, hp: 10 }, gold: { mp: 3, hp: 15 }, rainbow: { mp: 5, hp: 20 },
+    bronze: { mp: 10, hp: 5 }, silver: { mp: 20, hp: 10 }, gold: { mp: 30, hp: 15 }, rainbow: { mp: 50, hp: 20 },
   };
   // 出題単元の学年(小3〜小6/中1〜中3)から、獲得する宝箱のティアを決める。
   // 学年が読み取れない単元(理科の一部など学年表記のないもの)では宝箱は出さない。
