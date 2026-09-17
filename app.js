@@ -321,6 +321,7 @@
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
+        catStats: s.catStats, categoryRanks: s.categoryRanks,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -339,6 +340,7 @@
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
+        catStats: s.catStats, categoryRanks: s.categoryRanks,
       });
     }
   }
@@ -2517,6 +2519,35 @@
       const rank = GRADE_RANK[categoryGrade[c.id]];
       return rank && rank <= ownRank;
     }).map(c => c.id);
+  }
+
+  // 算数・数学の単元別「級」システム(2026-09-18〜)。生涯の出題数・正答率から
+  // 3級/2級/1級/黒帯(コンプリート)を判定する。一度到達した級は、後で正答率が
+  // 下がっても失われない実績バッジとして扱う(state.categoryRanksにモノトニックに
+  // 保存し、サーバー側でも同じ「大きい方を採用」でマージする)。
+  const CATEGORY_RANK_LABELS_ = { 1: '🥉3級', 2: '🥈2級', 3: '🥇1級', 4: '🥋黒帯' };
+  // 算数・数学: 20/40/60/100問(正答率80%以上)で3級/2級/1級/黒帯。
+  const MATH_RANK_THRESHOLDS_ = [20, 40, 60, 100];
+  // 理科: 20/30/40/50問(正答率80%以上)で3級/2級/1級/黒帯。
+  const SCIENCE_RANK_THRESHOLDS_ = [20, 30, 40, 50];
+  function computeCategoryRankLevel_(total, correct, thresholds) {
+    const acc = total > 0 ? correct / total : 0;
+    if (acc < 0.8) return 0;
+    if (total >= thresholds[3]) return 4;
+    if (total >= thresholds[2]) return 3;
+    if (total >= thresholds[1]) return 2;
+    if (total >= thresholds[0]) return 1;
+    return 0;
+  }
+  // 単元(catId)を1問解くたびに呼び、その単元の級が新しく上がっていれば更新する。
+  // 本番公開前のプレビューのため、まずは00001だけで動作させる。
+  function updateCategoryRank_(catId, thresholds) {
+    if (!isAdminSession_()) return;
+    const cs = state.catStats[catId];
+    if (!cs) return;
+    const newLevel = computeCategoryRankLevel_(cs.total, cs.correct, thresholds);
+    const prevLevel = Number(state.categoryRanks[catId]) || 0;
+    if (newLevel > prevLevel) state.categoryRanks[catId] = newLevel;
   }
 
   /* ---------- 理科の単元 ---------- */
@@ -18215,7 +18246,12 @@
     streak: 0,
     wrongStreak: 0,
     streakAboveGrade: true,
-    catStats: {},
+    catStats: (savedProgress && savedProgress.catStats && typeof savedProgress.catStats === 'object') ? JSON.parse(JSON.stringify(savedProgress.catStats)) : ((savedGame && savedGame.catStats && typeof savedGame.catStats === 'object') ? JSON.parse(JSON.stringify(savedGame.catStats)) : {}),
+    // 単元別の級(3級/2級/1級/黒帯)。0=未達, 1=3級, 2=2級, 3=1級, 4=黒帯。
+    // 一度到達したら下がらない(モノトニック)実績バッジとして扱う。サーバーからの
+    // 応答(categoryRanks、rare_defeatsと同じ「大きい方を採用」でマージ済み)を
+    // 優先し、無ければローカル保存値を使う。
+    categoryRanks: (savedProgress && savedProgress.categoryRanks && typeof savedProgress.categoryRanks === 'object') ? JSON.parse(JSON.stringify(savedProgress.categoryRanks)) : ((savedGame && savedGame.categoryRanks && typeof savedGame.categoryRanks === 'object') ? JSON.parse(JSON.stringify(savedGame.categoryRanks)) : {}),
     current: null,
     answered: false,
     // 出題範囲(有効カテゴリ)の設定は、アカウント別ストレージ(progress)を優先し、
@@ -18497,6 +18533,8 @@
     quizPerfectBannerText: document.getElementById('quizPerfectBannerText'),
     charArtBanner: document.getElementById('charArtBanner'),
     charArtBannerText: document.getElementById('charArtBannerText'),
+    categoryRankBanner: document.getElementById('categoryRankBanner'),
+    categoryRankBannerText: document.getElementById('categoryRankBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -18663,10 +18701,11 @@
           ? `<span class="cat-acc">${Math.round(cs.correct / cs.total * 100)}%</span>`
           : '';
         const newBadge = isRecentlyAdded(c.addedDate) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
+        const rankBadge = renderCategoryRankBadge_(c.id);
         return `
           <label class="settings-item">
             <input type="checkbox" data-cat="${c.id}" ${state.enabledScience.has(c.id) ? 'checked' : ''} />
-            <span class="cat-label">${c.label}</span>${newBadge}${acc}
+            <span class="cat-label">${c.label}</span>${newBadge}${acc}${rankBadge}
           </label>
         `;
       }).join('');
@@ -18701,10 +18740,11 @@
         ? `<span class="cat-hp-badge" title="10問連続正解でHPが増える単元">❤️HP UP</span>`
         : '';
       const newBadge = isRecentlyAdded(c.addedDate) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
+      const rankBadge = renderCategoryRankBadge_(c.id);
       return `
         <label class="settings-item${complete ? ' is-daily-complete' : ''}">
           <input type="checkbox" data-cat="${c.id}" ${(state.enabled.has(c.id) && !complete) ? 'checked' : ''} ${complete ? 'disabled' : ''} />
-          <span class="cat-label">${c.label}</span>${newBadge}${hpBadge}${acc}${completeBadge}
+          <span class="cat-label">${c.label}</span>${newBadge}${hpBadge}${acc}${completeBadge}${rankBadge}
         </label>
       `;
     }).join('');
@@ -19028,6 +19068,7 @@
         }
       }
     }
+    updateCategoryRank_(catId, SCIENCE_RANK_THRESHOLDS_);
     saveGameState(state);
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
 
@@ -19186,6 +19227,7 @@
     renderWinterCourseBanner_();
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
+    renderCategoryRankBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -19508,6 +19550,7 @@
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
     if (isCorrect) state.catStats[catId].correct++;
+    updateCategoryRank_(catId, MATH_RANK_THRESHOLDS_);
 
     Array.from(els.choices.children).forEach(b => {
       b.disabled = true;
@@ -19642,12 +19685,24 @@
       saveGameState(state);
       if (session && session.id) {
         debouncedSyncPoints_(session.id, function (res) {
+          if (res && res.categoryRanks && typeof res.categoryRanks === 'object') {
+            Object.keys(res.categoryRanks).forEach(function (k) {
+              const lv = Number(res.categoryRanks[k]) || 0;
+              if (lv > (Number(state.categoryRanks[k]) || 0)) state.categoryRanks[k] = lv;
+            });
+            saveGameState(state);
+          }
           if (res && res.bonusAwarded > 0) {
             state.points += res.bonusAwarded;
             saveGameState(state);
             updateGameHud();
             if (res.prefectureBonusAwarded > 0) window.alert(`🎉 都道府県制覇ボーナス！+${res.prefectureBonusAwarded}MP 🎉`);
             if (res.continentBonusAwarded > 0) window.alert(`🌏 大陸制覇ボーナス！+${res.continentBonusAwarded}MP 🌏`);
+            if (Array.isArray(res.completionBonusesAwarded)) {
+              res.completionBonusesAwarded.forEach(function (b) {
+                window.alert(`🏆 ${b.label}コンプリートボーナス！全単元黒帯達成！+${b.mp}MP 🏆`);
+              });
+            }
           }
         });
       }
@@ -19959,6 +20014,31 @@
     }
   }
 
+  // 単元別の級システムの告知(2026-09-18〜2026-09-27の10日間)。本番公開前の
+  // プレビューのため、キャラクターイラスト募集バナーと違い、まずは00001だけに表示する。
+  var CATEGORY_RANK_BANNER_START_ = '2026-09-18';
+  var CATEGORY_RANK_BANNER_END_ = '2026-09-27';
+  function renderCategoryRankBanner_() {
+    if (!els.categoryRankBanner) return;
+    var today = todayKey();
+    if (!isAdminSession_() || today < CATEGORY_RANK_BANNER_START_ || today > CATEGORY_RANK_BANNER_END_) {
+      els.categoryRankBanner.hidden = true;
+      return;
+    }
+    els.categoryRankBanner.hidden = false;
+    if (els.categoryRankBannerText) {
+      els.categoryRankBannerText.textContent = '📢【単元別「級」スタート！】各単元(算数・数学は20/40/60/100問、理科は20/30/40/50問)を正答率80%以上で解くと、3級→2級→1級→黒帯(コンプリート)を獲得！黒帯は一度取ったら正答率が下がってもなくなりません。コンプリートボーナス：算数・数学は「自分の学年+1つ下の学年」の全単元が黒帯で500MP(小4〜小6は10月末まで、中1〜中3は11月末まで)。理科は学年ごとに個別ボーナス(小4:100MP、小5:100MP、小6:100MP、中1:300MP、中2:400MP、中3:500MP、期限なし)！';
+    }
+  }
+
+  // 単元別の級バッジを1つ表示するHTML(00001限定プレビュー中)。未達成なら何も表示しない。
+  function renderCategoryRankBadge_(catId) {
+    if (!isAdminSession_()) return '';
+    var level = Number(state.categoryRanks[catId]) || 0;
+    if (level <= 0) return '';
+    return '<span class="cat-rank-badge">' + (CATEGORY_RANK_LABELS_[level] || '') + '</span>';
+  }
+
   /* ---------- ログイン前チェック(文章題3問連続正解、8/10から) ---------- */
   var LOGIN_GATE_START_ = '2026-08-10';
   var LOGIN_GATE_REQUIRED_STREAK_ = 3;
@@ -20242,6 +20322,10 @@
       pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord,
       pointsTodayBonus: state.pointsTodayBonus,
       missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
+      // 単元別の級システムは本番公開前のプレビュー中のため、まずは00001だけが
+      // サーバーへ送信する(他の生徒はcategoryRanksを送らないので、サーバー側の
+      // コンプリートボーナス判定も自然に動かない)。
+      categoryRanks: isAdminSession_() ? (state.categoryRanks || {}) : undefined,
     };
   }
 
@@ -20286,6 +20370,7 @@
     var sMathGodTitleEarned = !!server.mathGodTitleEarned;
     var sTreasureItems = (server.treasureItems && typeof server.treasureItems === 'object') ? server.treasureItems : {};
     var sSpellbooks = (server.spellbooks && typeof server.spellbooks === 'object') ? server.spellbooks : {};
+    var sCategoryRanks = (server.categoryRanks && typeof server.categoryRanks === 'object') ? server.categoryRanks : {};
     var changed = false;
 
     if (sp > state.points) { state.points = sp; changed = true; }
@@ -20303,6 +20388,10 @@
     });
     sRareCollected.forEach(function (rid) {
       if (state.rareCollected.indexOf(rid) === -1) { state.rareCollected.push(rid); changed = true; }
+    });
+    Object.keys(sCategoryRanks).forEach(function (k) {
+      var sv = Number(sCategoryRanks[k]) || 0;
+      if (sv > (Number(state.categoryRanks[k]) || 0)) { state.categoryRanks[k] = sv; changed = true; }
     });
     Object.keys(sRareDefeats).forEach(function (k) {
       var sv = Number(sRareDefeats[k]) || 0;
@@ -20398,6 +20487,7 @@
       || state.items.some(function (x) { return sItems.indexOf(x) === -1; })
       || state.rareCollected.some(function (x) { return sRareCollected.indexOf(x) === -1; })
       || Object.keys(state.rareDefeats).some(function (k) { return (Number(state.rareDefeats[k]) || 0) > (Number(sRareDefeats[k]) || 0); })
+      || Object.keys(state.categoryRanks).some(function (k) { return (Number(state.categoryRanks[k]) || 0) > (Number(sCategoryRanks[k]) || 0); })
       || thinkerMilestoneRank(state.thinkerMilestone) > thinkerMilestoneRank(sThinkerMilestone)
       || (Number(state.hp) || 0) > sHp
       || localWorldLap > sWorldLap
@@ -20666,6 +20756,9 @@
     { id: 'level300',      icon: '🥇', name: 'レベル300',      desc: 'レベル300に到達した' },
     { id: 'level500',      icon: '💎', name: 'レベル500',      desc: 'レベル500に到達した' },
     { id: 'level1000',     icon: '👑', name: 'レベル1000',     desc: 'レベル1000に到達した' },
+    { id: 'level2000',     icon: '🌟', name: 'レベル2000',     desc: 'レベル2000に到達した' },
+    { id: 'level3000',     icon: '🌠', name: 'レベル3000',     desc: 'レベル3000に到達した' },
+    { id: 'level5000',     icon: '🏵️', name: 'レベル5000',     desc: 'レベル5000に到達した' },
   ];
 
   function computeEarnedBadges(data) {
@@ -20674,7 +20767,7 @@
     const clearedCats = new Set((data.byCategory || []).filter(c => c.correct > 0).map(c => c.category));
     if (allCatIds.length > 0 && allCatIds.every(id => clearedCats.has(id))) earned.add('allCategories');
     if ((data.streak || 0) >= 7) earned.add('streak7');
-    [100, 200, 300, 500, 1000].forEach(n => { if (state.level >= n) earned.add('level' + n); });
+    [100, 200, 300, 500, 1000, 2000, 3000, 5000].forEach(n => { if (state.level >= n) earned.add('level' + n); });
     return earned;
   }
 

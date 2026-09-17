@@ -61,7 +61,18 @@ CREATE TABLE students (
   -- どこかの端末で達成していれば達成済み)としてマージする。
   mission_date TEXT,                       -- ミッションの達成状況の基準日(JST, 'yyyy-MM-dd')
   mission_correct INTEGER NOT NULL DEFAULT 0,
-  mission_claimed BOOLEAN NOT NULL DEFAULT false
+  mission_claimed BOOLEAN NOT NULL DEFAULT false,
+  -- 算数・数学の単元別「級」システム(2026-09-18〜)。各単元(CATEGORIESのid)ごとに
+  -- 生涯の出題数・正答率から3級/2級/1級/黒帯を判定し、一度到達したら後で正答率が
+  -- 下がっても失われない実績バッジとして扱う(クライアントが計算し、rare_defeatsと
+  -- 同じ「値が大きい方を採用」パターンでマージするため、他の実績系フィールドと
+  -- 同程度の信頼モデル)。{catId: 0〜4の段位レベル}
+  category_ranks JSONB NOT NULL DEFAULT '{}',
+  -- 学年またぎの完全制覇コンプリートボーナス(500MP、期間限定)。一度受け取ったら
+  -- 二重付与されないよう学年名をキーにフラグを立てる。判定・付与はhandleSyncPoints
+  -- 側でcategory_ranksマージ後にサーバー側で行う(bonus_awardedと同じ位置づけ)。
+  -- {'小4': true, '小5': true, ...}
+  completion_bonus JSONB NOT NULL DEFAULT '{}'
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
