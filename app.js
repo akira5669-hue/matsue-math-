@@ -17608,7 +17608,7 @@
     { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.jpg' },
     { name: 'アキラメタル',    emoji: '🤘', img: 'images/akirametal.jpg' },
     { name: 'ゴーマジンガー',  emoji: '🤖', img: 'images/gomajinger.jpg' },
-    { name: 'キラキラアキラ',  emoji: '⭐' },
+    { name: 'キラキラアキラ',  emoji: '⭐', img: 'images/kirakira_akira.jpg' },
     { name: 'ナットウスライム', emoji: '🟫', img: 'images/nattoslime.jpg' },
     { name: 'ハナマルオ',      emoji: '⭕', img: 'images/hanamaruo.jpg' },
     { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
@@ -19950,7 +19950,7 @@
 
   // キャラクターイラスト募集告知(まだ画像になっていないキャラを生徒に描いてもらう企画)。
   // 採用/不採用に関わらず300MP付与。2026-09-16に本番公開(全生徒に表示)。
-  var CHAR_ART_TARGETS_ = ['チンカイトウ', 'キラキラアキラ'];
+  var CHAR_ART_TARGETS_ = ['チンカイトウ'];
   function renderCharArtBanner_() {
     if (!els.charArtBanner) return;
     els.charArtBanner.hidden = false;
