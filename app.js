@@ -2530,6 +2530,8 @@
   const MATH_RANK_THRESHOLDS_ = [20, 40, 60, 100];
   // 理科: 20/30/40/50問(正答率80%以上)で3級/2級/1級/黒帯。
   const SCIENCE_RANK_THRESHOLDS_ = [20, 30, 40, 50];
+  const MATH_CATEGORY_ID_SET_ = new Set(CATEGORIES.map(function (c) { return c.id; }));
+  const SCIENCE_CATEGORY_ID_SET_ = new Set(SCIENCE_CATEGORIES.map(function (c) { return c.id; }));
   function computeCategoryRankLevel_(total, correct, thresholds) {
     const acc = total > 0 ? correct / total : 0;
     if (acc < 0.8) return 0;
@@ -2548,6 +2550,28 @@
     const newLevel = computeCategoryRankLevel_(cs.total, cs.correct, thresholds);
     const prevLevel = Number(state.categoryRanks[catId]) || 0;
     if (newLevel > prevLevel) state.categoryRanks[catId] = newLevel;
+  }
+  // catStatsはこの機能を追加した時点からのローカル累積でしかないため、学習記録
+  // (サーバーのrecordsテーブルに基づく生涯の出題数・正答数、historyアクション)を
+  // 取得できたタイミングで、そちらからも級を計算し直す(catStatsより進んでいれば
+  // 上書き)。これにより、以前から解いていて既に条件を満たしている単元も、
+  // すぐに正しい級が反映される。
+  function backfillCategoryRanksFromHistory_(byCategory) {
+    if (!isAdminSession_() || !Array.isArray(byCategory)) return;
+    let changed = false;
+    byCategory.forEach(function (c) {
+      const thresholds = MATH_CATEGORY_ID_SET_.has(c.category) ? MATH_RANK_THRESHOLDS_
+        : (SCIENCE_CATEGORY_ID_SET_.has(c.category) ? SCIENCE_RANK_THRESHOLDS_ : null);
+      if (!thresholds) return;
+      const newLevel = computeCategoryRankLevel_(c.total, c.correct, thresholds);
+      const prevLevel = Number(state.categoryRanks[c.category]) || 0;
+      if (newLevel > prevLevel) { state.categoryRanks[c.category] = newLevel; changed = true; }
+    });
+    if (changed) {
+      saveGameState(state);
+      const session = loadSession();
+      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    }
   }
 
   /* ---------- 理科の単元 ---------- */
@@ -20028,7 +20052,7 @@
     }
     els.categoryRankBanner.hidden = false;
     if (els.categoryRankBannerText) {
-      els.categoryRankBannerText.textContent = '📢【単元別「級」スタート！】各単元(算数・数学は20/40/60/100問、理科は20/30/40/50問)を正答率80%以上で解くと、3級→2級→1級→黒帯(コンプリート)を獲得！黒帯は一度取ったら正答率が下がってもなくなりません。コンプリートボーナス：算数・数学は「自分の学年+1つ下の学年」の全単元が黒帯で500MP(小4〜小6は10月末まで、中1〜中3は11月末まで)。理科は学年ごとに個別ボーナス(小4:100MP、小5:100MP、小6:100MP、中1:300MP、中2:400MP、中3:500MP、期限なし)！';
+      els.categoryRankBannerText.textContent = '📢【単元別「級」スタート！】各単元(算数・数学は20/40/60/100問、理科は20/30/40/50問)を正答率80%以上で解くと、3級→2級→1級→黒帯(コンプリート)を獲得！黒帯は一度取ったら正答率が下がってもなくなりません。コンプリートボーナス：算数・数学は「自分の学年+1つ下の学年」の全単元が黒帯で500MP(小4〜小6は10月末まで、中1〜中3は11月末まで)。理科は学年ごとに個別ボーナス(小4:100MP、小5:100MP、小6:100MP、中1:300MP、中2:400MP、中3:500MP、来年1月末まで)！';
     }
   }
 
@@ -20867,6 +20891,7 @@
   }
 
   function renderHistory(data) {
+    backfillCategoryRanksFromHistory_(data.byCategory);
     renderBadges(data);
     renderRareCollection();
     renderItems();
