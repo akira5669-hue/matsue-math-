@@ -17609,7 +17609,7 @@
     { name: 'アキラメタル',    emoji: '🤘' },
     { name: 'ゴーマジンガー',  emoji: '🤖' },
     { name: 'キラキラアキラ',  emoji: '⭐' },
-    { name: 'ナットウスライム', emoji: '🟫' },
+    { name: 'ナットウスライム', emoji: '🟫', img: 'images/nattoslime.jpg' },
     { name: 'ハナマルオ',      emoji: '⭕', img: 'images/hanamaruo.jpg' },
     { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
     { name: 'かっこっこ',      emoji: '🐤', img: 'images/kakkokko.jpg' },
