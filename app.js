@@ -17606,7 +17606,7 @@
     { name: 'ボンミスコ',      emoji: '💥', img: 'images/bonmisuko.png' },
     { name: 'チンカイトウ',    emoji: '❌' },
     { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.jpg' },
-    { name: 'アキラメタル',    emoji: '🤘' },
+    { name: 'アキラメタル',    emoji: '🤘', img: 'images/akirametal.jpg' },
     { name: 'ゴーマジンガー',  emoji: '🤖' },
     { name: 'キラキラアキラ',  emoji: '⭐' },
     { name: 'ナットウスライム', emoji: '🟫', img: 'images/nattoslime.jpg' },
@@ -18486,6 +18486,7 @@
     scienceStreakBarInner: document.getElementById('scienceStreakBarInner'),
     scienceStreakText: document.getElementById('scienceStreakText'),
     scienceExpText: document.getElementById('scienceExpText'),
+    scienceCharBanner: document.getElementById('scienceCharBanner'),
     hpRulesBanner: document.getElementById('hpRulesBanner'),
     hpRulesBannerText: document.getElementById('hpRulesBannerText'),
     mpCapBanner: document.getElementById('mpCapBanner'),
@@ -18783,6 +18784,17 @@
     if (pool.length === 0) return null;
     return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
   }
+  // ハナマルコ(理科の通常キャラ)：選択中(ON)の理科単元の中から、間違えた問題を
+  // ランダムに1つ選ぶ。無ければnull(その場合は通常のランダム出題にフォールバック)。
+  function pickScienceMistakeQuestion() {
+    const pool = [];
+    state.enabledScience.forEach(id => {
+      const bank = state.wrongBank[id];
+      if (bank && bank.length > 0) bank.forEach(snap => pool.push(snap));
+    });
+    if (pool.length === 0) return null;
+    return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
+  }
   // ステージ4のボス戦は「間違えた問題が多く出る」仕様。出題範囲(自分の学年以上・
   // ON中)の間違えた問題の中からランダムに1つ選ぶ。無ければnull。
   const WORLD_BOSS_STAGE4_WRONG_BIAS = 0.5;
@@ -18890,6 +18902,15 @@
     return src[randInt(0, src.length - 1)];
   }
 
+  // ハナマルコ：理科の通常キャラ(レアではなく、一定確率で毎回の出題時に登場しうる)。
+  // 登場すると、選択中の理科単元の中から過去に間違えた問題を再出題する。
+  // 間違えた問題が無ければ通常のランダム出題にフォールバックする。
+  const HANAMARUKO_APPEAR_CHANCE_ = 0.2;
+  const HANAMARUKO_LINES_ = [
+    'みんなよくがんばったね！', 'まちがえても大丈夫！つぎは花丸だよ！',
+    '花丸をいっぱいつけよう！', 'やればできる！！', 'がんばるキミに、ハナマルを！',
+  ];
+
   function updateScienceHud() {
     const streak = state.scienceStreak || 0;
     const pct = Math.round((streak / SCIENCE_STREAK_REQUIRED) * 100);
@@ -18901,10 +18922,20 @@
 
   function nextScienceQuestion() {
     clearMemoCanvas();
-    const cat = pickScienceGenerator();
-    const q = cat.gen();
+    const mistakeQ = (Math.random() < HANAMARUKO_APPEAR_CHANCE_) ? pickScienceMistakeQuestion() : null;
+    const q = mistakeQ || pickScienceGenerator().gen();
     state.current = q;
     state.answered = false;
+    if (els.scienceCharBanner) {
+      if (mistakeQ) {
+        const line = HANAMARUKO_LINES_[randInt(0, HANAMARUKO_LINES_.length - 1)];
+        els.scienceCharBanner.hidden = false;
+        els.scienceCharBanner.innerHTML = `<img src="images/hanamaruko.jpg" class="enemy-char-img-sm" alt=""> <strong>ハナマルコ</strong>登場！前に間違えた問題だよ。「${line}」`;
+      } else {
+        els.scienceCharBanner.hidden = true;
+        els.scienceCharBanner.innerHTML = '';
+      }
+    }
     els.categoryTag.textContent = categoryLabel[q.category] || q.category;
     if (q.questionHtml) {
       els.questionText.innerHTML = q.questionHtml;
@@ -18960,6 +18991,7 @@
     if (isCorrect) {
       state.correct++;
       state.catStats[catId].correct++;
+      clearWrongQuestion(state.current);
       state.scienceStreak = (state.scienceStreak || 0) + 1;
       if (state.scienceStreak >= SCIENCE_STREAK_REQUIRED) {
         const today = todayKey();
@@ -18983,6 +19015,7 @@
       }
     } else {
       state.scienceStreak = 0;
+      recordWrongQuestion(state.current);
       if (isHpDamageActive_() && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         winHtml = state.steelArmorCharges > 0
