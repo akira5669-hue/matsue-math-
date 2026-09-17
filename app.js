@@ -17602,7 +17602,7 @@
   const ENEMIES = [
     { name: 'マチガール',      emoji: '😤', img: 'images/machigairu.png' },
     { name: 'マチガイオ',      emoji: '👺', img: 'images/machigaio.jpg' },
-    { name: 'ケアレスミス',    emoji: '😅' },
+    { name: 'ケアレスミス',    emoji: '😅', img: 'images/carelessmiss.jpg' },
     { name: 'ボンミスコ',      emoji: '💥', img: 'images/bonmisuko.png' },
     { name: 'チンカイトウ',    emoji: '❌' },
     { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.jpg' },
