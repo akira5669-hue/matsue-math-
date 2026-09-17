@@ -17610,7 +17610,7 @@
     { name: 'ゴーマジンガー',  emoji: '🤖' },
     { name: 'キラキラアキラ',  emoji: '⭐' },
     { name: 'ナットウスライム', emoji: '🟫' },
-    { name: 'ハナマルオ',      emoji: '⭕' },
+    { name: 'ハナマルオ',      emoji: '⭕', img: 'images/hanamaruo.jpg' },
     { name: 'カッコウ',        emoji: '🐦', img: 'images/kakkou.png' },
     { name: 'かっこっこ',      emoji: '🐤', img: 'images/kakkokko.jpg' },
     { name: 'イコールくん',    emoji: '🟰', img: 'images/ikorukun.jpg' },
