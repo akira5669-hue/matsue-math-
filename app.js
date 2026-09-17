@@ -2480,6 +2480,9 @@
     const m = c.label.match(/（(小[3456]|中[123])）/);
     return [c.id, m ? m[1] : null];
   }));
+  // 出題範囲の並び順(CATEGORIES→SCIENCE_CATEGORIESの定義順、中1〜中3・小4〜小6・
+  // 小3の学年ブロック順)を、学習記録の単元別一覧でも同じ並びにするためのindex。
+  const categoryDisplayOrder = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map((c, i) => [c.id, i]));
   function isAboveOwnGrade(catId, ownGrade) {
     const ownRank = GRADE_RANK[ownGrade];
     const catRank = GRADE_RANK[categoryGrade[catId]];
@@ -20903,7 +20906,14 @@
     els.historyCalendar.innerHTML = buildCalendarHtml(data.byDate);
 
     els.historyCats.innerHTML = data.byCategory
-      .sort(function (a, b) { return b.total - a.total; })
+      .slice()
+      .sort(function (a, b) {
+        var oa = categoryDisplayOrder[a.category];
+        var ob = categoryDisplayOrder[b.category];
+        if (oa === undefined) oa = 999999;
+        if (ob === undefined) ob = 999999;
+        return oa - ob;
+      })
       .map(function (c) {
         var rate = Math.round((c.correct / c.total) * 100);
         var label = categoryLabel[c.category] || c.category;
