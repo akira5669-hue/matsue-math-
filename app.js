@@ -19917,7 +19917,7 @@
 
   // キャラクターイラスト募集告知(まだ画像になっていないキャラを生徒に描いてもらう企画)。
   // 採用/不採用に関わらず300MP付与。2026-09-16に本番公開(全生徒に表示)。
-  var CHAR_ART_TARGETS_ = ['ケアレスミス', 'チンカイトウ', 'アキラメタル', 'ゴーマジンガー', 'キラキラアキラ', 'ナットウスライム', 'ハナマルオ'];
+  var CHAR_ART_TARGETS_ = ['ケアレスミス', 'チンカイトウ', 'ゴーマジンガー', 'キラキラアキラ'];
   function renderCharArtBanner_() {
     if (!els.charArtBanner) return;
     els.charArtBanner.hidden = false;
