@@ -20115,9 +20115,13 @@
 
   // キャラクターイラスト募集告知(まだ画像になっていないキャラを生徒に描いてもらう企画)。
   // 採用/不採用に関わらず300MP付与。2026-09-16に本番公開(全生徒に表示)。
-  var CHAR_ART_TARGETS_ = ['チンカイトウ'];
+  var CHAR_ART_TARGETS_ = [];
   function renderCharArtBanner_() {
     if (!els.charArtBanner) return;
+    if (CHAR_ART_TARGETS_.length === 0) {
+      els.charArtBanner.hidden = true;
+      return;
+    }
     els.charArtBanner.hidden = false;
     if (els.charArtBannerText) {
       els.charArtBannerText.textContent = '📢【キャラクターイラスト募集】まだ絵になっていないキャラ（' + CHAR_ART_TARGETS_.join('・') + '）のイラストを描いて先生に見せてね！採用されたら300MP、採用されなくても参加してくれたら300MPプレゼント！';
