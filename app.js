@@ -18580,6 +18580,8 @@
     charArtBannerText: document.getElementById('charArtBannerText'),
     categoryRankBanner: document.getElementById('categoryRankBanner'),
     categoryRankBannerText: document.getElementById('categoryRankBannerText'),
+    superAkirametalBanner: document.getElementById('superAkirametalBanner'),
+    superAkirametalBannerText: document.getElementById('superAkirametalBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -19272,6 +19274,7 @@
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
+    renderSuperAkirametalBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -20131,6 +20134,20 @@
     els.categoryRankBanner.hidden = false;
     if (els.categoryRankBannerText) {
       els.categoryRankBannerText.textContent = '📢【単元別「級」スタート！】各単元(算数・数学は20/40/60/100問、理科は20/30/40/50問)を正答率80%以上で解くと、3級→2級→1級→黒帯(コンプリート)を獲得！黒帯は一度取ったら正答率が下がってもなくなりません。コンプリートボーナス：算数・数学は「自分の学年+1つ下の学年」の全単元が黒帯で500MP(小4〜小6は10月末まで、中1〜中3は11月末まで)。理科は学年ごとに個別ボーナス(小4:100MP、小5:100MP、小6:100MP、中1:300MP、中2:400MP、中3:500MP、来年1月末まで)！';
+    }
+  }
+
+  // 新キャラ「スーパーアキラメタル」の告知(2026-09-18〜2026-09-30、全生徒に表示)。
+  var SUPERAKIRAMETAL_BANNER_END_ = '2026-09-30';
+  function renderSuperAkirametalBanner_() {
+    if (!els.superAkirametalBanner) return;
+    if (todayKey() > SUPERAKIRAMETAL_BANNER_END_) {
+      els.superAkirametalBanner.hidden = true;
+      return;
+    }
+    els.superAkirametalBanner.hidden = false;
+    if (els.superAkirametalBannerText) {
+      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月末まで出現率アップ中！倒すと必ず鍵が1つ手に入るよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
     }
   }
 
