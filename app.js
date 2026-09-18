@@ -2544,16 +2544,9 @@
     if (total >= thresholds[0]) return 1;
     return 0;
   }
-  // 単元(catId)を1問解くたびに呼び、その単元の級が新しく上がっていれば更新する。
-  // 本番公開前のプレビューのため、まずは00001だけで動作させる。
-  function updateCategoryRank_(catId, thresholds) {
-    if (!isAdminSession_()) return;
-    const cs = state.catStats[catId];
-    if (!cs) return;
-    const newLevel = computeCategoryRankLevel_(cs.total, cs.correct, thresholds);
-    const prevLevel = Number(state.categoryRanks[catId]) || 0;
-    if (newLevel > prevLevel) state.categoryRanks[catId] = newLevel;
-  }
+  // 級・黒帯バッジは、ローカルのcatStats(この機能を追加した時点からの新規カウント)
+  // では判定しない。学習記録画面(サーバーのrecordsテーブルに基づく生涯累積)を
+  // 取得できたタイミングでのみ計算する(backfillCategoryRanksFromHistory_参照)。
   // catStatsはこの機能を追加した時点からのローカル累積でしかないため、学習記録
   // (サーバーのrecordsテーブルに基づく生涯の出題数・正答数、historyアクション)を
   // 取得できたタイミングで、そちらからも級を計算し直す(catStatsより進んでいれば
@@ -19120,7 +19113,6 @@
         }
       }
     }
-    updateCategoryRank_(catId, SCIENCE_RANK_THRESHOLDS_);
     saveGameState(state);
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
 
@@ -19631,7 +19623,6 @@
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
     if (isCorrect) state.catStats[catId].correct++;
-    updateCategoryRank_(catId, MATH_RANK_THRESHOLDS_);
 
     Array.from(els.choices.children).forEach(b => {
       b.disabled = true;
@@ -19936,7 +19927,23 @@
   els.resetBtn.addEventListener('click', resetStats);
   els.settingsToggle.addEventListener('click', () => {
     const isHidden = els.settingsPanel.hasAttribute('hidden');
-    if (isHidden) { els.settingsPanel.removeAttribute('hidden'); renderSettings(); }
+    if (isHidden) {
+      els.settingsPanel.removeAttribute('hidden');
+      renderSettings();
+      // 級・黒帯バッジは生涯累積データでしか判定しないため、出題範囲パネルを開く
+      // たびに学習記録と同じデータを取得して反映する(00001限定プレビュー中)。
+      if (isAdminSession_()) {
+        const session = loadSession();
+        if (session && session.id) {
+          apiPost('history', { id: session.id }).then(function (res) {
+            if (res && res.ok) {
+              backfillCategoryRanksFromHistory_(res.byCategory);
+              renderSettings();
+            }
+          }).catch(function () { });
+        }
+      }
+    }
     else els.settingsPanel.setAttribute('hidden', '');
     els.settingsToggle.setAttribute('aria-expanded', String(isHidden));
   });
