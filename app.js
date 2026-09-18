@@ -17655,7 +17655,7 @@
     { name: 'マチガイオ',      emoji: '👺', img: 'images/machigaio.jpg' },
     { name: 'ケアレスミス',    emoji: '😅', img: 'images/carelessmiss.jpg' },
     { name: 'ボンミスコ',      emoji: '💥', img: 'images/bonmisuko.png' },
-    { name: 'チンカイトウ',    emoji: '❌' },
+    { name: 'チンカイトウ',    emoji: '❌', img: 'images/chinkaito.jpg' },
     { name: 'ウッカリミスコ',  emoji: '😱', img: 'images/ukkarimisuko.jpg' },
     { name: 'アキラメタル',    emoji: '🤘', img: 'images/akirametal.jpg' },
     { name: 'ゴーマジンガー',  emoji: '🤖', img: 'images/gomajinger.jpg' },
