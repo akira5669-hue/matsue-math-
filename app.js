@@ -17786,6 +17786,20 @@
         miss: '🎣 いただき！',
       },
     },
+    // スーパーアキラメタルは漁師AKRと同じく間違えても逃げないレアキャラだが、
+    // 1問間違えるごとにMP-10・HP-10という重いペナルティを受ける(この処理は
+    // handleAnswer内でstate.rareType==='superakirametal'を見て行い、サーバー側の
+    // 専用エンドポイント(superAkirametalPenalty)で確実に減算する)。その代わり
+    // 撃破すると必ずランダムなティアの鍵を1つ手に入れる。
+    // 出現率: 2026年9月は10%程度、10月以降は1%以下(rollRareType参照)。
+    superakirametal: {
+      id: 'superakirametal', name: 'スーパーアキラメタル', img: 'images/superakirametal.jpg',
+      lines: {
+        appear: '諦めるにはまだ早い…お前のロックな魂、見せてみろよ！ただし1問間違えるたびにMPとHPを10ずつもらうぜ！',
+        defeat: 'イカした正解だったぜ…！お前に鍵をやるよ。約束だからな。',
+        miss: '🎸 まだまだ甘いな…！',
+      },
+    },
     // スットボケAKRは文章題限定のレアキャラ。既存のレアキャラ抽選(rollRareType)とは
     // 完全に独立した仕組みで、文章題の問題が出た瞬間に別枠で5%の確率で登場する。
     sutoboke: {
@@ -17990,7 +18004,7 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi', 'superakirametal'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
@@ -18189,6 +18203,16 @@
   const SOUBUSEN_END = '2026-08-31';
   const NATTOMAN_START = '2026-07-31';
   const NATTOMAN_END = '2026-08-31';
+  // スーパーアキラメタルの出現率：2026年9月中は10%程度、10月以降(期限なし)は1%以下。
+  const SUPERAKIRAMETAL_HIGH_CHANCE = 0.10;
+  const SUPERAKIRAMETAL_HIGH_END = '2026-09-30';
+  const SUPERAKIRAMETAL_LOW_CHANCE = 0.005;
+  function superAkirametalChance_() {
+    return todayKey() <= SUPERAKIRAMETAL_HIGH_END ? SUPERAKIRAMETAL_HIGH_CHANCE : SUPERAKIRAMETAL_LOW_CHANCE;
+  }
+  // lib/handlers/shop.jsのSUPERAKIRAMETAL_MP_PENALTY/HP_PENALTYと必ず揃えること。
+  const SUPERAKIRAMETAL_MP_PENALTY_ = 10;
+  const SUPERAKIRAMETAL_HP_PENALTY_ = 10;
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
@@ -18230,6 +18254,7 @@
       ['fugoupakkun', RARE_CHANCE_FUGOUPAKKUN],
       ['goumaji', RARE_CHANCE_GOUMAJI],
       ['gyoshi', RARE_CHANCE_GYOSHI],
+      ['superakirametal', superAkirametalChance_()],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -19557,6 +19582,35 @@
           missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
+      } else if (state.rareType === 'superakirametal' && hasSteelArmorCharge_()) {
+        state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+        missLineHtml += state.steelArmorCharges > 0
+          ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
+          : `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！…鎧は壊れてなくなった。</div>`;
+        saveGameState(state);
+      } else if (state.rareType === 'superakirametal') {
+        // スーパーアキラメタルは逃げない代わりに、不正解のたびにMP-10・HP-10という
+        // 重いペナルティを受ける。ポイントの同期は「サーバー保持値と端末申告値の
+        // 大きい方」を採用するため、state.pointsを減らすだけでは減少がサーバーに
+        // 反映されない。専用エンドポイント(サーバー側で確定的に減算)を叩いて確実に
+        // 反映し、応答の値でローカルも揃える。
+        state.points = Math.max(0, (Number(state.points) || 0) - SUPERAKIRAMETAL_MP_PENALTY_);
+        state.hp = Math.max(0, (Number(state.hp) || 0) - SUPERAKIRAMETAL_HP_PENALTY_);
+        missLineHtml += `<div class="enemy-quote-banner">🎸 スーパーアキラメタルに、MPを${SUPERAKIRAMETAL_MP_PENALTY_}・HPを${SUPERAKIRAMETAL_HP_PENALTY_}奪われた！（残りMP: ${state.points} / 残りHP: ${state.hp}）</div>`;
+        if (state.hp <= 0) {
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+        }
+        saveGameState(state);
+        if (session && session.id) {
+          apiPost('superAkirametalPenalty', { id: session.id }).then(function (res) {
+            if (res && res.ok) {
+              state.points = Number(res.points) || 0;
+              state.hp = Number(res.hp) || 0;
+              saveGameState(state);
+              updateGameHud();
+            }
+          }).catch(function () { });
+        }
       } else if (isHpDamageActive_() && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         missLineHtml += state.steelArmorCharges > 0
@@ -19695,6 +19749,19 @@
         }
       }
 
+      // スーパーアキラメタル撃破：確率ドロップではなく、必ずランダムなティアの鍵を
+      // 1つ手に入れる(重いMP/HPペナルティに見合う確定報酬)。
+      let superAkirametalKeyHtml = '';
+      if (wasRareType === 'superakirametal') {
+        const keyTiers_ = ['bronze', 'silver', 'gold', 'rainbow'];
+        const keyTier_ = keyTiers_[randInt(0, keyTiers_.length - 1)];
+        const keyKey_ = treasureItemKey_('key', keyTier_);
+        state.treasureItems = state.treasureItems || {};
+        state.treasureItems[keyKey_] = (Number(state.treasureItems[keyKey_]) || 0) + 1;
+        superAkirametalKeyHtml = `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[keyTier_]} ${TREASURE_TIER_LABEL_[keyTier_]}の鍵を手に入れた！</div>`;
+        if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      }
+
       const prevPrefectureCount = state.prefectureCount;
       state.prefectureCount = Math.min(47, state.prefectureCount + 1);
       const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
@@ -19766,13 +19833,14 @@
         : wasRareType === 'nattoman' ? ('<span class="rare-badge">🫘レア撃破！+' + NATTOMAN_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'fugoupakkun' ? ('<span class="rare-badge">🔢レア撃破！+' + FUGOUPAKKUN_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
+        : wasRareType === 'superakirametal' ? '<span class="rare-badge">🎸スーパーレア撃破！🎸</span>'
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';

@@ -9,7 +9,7 @@ const {
   handleRanking, handleRankingGrade, handleRankingToday, handleRankingPoints, handleRankingHp, handleChallengeRanking,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook, handleSuperAkirametalPenalty } = require('../lib/handlers/shop');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
@@ -47,6 +47,7 @@ const ACTIONS = {
   sellTreasureRing: handleSellTreasureRing,
   openTreasureChest: handleOpenTreasureChest,
   buySpellbook: handleBuySpellbook,
+  superAkirametalPenalty: handleSuperAkirametalPenalty,
   registerGuardian: handleRegisterGuardian,
   withdraw: handleWithdraw,
   weeklyQuizGet: handleWeeklyQuizGet,
