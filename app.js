@@ -2553,7 +2553,7 @@
   // 上書き)。これにより、以前から解いていて既に条件を満たしている単元も、
   // すぐに正しい級が反映される。
   function backfillCategoryRanksFromHistory_(byCategory) {
-    if (!isAdminSession_() || !Array.isArray(byCategory)) return;
+    if (!Array.isArray(byCategory)) return;
     let changed = false;
     byCategory.forEach(function (c) {
       const thresholds = MATH_CATEGORY_ID_SET_.has(c.category) ? MATH_RANK_THRESHOLDS_
@@ -19938,17 +19938,15 @@
       els.settingsPanel.removeAttribute('hidden');
       renderSettings();
       // 級・黒帯バッジは生涯累積データでしか判定しないため、出題範囲パネルを開く
-      // たびに学習記録と同じデータを取得して反映する(00001限定プレビュー中)。
-      if (isAdminSession_()) {
-        const session = loadSession();
-        if (session && session.id) {
-          apiPost('history', { id: session.id }).then(function (res) {
-            if (res && res.ok) {
-              backfillCategoryRanksFromHistory_(res.byCategory);
-              renderSettings();
-            }
-          }).catch(function () { });
-        }
+      // たびに学習記録と同じデータを取得して反映する。
+      const session = loadSession();
+      if (session && session.id) {
+        apiPost('history', { id: session.id }).then(function (res) {
+          if (res && res.ok) {
+            backfillCategoryRanksFromHistory_(res.byCategory);
+            renderSettings();
+          }
+        }).catch(function () { });
       }
     }
     else els.settingsPanel.setAttribute('hidden', '');
@@ -20135,7 +20133,7 @@
   function renderCategoryRankBanner_() {
     if (!els.categoryRankBanner) return;
     var today = todayKey();
-    if (!isAdminSession_() || today < CATEGORY_RANK_BANNER_START_ || today > CATEGORY_RANK_BANNER_END_) {
+    if (today < CATEGORY_RANK_BANNER_START_ || today > CATEGORY_RANK_BANNER_END_) {
       els.categoryRankBanner.hidden = true;
       return;
     }
@@ -20159,9 +20157,8 @@
     }
   }
 
-  // 単元別の級バッジを1つ表示するHTML(00001限定プレビュー中)。未達成なら何も表示しない。
+  // 単元別の級バッジを1つ表示するHTML。未達成なら何も表示しない。
   function renderCategoryRankBadge_(catId) {
-    if (!isAdminSession_()) return '';
     var level = Number(state.categoryRanks[catId]) || 0;
     if (level <= 0) return '';
     return '<span class="cat-rank-badge">' + (CATEGORY_RANK_LABELS_[level] || '') + '</span>';
@@ -20450,10 +20447,7 @@
       pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord,
       pointsTodayBonus: state.pointsTodayBonus,
       missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
-      // 単元別の級システムは本番公開前のプレビュー中のため、まずは00001だけが
-      // サーバーへ送信する(他の生徒はcategoryRanksを送らないので、サーバー側の
-      // コンプリートボーナス判定も自然に動かない)。
-      categoryRanks: isAdminSession_() ? (state.categoryRanks || {}) : undefined,
+      categoryRanks: state.categoryRanks || {},
     };
   }
 
