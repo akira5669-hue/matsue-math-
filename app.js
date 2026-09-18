@@ -18196,12 +18196,16 @@
   const SOUBUSEN_END = '2026-08-31';
   const NATTOMAN_START = '2026-07-31';
   const NATTOMAN_END = '2026-08-31';
-  // スーパーアキラメタルの出現率：2026年9月中は10%程度、10月以降(期限なし)は1%以下。
+  // スーパーアキラメタルの出現率：2026-09-20(日)より前は出現なし。
+  // 9/20〜9/30は10%程度、10月以降(期限なし)は1%以下。
+  const SUPERAKIRAMETAL_START = '2026-09-20';
   const SUPERAKIRAMETAL_HIGH_CHANCE = 0.10;
   const SUPERAKIRAMETAL_HIGH_END = '2026-09-30';
   const SUPERAKIRAMETAL_LOW_CHANCE = 0.005;
   function superAkirametalChance_() {
-    return todayKey() <= SUPERAKIRAMETAL_HIGH_END ? SUPERAKIRAMETAL_HIGH_CHANCE : SUPERAKIRAMETAL_LOW_CHANCE;
+    const today = todayKey();
+    if (today < SUPERAKIRAMETAL_START) return 0;
+    return today <= SUPERAKIRAMETAL_HIGH_END ? SUPERAKIRAMETAL_HIGH_CHANCE : SUPERAKIRAMETAL_LOW_CHANCE;
   }
   // lib/handlers/shop.jsのSUPERAKIRAMETAL_MP_PENALTY/HP_PENALTYと必ず揃えること。
   const SUPERAKIRAMETAL_MP_PENALTY_ = 10;
@@ -20147,7 +20151,7 @@
     }
     els.superAkirametalBanner.hidden = false;
     if (els.superAkirametalBannerText) {
-      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月末まで出現率アップ中！倒すと必ず鍵が1つ手に入るよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
+      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月20日(日)〜9月末まで出現率アップ中！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
     }
   }
 
