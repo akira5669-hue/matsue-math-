@@ -17795,7 +17795,7 @@
     superakirametal: {
       id: 'superakirametal', name: 'スーパーアキラメタル', img: 'images/superakirametal.jpg',
       lines: {
-        appear: '諦めるにはまだ早い…お前のロックな魂、見せてみろよ！ただし1問間違えるたびにMPとHPを10ずつもらうぜ！',
+        appear: '諦めるにはまだ早い…お前のロックな魂、見せてみろよ！⚠️1問間違えるごとにMPが10・HPが10減るぞ！気をつけろ！',
         defeat: 'イカした正解だったぜ…！お前に鍵をやるよ。約束だからな。',
         miss: '🎸 まだまだ甘いな…！',
       },
