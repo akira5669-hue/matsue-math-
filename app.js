@@ -19700,12 +19700,24 @@
       // BONMISUKO_CURSE_MP_CAPに制限される。
       const basePoints = state.cursed ? Math.min(rawBasePoints, BONMISUKO_CURSE_MP_CAP) : rawBasePoints;
       // 文章題と計算問題(理科含む)で、1日のMP上限を別々の50MPずつに分けて管理する。
-      const dailyCapForThis = isWordProblem ? POINTS_DAILY_CAP_WORD : POINTS_DAILY_CAP_CALC;
-      const todayBucketForThis = isWordProblem ? state.pointsTodayWord : state.pointsTodayCalc;
-      const pointsToAdd = Math.max(0, Math.min(basePoints, dailyCapForThis - todayBucketForThis));
+      // ただし呪い中はすでに報酬がBONMISUKO_CURSE_MP_CAPまで絞られているため、
+      // さらにこの1日上限にも巻き込まれると、呪い解除に必要な100MPを稼ぐ前に
+      // 上限に達してしまい、その日はずっと呪いから抜け出せなくなる。そのため
+      // 呪い中の報酬はミッション報酬などと同じ「1日上限を経由しないボーナス」
+      // 扱いとする(pointsTodayBonusは元々端末間の二重加算防止のみが目的で、
+      // 固定上限を持たない)。
+      let pointsToAdd;
+      if (state.cursed) {
+        pointsToAdd = Math.max(0, basePoints);
+        state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + pointsToAdd;
+      } else {
+        const dailyCapForThis = isWordProblem ? POINTS_DAILY_CAP_WORD : POINTS_DAILY_CAP_CALC;
+        const todayBucketForThis = isWordProblem ? state.pointsTodayWord : state.pointsTodayCalc;
+        pointsToAdd = Math.max(0, Math.min(basePoints, dailyCapForThis - todayBucketForThis));
+        if (isWordProblem) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
+      }
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
-      if (isWordProblem) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
       let doubleGainedHtml = '';
       state.exp += 10;
       // レベルは算数・数学の経験値(exp)と理科の経験値(scienceExp)を合算して決まる。
@@ -20182,7 +20194,7 @@
     }
     els.superAkirametalBanner.hidden = false;
     if (els.superAkirametalBannerText) {
-      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】出現率は初日(9/20)が一番高く、日を追うごとに下がっていくよ！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
+      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月20日(日)〜9月末まで出現率アップ中！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
     }
   }
 
