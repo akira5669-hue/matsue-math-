@@ -18675,6 +18675,10 @@
     rankingTestConfirmYes: document.getElementById('rankingTestConfirmYes'),
     rankingTestConfirmNo: document.getElementById('rankingTestConfirmNo'),
     rankingTestResult: document.getElementById('rankingTestResult'),
+    proofTestCard: document.getElementById('proofTestCard'),
+    proofTestFileInput: document.getElementById('proofTestFileInput'),
+    proofTestSubmitBtn: document.getElementById('proofTestSubmitBtn'),
+    proofTestResult: document.getElementById('proofTestResult'),
     hyakuMasuCard: document.getElementById('hyakuMasuCard'),
     hyakuMasuCardTitle: document.getElementById('hyakuMasuCardTitle'),
     hyakuMasuHint: document.getElementById('hyakuMasuHint'),
@@ -22887,6 +22891,11 @@
     els.penaTestCardTitle.textContent = isMiddle ? '📝 抜き打ちテスト' : '📝 ペナテスト';
     els.penaTestCard.hidden = false;
     els.rankingTestCard.hidden = !isMiddle;
+    // 証明の問題(9/19配布、中2限定)提出：9/26を過ぎたら画面ごと消す。
+    els.proofTestCard.hidden = grade !== '中2' || todayKey() > PROOF_TEST_DEADLINE_;
+    els.proofTestFileInput.value = '';
+    els.proofTestSubmitBtn.disabled = true;
+    els.proofTestResult.textContent = '';
     els.penaTestFileInput.value = '';
     els.penaTestSubmitBtn.disabled = true;
     els.penaTestResult.textContent = '';
@@ -22978,6 +22987,36 @@
     }).catch(function () {
       els.penaTestSubmitBtn.disabled = false;
       els.penaTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
+    });
+  }
+
+  // 証明の問題(2026-09-19配布、中2限定、9/26締切)満点提出。
+  var PROOF_TEST_DEADLINE_ = '2026-09-26';
+  function submitProofTestPhoto() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var file = els.proofTestFileInput.files && els.proofTestFileInput.files[0];
+    if (!file) { els.proofTestResult.textContent = '写真を選んでください。'; return; }
+    els.proofTestSubmitBtn.disabled = true;
+    els.proofTestResult.textContent = '送信中…';
+    compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
+      return apiPost('submitTestPhoto', { id: session.id, testType: 'proof', imageBase64: base64, mimeType: 'image/jpeg' });
+    }).then(function (res) {
+      els.proofTestSubmitBtn.disabled = false;
+      if (!res.ok) {
+        els.proofTestResult.textContent = res.error === 'already_submitted_this_month'
+          ? 'すでに提出済みです。'
+          : res.error === 'submission_closed'
+          ? '提出期限（9月26日）を過ぎました。'
+          : '送信に失敗しました。もう一度お試しください。';
+        return;
+      }
+      applyTestPhotoPointsResult(res);
+      els.proofTestFileInput.value = '';
+      els.proofTestResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！';
+    }).catch(function () {
+      els.proofTestSubmitBtn.disabled = false;
+      els.proofTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
     });
   }
 
@@ -23824,6 +23863,10 @@
     els.penaTestSubmitBtn.disabled = !(els.penaTestFileInput.files && els.penaTestFileInput.files[0]);
   });
   els.penaTestSubmitBtn.addEventListener('click', submitPenaTestPhoto);
+  els.proofTestFileInput.addEventListener('change', function () {
+    els.proofTestSubmitBtn.disabled = !(els.proofTestFileInput.files && els.proofTestFileInput.files[0]);
+  });
+  els.proofTestSubmitBtn.addEventListener('click', submitProofTestPhoto);
   Array.from(els.rankingTierRow.children).forEach(function (btn) {
     btn.addEventListener('click', function () { handleRankingTierClick(btn.dataset.tier); });
   });

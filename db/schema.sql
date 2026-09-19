@@ -29,6 +29,7 @@ CREATE TABLE students (
   today_stats JSONB,                       -- {date, correct, total}
   hp INTEGER NOT NULL DEFAULT 0,
   last_ranking_test_month TEXT,            -- 'yyyy-MM'
+  last_proof_test_month TEXT,              -- 'yyyy-MM'。中2限定「証明」満点提出(2026-09-19配布分、9/26締切)の月1回制限用
   world_lap INTEGER NOT NULL DEFAULT 1,
   world_lap_start_level INTEGER NOT NULL DEFAULT 100,
   world_boss_defeated JSONB NOT NULL DEFAULT '{}',
