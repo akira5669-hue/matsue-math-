@@ -312,7 +312,7 @@
         pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
-        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
+        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
@@ -332,7 +332,7 @@
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
-        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed,
+        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
@@ -18360,6 +18360,8 @@
     missionCategoryId: (savedProgress && savedProgress.missionCategoryId) || (savedGame && savedGame.missionCategoryId) || null,
     missionCorrect: savedProgress ? (Number(savedProgress.missionCorrect) || 0) : ((savedGame && Number(savedGame.missionCorrect)) || 0),
     missionClaimed: (savedProgress ? !!savedProgress.missionClaimed : !!(savedGame && savedGame.missionClaimed)),
+    // ログイン成功時の+3HPボーナスの1日1回制限用(JST日付キー)。
+    hpLoginBonusDate: (savedProgress && savedProgress.hpLoginBonusDate) || (savedGame && savedGame.hpLoginBonusDate) || null,
     rareDefeats: (savedProgress && savedProgress.rareDefeats && typeof savedProgress.rareDefeats === 'object') ? Object.assign({}, savedProgress.rareDefeats) : ((savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {}),
     rareCollected: (savedProgress && Array.isArray(savedProgress.rareCollected)) ? savedProgress.rareCollected.slice() : ((savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : []),
     thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
@@ -20277,10 +20279,14 @@
     state.points += pointsToAdd;
     state.pointsToday += pointsToAdd;
     state.pointsTodayWord += pointsToAdd;
+    // +3HPボーナスは1日1回まで。以前は無制限で、ログアウト→ログインを
+    // 繰り返すだけでHPを際限なく稼げてしまっていた(MPは上のPOINTS_DAILY_CAP_WORD
+    // 経由の上限で既に対策済みだったが、HPには対策が漏れていた)。
     var hpBonusAwarded = 0;
-    if (isHpDamageActive_()) {
+    if (isHpDamageActive_() && state.hpLoginBonusDate !== today) {
       hpBonusAwarded = HP_LOGIN_GATE_BONUS_;
       state.hp = (Number(state.hp) || 0) + hpBonusAwarded;
+      state.hpLoginBonusDate = today;
     }
     saveGameState(state);
     showApp(name, false);
@@ -20451,6 +20457,7 @@
       pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord,
       pointsTodayBonus: state.pointsTodayBonus,
       missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
+      hpLoginBonusDate: state.hpLoginBonusDate,
       categoryRanks: state.categoryRanks || {},
     };
   }
@@ -20599,6 +20606,17 @@
         changed = true;
       } else if (localMissionClaimed && !serverMissionClaimed) {
         dailyLocalAhead = true;
+      }
+    }
+    if (server.hpLoginBonusDate) {
+      var todayNow3 = todayKey();
+      var localHpBonusClaimedToday = state.hpLoginBonusDate === todayNow3;
+      var serverHpBonusClaimedToday = server.hpLoginBonusDate === todayNow3;
+      if (serverHpBonusClaimedToday && !localHpBonusClaimedToday) {
+        // 他の端末で今日既に+3HPボーナスを受け取っている。この端末でも
+        // 受け取り済み扱いに揃え、二重に受け取れないようにする。
+        state.hpLoginBonusDate = todayNow3;
+        changed = true;
       }
     }
 
