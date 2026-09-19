@@ -18204,15 +18204,28 @@
   const NATTOMAN_START = '2026-07-31';
   const NATTOMAN_END = '2026-08-31';
   // スーパーアキラメタルの出現率：2026-09-20(日)より前は出現なし。
-  // 9/20〜9/30は10%程度、10月以降(期限なし)は1%以下。
+  // 初日から日を追うごとに出現率を下げていき、10月以降(期限なし)は0.5%に落ち着く。
   const SUPERAKIRAMETAL_START = '2026-09-20';
-  const SUPERAKIRAMETAL_HIGH_CHANCE = 0.10;
-  const SUPERAKIRAMETAL_HIGH_END = '2026-09-30';
+  const SUPERAKIRAMETAL_DAILY_CHANCE_ = {
+    '2026-09-20': 0.05,
+    '2026-09-21': 0.04,
+    '2026-09-22': 0.025,
+    '2026-09-23': 0.02,
+  };
+  const SUPERAKIRAMETAL_MID_START_ = '2026-09-24';
+  const SUPERAKIRAMETAL_MID_END_ = '2026-09-30';
+  const SUPERAKIRAMETAL_MID_CHANCE_ = 0.01;
   const SUPERAKIRAMETAL_LOW_CHANCE = 0.005;
   function superAkirametalChance_() {
     const today = todayKey();
     if (today < SUPERAKIRAMETAL_START) return 0;
-    return today <= SUPERAKIRAMETAL_HIGH_END ? SUPERAKIRAMETAL_HIGH_CHANCE : SUPERAKIRAMETAL_LOW_CHANCE;
+    if (Object.prototype.hasOwnProperty.call(SUPERAKIRAMETAL_DAILY_CHANCE_, today)) {
+      return SUPERAKIRAMETAL_DAILY_CHANCE_[today];
+    }
+    if (today >= SUPERAKIRAMETAL_MID_START_ && today <= SUPERAKIRAMETAL_MID_END_) {
+      return SUPERAKIRAMETAL_MID_CHANCE_;
+    }
+    return SUPERAKIRAMETAL_LOW_CHANCE;
   }
   // lib/handlers/shop.jsのSUPERAKIRAMETAL_MP_PENALTY/HP_PENALTYと必ず揃えること。
   const SUPERAKIRAMETAL_MP_PENALTY_ = 10;
@@ -20169,7 +20182,7 @@
     }
     els.superAkirametalBanner.hidden = false;
     if (els.superAkirametalBannerText) {
-      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月20日(日)〜9月末まで出現率アップ中！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
+      els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】出現率は初日(9/20)が一番高く、日を追うごとに下がっていくよ！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
     }
   }
 
