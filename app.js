@@ -1579,8 +1579,9 @@
       choices = shuffle([answer, `x = ${x0}`, `x = ±${x0 + 1}`, `x = ±${x0 > 1 ? x0 - 1 : x0 + 2}`]);
     } else if (pat === 4) {
       // 展開してから整理して解く：(x+p)(x+q) = rx + s の形
+      // r2 === -r1(根が±の対称形)も除外する。理由はpat===0と同じ。
       const r1 = randNonZero(-8, 8);
-      let r2; do { r2 = randNonZero(-8, 8); } while (r2 === r1);
+      let r2; do { r2 = randNonZero(-8, 8); } while (r2 === r1 || r2 === -r1);
       const p = randNonZero(-6, 6);
       let qq; do { qq = randNonZero(-6, 6); } while (qq === p);
       const rCoef = p + qq + r1 + r2;
@@ -1596,8 +1597,10 @@
       choices = shuffle([answer, roots(-rlo, -rhi), roots(rlo - 1, rhi), roots(rlo, rhi + 1)]);
     } else if (pat === 5) {
       // 置き換え型：(x+k)² + p(x+k) + q = 0
+      // 実際の解はx1=m1-k, x2=m2-kなので、x1+x2===0(根が±の対称形)も除外する。
+      // 理由はpat===0と同じ。
       const k = randNonZero(-6, 6);
-      let m1, m2; do { m1 = randNonZero(-7, 7); m2 = randNonZero(-7, 7); } while (m1 === m2);
+      let m1, m2; do { m1 = randNonZero(-7, 7); m2 = randNonZero(-7, 7); } while (m1 === m2 || (m1 + m2 - 2 * k) === 0);
       const coefMid = -(m1 + m2), coefConst = m1 * m2;
       const kStr = k >= 0 ? `+${k}` : `${k}`;
       const midSign = coefMid >= 0 ? '+' : '−';
@@ -1612,8 +1615,12 @@
       choices = shuffle([answer, roots(-xlo, -xhi), roots(xlo - 1, xhi), roots(xlo, xhi + 1)]);
     } else if (pat === 0) {
       // (x − a)(x − b) = 0
+      // b === -a(根が±の対称形、例：±2)を除外する。除外しないと、不正解の
+      // ダミー選択肢roots(-r1,-r2)が符号反転で正解と全く同じ解の組み合わせに
+      // なってしまい、順番違いなだけの「不正解」が出題される不具合になる
+      // (実際に(x+2)(x-2)=0で発生を確認)。
       const a = randNonZero(-7, 7);
-      let b; do { b = randNonZero(-7, 7); } while (b === a);
+      let b; do { b = randNonZero(-7, 7); } while (b === a || b === -a);
       const r1 = Math.min(a, b), r2 = Math.max(a, b);
       const aS = a<0?`+ ${Math.abs(a)}`:`− ${a}`;
       const bS = b<0?`+ ${Math.abs(b)}`:`− ${b}`;
