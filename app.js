@@ -18588,6 +18588,8 @@
     categoryRankBannerText: document.getElementById('categoryRankBannerText'),
     superAkirametalBanner: document.getElementById('superAkirametalBanner'),
     superAkirametalBannerText: document.getElementById('superAkirametalBannerText'),
+    proofTestBanner: document.getElementById('proofTestBanner'),
+    proofTestBannerText: document.getElementById('proofTestBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
@@ -19285,6 +19287,7 @@
     renderCharArtBanner_();
     renderCategoryRankBanner_();
     renderSuperAkirametalBanner_();
+    renderProofTestBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -20163,6 +20166,22 @@
     }
   }
 
+  // 証明の問題(2026-09-19配布、中2限定)満点提出の告知。中2(と00001のテスト用)
+  // だけに表示し、提出締切(9/26)を過ぎたら消す。
+  function renderProofTestBanner_() {
+    if (!els.proofTestBanner) return;
+    var session = loadSession();
+    var grade = session && session.grade;
+    if ((grade !== '中2' && !isAdminSession_()) || todayKey() > PROOF_TEST_DEADLINE_) {
+      els.proofTestBanner.hidden = true;
+      return;
+    }
+    els.proofTestBanner.hidden = false;
+    if (els.proofTestBannerText) {
+      els.proofTestBannerText.textContent = '📢【中2限定】9月19日に配布した証明の問題が満点だった人は、「📷テスト提出」から写真を送ると500MPもらえます！提出期限は9月26日までです。';
+    }
+  }
+
   // 単元別の級バッジを1つ表示するHTML。未達成なら何も表示しない。
   function renderCategoryRankBadge_(catId) {
     var level = Number(state.categoryRanks[catId]) || 0;
@@ -20270,28 +20289,33 @@
     var id = loginGate.pendingId;
     var name = loginGate.pendingName;
     var requiredStreak = loginGate.requiredStreak;
-    // ログイン時のMPも、文章題と同じ1日上限(POINTS_DAILY_CAP_WORD)の中に含める。
-    // 以前はここだけ無条件加算だったため、ログインし直すだけで際限なくMPを
-    // 稼げてしまっていた(中学生は1問正解ですぐ突破できるようになったため特に深刻)。
+    // ログイン成功時のMP・HPボーナスは、まとめて1日1回までに制限する。以前は
+    // MPだけ文章題と同じ日次上限(POINTS_DAILY_CAP_WORD)で頭打ちにしていたが、
+    // その上限に達するまでは何度でもログインし直して繰り返し貰えてしまっていた。
+    // HPボーナスの1日1回判定用に既にあるhpLoginBonusDate(サーバー側で端末をまたいで
+    // マージ済み)を、MPボーナスの判定にも流用する。
     var today = todayKey();
     if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
-    var pointsToAdd = Math.max(0, Math.min(LOGIN_GATE_REWARD_MP_, POINTS_DAILY_CAP_WORD - (Number(state.pointsTodayWord) || 0)));
-    state.points += pointsToAdd;
-    state.pointsToday += pointsToAdd;
-    state.pointsTodayWord += pointsToAdd;
-    // +3HPボーナスは1日1回まで。以前は無制限で、ログアウト→ログインを
-    // 繰り返すだけでHPを際限なく稼げてしまっていた(MPは上のPOINTS_DAILY_CAP_WORD
-    // 経由の上限で既に対策済みだったが、HPには対策が漏れていた)。
+    var alreadyClaimedLoginBonusToday = state.hpLoginBonusDate === today;
+    var pointsToAdd = 0;
     var hpBonusAwarded = 0;
-    if (isHpDamageActive_() && state.hpLoginBonusDate !== today) {
-      hpBonusAwarded = HP_LOGIN_GATE_BONUS_;
-      state.hp = (Number(state.hp) || 0) + hpBonusAwarded;
+    if (!alreadyClaimedLoginBonusToday) {
+      pointsToAdd = Math.max(0, Math.min(LOGIN_GATE_REWARD_MP_, POINTS_DAILY_CAP_WORD - (Number(state.pointsTodayWord) || 0)));
+      state.points += pointsToAdd;
+      state.pointsToday += pointsToAdd;
+      state.pointsTodayWord += pointsToAdd;
+      if (isHpDamageActive_()) {
+        hpBonusAwarded = HP_LOGIN_GATE_BONUS_;
+        state.hp = (Number(state.hp) || 0) + hpBonusAwarded;
+      }
       state.hpLoginBonusDate = today;
     }
     saveGameState(state);
     showApp(name, false);
     var clearedText = requiredStreak <= 1 ? '1問正解！' : requiredStreak + '問連続正解！';
-    var mpText = pointsToAdd > 0 ? '+' + pointsToAdd + 'MP獲得！' : '（本日のMP上限に達しているためMPはありません）';
+    var mpText = pointsToAdd > 0 ? '+' + pointsToAdd + 'MP獲得！'
+      : alreadyClaimedLoginBonusToday ? '（本日のログインボーナスは受け取り済みです）'
+      : '（本日のMP上限に達しているためMPはありません）';
     window.alert('🎉 ' + clearedText + mpText + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
     if (id) apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
   }
@@ -22910,7 +22934,7 @@
     els.penaTestCard.hidden = false;
     els.rankingTestCard.hidden = !isMiddle;
     // 証明の問題(9/19配布、中2限定)提出：9/26を過ぎたら画面ごと消す。
-    els.proofTestCard.hidden = grade !== '中2' || todayKey() > PROOF_TEST_DEADLINE_;
+    els.proofTestCard.hidden = (grade !== '中2' && !isAdminSession_()) || todayKey() > PROOF_TEST_DEADLINE_;
     els.proofTestFileInput.value = '';
     els.proofTestSubmitBtn.disabled = true;
     els.proofTestResult.textContent = '';
