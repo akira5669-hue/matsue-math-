@@ -228,6 +228,10 @@
       <p class="mp-cap-banner-text" id="spellbookLiveBannerText"></p>
     </section>
 
+    <section class="mp-cap-banner" id="scienceServiceDayBanner" hidden>
+      <p class="mp-cap-banner-text" id="scienceServiceDayBannerText"></p>
+    </section>
+
     <section class="mp-cap-banner" id="proofTestBanner" hidden>
       <p class="mp-cap-banner-text" id="proofTestBannerText"></p>
     </section>
@@ -310,6 +314,7 @@
         <button type="button" class="login-tab" id="rankingTabGrade" role="tab" aria-selected="false">学年別ランキング</button>
         <button type="button" class="login-tab" id="rankingTabHp" role="tab" aria-selected="false">HPランキング</button>
         <button type="button" class="login-tab" id="rankingTabChallenge" role="tab" aria-selected="false">チャレンジ問題正解ランキング</button>
+        <button type="button" class="login-tab" id="rankingTabHyakuMasu" role="tab" aria-selected="false">100マス計算ランキング</button>
       </div>
       <p class="ranking-hp-hint" id="rankingHpHint" hidden>❤️ HPは、文章題（❤️HP UPマークのついた単元）を10問連続正解するごとに貯まります。今後、世界一周を進めるときにも使う予定です。</p>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
@@ -454,9 +459,18 @@
           <input type="checkbox" id="hyakuMasuConfirmCheckbox" />
           目標タイム内にできました
         </label>
+        <div class="hyakumasu-time-row">
+          <label class="hyakumasu-time-field">分<input type="number" id="hyakuMasuMinutesInput" min="0" max="9" placeholder="0" /></label>
+          <label class="hyakumasu-time-field">秒<input type="number" id="hyakuMasuSecondsInput" min="0" max="59" placeholder="0" /></label>
+        </div>
         <input type="file" accept="image/*" id="hyakuMasuFileInput" class="test-photo-file-input" />
         <button type="button" class="primary-btn" id="hyakuMasuSubmitBtn" disabled>送信する</button>
         <p class="test-photo-result" id="hyakuMasuResult"></p>
+        <button type="button" class="ghost-btn" id="hyakuMasuHistoryToggle">📈 自分のタイムの記録を見る</button>
+        <div id="hyakuMasuHistoryBox" hidden>
+          <p class="test-photo-hint">あなただけに表示される、過去の提出タイムの記録です。</p>
+          <div id="hyakuMasuHistoryList"></div>
+        </div>
       </div>
 
       <div class="test-photo-card" id="challengeTestCard" hidden>

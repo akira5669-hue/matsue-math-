@@ -109,6 +109,22 @@ CREATE TABLE test_photos (
 );
 CREATE INDEX idx_test_photos_student_id ON test_photos (student_id);
 
+-- 100マス計算チャレンジのタイム記録(2026-09-20〜)。test_photosは21日で自動削除
+-- されるため、成長記録(過去のタイムの推移)を残すには使えない。そのため提出のたびに
+-- ここへも記録し、週替わりランキング(week_key単位)と、生徒本人だけが見られる
+-- 自分のタイムの推移(成長記録)の両方のデータ源として使う。退会後もCASCADEで消える。
+CREATE TABLE hyakumasu_times (
+  id BIGSERIAL PRIMARY KEY,
+  ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+  student_id TEXT NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+  name TEXT,
+  grade TEXT,
+  week_key TEXT NOT NULL,                  -- 月曜日キー(週替わりランキング集計用)
+  time_seconds INTEGER NOT NULL
+);
+CREATE INDEX idx_hyakumasu_times_student ON hyakumasu_times (student_id);
+CREATE INDEX idx_hyakumasu_times_week ON hyakumasu_times (week_key);
+
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,
   ts TIMESTAMPTZ NOT NULL DEFAULT now(),

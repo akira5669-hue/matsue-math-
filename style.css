@@ -1856,6 +1856,36 @@ h1 {
   font-weight: 700;
   cursor: pointer;
 }
+.hyakumasu-time-row {
+  display: flex;
+  gap: 14px;
+}
+.hyakumasu-time-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.hyakumasu-time-field input {
+  width: 56px;
+  padding: 6px 8px;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+}
+.hyakumasu-history-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--c-line);
+  font-size: 13px;
+}
+.hyakumasu-history-row:last-child { border-bottom: none; }
+.hyakumasu-history-date { color: var(--c-ink-soft); }
+.hyakumasu-history-time { font-weight: 700; }
 .login-checkbox-row {
   display: flex;
   align-items: flex-start;

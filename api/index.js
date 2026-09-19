@@ -7,6 +7,7 @@ const { handleLog, handleLogBatch, handleHistory } = require('../lib/handlers/lo
 const { handleSyncPoints, handleSaveAvatar } = require('../lib/handlers/sync');
 const {
   handleRanking, handleRankingGrade, handleRankingToday, handleRankingPoints, handleRankingHp, handleChallengeRanking,
+  handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
 const { handleAkrPrayer, handleZombieVaccine, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook, handleSuperAkirametalPenalty } = require('../lib/handlers/shop');
@@ -33,6 +34,8 @@ const ACTIONS = {
   rankingPoints: handleRankingPoints,
   rankingHp: handleRankingHp,
   challengeRanking: handleChallengeRanking,
+  hyakuMasuRanking: handleHyakuMasuRanking,
+  hyakuMasuHistory: handleHyakuMasuHistory,
   giftCatalog: handleGiftCatalog,
   redeemGift: handleRedeemGift,
   grantItems: handleGrantItems,

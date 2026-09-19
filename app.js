@@ -18567,6 +18567,7 @@
     rankingTabGrade: document.getElementById('rankingTabGrade'),
     rankingTabHp: document.getElementById('rankingTabHp'),
     rankingTabChallenge: document.getElementById('rankingTabChallenge'),
+    rankingTabHyakuMasu: document.getElementById('rankingTabHyakuMasu'),
     rankingHpHint: document.getElementById('rankingHpHint'),
     rankingSummary: document.getElementById('rankingSummary'),
     rankingList: document.getElementById('rankingList'),
@@ -18626,6 +18627,8 @@
     superAkirametalBannerText: document.getElementById('superAkirametalBannerText'),
     spellbookLiveBanner: document.getElementById('spellbookLiveBanner'),
     spellbookLiveBannerText: document.getElementById('spellbookLiveBannerText'),
+    scienceServiceDayBanner: document.getElementById('scienceServiceDayBanner'),
+    scienceServiceDayBannerText: document.getElementById('scienceServiceDayBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
     proofTestBannerText: document.getElementById('proofTestBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
@@ -18727,9 +18730,14 @@
     hyakuMasuCardTitle: document.getElementById('hyakuMasuCardTitle'),
     hyakuMasuHint: document.getElementById('hyakuMasuHint'),
     hyakuMasuConfirmCheckbox: document.getElementById('hyakuMasuConfirmCheckbox'),
+    hyakuMasuMinutesInput: document.getElementById('hyakuMasuMinutesInput'),
+    hyakuMasuSecondsInput: document.getElementById('hyakuMasuSecondsInput'),
     hyakuMasuFileInput: document.getElementById('hyakuMasuFileInput'),
     hyakuMasuSubmitBtn: document.getElementById('hyakuMasuSubmitBtn'),
     hyakuMasuResult: document.getElementById('hyakuMasuResult'),
+    hyakuMasuHistoryToggle: document.getElementById('hyakuMasuHistoryToggle'),
+    hyakuMasuHistoryBox: document.getElementById('hyakuMasuHistoryBox'),
+    hyakuMasuHistoryList: document.getElementById('hyakuMasuHistoryList'),
     challengeTestCard: document.getElementById('challengeTestCard'),
     challengeTestCardTitle: document.getElementById('challengeTestCardTitle'),
     challengeTestHint: document.getElementById('challengeTestHint'),
@@ -19033,6 +19041,11 @@
   const SCIENCE_STREAK_REQUIRED = 5;
   const SCIENCE_STREAK_MP = 5;
   const SCIENCE_EXP_PER_STREAK = 5;
+  // シルバーウィーク理科サービスデイ(2026-09-24まで)：期間中は5問連続正解でHPも+1増える。
+  const SCIENCE_SERVICE_DAY_END_ = '2026-09-24';
+  function scienceServiceDayActive_() {
+    return todayKey() <= SCIENCE_SERVICE_DAY_END_;
+  }
 
   function pickScienceGenerator() {
     const allowed = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
@@ -19142,6 +19155,13 @@
         state.pointsTodayCalc += pointsToAdd;
         state.scienceExp += SCIENCE_EXP_PER_STREAK;
         state.scienceStreak = 0;
+        // シルバーウィーク理科サービスデイ(〜2026-09-24)：期間中は5問連続正解でHPも
+        // +1増える(ゾンビ化中はどんな形でもHPが増えないので対象外)。
+        let scienceHpGainHtml = '';
+        if (scienceServiceDayActive_() && !state.zombified) {
+          state.hp = (Number(state.hp) || 0) + 1;
+          scienceHpGainHtml = '、HP+1';
+        }
         // レベルは算数・数学の経験値と理科の経験値を合算して決まる(単一のLv.)。
         const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
         const leveledUp = newLevel > state.level;
@@ -19149,8 +19169,8 @@
         state.level = newLevel;
         const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
         winHtml = (pointsToAdd > 0
-          ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}！🎉</div>`
-          : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
+          ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}${scienceHpGainHtml}！🎉</div>`
+          : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}${scienceHpGainHtml}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
       }
     } else {
       state.scienceStreak = 0;
@@ -19332,6 +19352,7 @@
     renderCharArtBanner_();
     renderCategoryRankBanner_();
     renderSpellbookLiveBanner_();
+    renderScienceServiceDayBanner_();
     renderSuperAkirametalBanner_();
     renderProofTestBanner_();
   }
@@ -20238,6 +20259,19 @@
     els.superAkirametalBanner.hidden = false;
     if (els.superAkirametalBannerText) {
       els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月20日(日)〜9月末まで出現率アップ中！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
+    }
+  }
+
+  // シルバーウィーク理科サービスデイの告知(〜2026-09-24)。
+  function renderScienceServiceDayBanner_() {
+    if (!els.scienceServiceDayBanner) return;
+    if (!scienceServiceDayActive_()) {
+      els.scienceServiceDayBanner.hidden = true;
+      return;
+    }
+    els.scienceServiceDayBanner.hidden = false;
+    if (els.scienceServiceDayBannerText) {
+      els.scienceServiceDayBannerText.textContent = '📢【シルバーウィーク理科サービスデイ！】9月24日(木)まで、理科で5問連続正解するとMP・経験値に加えてHPも+1もらえます！';
     }
   }
 
@@ -21264,6 +21298,41 @@
     renderChallengeDivision(res.middle, res.middleNearby, els.rankingChallengeMiddleList, els.rankingChallengeMiddleNearby, els.rankingChallengeMiddleNearbyList, 'まだ中学部のデータがありません。');
   }
 
+  function hyakuMasuRankingTimeLabel_(totalSeconds) {
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return m > 0 ? (m + '分' + s + '秒') : (s + '秒');
+  }
+
+  function hyakuMasuRankingRowHtml(r) {
+    var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
+    var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${hyakuMasuRankingTimeLabel_(r.timeSeconds)}</span></div>`;
+  }
+
+  function renderHyakuMasuRanking(res) {
+    els.rankingChallengeElementary.hidden = true;
+    els.rankingChallengeMiddle.hidden = true;
+    els.rankingList.hidden = false;
+    els.rankingTitle.textContent = '100マス計算タイムランキング（今週・上位30位）';
+    if (res.ranking.length === 0) {
+      els.rankingSummary.textContent = '今週はまだ100マス計算の提出データがありません。';
+      els.rankingList.innerHTML = '';
+      els.rankingNearby.hidden = true;
+      return;
+    }
+    els.rankingSummary.textContent = `今週のタイム上位 ${res.ranking.length} 名（速い順）`;
+    els.rankingList.innerHTML = res.ranking.map(hyakuMasuRankingRowHtml).join('');
+    if (Array.isArray(res.nearby) && res.nearby.length > 0) {
+      els.rankingNearby.hidden = false;
+      els.rankingNearbyList.innerHTML = res.nearby.map(hyakuMasuRankingRowHtml).join('');
+    } else {
+      els.rankingNearby.hidden = true;
+      els.rankingNearbyList.innerHTML = '';
+    }
+  }
+
   function setRankingTabActive(mode) {
     els.rankingTabExp.classList.toggle('is-active', mode === 'exp');
     els.rankingTabExp.setAttribute('aria-selected', String(mode === 'exp'));
@@ -21277,6 +21346,8 @@
     els.rankingTabHp.setAttribute('aria-selected', String(mode === 'hp'));
     els.rankingTabChallenge.classList.toggle('is-active', mode === 'challenge');
     els.rankingTabChallenge.setAttribute('aria-selected', String(mode === 'challenge'));
+    els.rankingTabHyakuMasu.classList.toggle('is-active', mode === 'hyakuMasu');
+    els.rankingTabHyakuMasu.setAttribute('aria-selected', String(mode === 'hyakuMasu'));
     els.rankingHpHint.hidden = mode !== 'hp';
   }
 
@@ -21290,6 +21361,15 @@
       apiPost('challengeRanking', { id: session.id }).then(function (res) {
         if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
         renderChallengeRanking(res);
+      }).catch(function () {
+        els.rankingSummary.textContent = '読み込みに失敗しました。';
+      });
+      return;
+    }
+    if (mode === 'hyakuMasu') {
+      apiPost('hyakuMasuRanking', { id: session.id }).then(function (res) {
+        if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+        renderHyakuMasuRanking(res);
       }).catch(function () {
         els.rankingSummary.textContent = '読み込みに失敗しました。';
       });
@@ -23127,8 +23207,11 @@
     }
     els.hyakuMasuConfirmCheckbox.checked = false;
     els.hyakuMasuFileInput.value = '';
+    els.hyakuMasuMinutesInput.value = '';
+    els.hyakuMasuSecondsInput.value = '';
     els.hyakuMasuSubmitBtn.disabled = true;
     els.hyakuMasuResult.textContent = '';
+    if (els.hyakuMasuHistoryBox) els.hyakuMasuHistoryBox.setAttribute('hidden', '');
 
     els.challengeTestCard.hidden = false;
     els.challengeTestHint.textContent = isMiddle
@@ -23308,20 +23391,31 @@
 
   /* ---------- 100マス計算チャレンジ ---------- */
 
+  function hyakuMasuTimeSeconds_() {
+    var minutes = parseInt(els.hyakuMasuMinutesInput.value, 10);
+    var seconds = parseInt(els.hyakuMasuSecondsInput.value, 10);
+    if (!isFinite(minutes) || minutes < 0) minutes = 0;
+    if (!isFinite(seconds) || seconds < 0) seconds = 0;
+    var total = minutes * 60 + seconds;
+    return total > 0 ? total : null;
+  }
+
   function updateHyakuMasuSubmitEnabled() {
     var hasFile = !!(els.hyakuMasuFileInput.files && els.hyakuMasuFileInput.files[0]);
-    els.hyakuMasuSubmitBtn.disabled = !(hasFile && els.hyakuMasuConfirmCheckbox.checked);
+    var hasTime = hyakuMasuTimeSeconds_() !== null;
+    els.hyakuMasuSubmitBtn.disabled = !(hasFile && hasTime && els.hyakuMasuConfirmCheckbox.checked);
   }
 
   function submitHyakuMasuPhoto() {
     var session = loadSession();
     if (!session || !session.id) return;
     var file = els.hyakuMasuFileInput.files && els.hyakuMasuFileInput.files[0];
-    if (!file || !els.hyakuMasuConfirmCheckbox.checked) return;
+    var timeSeconds = hyakuMasuTimeSeconds_();
+    if (!file || !timeSeconds || !els.hyakuMasuConfirmCheckbox.checked) return;
     els.hyakuMasuSubmitBtn.disabled = true;
     els.hyakuMasuResult.textContent = '送信中…';
     compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
-      return apiPost('submitTestPhoto', { id: session.id, testType: 'hyakuMasu', imageBase64: base64, mimeType: 'image/jpeg' });
+      return apiPost('submitTestPhoto', { id: session.id, testType: 'hyakuMasu', imageBase64: base64, mimeType: 'image/jpeg', timeSeconds: timeSeconds });
     }).then(function (res) {
       if (!res.ok) {
         els.hyakuMasuResult.textContent = res.error === 'already_submitted_this_week'
@@ -23335,12 +23429,52 @@
       applyTestPhotoPointsResult(res);
       els.hyakuMasuFileInput.value = '';
       els.hyakuMasuConfirmCheckbox.checked = false;
+      els.hyakuMasuMinutesInput.value = '';
+      els.hyakuMasuSecondsInput.value = '';
       els.hyakuMasuSubmitBtn.disabled = true;
       els.hyakuMasuResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！';
+      if (els.hyakuMasuHistoryBox && !els.hyakuMasuHistoryBox.hidden) loadHyakuMasuHistory();
     }).catch(function () {
       els.hyakuMasuResult.textContent = '送信に失敗しました。もう一度お試しください。';
       updateHyakuMasuSubmitEnabled();
     });
+  }
+
+  function hyakuMasuTimeLabel_(totalSeconds) {
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return m > 0 ? (m + '分' + s + '秒') : (s + '秒');
+  }
+
+  function renderHyakuMasuHistory_(history) {
+    if (!els.hyakuMasuHistoryList) return;
+    if (!history || history.length === 0) {
+      els.hyakuMasuHistoryList.innerHTML = '<p class="history-summary">まだ提出記録がありません。</p>';
+      return;
+    }
+    els.hyakuMasuHistoryList.innerHTML = history.map(function (h) {
+      return '<div class="hyakumasu-history-row"><span class="hyakumasu-history-date">' + h.date + '</span><span class="hyakumasu-history-time">' + hyakuMasuTimeLabel_(h.timeSeconds) + '</span></div>';
+    }).join('');
+  }
+
+  function loadHyakuMasuHistory() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.hyakuMasuHistoryList.innerHTML = '<p class="history-summary">読み込み中…</p>';
+    apiPost('hyakuMasuHistory', { id: session.id }).then(function (res) {
+      if (!res.ok) { els.hyakuMasuHistoryList.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>'; return; }
+      renderHyakuMasuHistory_(res.history);
+    }).catch(function () {
+      els.hyakuMasuHistoryList.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>';
+    });
+  }
+
+  function toggleHyakuMasuHistory() {
+    if (!els.hyakuMasuHistoryBox) return;
+    var isHidden = els.hyakuMasuHistoryBox.hasAttribute('hidden');
+    if (!isHidden) { els.hyakuMasuHistoryBox.setAttribute('hidden', ''); return; }
+    els.hyakuMasuHistoryBox.removeAttribute('hidden');
+    loadHyakuMasuHistory();
   }
 
   /* ---------- チャレンジ問題 ---------- */
@@ -24000,6 +24134,7 @@
   els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
+  els.rankingTabHyakuMasu.addEventListener('click', function () { selectRankingMode('hyakuMasu'); });
   if (els.subjectToggle) els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
@@ -24099,7 +24234,10 @@
   els.rankingTestConfirmNo.addEventListener('click', cancelRankingTierConfirm);
   els.hyakuMasuFileInput.addEventListener('change', updateHyakuMasuSubmitEnabled);
   els.hyakuMasuConfirmCheckbox.addEventListener('change', updateHyakuMasuSubmitEnabled);
+  els.hyakuMasuMinutesInput.addEventListener('input', updateHyakuMasuSubmitEnabled);
+  els.hyakuMasuSecondsInput.addEventListener('input', updateHyakuMasuSubmitEnabled);
   els.hyakuMasuSubmitBtn.addEventListener('click', submitHyakuMasuPhoto);
+  if (els.hyakuMasuHistoryToggle) els.hyakuMasuHistoryToggle.addEventListener('click', toggleHyakuMasuHistory);
   Array.from(els.challengeTierRow.children).forEach(function (btn) {
     btn.addEventListener('click', function () { handleChallengeTierClick(btn.dataset.tier); });
   });
