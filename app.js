@@ -318,7 +318,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
-        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
@@ -337,7 +337,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
-        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
@@ -18131,6 +18131,12 @@
   // 受けるまで解除されない。
   const BONMISUKO_CURSE_MP_CAP = 5;
   const AKR_PRAYER_COST_MP = 100;
+  // ゾンビ化：レアキャラ「ゾンビAKR」との対決中に不正解になるとかかる。ゾンビ化して
+  // いる間は、算数・数学の文章題(通常10問正解でHP獲得)や理科(5問正解)を含め、どんな
+  // 形でもHPが増えなくなり、正解・不正解を問わず1問答えるたびにHPが1減る。なんでも屋で
+  // ゾンビワクチンを打つまで解除されない。
+  const ZOMBIE_HP_DRAIN_ = 1;
+  const ZOMBIE_VACCINE_COST_MP = 100;
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
   const HERB_COST_MP = 300;
   const HERB_HP_GAIN = 100;
@@ -18140,6 +18146,15 @@
   // 爆裂薬草のさらに上位版「超絶薬草」：3000MPでHPを1500増やせる。
   const CHOUHERB_COST_MP = 3000;
   const CHOUHERB_HP_GAIN = 1500;
+  // 超絶薬草のさらに上位版「命の水」：5000MPでHPを3000増やせる。
+  const SEIMEI_MIZU_COST_MP = 5000;
+  const SEIMEI_MIZU_HP_GAIN = 3000;
+  // なんでも屋の新着アイテムは、追加から1週間だけ🆕NEWバッジ+光る枠を表示する。
+  const ZOMBIE_VACCINE_NEW_UNTIL_ = '2026-09-27';
+  const SEIMEI_MIZU_NEW_UNTIL_ = '2026-09-27';
+  function shopItemIsNew_(untilDate) {
+    return todayKey() <= untilDate;
+  }
   // なんでも屋の消費アイテム「すばやさの種」：100MPで購入し、アイテム図鑑に個数が
   // 表示される。逃げるタイプのレアキャラに間違えて逃げられそうになった瞬間、
   // 所持していれば自動で1個消費されて逃走を防ぎ、もう1回だけそのレアキャラに
@@ -18391,6 +18406,7 @@
     // ボン・ミスコの呪いにかかっているか。なんでも屋でAKRの祈りを受けるまで持続する
     // 状態のため、アカウント別ストレージ(progress)を優先する。
     cursed: (savedProgress ? !!savedProgress.cursed : !!(savedGame && savedGame.cursed)),
+    zombified: (savedProgress ? !!savedProgress.zombified : !!(savedGame && savedGame.zombified)),
     // 単元ごとの1日の出題数上限(DAILY_CATEGORY_COMPLETE_AT)のカウンタ。日付が変われば
     // ensureCategoryDailyReset()でリセットされる。
     categoryDailyCounts: (savedProgress && savedProgress.categoryDailyCounts && typeof savedProgress.categoryDailyCounts === 'object') ? Object.assign({}, savedProgress.categoryDailyCounts) : ((savedGame && savedGame.categoryDailyCounts && typeof savedGame.categoryDailyCounts === 'object') ? Object.assign({}, savedGame.categoryDailyCounts) : {}),
@@ -18608,6 +18624,8 @@
     categoryRankBannerText: document.getElementById('categoryRankBannerText'),
     superAkirametalBanner: document.getElementById('superAkirametalBanner'),
     superAkirametalBannerText: document.getElementById('superAkirametalBannerText'),
+    spellbookLiveBanner: document.getElementById('spellbookLiveBanner'),
+    spellbookLiveBannerText: document.getElementById('spellbookLiveBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
     proofTestBannerText: document.getElementById('proofTestBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
@@ -18621,6 +18639,8 @@
     giftCodeResult: document.getElementById('giftCodeResult'),
     curseBanner: document.getElementById('curseBanner'),
     curseBannerBtn: document.getElementById('curseBannerBtn'),
+    zombieBanner: document.getElementById('zombieBanner'),
+    zombieBannerBtn: document.getElementById('zombieBannerBtn'),
     shopToggle: document.getElementById('shopToggle'),
     shopPanel: document.getElementById('shopPanel'),
     shopSummary: document.getElementById('shopSummary'),
@@ -19147,6 +19167,10 @@
         }
       }
     }
+    // ゾンビ化中は科目を問わず、正解・不正解にかかわらず1問答えるたびにHPが減る。
+    if (state.zombified) {
+      state.hp = Math.max(0, (Number(state.hp) || 0) - ZOMBIE_HP_DRAIN_);
+    }
     saveGameState(state);
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
 
@@ -19300,12 +19324,14 @@
     updateWorldSpellBtnVisibility_();
     renderWorldLaunchBanner();
     renderCurseBanner();
+    renderZombieBanner_();
     renderHpRulesBanner_();
     renderMpCapBanner_();
     renderWinterCourseBanner_();
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
+    renderSpellbookLiveBanner_();
     renderSuperAkirametalBanner_();
     renderProofTestBanner_();
   }
@@ -19536,6 +19562,15 @@
         missLineHtml += `<div class="enemy-quote-banner">😈 ボン・ミスコの呪いをかけられた…！なんでも屋でAKRの祈りを受けるまで、間違えた問題ばかり出題され、MP獲得も${BONMISUKO_CURSE_MP_CAP}に制限されてしまう…</div>`;
         saveGameState(state);
       }
+      // ゾンビ化：レアキャラ「ゾンビAKR」との対決中に不正解になるとゾンビ化する。
+      // ゾンビ化している間は、下の共通処理(isCorrect/不正解どちらでも実行)でHPが
+      // 毎問1減り続け、文章題のHP獲得(handleAnswerのisCorrect側)も無効になる。
+      // なんでも屋でゾンビワクチンを打つまで解除されない。
+      if (!state.worldBossActiveStage && state.rareType === 'zombie' && !state.zombified) {
+        state.zombified = true;
+        missLineHtml += `<div class="enemy-quote-banner">🧟 ゾンビ化してしまった…！なんでも屋でゾンビワクチンを打つまで、HPが増えなくなり、正解しても不正解でも1問ごとにHPが${ZOMBIE_HP_DRAIN_}減ってしまう…</div>`;
+        saveGameState(state);
+      }
       // 天使の涙：通常のレア抽選とは独立した専用トリガー。ボス戦以外で2問連続不正解に
       // なった瞬間、その時点の敵(通常の敵・レアキャラ問わず、上のfled処理で入れ替わった
       // 後の敵も含む)を天使の涙に変える。間違えても逃げないので、ここでの判定は
@@ -19656,6 +19691,14 @@
       }
     }
 
+    // ゾンビ化中は、正解・不正解を問わず1問答えるたびにHPが減る(なんでも屋で
+    // ゾンビワクチンを打つまで持続)。上のisCorrect/不正解いずれの分岐からも
+    // 合流するここに置くことで、両方のケースに確実に効かせる。
+    if (state.zombified) {
+      state.hp = Math.max(0, (Number(state.hp) || 0) - ZOMBIE_HP_DRAIN_);
+      saveGameState(state);
+    }
+
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
     if (isCorrect) state.catStats[catId].correct++;
@@ -19731,7 +19774,7 @@
       state.streakAboveGrade = true;
 
       let hpBonusHtml = '';
-      if (isHpEarningCategory_(catId)) {
+      if (isHpEarningCategory_(catId) && !state.zombified) {
         const hpGain = catId === 'circleSector6' ? CIRCLE_SECTOR6_FIXED_HP_GAIN : wordProblemHpGainForGrade_(ownGrade);
         state.hp = (Number(state.hp) || 0) + hpGain;
         hpBonusHtml = ` +${hpGain}HP`;
@@ -20195,6 +20238,20 @@
     els.superAkirametalBanner.hidden = false;
     if (els.superAkirametalBannerText) {
       els.superAkirametalBannerText.textContent = '📢【新キャラ「スーパーアキラメタル」登場！】9月20日(日)〜9月末まで出現率アップ中！スーパーアキラメタルを倒して、宝箱の鍵をゲットせよ。ただし逃げない代わりに、1問間違えるごとにMPとHPが10ずつ減るので気をつけて！';
+    }
+  }
+
+  // 魔法の書が世界一周のボス戦で使えるようになった告知(2026-09-20〜2026-09-27の1週間)。
+  var SPELLBOOK_LIVE_BANNER_END_ = '2026-09-27';
+  function renderSpellbookLiveBanner_() {
+    if (!els.spellbookLiveBanner) return;
+    if (todayKey() > SPELLBOOK_LIVE_BANNER_END_) {
+      els.spellbookLiveBanner.hidden = true;
+      return;
+    }
+    els.spellbookLiveBanner.hidden = false;
+    if (els.spellbookLiveBannerText) {
+      els.spellbookLiveBannerText.textContent = '📢【魔法の書が使えるようになりました！】なんでも屋で購入した魔法の書は、世界一周のボス戦で詠唱できます。詠唱すると自分のHPが減りますが、次の問題に正解するとボスに大ダメージを与えられます！';
     }
   }
 
@@ -21369,6 +21426,11 @@
     els.curseBanner.hidden = !state.cursed;
   }
 
+  function renderZombieBanner_() {
+    if (!els.zombieBanner) return;
+    els.zombieBanner.hidden = !state.zombified;
+  }
+
   function renderShopList() {
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
 
@@ -21382,6 +21444,19 @@
       prayerActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
     var prayerRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.jpg" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${prayerActionHtml}</div>`;
+
+    var vaccineCanAfford = state.points >= ZOMBIE_VACCINE_COST_MP;
+    var vaccineActionHtml;
+    if (!state.zombified) {
+      vaccineActionHtml = `<span class="gift-insufficient">今はゾンビ化していません</span>`;
+    } else if (vaccineCanAfford) {
+      vaccineActionHtml = `<button type="button" class="gift-redeem-btn" id="zombieVaccineBtn">打ってもらう</button>`;
+    } else {
+      vaccineActionHtml = `<span class="gift-insufficient">MP不足</span>`;
+    }
+    var vaccineIsNew = shopItemIsNew_(ZOMBIE_VACCINE_NEW_UNTIL_);
+    var vaccineNewBadgeHtml = vaccineIsNew ? '<span class="shop-new-badge">🆕NEW</span>' : '';
+    var vaccineRowHtml = `<div class="gift-row${vaccineIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/zombie_vaccine.jpg" alt="ゾンビワクチン"><div class="gift-info"><span class="gift-label">🧟 ゾンビワクチン（ゾンビ化を治す）${vaccineNewBadgeHtml}</span><span class="gift-cost">${ZOMBIE_VACCINE_COST_MP}MP</span></div>${vaccineActionHtml}</div>`;
 
     var herbCanAfford = state.points >= HERB_COST_MP;
     var herbActionHtml = herbCanAfford
@@ -21400,6 +21475,14 @@
       ? `<button type="button" class="gift-redeem-btn" id="buyChouHerbBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
     var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.jpg" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span></div>${chouHerbActionHtml}</div>`;
+
+    var seimeiMizuCanAfford = state.points >= SEIMEI_MIZU_COST_MP;
+    var seimeiMizuActionHtml = seimeiMizuCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buySeimeiMizuBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var seimeiMizuIsNew = shopItemIsNew_(SEIMEI_MIZU_NEW_UNTIL_);
+    var seimeiMizuNewBadgeHtml = seimeiMizuIsNew ? '<span class="shop-new-badge">🆕NEW</span>' : '';
+    var seimeiMizuRowHtml = `<div class="gift-row${seimeiMizuIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/seimei_mizu.jpg" alt="命の水"><div class="gift-info"><span class="gift-label">💧 命の水（HPを${SEIMEI_MIZU_HP_GAIN}増やす）${seimeiMizuNewBadgeHtml}</span><span class="gift-cost">${SEIMEI_MIZU_COST_MP}MP</span></div>${seimeiMizuActionHtml}</div>`;
 
     var speedSeedCanAfford = state.points >= SPEEDSEED_COST_MP;
     var speedSeedActionHtml = speedSeedCanAfford
@@ -21434,7 +21517,7 @@
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -21449,12 +21532,16 @@
     });
     var prayerBtn = document.getElementById('akrPrayerBtn');
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
+    var vaccineBtn = document.getElementById('zombieVaccineBtn');
+    if (vaccineBtn) vaccineBtn.addEventListener('click', function () { handleZombieVaccineClick(vaccineBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
     if (herbBtn) herbBtn.addEventListener('click', function () { handleBuyHerbClick(herbBtn); });
     var bakuHerbBtn = document.getElementById('buyBakuHerbBtn');
     if (bakuHerbBtn) bakuHerbBtn.addEventListener('click', function () { handleBuyBakuHerbClick(bakuHerbBtn); });
     var chouHerbBtn = document.getElementById('buyChouHerbBtn');
     if (chouHerbBtn) chouHerbBtn.addEventListener('click', function () { handleBuyChouHerbClick(chouHerbBtn); });
+    var seimeiMizuBtn = document.getElementById('buySeimeiMizuBtn');
+    if (seimeiMizuBtn) seimeiMizuBtn.addEventListener('click', function () { handleBuySeimeiMizuClick(seimeiMizuBtn); });
     var speedSeedBtn = document.getElementById('buySpeedSeedBtn');
     if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
     var ironWallBtn = document.getElementById('buyIronWallBtn');
@@ -21600,9 +21687,8 @@
     });
   }
 
-  // 魔法の書のなんでも屋UI(9月/2周目のボス戦専用)。00001限定プレビュー。
+  // 魔法の書のなんでも屋UI(9月/2周目のボス戦専用)。2026-09-20から全生徒に公開。
   function spellbookShopRowsHtml_() {
-    if (!isAdminSession_()) return '';
     var books = state.spellbooks || {};
     var rowsHtml = SPELLBOOKS_.map(function (b) {
       var count = Number(books[b.id]) || 0;
@@ -21611,7 +21697,7 @@
         : `<span class="gift-insufficient">MP不足</span>`;
       return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${b.emoji} 魔法の書「${b.label}」（所持: ${count}冊）</span><span class="gift-cost">${b.cost}MP</span><span class="shop-item-note">${b.target}のボスに有効。詠唱すると自分のHPが${b.selfDmg}減り、次の問題に正解すると相手のHPを${b.dmg}減らす（不正解だとボスにかわされて不発）</span></div>${actionHtml}</div>`;
     }).join('');
-    return `<div class="shop-section-title">📖 魔法の書（00001限定プレビュー中）</div>` + rowsHtml;
+    return `<div class="shop-section-title">📖 魔法の書</div>` + rowsHtml;
   }
 
   function handleBuySpellbookClick(bookId, btn) {
@@ -21662,6 +21748,32 @@
       renderCurseBanner();
       renderShopList();
       window.alert('🙏 AKRの祈りが届き、ボン・ミスコの呪いが解けた！');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleZombieVaccineClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`ゾンビワクチンを打ちます（${ZOMBIE_VACCINE_COST_MP}MP）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('zombieVaccine', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = 'ワクチンの接種に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.zombified = false;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert('🧟💉 ゾンビワクチンを打って、ゾンビ化が治った！');
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -21740,6 +21852,32 @@
       updateGameHud();
       renderShopList();
       window.alert(`🌟 超絶薬草を使った！HPが${CHOUHERB_HP_GAIN}増えた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuySeimeiMizuClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`命の水を購入します（${SEIMEI_MIZU_COST_MP}MP）。HPが${SEIMEI_MIZU_HP_GAIN}増えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buySeimeiMizu', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`💧 命の水を使った！HPが${SEIMEI_MIZU_HP_GAIN}増えた！`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -22282,7 +22420,7 @@
   // 書があるため)。詠唱済みで結果待ちの間は、二重詠唱を防ぐため全部隠す。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellRow) return;
-    if (!isAdminSession_() || state.worldPendingSpell) {
+    if (state.worldPendingSpell) {
       els.worldSpellRow.hidden = true;
       els.worldSpellRow.innerHTML = '';
       return;
@@ -23489,13 +23627,25 @@
     },
     {
       id: 'game_time_limit',
-      isNew: true,
       question: '夜おそくまでゲームに夢中な男の子。カーテンの外はもう星空で、お父さんとお母さんも「まだかな…」と心配顔。この子が直すべきことは何でしょう？',
       choices: ['ゲーム機を2台買う', 'ゲーム機を破壊する', '時間を決めてゲームをする', 'もっと遅くまでゲームをする'],
       correctIndex: 2,
       revealText: '正解は「時間を決めてゲームをする」！ゲームは楽しいけど、夜おそくまで続けると寝る時間や次の日の生活に響いちゃう。2台に増やしたり、遅くまでやったりするのは逆効果、ゲーム機を破壊するのはやりすぎ🔥 時間を決めて、楽しく続けるのが一番。',
     },
+    {
+      id: 'akira_height_rounding',
+      newUntil: '2026-09-27',
+      question: 'アキラ君の身長は、上から1けたのがい数にすると2mです。本当の身長は、何メートル？',
+      choices: ['0.175m', '1.75m', '17.5m', '175m'],
+      correctIndex: 1,
+      revealText: '正解は「1.75m」！上から1けたのがい数で2mになるのは1.5m以上2.5m未満の身長。0.175mだと赤ちゃんより小さく、17.5mや175mだと大仏サイズになっちゃう🔥 現実的な身長は1.75mだね。',
+    },
   ];
+  // BAKURETSU_QUIZ_QUESTIONS_のnewUntil(YYYY-MM-DD)を過ぎたら🆕NEWバッジを
+  // 自動で外す(手動で消し忘れないように、期限を日付で管理する)。
+  function bakuretsuQuizIsNew_(q) {
+    return !!(q.newUntil && todayKey() <= q.newUntil);
+  }
 
   function toggleBakuretsuQuiz() {
     var isHidden = els.bakuretsuQuizPanel.hasAttribute('hidden');
@@ -23532,7 +23682,7 @@
     bakuretsuQuizCurrent = next;
     els.bakuretsuQuizUnavailable.hidden = true;
     els.bakuretsuQuizBody.hidden = false;
-    var newBadgeHtml = next.isNew ? '<span class="rare-badge">🆕NEW</span>' : '';
+    var newBadgeHtml = bakuretsuQuizIsNew_(next) ? '<span class="rare-badge">🆕NEW</span>' : '';
     els.bakuretsuQuizQuestion.innerHTML = newBadgeHtml + escHtml(next.question);
     els.bakuretsuQuizChoiceRow.innerHTML = next.choices.map(function (choice, idx) {
       return '<button type="button" class="test-photo-tier-btn" data-idx="' + idx + '">' + escHtml(choice) + '</button>';
@@ -23854,6 +24004,7 @@
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
   els.curseBannerBtn.addEventListener('click', toggleShop);
+  if (els.zombieBannerBtn) els.zombieBannerBtn.addEventListener('click', toggleShop);
   if (els.hpGameOverLogoutBtn) els.hpGameOverLogoutBtn.addEventListener('click', handleLogout);
   if (els.hpGameOverShopBtn) els.hpGameOverShopBtn.addEventListener('click', toggleShop);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
