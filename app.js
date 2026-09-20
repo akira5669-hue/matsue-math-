@@ -18794,6 +18794,9 @@
     studyCalendarToggle: document.getElementById('studyCalendarToggle'),
     studyCalendarBox: document.getElementById('studyCalendarBox'),
     studyCalendarList: document.getElementById('studyCalendarList'),
+    studyCalendarPrevBtn: document.getElementById('studyCalendarPrevBtn'),
+    studyCalendarNextBtn: document.getElementById('studyCalendarNextBtn'),
+    studyCalendarMonthLabel: document.getElementById('studyCalendarMonthLabel'),
     rankingTabReading: document.getElementById('rankingTabReading'),
     weeklyQuizToggle: document.getElementById('weeklyQuizToggle'),
     weeklyQuizPanel: document.getElementById('weeklyQuizPanel'),
@@ -23805,7 +23808,7 @@
   function renderStudyCalendarList_(calendar) {
     if (!els.studyCalendarList) return;
     if (!calendar || calendar.length === 0) {
-      els.studyCalendarList.innerHTML = '<p class="history-summary">今月はまだ報告がありません。</p>';
+      els.studyCalendarList.innerHTML = '<p class="history-summary">この月はまだ報告がありません。</p>';
       return;
     }
     els.studyCalendarList.innerHTML = calendar.map(function (c) {
@@ -23813,12 +23816,29 @@
     }).join('');
   }
 
-  function loadMyStudyCalendar_() {
+  // 基本は今月だけ表示し、◀▶で過去(最大7年前まで、サーバー側でも制限)にさかのぼれる。
+  var studyCalendarViewMonth_ = null;
+  function studyCalendarMonthLabel_(monthKey) {
+    var parts = monthKey.split('-');
+    return parts[0] + '年' + parseInt(parts[1], 10) + '月';
+  }
+  function shiftMonthKey_(monthKey, delta) {
+    var parts = monthKey.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10) - 1 + delta;
+    y += Math.floor(m / 12);
+    m = ((m % 12) + 12) % 12;
+    return y + '-' + (m + 1 < 10 ? '0' : '') + (m + 1);
+  }
+  function loadMyStudyCalendar_(monthKey) {
     var session = loadSession();
     if (!session || !session.id) return;
     els.studyCalendarList.innerHTML = '<p class="history-summary">読み込み中…</p>';
-    apiPost('studyCalendar', { id: session.id }).then(function (res) {
+    apiPost('studyCalendar', { id: session.id, monthKey: monthKey || undefined }).then(function (res) {
       if (!res.ok) { els.studyCalendarList.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>'; return; }
+      studyCalendarViewMonth_ = res.monthKey;
+      if (els.studyCalendarMonthLabel) els.studyCalendarMonthLabel.textContent = studyCalendarMonthLabel_(res.monthKey);
+      if (els.studyCalendarNextBtn) els.studyCalendarNextBtn.disabled = res.monthKey >= todayKey().slice(0, 7);
       renderStudyCalendarList_(res.calendar);
     }).catch(function () {
       els.studyCalendarList.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>';
@@ -23830,6 +23850,7 @@
     var isHidden = els.studyCalendarBox.hasAttribute('hidden');
     if (!isHidden) { els.studyCalendarBox.setAttribute('hidden', ''); return; }
     els.studyCalendarBox.removeAttribute('hidden');
+    studyCalendarViewMonth_ = null;
     loadMyStudyCalendar_();
   }
 
@@ -24896,6 +24917,12 @@
   if (els.readingReviewInput) els.readingReviewInput.addEventListener('input', updateReadingSubmitEnabled_);
   if (els.readingSubmitBtn) els.readingSubmitBtn.addEventListener('click', submitReading);
   if (els.studyCalendarToggle) els.studyCalendarToggle.addEventListener('click', toggleMyStudyCalendar_);
+  if (els.studyCalendarPrevBtn) els.studyCalendarPrevBtn.addEventListener('click', function () {
+    loadMyStudyCalendar_(shiftMonthKey_(studyCalendarViewMonth_ || todayKey().slice(0, 7), -1));
+  });
+  if (els.studyCalendarNextBtn) els.studyCalendarNextBtn.addEventListener('click', function () {
+    loadMyStudyCalendar_(shiftMonthKey_(studyCalendarViewMonth_ || todayKey().slice(0, 7), 1));
+  });
   Array.from(els.challengeTierRow.children).forEach(function (btn) {
     btn.addEventListener('click', function () { handleChallengeTierClick(btn.dataset.tier); });
   });

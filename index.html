@@ -518,7 +518,12 @@
         <p class="test-photo-result" id="studyReportResult"></p>
         <button type="button" class="ghost-btn" id="studyCalendarToggle">📅 自分の学習カレンダーを見る</button>
         <div id="studyCalendarBox" hidden>
-          <p class="test-photo-hint">あなただけに表示される、今月の学習カレンダーです。</p>
+          <p class="test-photo-hint">あなただけに表示される学習カレンダーです（最大7年分さかのぼれます）。</p>
+          <div class="hyakumasu-time-row">
+            <button type="button" class="ghost-btn" id="studyCalendarPrevBtn">◀前の月</button>
+            <span id="studyCalendarMonthLabel"></span>
+            <button type="button" class="ghost-btn" id="studyCalendarNextBtn">次の月▶</button>
+          </div>
           <div id="studyCalendarList"></div>
         </div>
       </div>
