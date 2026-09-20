@@ -20591,8 +20591,6 @@
     els.withdrawPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
     els.rankingTabHp.hidden = !!isGuest;
-    // 毎日勉強時間報告は00001限定プレビュー中のため、ランキングタブも合わせて隠す。
-    if (els.rankingTabStudyReport) els.rankingTabStudyReport.hidden = !isAdminSession_();
     syncSubjectUi_();
     drawNumberline();
     renderSettings();
@@ -23751,11 +23749,6 @@
 
   function renderStudyReportCard_() {
     if (!els.studyReportCard) return;
-    // 00001限定プレビュー中(本番許可が出るまで一般生徒には表示しない)。
-    if (!isAdminSession_()) {
-      els.studyReportCard.hidden = true;
-      return;
-    }
     populateStudyReportTimeSelect_();
     els.studyReportCard.hidden = false;
     var today = todayKey();
