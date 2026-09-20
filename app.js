@@ -21472,14 +21472,14 @@
     var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
     var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
     var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
-    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">通算${r.total}回</span></div>`;
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">通算${studyReportTimeLabel_(r.minutes)}</span></div>`;
   }
 
   function renderStudyReportRanking_(res) {
     els.rankingList.hidden = true;
     els.rankingNearby.hidden = true;
-    els.rankingTitle.textContent = '毎日勉強時間報告ランキング（通算回数）';
-    els.rankingSummary.textContent = '報告した通算回数のランキングです（小学生/中学生別）。';
+    els.rankingTitle.textContent = '毎日勉強時間報告ランキング（通算勉強時間）';
+    els.rankingSummary.textContent = '報告した通算勉強時間のランキングです（小学生/中学生別、長い時間の人が上位）。';
     els.rankingChallengeElementary.hidden = false;
     els.rankingChallengeMiddle.hidden = false;
     renderChallengeDivision(res.elementary, res.elementaryNearby, els.rankingChallengeElementaryList, els.rankingChallengeElementaryNearby, els.rankingChallengeElementaryNearbyList, 'まだ小学部のデータがありません。', studyReportRankingRowHtml);
