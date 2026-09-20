@@ -18660,6 +18660,8 @@
     scienceServiceDayBannerText: document.getElementById('scienceServiceDayBannerText'),
     fujiBanner: document.getElementById('fujiBanner'),
     fujiBannerText: document.getElementById('fujiBannerText'),
+    readingBanner: document.getElementById('readingBanner'),
+    readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
     proofTestBannerText: document.getElementById('proofTestBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
@@ -19419,6 +19421,7 @@
     renderSpellbookLiveBanner_();
     renderScienceServiceDayBanner_();
     renderFujiBanner_();
+    renderReadingBanner_();
     renderSuperAkirametalBanner_();
     renderProofTestBanner_();
   }
@@ -20400,6 +20403,20 @@
       els.fujiBannerText.textContent = fujiEventActive_()
         ? '📢【極寒の富士登山、開催中！】47都道府県制覇していれば、世界一周の途中でも挑戦可能！山頂(10合目)に到達すれば、伝説の「勇者の剣」（ボスに1回1000ダメージ）がもらえるよ！10月末まで。'
         : '📢【予告：極寒の富士登山、10月限定で登場！】47都道府県制覇していれば挑戦できるようになるよ。山頂に到達すれば、伝説の「勇者の剣」がもらえる！今のうちに都道府県制覇を目指そう。';
+    }
+  }
+
+  // 「読書の秋」機能追加の告知(全生徒に表示)。
+  var READING_BANNER_END_ = '2026-10-10';
+  function renderReadingBanner_() {
+    if (!els.readingBanner) return;
+    if (todayKey() > READING_BANNER_END_) {
+      els.readingBanner.hidden = true;
+      return;
+    }
+    els.readingBanner.hidden = false;
+    if (els.readingBannerText) {
+      els.readingBannerText.textContent = '📢【ランキングに「読書」が追加されました！】📷テスト提出から、読み終わった本のタイトルと感想（50文字以上）を送ると+5MP・+10HPがもらえるよ（1日1回まで）。読んだ冊数で月間ランキングに参加でき、上位10人の投稿はみんなに紹介されます！';
     }
   }
 
