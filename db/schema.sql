@@ -78,7 +78,29 @@ CREATE TABLE students (
   -- 二重付与されないよう学年名をキーにフラグを立てる。判定・付与はhandleSyncPoints
   -- 側でcategory_ranksマージ後にサーバー側で行う(bonus_awardedと同じ位置づけ)。
   -- {'小4': true, '小5': true, ...}
-  completion_bonus JSONB NOT NULL DEFAULT '{}'
+  completion_bonus JSONB NOT NULL DEFAULT '{}',
+  -- 富士登山(2026年10月限定、47都道府県制覇済みなら世界一周の途中でも挑戦可)。
+  -- 山頂到達は一度trueになったら戻らない実績フラグ。山頂到達時点でレベル1000
+  -- 未満だと勇者の剣はもらえない(その場限りの判定で、後から再取得はできない)。
+  fuji_summit_reached BOOLEAN NOT NULL DEFAULT false,
+  -- 勇者の剣(山頂到達時にレベル1000以上なら入手)の、今使える所持数(0か1)。
+  -- 使うと0になる(なんでも屋「刀を研ぐ」500MPで1に戻せる)。
+  yusha_sword_count INTEGER NOT NULL DEFAULT 0,
+  -- 勇者の剣を一度でも手に入れたことがあるかの永続フラグ。使い切って0になっても
+  -- これはtrueのまま保たれ、図鑑に記念として表示し続けるために使う。
+  yusha_sword_obtained BOOLEAN NOT NULL DEFAULT false,
+  -- 富士登山の到達合目(0〜10)。世界一周ボス戦と違い複数日にまたがって挑戦できる
+  -- よう永続化する。fuji_leg_streakは今の区間(fuji_station→fuji_station+1)の
+  -- 連続正解数、fuji_time_attack_started_atは9合目(タイムアタック区間)の
+  -- 開始時刻(ミリ秒epoch文字列、対象外はNULL)。
+  fuji_station INTEGER NOT NULL DEFAULT 0,
+  fuji_leg_streak INTEGER NOT NULL DEFAULT 0,
+  fuji_time_attack_started_at TEXT,
+  -- 毎日勉強時間報告(2026-09-20〜)。1日1回、報告のたびに+1MP+1HP(1日のMP上限を
+  -- 経由しない直接加算)。study_report_dateで1日1回制限、study_report_totalは
+  -- 通算報告回数で、小学生/中学生別の月間ランキングに使う。
+  study_report_date TEXT,
+  study_report_total INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
@@ -124,6 +146,22 @@ CREATE TABLE hyakumasu_times (
 );
 CREATE INDEX idx_hyakumasu_times_student ON hyakumasu_times (student_id);
 CREATE INDEX idx_hyakumasu_times_week ON hyakumasu_times (week_key);
+
+-- 読者の秋(2026-09-20〜)。読み終わった本のタイトルと感想(50文字以上)を提出すると
+-- +5MP+10HP、1日1回まで。月間の冊数(month_key単位)でランキングし、上位10人の
+-- 投稿内容は他の生徒にも表示する。退会後もCASCADEで消える。
+CREATE TABLE reading_log (
+  id BIGSERIAL PRIMARY KEY,
+  ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+  student_id TEXT NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+  name TEXT,
+  grade TEXT,
+  month_key TEXT NOT NULL,                 -- 'yyyy-MM'
+  title TEXT NOT NULL,
+  review TEXT NOT NULL
+);
+CREATE INDEX idx_reading_log_student ON reading_log (student_id);
+CREATE INDEX idx_reading_log_month ON reading_log (month_key);
 
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,

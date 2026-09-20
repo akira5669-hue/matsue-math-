@@ -1183,6 +1183,20 @@ h1 {
   background: #fff8e1;
   border: 1.5px solid #f5b400;
 }
+.reading-books-list {
+  padding: 4px 10px 10px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reading-book-item {
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.reading-book-title { font-size: 12px; font-weight: 700; }
+.reading-book-review { margin: 4px 0 0; font-size: 12px; color: var(--c-ink-soft); line-height: 1.5; white-space: pre-wrap; }
 .ranking-nearby {
   margin-top: 14px;
   padding-top: 14px;

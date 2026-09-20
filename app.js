@@ -312,7 +312,7 @@
         pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
-        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate,
+        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
@@ -322,6 +322,7 @@
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
+        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -332,7 +333,7 @@
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
-        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate,
+        missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
@@ -341,6 +342,7 @@
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
+        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt,
       });
     }
   }
@@ -18137,6 +18139,8 @@
   // ゾンビワクチンを打つまで解除されない。
   const ZOMBIE_HP_DRAIN_ = 1;
   const ZOMBIE_VACCINE_COST_MP = 100;
+  // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。500MP。
+  const SHARPEN_SWORD_COST_MP = 500;
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
   const HERB_COST_MP = 300;
   const HERB_HP_GAIN = 100;
@@ -18397,6 +18401,8 @@
     missionClaimed: (savedProgress ? !!savedProgress.missionClaimed : !!(savedGame && savedGame.missionClaimed)),
     // ログイン成功時の+3HPボーナスの1日1回制限用(JST日付キー)。
     hpLoginBonusDate: (savedProgress && savedProgress.hpLoginBonusDate) || (savedGame && savedGame.hpLoginBonusDate) || null,
+    studyReportDate: (savedProgress && savedProgress.studyReportDate) || (savedGame && savedGame.studyReportDate) || null,
+    studyReportTotal: (savedProgress && Number(savedProgress.studyReportTotal)) || (savedGame && Number(savedGame.studyReportTotal)) || 0,
     rareDefeats: (savedProgress && savedProgress.rareDefeats && typeof savedProgress.rareDefeats === 'object') ? Object.assign({}, savedProgress.rareDefeats) : ((savedGame && savedGame.rareDefeats && typeof savedGame.rareDefeats === 'object') ? Object.assign({}, savedGame.rareDefeats) : {}),
     rareCollected: (savedProgress && Array.isArray(savedProgress.rareCollected)) ? savedProgress.rareCollected.slice() : ((savedGame && Array.isArray(savedGame.rareCollected)) ? savedGame.rareCollected.slice() : []),
     thinkerMilestone: (savedProgress && savedProgress.thinkerMilestone) || (savedGame && savedGame.thinkerMilestone) || null,
@@ -18446,10 +18452,28 @@
     // ダメージが入り、不正解だとかわされて不発になる。worldBossActiveStageと同様に
     // 端末セッション限定、あえて永続化しない。
     worldPendingSpell: null,
+    // 抜いた勇者の剣が結果待ちかどうか(worldPendingSpellと同じ、端末セッション限定)。
+    worldPendingSword: false,
     // 今のボスに与えた累計ダメージ(正解1問ごとの通常ダメージ＋魔法のダメージ)。
     // 連続正解数(streak)とは切り離して数えるので、不正解でもボスのHPは戻らない。
     // worldBossActiveStageと同様に端末セッション限定。
     worldBossDamage: 0,
+    // 富士登山(2026年10月限定)：今このタブで登山画面を表示中かどうかは
+    // worldBossActiveStageと同様に端末セッション限定(あえて永続化しない)。
+    fujiActive: false,
+    // ただし到達済みの合目(0〜10)・今の区間の連続正解数・タイムアタックの開始時刻は
+    // 複数日にまたがって挑戦できるよう永続化する(世界一周ボス戦とは違う設計)。
+    fujiStation: (savedProgress && Number(savedProgress.fujiStation)) || (savedGame && Number(savedGame.fujiStation)) || 0,
+    fujiLegStreak: (savedProgress && Number(savedProgress.fujiLegStreak)) || (savedGame && Number(savedGame.fujiLegStreak)) || 0,
+    fujiTimeAttackStartedAt: (savedProgress && savedProgress.fujiTimeAttackStartedAt) || (savedGame && savedGame.fujiTimeAttackStartedAt) || null,
+    // 山頂到達は一度trueになったら戻らない実績フラグ。
+    fujiSummitReached: !!((savedProgress && savedProgress.fujiSummitReached) || (savedGame && savedGame.fujiSummitReached)),
+    // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
+    // 1回使うと壊れて消える。ironWallCharges等と同じ「端末を信頼してSET」方式。
+    yushaSwordCount: (savedProgress && Number(savedProgress.yushaSwordCount)) || (savedGame && Number(savedGame.yushaSwordCount)) || 0,
+    // 勇者の剣を使い切って壊れた後も、手に入れたこと自体は記念として図鑑に残す
+    // ための永続フラグ(一度trueになったら戻らない)。
+    yushaSwordObtained: !!((savedProgress && savedProgress.yushaSwordObtained) || (savedGame && savedGame.yushaSwordObtained)),
   };
   applyWorldDataForLap_(state.worldLap);
 
@@ -18468,6 +18492,11 @@
     categoryTag: document.getElementById('categoryTag'),
     memoToggle: document.getElementById('memoToggle'),
     worldSpellRow: document.getElementById('worldSpellRow'),
+    fujiSwordBtn: document.getElementById('fujiSwordBtn'),
+    fujiCard: document.getElementById('fujiCard'),
+    fujiHint: document.getElementById('fujiHint'),
+    fujiStatusText: document.getElementById('fujiStatusText'),
+    fujiClimbBtn: document.getElementById('fujiClimbBtn'),
     battleVsRow: document.getElementById('battleVsRow'),
     battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
     battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
@@ -18629,6 +18658,8 @@
     spellbookLiveBannerText: document.getElementById('spellbookLiveBannerText'),
     scienceServiceDayBanner: document.getElementById('scienceServiceDayBanner'),
     scienceServiceDayBannerText: document.getElementById('scienceServiceDayBannerText'),
+    fujiBanner: document.getElementById('fujiBanner'),
+    fujiBannerText: document.getElementById('fujiBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
     proofTestBannerText: document.getElementById('proofTestBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
@@ -18748,6 +18779,17 @@
     challengeTestConfirmYes: document.getElementById('challengeTestConfirmYes'),
     challengeTestConfirmNo: document.getElementById('challengeTestConfirmNo'),
     challengeTestResult: document.getElementById('challengeTestResult'),
+    studyReportCard: document.getElementById('studyReportCard'),
+    studyReportBtn: document.getElementById('studyReportBtn'),
+    studyReportResult: document.getElementById('studyReportResult'),
+    readingCard: document.getElementById('readingCard'),
+    readingTitleInput: document.getElementById('readingTitleInput'),
+    readingReviewInput: document.getElementById('readingReviewInput'),
+    readingReviewCount: document.getElementById('readingReviewCount'),
+    readingSubmitBtn: document.getElementById('readingSubmitBtn'),
+    readingResult: document.getElementById('readingResult'),
+    rankingTabStudyReport: document.getElementById('rankingTabStudyReport'),
+    rankingTabReading: document.getElementById('rankingTabReading'),
     weeklyQuizToggle: document.getElementById('weeklyQuizToggle'),
     weeklyQuizPanel: document.getElementById('weeklyQuizPanel'),
     weeklyQuizUnavailable: document.getElementById('weeklyQuizUnavailable'),
@@ -19231,6 +19273,13 @@
   function nextQuestion() {
     if (ensureNotHpGameOver_()) return;
     if (state.subject === 'science') { nextScienceQuestion(); return; }
+    const fujiTimeoutHtml = checkFujiTimeAttackExpiry_();
+    if (fujiTimeoutHtml) {
+      els.feedback.innerHTML = fujiTimeoutHtml;
+      els.feedback.className = 'feedback incorrect';
+      updateGameHud();
+      if (ensureNotHpGameOver_()) return;
+    }
     clearMemoCanvas();
     // ボン・ミスコの呪いにかかっている間も、間違い大魔王/算数デビルちゃんと同じ
     // 「間違えた問題の保存庫」から出題する。
@@ -19278,33 +19327,41 @@
 
   function updateGameHud() {
     const isBossFight = !!state.worldBossActiveStage;
+    const isFuji = !!state.fujiActive;
     const bossSubIndex = isBossFight ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
     // requiredStreakは「敵のHP」。通常の敵・レアキャラは1問1ダメージなので
     // 「あと何問」とHPが一致するが、ボス戦は周ごとのダメージ量(と魔法)で削る。
-    const requiredStreak = isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
-    const hp = isBossFight
-      ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
+    const requiredStreak = isFuji ? fujiCurrentLeg_().streak
+      : isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+    const hp = isFuji ? Math.max(0, fujiCurrentLeg_().streak - (Number(state.fujiLegStreak) || 0))
+      : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
       : Math.max(0, requiredStreak - state.streak);
-    const enemy = isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
-    const isRare = !isBossFight && !!state.rareType;
+    const enemy = isFuji ? fujiEnemyDisplayForStation_() : isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
+    const isRare = !isBossFight && !isFuji && !!state.rareType;
     if (enemy.img) {
       els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
     } else {
       els.enemyEmoji.textContent = enemy.emoji;
     }
     els.enemyEmoji.classList.toggle('is-rare', isRare);
-    els.enemyName.textContent = (isBossFight ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + (isBossFight ? ' 👑' : isRare ? ' ✨' : '');
+    els.enemyName.textContent = ((isBossFight || isFuji) ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + ((isBossFight || isFuji) ? ' 👑' : isRare ? ' ✨' : '');
     els.enemyName.classList.toggle('is-rare-name', isRare);
-    if ((isRare || isBossFight) && enemy.lines && enemy.lines.appear) {
+    if ((isRare || isBossFight || isFuji) && enemy.lines && enemy.lines.appear) {
       els.enemySpeech.textContent = enemy.lines.appear;
       els.enemySpeech.hidden = false;
     } else {
       els.enemySpeech.hidden = true;
     }
+    // 勇者の剣：世界一周のボス戦(富士登山自体は対象外)で、持っていれば1回だけ
+    // 使える即死級の攻撃ボタンを出す。
+    if (els.fujiSwordBtn) {
+      els.fujiSwordBtn.hidden = !(isBossFight && !state.worldPendingSword && (Number(state.yushaSwordCount) || 0) > 0);
+    }
     // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
     // 00001限定プレビュー中(本番許可が出るまでlap1のボス戦にも出さない)。
     if (els.battleVsRow) {
-      if (isBossFight && isAdminSession_()) {
+      if ((isBossFight || isFuji) && isAdminSession_()) {
         els.battleVsRow.hidden = false;
         // 1箇所で例外が出てもHUD全体(この後のMP/HP/レベル表示)が巻き添えで
         // 止まらないよう、この区画だけは個別にガードする。
@@ -19353,6 +19410,7 @@
     renderCategoryRankBanner_();
     renderSpellbookLiveBanner_();
     renderScienceServiceDayBanner_();
+    renderFujiBanner_();
     renderSuperAkirametalBanner_();
     renderProofTestBanner_();
   }
@@ -19480,6 +19538,10 @@
       if (state.worldBossActiveStage) {
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + worldBossDamagePerHit_();
       }
+      // 富士登山も同様に、1問正解するごとに今の区間の連続正解数を積み上げる。
+      if (state.fujiActive) {
+        state.fujiLegStreak = (Number(state.fujiLegStreak) || 0) + 1;
+      }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
       if (state.worldBossActiveStage && state.worldPendingSpell) {
@@ -19490,6 +19552,12 @@
           missLineHtml += `<div class="item-gain-banner">${spellInfo.emoji} ${spellInfo.label}が命中！ボスに${spellInfo.dmg}ダメージ！</div>`;
           spellFxPending_ = { book: spellInfo, phase: 'hit' };
         }
+      }
+      // 勇者の剣を抜いた直後の問題に正解した場合、ここで初めてボスに1000ダメージが入る。
+      if (state.worldBossActiveStage && state.worldPendingSword) {
+        state.worldPendingSword = false;
+        state.worldBossDamage = (Number(state.worldBossDamage) || 0) + YUSHA_SWORD_DAMAGE_;
+        missLineHtml += `<div class="item-gain-banner">⚔️ 勇者の剣が命中！ボスに${YUSHA_SWORD_DAMAGE_}ダメージ！⚔️</div>`;
       }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
@@ -19618,6 +19686,12 @@
             spellFxPending_ = { book: dodgedSpellInfo, phase: 'miss' };
           }
         }
+        // 勇者の剣も同様に、抜いた直後の問題を間違えるとかわされて不発になる
+        // (剣はこの時点で既に壊れているので、消費が戻ることはない)。
+        if (state.worldPendingSword) {
+          state.worldPendingSword = false;
+          missLineHtml += `<div class="enemy-quote-banner">💨 勇者の剣はボスにかわされた…！攻撃は当たらなかった。</div>`;
+        }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
         // 指輪の護り：銀・金・虹色の指輪を持っていれば、鉄壁の盾より優先して
@@ -19650,6 +19724,26 @@
         if (ringShieldResult && session && session.id) {
           apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
         }
+      } else if (state.fujiActive) {
+        // 富士登山中の不正解は、今の区間の連続正解数をリセットする(=その合目の
+        // 最初からやり直し)。8合目以降は追加で極寒の吹雪によるHPダメージがある
+        // (FUJI_LEGS_のhpPenalty、0〜7合目はペナルティなし)。HPが0になると
+        // 登山中断(なんでも屋で回復するまで再開不可)だが、到達済みの合目は失われない。
+        const fujiLeg = fujiCurrentLeg_();
+        state.fujiLegStreak = 0;
+        if (fujiLeg.timeAttack) state.fujiTimeAttackStartedAt = Date.now();
+        if (fujiLeg.hpPenalty > 0) {
+          state.hp = Math.max(0, (Number(state.hp) || 0) - fujiLeg.hpPenalty);
+          if (state.hp <= 0) {
+            missLineHtml += `<div class="enemy-quote-banner">💥 極寒の吹雪でHPが0になってしまった…なんでも屋で回復するまで登山を再開できません。</div>`;
+            state.fujiActive = false;
+          } else {
+            missLineHtml += `<div class="enemy-quote-banner">❄️ 極寒の吹雪！HPが${fujiLeg.hpPenalty}減った！（残りHP: ${state.hp}）${state.fujiStation}合目の最初からやり直しだ！</div>`;
+          }
+        } else {
+          missLineHtml += `<div class="enemy-quote-banner">${state.fujiStation}合目の最初からやり直しだ！</div>`;
+        }
+        saveGameState(state);
       } else if (state.rareType === 'gyoshi' && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         missLineHtml += state.steelArmorCharges > 0
@@ -19741,8 +19835,14 @@
 
     let winHtml = '';
     const bossSubIndexForWin = state.worldBossActiveStage ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
-    const requiredStreak = state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
-    if (isCorrect && state.worldBossActiveStage && worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndexForWin) <= 0) {
+    const requiredStreak = state.fujiActive ? fujiCurrentLeg_().streak
+      : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+    if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
+      // 富士登山、区間クリア：MP/経験値の通常報酬ではなく、次の合目に進む(または
+      // 10合目=山頂到達の)特別演出。
+      winHtml = advanceFujiStationIfReady_();
+    } else if (isCorrect && state.worldBossActiveStage && worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndexForWin) <= 0) {
       // 世界一周のボス撃破：MP/経験値の通常報酬ではなく、ボスが仲間になる特別演出。
       // ステージ4のように複数体を順番に倒すステージでは、途中のボスを倒しても
       // ステージ自体はまだクリアにならず、そのまま次のボスへ続く。
@@ -20275,6 +20375,26 @@
     }
   }
 
+  // 富士登山(2026年10月限定)の告知。9月28日頃から予告を出し、10月に入ったら
+  // 勇者の剣がもらえることを前面に出した文言に切り替える。00001限定プレビュー中
+  // (本番許可が出るまで一般生徒には表示しない)。
+  var FUJI_BANNER_START_ = '2026-09-28';
+  var FUJI_BANNER_END_ = '2026-10-31';
+  function renderFujiBanner_() {
+    if (!els.fujiBanner) return;
+    var today = todayKey();
+    if (!isAdminSession_() || today < FUJI_BANNER_START_ || today > FUJI_BANNER_END_) {
+      els.fujiBanner.hidden = true;
+      return;
+    }
+    els.fujiBanner.hidden = false;
+    if (els.fujiBannerText) {
+      els.fujiBannerText.textContent = fujiEventActive_()
+        ? '📢【極寒の富士登山、開催中！】47都道府県制覇していれば、世界一周の途中でも挑戦可能！山頂(10合目)に到達すれば、伝説の「勇者の剣」（ボスに1回1000ダメージ）がもらえるよ！10月末まで。'
+        : '📢【予告：極寒の富士登山、10月限定で登場！】47都道府県制覇していれば挑戦できるようになるよ。山頂に到達すれば、伝説の「勇者の剣」がもらえる！今のうちに都道府県制覇を目指そう。';
+    }
+  }
+
   // 魔法の書が世界一周のボス戦で使えるようになった告知(2026-09-20〜2026-09-27の1週間)。
   var SPELLBOOK_LIVE_BANNER_END_ = '2026-09-27';
   function renderSpellbookLiveBanner_() {
@@ -20606,6 +20726,12 @@
       missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
       hpLoginBonusDate: state.hpLoginBonusDate,
       categoryRanks: state.categoryRanks || {},
+      fujiSummitReached: state.fujiSummitReached,
+      yushaSwordCount: state.yushaSwordCount,
+      yushaSwordObtained: state.yushaSwordObtained,
+      fujiStation: state.fujiStation,
+      fujiLegStreak: state.fujiLegStreak,
+      fujiTimeAttackStartedAt: state.fujiTimeAttackStartedAt,
     };
   }
 
@@ -20709,6 +20835,26 @@
       var sv = Number(sSpellbooks[el]) || 0;
       if (sv > (Number(state.spellbooks[el]) || 0)) { state.spellbooks[el] = sv; changed = true; }
     });
+    // 富士登山の山頂到達は一度trueになったら戻らない実績フラグなのでOR、
+    // 勇者の剣の所持数はironWallCharges等と同じく大きい方を採用する。
+    if (server.fujiSummitReached && !state.fujiSummitReached) { state.fujiSummitReached = true; changed = true; }
+    var sYushaSwordCount = Number(server.yushaSwordCount) || 0;
+    if (sYushaSwordCount > (Number(state.yushaSwordCount) || 0)) { state.yushaSwordCount = sYushaSwordCount; changed = true; }
+    if (server.yushaSwordObtained && !state.yushaSwordObtained) { state.yushaSwordObtained = true; changed = true; }
+    // 富士登山の到達合目は、進んでいる方(大きい方)を採用する。合目が進んでいれば
+    // 今の区間の連続正解数・タイムアタック開始時刻もサーバー側の値に揃える
+    // (古い区間のfujiLegStreakを新しい区間に持ち越さないため)。
+    var sFujiStation = Number(server.fujiStation) || 0;
+    var localFujiStation = Number(state.fujiStation) || 0;
+    if (sFujiStation > localFujiStation) {
+      state.fujiStation = sFujiStation;
+      state.fujiLegStreak = Number(server.fujiLegStreak) || 0;
+      state.fujiTimeAttackStartedAt = server.fujiTimeAttackStartedAt || null;
+      changed = true;
+    } else if (sFujiStation === localFujiStation) {
+      var sFujiLegStreak = Number(server.fujiLegStreak) || 0;
+      if (sFujiLegStreak > (Number(state.fujiLegStreak) || 0)) { state.fujiLegStreak = sFujiLegStreak; changed = true; }
+    }
 
     // 1日のMP獲得上限・今日のミッションの当日状態も、他の項目と同じく
     // 「大きい方」でマージする(2026-09-07〜、詳しくはlib/handlers/sync.js参照)。
@@ -20765,6 +20911,19 @@
         state.hpLoginBonusDate = todayNow3;
         changed = true;
       }
+    }
+    // 毎日勉強時間報告も同じく、他の端末で今日既に報告済みならボタンを
+    // 押せない状態に揃える(実際の二重付与防止はhandleStudyReport側で行う)。
+    if (server.studyReportDate) {
+      var todayNow4 = todayKey();
+      if (server.studyReportDate === todayNow4 && state.studyReportDate !== todayNow4) {
+        state.studyReportDate = todayNow4;
+        changed = true;
+      }
+    }
+    if (Number(server.studyReportTotal) > (Number(state.studyReportTotal) || 0)) {
+      state.studyReportTotal = Number(server.studyReportTotal);
+      changed = true;
     }
 
     if (changed) {
@@ -21093,6 +21252,15 @@
     if (steelArmorCharges > 0) {
       html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.jpg" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span></div>`;
     }
+    // 勇者の剣(富士登山の山頂到達報酬)は、他の消費アイテムと違い使い切って
+    // 壊れた後も記念として図鑑に残り続ける(手に入れたこと自体がyushaSwordObtained
+    // で永続的に記録される)。
+    if (state.yushaSwordObtained) {
+      var yushaSwordCount = Number(state.yushaSwordCount) || 0;
+      html += yushaSwordCount > 0
+        ? `<div class="badge-item badge-earned" title="世界一周のボス戦で、問題に正解すれば1回だけ1000ダメージを与えられる"><span class="badge-icon"><img src="images/yusha_sword.jpg" alt=""></span><span class="badge-name">勇者の剣（未使用）</span></div>`
+        : `<div class="badge-item badge-earned" title="使用済み。なんでも屋で「刀を研ぐ」となんでも屋で直せる"><span class="badge-icon"><img src="images/yusha_sword.jpg" alt="" style="filter:grayscale(1);"></span><span class="badge-name">勇者の剣（使用済み）</span></div>`;
+    }
     els.historyItems.innerHTML = html;
   }
 
@@ -21271,16 +21439,17 @@
     return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">正解 ${r.total}問</span></div>`;
   }
 
-  function renderChallengeDivision(list, nearby, listEl, nearbyEl, nearbyListEl, emptyText) {
+  function renderChallengeDivision(list, nearby, listEl, nearbyEl, nearbyListEl, emptyText, rowFn) {
+    rowFn = rowFn || challengeRankingRowHtml;
     if (list.length === 0) {
       listEl.innerHTML = `<p class="history-summary">${emptyText}</p>`;
       nearbyEl.hidden = true;
       return;
     }
-    listEl.innerHTML = list.map(challengeRankingRowHtml).join('');
+    listEl.innerHTML = list.map(rowFn).join('');
     if (Array.isArray(nearby) && nearby.length > 0) {
       nearbyEl.hidden = false;
-      nearbyListEl.innerHTML = nearby.map(challengeRankingRowHtml).join('');
+      nearbyListEl.innerHTML = nearby.map(rowFn).join('');
     } else {
       nearbyEl.hidden = true;
       nearbyListEl.innerHTML = '';
@@ -21296,6 +21465,59 @@
     els.rankingChallengeMiddle.hidden = false;
     renderChallengeDivision(res.elementary, res.elementaryNearby, els.rankingChallengeElementaryList, els.rankingChallengeElementaryNearby, els.rankingChallengeElementaryNearbyList, 'まだ小学部のデータがありません。');
     renderChallengeDivision(res.middle, res.middleNearby, els.rankingChallengeMiddleList, els.rankingChallengeMiddleNearby, els.rankingChallengeMiddleNearbyList, 'まだ中学部のデータがありません。');
+  }
+
+  function studyReportRankingRowHtml(r) {
+    var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
+    var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">通算${r.total}回</span></div>`;
+  }
+
+  function renderStudyReportRanking_(res) {
+    els.rankingList.hidden = true;
+    els.rankingNearby.hidden = true;
+    els.rankingTitle.textContent = '毎日勉強時間報告ランキング（通算回数）';
+    els.rankingSummary.textContent = '報告した通算回数のランキングです（小学生/中学生別）。';
+    els.rankingChallengeElementary.hidden = false;
+    els.rankingChallengeMiddle.hidden = false;
+    renderChallengeDivision(res.elementary, res.elementaryNearby, els.rankingChallengeElementaryList, els.rankingChallengeElementaryNearby, els.rankingChallengeElementaryNearbyList, 'まだ小学部のデータがありません。', studyReportRankingRowHtml);
+    renderChallengeDivision(res.middle, res.middleNearby, els.rankingChallengeMiddleList, els.rankingChallengeMiddleNearby, els.rankingChallengeMiddleNearbyList, 'まだ中学部のデータがありません。', studyReportRankingRowHtml);
+  }
+
+  function readingRankingRowHtml(r) {
+    var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
+    var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
+    var booksHtml = '';
+    if (Array.isArray(r.books) && r.books.length > 0) {
+      booksHtml = '<div class="reading-books-list">' + r.books.map(function (b) {
+        return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p></div>';
+      }).join('') + '</div>';
+    }
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${r.count}冊</span></div>` + booksHtml;
+  }
+
+  function renderReadingRanking_(res) {
+    els.rankingChallengeElementary.hidden = true;
+    els.rankingChallengeMiddle.hidden = true;
+    els.rankingList.hidden = false;
+    els.rankingTitle.textContent = '読書ランキング（今月・上位50位）';
+    if (res.ranking.length === 0) {
+      els.rankingSummary.textContent = '今月はまだ読書の投稿データがありません。';
+      els.rankingList.innerHTML = '';
+      els.rankingNearby.hidden = true;
+      return;
+    }
+    els.rankingSummary.textContent = `今月読んだ冊数の上位 ${res.ranking.length} 名（上位10名は投稿内容も紹介！）`;
+    els.rankingList.innerHTML = res.ranking.map(readingRankingRowHtml).join('');
+    if (Array.isArray(res.nearby) && res.nearby.length > 0) {
+      els.rankingNearby.hidden = false;
+      els.rankingNearbyList.innerHTML = res.nearby.map(readingRankingRowHtml).join('');
+    } else {
+      els.rankingNearby.hidden = true;
+      els.rankingNearbyList.innerHTML = '';
+    }
   }
 
   function hyakuMasuRankingTimeLabel_(totalSeconds) {
@@ -21348,6 +21570,10 @@
     els.rankingTabChallenge.setAttribute('aria-selected', String(mode === 'challenge'));
     els.rankingTabHyakuMasu.classList.toggle('is-active', mode === 'hyakuMasu');
     els.rankingTabHyakuMasu.setAttribute('aria-selected', String(mode === 'hyakuMasu'));
+    els.rankingTabStudyReport.classList.toggle('is-active', mode === 'studyReport');
+    els.rankingTabStudyReport.setAttribute('aria-selected', String(mode === 'studyReport'));
+    els.rankingTabReading.classList.toggle('is-active', mode === 'reading');
+    els.rankingTabReading.setAttribute('aria-selected', String(mode === 'reading'));
     els.rankingHpHint.hidden = mode !== 'hp';
   }
 
@@ -21370,6 +21596,24 @@
       apiPost('hyakuMasuRanking', { id: session.id }).then(function (res) {
         if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
         renderHyakuMasuRanking(res);
+      }).catch(function () {
+        els.rankingSummary.textContent = '読み込みに失敗しました。';
+      });
+      return;
+    }
+    if (mode === 'studyReport') {
+      apiPost('studyReportRanking', { id: session.id }).then(function (res) {
+        if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+        renderStudyReportRanking_(res);
+      }).catch(function () {
+        els.rankingSummary.textContent = '読み込みに失敗しました。';
+      });
+      return;
+    }
+    if (mode === 'reading') {
+      apiPost('readingRanking', { id: session.id }).then(function (res) {
+        if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+        renderReadingRanking_(res);
       }).catch(function () {
         els.rankingSummary.textContent = '読み込みに失敗しました。';
       });
@@ -21538,6 +21782,23 @@
     var vaccineNewBadgeHtml = vaccineIsNew ? '<span class="shop-new-badge">🆕NEW</span>' : '';
     var vaccineRowHtml = `<div class="gift-row${vaccineIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/zombie_vaccine.jpg" alt="ゾンビワクチン"><div class="gift-info"><span class="gift-label">🧟 ゾンビワクチン（ゾンビ化を治す）${vaccineNewBadgeHtml}</span><span class="gift-cost">${ZOMBIE_VACCINE_COST_MP}MP</span></div>${vaccineActionHtml}</div>`;
 
+    // 刀を研ぐ：勇者の剣を手に入れたことがある生徒にだけ表示する(00001限定
+    // プレビュー中は富士登山自体がisAdminSession_()限定のため、実質00001のみ表示)。
+    var sharpenRowHtml = '';
+    if (isAdminSession_() && state.yushaSwordObtained) {
+      var sharpenNeeded = (Number(state.yushaSwordCount) || 0) <= 0;
+      var sharpenCanAfford = state.points >= SHARPEN_SWORD_COST_MP;
+      var sharpenActionHtml;
+      if (!sharpenNeeded) {
+        sharpenActionHtml = `<span class="gift-insufficient">まだ壊れていません</span>`;
+      } else if (sharpenCanAfford) {
+        sharpenActionHtml = `<button type="button" class="gift-redeem-btn" id="sharpenSwordBtn">研いでもらう</button>`;
+      } else {
+        sharpenActionHtml = `<span class="gift-insufficient">MP不足</span>`;
+      }
+      sharpenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/yusha_sword.jpg" alt="勇者の剣"><div class="gift-info"><span class="gift-label">🗡️ 刀を研ぐ（壊れた勇者の剣を直す）</span><span class="gift-cost">${SHARPEN_SWORD_COST_MP}MP</span></div>${sharpenActionHtml}</div>`;
+    }
+
     var herbCanAfford = state.points >= HERB_COST_MP;
     var herbActionHtml = herbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyHerbBtn">購入する</button>`
@@ -21597,7 +21858,7 @@
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -21614,6 +21875,8 @@
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var vaccineBtn = document.getElementById('zombieVaccineBtn');
     if (vaccineBtn) vaccineBtn.addEventListener('click', function () { handleZombieVaccineClick(vaccineBtn); });
+    var sharpenBtn = document.getElementById('sharpenSwordBtn');
+    if (sharpenBtn) sharpenBtn.addEventListener('click', function () { handleSharpenSwordClick(sharpenBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
     if (herbBtn) herbBtn.addEventListener('click', function () { handleBuyHerbClick(herbBtn); });
     var bakuHerbBtn = document.getElementById('buyBakuHerbBtn');
@@ -21854,6 +22117,34 @@
       updateGameHud();
       renderShopList();
       window.alert('🧟💉 ゾンビワクチンを打って、ゾンビ化が治った！');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleSharpenSwordClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`刀を研いでもらいます（${SHARPEN_SWORD_COST_MP}MP）。勇者の剣がまた1回使えるようになります。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('sharpenSword', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '刀を研ぐのに失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'no_sword') msg = '勇者の剣を持っていません。';
+        else if (res.error === 'already_usable') msg = '剣はまだ壊れていません。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.yushaSwordCount = res.yushaSwordCount;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert('🗡️✨ 刀を研いでもらい、勇者の剣がまた使えるようになった！');
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -22496,11 +22787,170 @@
     return winHtml;
   }
 
+  /* ---------- 富士登山(2026年10月限定) ---------- */
+
+  // 47都道府県制覇済みなら、世界一周の進み具合(周・ボス戦中かどうか)に関係なく
+  // 挑戦できる10月限定の特別ステージ。0合目〜10合目(山頂)まで、区間ごとに
+  // 必要な連続正解数が決まっている(FUJI_LEGS_)。山頂(10合目)に到達すれば、
+  // レベルに関係なく誰でも「勇者の剣」がもらえる。
+  // 進行状況(fujiStation/fujiLegStreak/fujiTimeAttackStartedAt)は世界一周ボス戦
+  // と違い、複数日にまたがって挑戦できるよう永続化する(本人のみ・端末をまたいでも
+  // 「進んでいる方」を採用してマージする)。
+  const FUJI_START_ = '2026-10-01';
+  const FUJI_END_ = '2026-10-31';
+  const FUJI_TOP_STATION_ = 10;
+  // インデックスiは「i合目→(i+1)合目」の区間。streakがその区間に必要な連続正解数、
+  // hpPenaltyは不正解のたびに減るHP(0=ペナルティなし)。7→8until10で徐々に厳しくなる。
+  const FUJI_LEGS_ = [
+    { streak: 10, hpPenalty: 0 },   // 0→1
+    { streak: 10, hpPenalty: 0 },   // 1→2
+    { streak: 10, hpPenalty: 0 },   // 2→3
+    { streak: 10, hpPenalty: 0 },   // 3→4
+    { streak: 10, hpPenalty: 0 },   // 4→5
+    { streak: 10, hpPenalty: 0 },   // 5→6
+    { streak: 10, hpPenalty: 0 },   // 6→7
+    { streak: 20, hpPenalty: 0 },   // 7→8
+    { streak: 30, hpPenalty: 50 },  // 8→9
+    { streak: 50, hpPenalty: 100, timeAttack: true }, // 9→10(タイムアタック)
+  ];
+  function fujiCurrentLeg_() {
+    return FUJI_LEGS_[Math.min(Number(state.fujiStation) || 0, FUJI_LEGS_.length - 1)];
+  }
+  // 最終区間(9→10)のみ、学年別の制限時間内に50問正解する必要がある。
+  function fujiTimeAttackLimitMs_(grade) {
+    var isElementary = String(grade || '').charAt(0) === '小';
+    return (isElementary ? 10 : 20) * 60 * 1000;
+  }
+  function fujiTimeAttackRemainingMs_() {
+    if (!state.fujiTimeAttackStartedAt) return null;
+    var session = loadSession();
+    var limitMs = fujiTimeAttackLimitMs_(session && session.grade);
+    return limitMs - (Date.now() - Number(state.fujiTimeAttackStartedAt));
+  }
+  function fujiTimeAttackLabel_(ms) {
+    var totalSec = Math.max(0, Math.ceil(ms / 1000));
+    var m = Math.floor(totalSec / 60);
+    var s = totalSec % 60;
+    return m + '分' + (s < 10 ? '0' : '') + s + '秒';
+  }
+  // 9合目(タイムアタック区間)で制限時間を過ぎていたら、極寒の吹雪ペナルティを
+  // 適用して9合目の最初からやり直しにする。nextQuestion()の冒頭で毎回チェックする。
+  function checkFujiTimeAttackExpiry_() {
+    if (!state.fujiActive || (Number(state.fujiStation) || 0) !== 9) return null;
+    var remaining = fujiTimeAttackRemainingMs_();
+    if (remaining === null || remaining > 0) return null;
+    var penalty = fujiCurrentLeg_().hpPenalty;
+    state.fujiLegStreak = 0;
+    state.fujiTimeAttackStartedAt = Date.now();
+    state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
+    var html = `<div class="enemy-quote-banner">⏰ 制限時間切れ…！極寒の吹雪でHPが${penalty}減った。（残りHP: ${state.hp}）9合目の最初からやり直しだ！</div>`;
+    if (state.hp <= 0) {
+      state.fujiActive = false;
+      html += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で回復するまで登山を再開できません。</div>`;
+    }
+    saveGameState(state);
+    return html;
+  }
+  function fujiEnemyDisplayForStation_() {
+    var station = Number(state.fujiStation) || 0;
+    var nextStation = Math.min(station + 1, FUJI_TOP_STATION_);
+    var timeAttackNote = fujiCurrentLeg_().timeAttack ? '⏱️タイムアタック中！' : '';
+    return {
+      name: '極寒の富士山（' + station + '合目→' + nextStation + '合目）',
+      emoji: '🗻',
+      lines: { appear: timeAttackNote ? '⏱️ここからはタイムアタック！制限時間内に登り切れ！' : '⛄ここから先は極寒の道のり…最後まで登り切れるか！？' },
+    };
+  }
+  function fujiEventActive_() {
+    var today = todayKey();
+    return today >= FUJI_START_ && today <= FUJI_END_;
+  }
+  function fujiUnlocked_() {
+    return (Number(state.prefectureCount) || 0) >= 47;
+  }
+  function fujiCanEnter_() {
+    // 00001限定プレビュー中(本番許可が出るまで一般生徒には解放しない)。fujiActiveが
+    // 既にtrueでも、登山画面に戻るために再度呼べるようにする(進行中の状態は
+    // 触らない)。
+    return isAdminSession_() && fujiEventActive_() && fujiUnlocked_() && !state.fujiSummitReached && !state.worldBossActiveStage;
+  }
+  function startFujiClimb_() {
+    if (!fujiCanEnter_()) return;
+    if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
+    state.fujiActive = true;
+    state.streak = 0;
+    // 9合目(最終区間)から再開する場合は、タイムアタックのタイマーを仕切り直す。
+    if ((Number(state.fujiStation) || 0) === 9 && !state.fujiTimeAttackStartedAt) {
+      state.fujiTimeAttackStartedAt = Date.now();
+    }
+    saveGameState(state);
+    if (els.worldPanel) els.worldPanel.hidden = true;
+    updateGameHud();
+    nextQuestion();
+  }
+  // 9合目の頭に戻す(タイムアタック失敗・8→9区間でのミス等で共通して使う)。
+  function fujiResetToStation_(station) {
+    state.fujiStation = station;
+    state.fujiLegStreak = 0;
+    state.fujiTimeAttackStartedAt = null;
+  }
+  function finishFujiClimb_() {
+    state.fujiActive = false;
+    state.fujiStation = FUJI_TOP_STATION_;
+    state.fujiLegStreak = 0;
+    state.fujiTimeAttackStartedAt = null;
+    state.fujiSummitReached = true;
+    state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) + 1;
+    state.yushaSwordObtained = true;
+    var swordHtml = '<div class="item-gain-banner"><img src="images/yusha_sword.jpg" class="enemy-char-img-sm" alt="">⚔️ 伝説の「勇者の剣」を手に入れた！世界一周のボス戦で、問題に正解すれば1回だけ1000ダメージを与えられる！</div>';
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    return '<div class="win-banner">🎉⛰️ 富士山の頂上に到達した！🎉</div>' + swordHtml;
+  }
+  // 今の区間(FUJI_LEGS_[fujiStation])の必要連続正解数に達したら、次の合目へ進める。
+  // 10合目に達したら山頂到達(finishFujiClimb_)、9合目に入った瞬間はタイムアタックの
+  // タイマーを開始する。
+  function advanceFujiStationIfReady_() {
+    state.fujiStation = (Number(state.fujiStation) || 0) + 1;
+    state.fujiLegStreak = 0;
+    if (state.fujiStation >= FUJI_TOP_STATION_) {
+      return finishFujiClimb_();
+    }
+    var timeAttackHtml = '';
+    if (state.fujiStation === 9) {
+      state.fujiTimeAttackStartedAt = Date.now();
+      var session = loadSession();
+      timeAttackHtml = '<div class="enemy-quote-banner">⏱️ここからはタイムアタック！' + fujiTimeAttackLabel_(fujiTimeAttackLimitMs_(session && session.grade)) + '以内に50問正解しよう！</div>';
+    }
+    saveGameState(state);
+    return '<div class="win-banner">🎉 ' + state.fujiStation + '合目に到達！🎉</div>' + timeAttackHtml;
+  }
+  // 勇者の剣：世界一周のボス戦中に1回だけ使える特別攻撃。魔法の書と同じく、
+  // 抜いた直後の問題に正解して初めて1000ダメージが入る(不正解だとかわされて
+  // 不発になる)。抜いた時点で所持数は減り(壊れる)、手に入れたこと自体の記念
+  // (yushaSwordObtained)は残り続ける。
+  const YUSHA_SWORD_DAMAGE_ = 1000;
+  function castYushaSword_() {
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell) return;
+    if ((Number(state.yushaSwordCount) || 0) <= 0) return;
+    if (!window.confirm('勇者の剣を使いますか？次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。剣はこれで壊れてなくなります。')) return;
+    state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) - 1;
+    state.worldPendingSword = true;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    els.feedback.innerHTML = '<span class="fb-result">⚔️ 勇者の剣を抜いた！次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…</span>';
+    els.feedback.classList.remove('incorrect');
+    els.feedback.classList.add('correct');
+  }
+
   // 今のボスに使える魔法の書を、1冊ごとにボタンとして並べる(1体のボスに複数の
   // 書があるため)。詠唱済みで結果待ちの間は、二重詠唱を防ぐため全部隠す。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellRow) return;
-    if (state.worldPendingSpell) {
+    if (state.worldPendingSpell || state.worldPendingSword) {
       els.worldSpellRow.hidden = true;
       els.worldSpellRow.innerHTML = '';
       return;
@@ -22639,7 +23089,7 @@
   // (handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて不発になる
   // (handleAnswerの不正解側で解決)。
   function castWorldSpell_(bookId) {
-    if (state.worldPendingSpell) return;
+    if (state.worldPendingSpell || state.worldPendingSword) return;
     const book = spellbookById_(bookId);
     if (!book) return;
     // 今のボスに有効な書かどうかを、ここでも必ず確認する。
@@ -23014,11 +23464,49 @@
     });
   }
 
+  function renderFujiCard_() {
+    if (!els.fujiCard) return;
+    // 00001限定プレビュー中(本番許可が出るまで一般生徒には表示しない)。
+    if (!isAdminSession_() || !fujiEventActive_()) {
+      els.fujiCard.hidden = true;
+      return;
+    }
+    els.fujiCard.hidden = false;
+    if (state.fujiSummitReached) {
+      els.fujiClimbBtn.hidden = true;
+      els.fujiStatusText.textContent = state.yushaSwordObtained
+        ? ('🎉 山頂に到達済みです！勇者の剣を' + ((Number(state.yushaSwordCount) || 0) > 0 ? '持っています（世界一周のボス戦で使えます）。' : '使いました（壊れましたが記念に残っています）。'))
+        : '🎉 山頂に到達済みです！';
+    } else if (!fujiUnlocked_()) {
+      els.fujiClimbBtn.hidden = true;
+      els.fujiStatusText.textContent = '🔒 47都道府県制覇（' + (Number(state.prefectureCount) || 0) + '/47）で挑戦できるようになります。';
+    } else if (state.worldBossActiveStage) {
+      els.fujiClimbBtn.hidden = true;
+      els.fujiStatusText.textContent = '今は世界一周のボス戦の途中です。ボス戦を終えてから挑戦してください。';
+    } else {
+      els.fujiClimbBtn.hidden = false;
+      var station = Number(state.fujiStation) || 0;
+      var leg = fujiCurrentLeg_();
+      var remainQ = Math.max(0, leg.streak - (Number(state.fujiLegStreak) || 0));
+      if (state.fujiActive) {
+        var timeNote = leg.timeAttack ? '　⏱️残り' + fujiTimeAttackLabel_(fujiTimeAttackRemainingMs_() || 0) : '';
+        els.fujiStatusText.textContent = '⛄ 登山中…（' + station + '合目、あと' + remainQ + '問で' + (station + 1) + '合目！）' + timeNote;
+        els.fujiClimbBtn.textContent = '⛰️ 登山画面に戻る';
+      } else {
+        els.fujiStatusText.textContent = station > 0
+          ? ('現在' + station + '合目まで到達済み。続きから挑戦できます！')
+          : '挑戦の準備ができています！';
+        els.fujiClimbBtn.textContent = station > 0 ? '⛰️ 続きから登る' : '⛰️ 登る';
+      }
+    }
+  }
+
   function renderWorldPanel() {
     if (typeof WORLD_DATA === 'undefined' || !Array.isArray(WORLD_DATA) || WORLD_DATA.length === 0) {
       els.worldProgress.textContent = '国データの読み込みに失敗しました。ページを再読み込みしてください。';
       return;
     }
+    renderFujiCard_();
     var total = WORLD_DATA.length;
     var count = worldCountForLevel(state.level);
     var lapLabel = (Number(state.worldLap) || 1) + '周目：';
@@ -23224,6 +23712,94 @@
     challengeTestSubmitting = false;
     setChallengeTestControlsDisabled(false);
     renderChallengeTierButtons();
+
+    renderStudyReportCard_();
+
+    if (els.readingCard) {
+      els.readingCard.hidden = false;
+      els.readingTitleInput.value = '';
+      els.readingReviewInput.value = '';
+      els.readingReviewCount.textContent = '0文字';
+      els.readingSubmitBtn.disabled = true;
+      els.readingResult.textContent = '';
+    }
+  }
+
+  function renderStudyReportCard_() {
+    if (!els.studyReportCard) return;
+    els.studyReportCard.hidden = false;
+    var today = todayKey();
+    var alreadyReported = state.studyReportDate === today;
+    els.studyReportBtn.disabled = alreadyReported;
+    els.studyReportResult.textContent = alreadyReported ? '✅ 本日は報告済みです。また明日報告してね！' : '';
+  }
+
+  function submitStudyReport() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.studyReportBtn.disabled = true;
+    els.studyReportResult.textContent = '送信中…';
+    apiPost('studyReport', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        els.studyReportResult.textContent = res.error === 'already_reported_today'
+          ? '✅ 本日は報告済みです。また明日報告してね！'
+          : '送信に失敗しました。もう一度お試しください。';
+        state.studyReportDate = todayKey();
+        saveGameState(state);
+        return;
+      }
+      state.points = res.points;
+      state.hp = res.hp;
+      state.studyReportDate = todayKey();
+      state.studyReportTotal = res.studyReportTotal;
+      saveGameState(state);
+      updateGameHud();
+      els.studyReportResult.textContent = '🎉 報告完了！ +1MP、+1HPもらいました！（通算' + res.studyReportTotal + '回）';
+    }).catch(function () {
+      els.studyReportResult.textContent = '通信に失敗しました。もう一度お試しください。';
+      els.studyReportBtn.disabled = false;
+    });
+  }
+
+  function updateReadingSubmitEnabled_() {
+    var titleOk = els.readingTitleInput.value.trim().length > 0;
+    var reviewLen = els.readingReviewInput.value.trim().length;
+    els.readingReviewCount.textContent = reviewLen + '文字' + (reviewLen < READING_REVIEW_MIN_LENGTH_ ? '（あと' + (READING_REVIEW_MIN_LENGTH_ - reviewLen) + '文字）' : '');
+    els.readingSubmitBtn.disabled = !(titleOk && reviewLen >= READING_REVIEW_MIN_LENGTH_);
+  }
+
+  const READING_REVIEW_MIN_LENGTH_ = 50;
+  function submitReading() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var title = els.readingTitleInput.value.trim();
+    var review = els.readingReviewInput.value.trim();
+    if (!title || review.length < READING_REVIEW_MIN_LENGTH_) return;
+    els.readingSubmitBtn.disabled = true;
+    els.readingResult.textContent = '送信中…';
+    apiPost('submitReading', { id: session.id, title: title, review: review }).then(function (res) {
+      if (!res.ok) {
+        els.readingResult.textContent = res.error === 'already_submitted_today'
+          ? '本日はすでに投稿済みです（1日1回までです）。'
+          : res.error === 'missing_fields'
+          ? 'タイトルと50文字以上の感想を入力してください。'
+          : '送信に失敗しました。もう一度お試しください。';
+        updateReadingSubmitEnabled_();
+        return;
+      }
+      state.points = res.newTotalPoints;
+      state.hp = res.newTotalHp;
+      saveGameState(state);
+      updateGameHud();
+      els.readingTitleInput.value = '';
+      els.readingReviewInput.value = '';
+      els.readingReviewCount.textContent = '0文字';
+      els.readingSubmitBtn.disabled = true;
+      els.readingResult.textContent = '🎉 投稿完了！ +' + res.pointsAwarded + 'MP、+' + res.hpAwarded + 'HPもらいました！';
+    }).catch(function () {
+      els.readingResult.textContent = '通信に失敗しました。もう一度お試しください。';
+      updateReadingSubmitEnabled_();
+    });
   }
 
   // 写真をそのまま送ると通信が重くなる/GASの実行時間を圧迫するため、canvasで
@@ -24135,6 +24711,8 @@
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
   els.rankingTabHyakuMasu.addEventListener('click', function () { selectRankingMode('hyakuMasu'); });
+  els.rankingTabStudyReport.addEventListener('click', function () { selectRankingMode('studyReport'); });
+  els.rankingTabReading.addEventListener('click', function () { selectRankingMode('reading'); });
   if (els.subjectToggle) els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
@@ -24183,6 +24761,8 @@
       window.setTimeout(function () { playSpellFx_(sample, 'hit'); }, 900);
     });
   }
+  if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
+  if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.worldDiceCloseBtn) {
     els.worldDiceCloseBtn.addEventListener('click', function () {
       if (worldDiceRollQueue_.length > 0) {
@@ -24238,6 +24818,10 @@
   els.hyakuMasuSecondsInput.addEventListener('input', updateHyakuMasuSubmitEnabled);
   els.hyakuMasuSubmitBtn.addEventListener('click', submitHyakuMasuPhoto);
   if (els.hyakuMasuHistoryToggle) els.hyakuMasuHistoryToggle.addEventListener('click', toggleHyakuMasuHistory);
+  if (els.studyReportBtn) els.studyReportBtn.addEventListener('click', submitStudyReport);
+  if (els.readingTitleInput) els.readingTitleInput.addEventListener('input', updateReadingSubmitEnabled_);
+  if (els.readingReviewInput) els.readingReviewInput.addEventListener('input', updateReadingSubmitEnabled_);
+  if (els.readingSubmitBtn) els.readingSubmitBtn.addEventListener('click', submitReading);
   Array.from(els.challengeTierRow.children).forEach(function (btn) {
     btn.addEventListener('click', function () { handleChallengeTierClick(btn.dataset.tier); });
   });

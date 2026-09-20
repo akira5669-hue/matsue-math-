@@ -10,12 +10,14 @@ const {
   handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleZombieVaccine, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook, handleSuperAkirametalPenalty } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook, handleSuperAkirametalPenalty } = require('../lib/handlers/shop');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
 const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
+const { handleStudyReport, handleStudyReportRanking } = require('../lib/handlers/studyReport');
+const { handleSubmitReading, handleReadingRanking } = require('../lib/handlers/reading');
 
 const ACTIONS = {
   getPoints: handleGetPoints,
@@ -36,11 +38,16 @@ const ACTIONS = {
   challengeRanking: handleChallengeRanking,
   hyakuMasuRanking: handleHyakuMasuRanking,
   hyakuMasuHistory: handleHyakuMasuHistory,
+  studyReport: handleStudyReport,
+  studyReportRanking: handleStudyReportRanking,
+  submitReading: handleSubmitReading,
+  readingRanking: handleReadingRanking,
   giftCatalog: handleGiftCatalog,
   redeemGift: handleRedeemGift,
   grantItems: handleGrantItems,
   akrPrayer: handleAkrPrayer,
   zombieVaccine: handleZombieVaccine,
+  sharpenSword: handleSharpenSword,
   buyHerb: handleBuyHerb,
   buyBakuHerb: handleBuyBakuHerb,
   buyChouHerb: handleBuyChouHerb,

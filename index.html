@@ -232,6 +232,10 @@
       <p class="mp-cap-banner-text" id="scienceServiceDayBannerText"></p>
     </section>
 
+    <section class="mp-cap-banner" id="fujiBanner" hidden>
+      <p class="mp-cap-banner-text" id="fujiBannerText"></p>
+    </section>
+
     <section class="mp-cap-banner" id="proofTestBanner" hidden>
       <p class="mp-cap-banner-text" id="proofTestBannerText"></p>
     </section>
@@ -315,6 +319,8 @@
         <button type="button" class="login-tab" id="rankingTabHp" role="tab" aria-selected="false">HPランキング</button>
         <button type="button" class="login-tab" id="rankingTabChallenge" role="tab" aria-selected="false">チャレンジ問題正解ランキング</button>
         <button type="button" class="login-tab" id="rankingTabHyakuMasu" role="tab" aria-selected="false">100マス計算ランキング</button>
+        <button type="button" class="login-tab" id="rankingTabStudyReport" role="tab" aria-selected="false">勉強報告ランキング</button>
+        <button type="button" class="login-tab" id="rankingTabReading" role="tab" aria-selected="false">読書ランキング</button>
       </div>
       <p class="ranking-hp-hint" id="rankingHpHint" hidden>❤️ HPは、文章題（❤️HP UPマークのついた単元）を10問連続正解するごとに貯まります。今後、世界一周を進めるときにも使う予定です。</p>
       <p class="history-summary" id="rankingSummary">読み込み中…</p>
@@ -371,6 +377,15 @@
       <h3 class="history-title">🌍 世界制覇を目指せ！！</h3>
       <p class="history-summary">レベルが10上がるごとに、世界の国を1つずつ制覇していくよ！（全100ヵ国）</p>
       <p class="world-progress" id="worldProgress">読み込み中…</p>
+
+      <div class="test-photo-card" id="fujiCard" hidden>
+        <h4 class="test-photo-card-title">🗻 極寒の富士登山（10月限定）</h4>
+        <img src="images/yusha_sword.jpg" alt="勇者の剣" class="shop-item-img" style="align-self:flex-start;">
+        <p class="test-photo-hint" id="fujiHint">47都道府県制覇済みなら、世界一周の途中でも挑戦できる特別ステージ！0合目から10合目(山頂)まで、10問連続正解で1つ進む(7→8合目は20問、8→9合目は30問、9→10合目は50問のタイムアタック！)。8合目からは間違えると極寒の吹雪でHPが大きく減るので気をつけて。山頂(10合目)に到達すれば、誰でも伝説の「勇者の剣」がもらえるよ！</p>
+        <p class="test-photo-hint" id="fujiStatusText"></p>
+        <button type="button" class="primary-btn" id="fujiClimbBtn" hidden>⛰️ 登る</button>
+      </div>
+
       <button type="button" class="ghost-btn" id="worldDiceTestBtn" hidden>🎲 サイコロ画面をテスト表示</button>
       <div class="world-boss-test-row" id="worldBossTestRow" hidden>
         <p class="world-boss-test-label">👑 ボス戦をテスト開始（00001のみ・進行状況は変わりません）<span id="appBuildLabel"></span></p>
@@ -490,6 +505,27 @@
           </div>
         </div>
         <p class="test-photo-result" id="challengeTestResult"></p>
+      </div>
+
+      <div class="test-photo-card" id="studyReportCard" hidden>
+        <h4 class="test-photo-card-title">📚 毎日勉強時間報告</h4>
+        <p class="test-photo-hint">今日勉強したことを報告すると+1MP・+1HPがもらえます。1日1回まで（MPの1日上限に達していてももらえます）。</p>
+        <button type="button" class="primary-btn" id="studyReportBtn">今日の勉強を報告する</button>
+        <p class="test-photo-result" id="studyReportResult"></p>
+      </div>
+
+      <div class="test-photo-card" id="readingCard" hidden>
+        <h4 class="test-photo-card-title">📖 読者の秋</h4>
+        <p class="test-photo-hint">読み終わった本のタイトルと感想（50文字以上）を投稿すると+5MP・+10HPがもらえます。1日1回まで。読んだ冊数で月間ランキングに参加でき、上位10人の投稿はみんなに紹介されます！</p>
+        <label class="grant-field">本のタイトル
+          <input type="text" id="readingTitleInput" maxlength="60" placeholder="例：ごんぎつね" />
+        </label>
+        <label class="grant-field">感想（50文字以上）
+          <textarea id="readingReviewInput" rows="4" maxlength="1000" placeholder="どんなお話だった？どう思った？"></textarea>
+        </label>
+        <p class="test-photo-hint" id="readingReviewCount">0文字</p>
+        <button type="button" class="primary-btn" id="readingSubmitBtn" disabled>投稿する</button>
+        <p class="test-photo-result" id="readingResult"></p>
       </div>
     </section>
 
@@ -687,6 +723,7 @@
     </div>
     <div class="enemy-speech" id="enemySpeech" hidden></div>
     <div class="world-spell-row" id="worldSpellRow" hidden></div>
+    <button type="button" class="ghost-btn world-spell-btn" id="fujiSwordBtn" hidden>⚔️ 勇者の剣を使う（1回で1000ダメージ・使うと壊れる）</button>
 
     <div class="enemy-area" id="scienceArea" hidden>
       <div class="enemy-left">
