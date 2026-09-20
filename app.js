@@ -9612,7 +9612,7 @@
   /* ---------- 今日のミッション（学年ごとに毎日ランダムな単元を1つ出題） ---------- */
 
   const MISSION_TARGET = 10;
-  const MISSION_REWARD_MP = 20;
+  const MISSION_REWARD_MP = 10;
 
   function hashStr(s) {
     let h = 0;
@@ -20440,7 +20440,7 @@
   /* ---------- ログイン前チェック(文章題3問連続正解、8/10から) ---------- */
   var LOGIN_GATE_START_ = '2026-08-10';
   var LOGIN_GATE_REQUIRED_STREAK_ = 3;
-  var LOGIN_GATE_REWARD_MP_ = 10;
+  var LOGIN_GATE_REWARD_MP_ = 5;
   // 2026-09-01から、中学生だけは1問正解ですぐ入れるように短縮する代わりに、
   // 間違えるたびにHPが1減るようにする(小学生は今までどおり3問連続正解・HP減少なし)。
   var LOGIN_GATE_MIDDLE_SCHOOL_START_ = '2026-09-01';
