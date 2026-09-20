@@ -100,7 +100,10 @@ CREATE TABLE students (
   -- 経由しない直接加算)。study_report_dateで1日1回制限、study_report_totalは
   -- 通算報告回数で、小学生/中学生別の月間ランキングに使う。
   study_report_date TEXT,
-  study_report_total INTEGER NOT NULL DEFAULT 0
+  study_report_total INTEGER NOT NULL DEFAULT 0,
+  -- 報告のたびに選んだ勉強時間(分、30分刻み)の累計。ランキングには使わず
+  -- 記録用(将来の表示・分析用)。
+  study_report_minutes_total INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);

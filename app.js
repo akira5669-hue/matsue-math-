@@ -18780,6 +18780,7 @@
     challengeTestConfirmNo: document.getElementById('challengeTestConfirmNo'),
     challengeTestResult: document.getElementById('challengeTestResult'),
     studyReportCard: document.getElementById('studyReportCard'),
+    studyReportTimeSelect: document.getElementById('studyReportTimeSelect'),
     studyReportBtn: document.getElementById('studyReportBtn'),
     studyReportResult: document.getElementById('studyReportResult'),
     readingCard: document.getElementById('readingCard'),
@@ -20590,6 +20591,8 @@
     els.withdrawPanel.hidden = true;
     els.rankingTabPoints.hidden = !!isGuest;
     els.rankingTabHp.hidden = !!isGuest;
+    // 毎日勉強時間報告は00001限定プレビュー中のため、ランキングタブも合わせて隠す。
+    if (els.rankingTabStudyReport) els.rankingTabStudyReport.hidden = !isAdminSession_();
     syncSubjectUi_();
     drawNumberline();
     renderSettings();
@@ -23725,8 +23728,35 @@
     }
   }
 
+  // 30分刻み(30分〜16時間=960分)の選択肢。00001限定プレビュー中に追加した項目。
+  var STUDY_REPORT_MIN_MINUTES_ = 30;
+  var STUDY_REPORT_MAX_MINUTES_ = 16 * 60;
+  var STUDY_REPORT_STEP_MINUTES_ = 30;
+  function studyReportTimeLabel_(minutes) {
+    var h = Math.floor(minutes / 60);
+    var m = minutes % 60;
+    var label = '';
+    if (h > 0) label += h + '時間';
+    if (m > 0) label += m + '分';
+    return label;
+  }
+  function populateStudyReportTimeSelect_() {
+    if (!els.studyReportTimeSelect || els.studyReportTimeSelect.options.length > 0) return;
+    var html = '';
+    for (var mins = STUDY_REPORT_MIN_MINUTES_; mins <= STUDY_REPORT_MAX_MINUTES_; mins += STUDY_REPORT_STEP_MINUTES_) {
+      html += '<option value="' + mins + '">' + studyReportTimeLabel_(mins) + '</option>';
+    }
+    els.studyReportTimeSelect.innerHTML = html;
+  }
+
   function renderStudyReportCard_() {
     if (!els.studyReportCard) return;
+    // 00001限定プレビュー中(本番許可が出るまで一般生徒には表示しない)。
+    if (!isAdminSession_()) {
+      els.studyReportCard.hidden = true;
+      return;
+    }
+    populateStudyReportTimeSelect_();
     els.studyReportCard.hidden = false;
     var today = todayKey();
     var alreadyReported = state.studyReportDate === today;
@@ -23737,9 +23767,10 @@
   function submitStudyReport() {
     var session = loadSession();
     if (!session || !session.id) return;
+    var minutes = parseInt(els.studyReportTimeSelect.value, 10) || STUDY_REPORT_MIN_MINUTES_;
     els.studyReportBtn.disabled = true;
     els.studyReportResult.textContent = '送信中…';
-    apiPost('studyReport', { id: session.id }).then(function (res) {
+    apiPost('studyReport', { id: session.id, studyMinutes: minutes }).then(function (res) {
       if (!res.ok) {
         els.studyReportResult.textContent = res.error === 'already_reported_today'
           ? '✅ 本日は報告済みです。また明日報告してね！'
@@ -23754,7 +23785,7 @@
       state.studyReportTotal = res.studyReportTotal;
       saveGameState(state);
       updateGameHud();
-      els.studyReportResult.textContent = '🎉 報告完了！ +1MP、+1HPもらいました！（通算' + res.studyReportTotal + '回）';
+      els.studyReportResult.textContent = '🎉 ' + studyReportTimeLabel_(minutes) + 'の勉強を報告完了！ +1MP、+1HPもらいました！（通算' + res.studyReportTotal + '回）';
     }).catch(function () {
       els.studyReportResult.textContent = '通信に失敗しました。もう一度お試しください。';
       els.studyReportBtn.disabled = false;
