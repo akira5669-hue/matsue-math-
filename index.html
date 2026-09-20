@@ -319,7 +319,8 @@
         <button type="button" class="login-tab" id="rankingTabHp" role="tab" aria-selected="false">HPランキング</button>
         <button type="button" class="login-tab" id="rankingTabChallenge" role="tab" aria-selected="false">チャレンジ問題正解ランキング</button>
         <button type="button" class="login-tab" id="rankingTabHyakuMasu" role="tab" aria-selected="false">100マス計算ランキング</button>
-        <button type="button" class="login-tab" id="rankingTabStudyReport" role="tab" aria-selected="false">勉強報告ランキング</button>
+        <button type="button" class="login-tab" id="rankingTabStudyReport" role="tab" aria-selected="false">勉強時間ランキング(本日)</button>
+        <button type="button" class="login-tab" id="rankingTabStudyReportMonth" role="tab" aria-selected="false">勉強時間ランキング(今月累計)</button>
         <button type="button" class="login-tab" id="rankingTabReading" role="tab" aria-selected="false">読書ランキング</button>
       </div>
       <p class="ranking-hp-hint" id="rankingHpHint" hidden>❤️ HPは、文章題（❤️HP UPマークのついた単元）を10問連続正解するごとに貯まります。今後、世界一周を進めるときにも使う予定です。</p>
@@ -515,6 +516,11 @@
         </label>
         <button type="button" class="primary-btn" id="studyReportBtn">今日の勉強を報告する</button>
         <p class="test-photo-result" id="studyReportResult"></p>
+        <button type="button" class="ghost-btn" id="studyCalendarToggle">📅 自分の学習カレンダーを見る</button>
+        <div id="studyCalendarBox" hidden>
+          <p class="test-photo-hint">あなただけに表示される、今月の学習カレンダーです。</p>
+          <div id="studyCalendarList"></div>
+        </div>
       </div>
 
       <div class="test-photo-card" id="readingCard" hidden>

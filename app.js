@@ -18790,6 +18790,10 @@
     readingSubmitBtn: document.getElementById('readingSubmitBtn'),
     readingResult: document.getElementById('readingResult'),
     rankingTabStudyReport: document.getElementById('rankingTabStudyReport'),
+    rankingTabStudyReportMonth: document.getElementById('rankingTabStudyReportMonth'),
+    studyCalendarToggle: document.getElementById('studyCalendarToggle'),
+    studyCalendarBox: document.getElementById('studyCalendarBox'),
+    studyCalendarList: document.getElementById('studyCalendarList'),
     rankingTabReading: document.getElementById('rankingTabReading'),
     weeklyQuizToggle: document.getElementById('weeklyQuizToggle'),
     weeklyQuizPanel: document.getElementById('weeklyQuizPanel'),
@@ -21472,14 +21476,22 @@
     var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
     var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
     var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
-    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">通算${studyReportTimeLabel_(r.minutes)}</span></div>`;
+    var calendarHtml = '';
+    if (Array.isArray(r.calendar)) {
+      calendarHtml = r.calendar.length > 0
+        ? '<div class="reading-books-list">' + r.calendar.map(function (c) {
+          return '<div class="hyakumasu-history-row"><span class="hyakumasu-history-date">' + c.date + '</span><span class="hyakumasu-history-time">' + studyReportTimeLabel_(c.minutes) + '</span></div>';
+        }).join('') + '</div>'
+        : '<div class="reading-books-list"><p class="history-summary">今月はまだ報告がありません。</p></div>';
+    }
+    return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${studyReportTimeLabel_(r.minutes)}</span></div>` + calendarHtml;
   }
 
-  function renderStudyReportRanking_(res) {
+  function renderStudyReportRanking_(res, periodLabel) {
     els.rankingList.hidden = true;
     els.rankingNearby.hidden = true;
-    els.rankingTitle.textContent = '毎日勉強時間報告ランキング（通算勉強時間）';
-    els.rankingSummary.textContent = '報告した通算勉強時間のランキングです（小学生/中学生別、長い時間の人が上位）。';
+    els.rankingTitle.textContent = '勉強時間ランキング（' + periodLabel + '）';
+    els.rankingSummary.textContent = periodLabel + 'の勉強時間のランキングです（小学生/中学生別、長い時間の人が上位。上位3人はカレンダーも紹介）。';
     els.rankingChallengeElementary.hidden = false;
     els.rankingChallengeMiddle.hidden = false;
     renderChallengeDivision(res.elementary, res.elementaryNearby, els.rankingChallengeElementaryList, els.rankingChallengeElementaryNearby, els.rankingChallengeElementaryNearbyList, 'まだ小学部のデータがありません。', studyReportRankingRowHtml);
@@ -21571,8 +21583,10 @@
     els.rankingTabChallenge.setAttribute('aria-selected', String(mode === 'challenge'));
     els.rankingTabHyakuMasu.classList.toggle('is-active', mode === 'hyakuMasu');
     els.rankingTabHyakuMasu.setAttribute('aria-selected', String(mode === 'hyakuMasu'));
-    els.rankingTabStudyReport.classList.toggle('is-active', mode === 'studyReport');
-    els.rankingTabStudyReport.setAttribute('aria-selected', String(mode === 'studyReport'));
+    els.rankingTabStudyReport.classList.toggle('is-active', mode === 'studyReportToday');
+    els.rankingTabStudyReport.setAttribute('aria-selected', String(mode === 'studyReportToday'));
+    els.rankingTabStudyReportMonth.classList.toggle('is-active', mode === 'studyReportMonth');
+    els.rankingTabStudyReportMonth.setAttribute('aria-selected', String(mode === 'studyReportMonth'));
     els.rankingTabReading.classList.toggle('is-active', mode === 'reading');
     els.rankingTabReading.setAttribute('aria-selected', String(mode === 'reading'));
     els.rankingHpHint.hidden = mode !== 'hp';
@@ -21602,10 +21616,11 @@
       });
       return;
     }
-    if (mode === 'studyReport') {
-      apiPost('studyReportRanking', { id: session.id }).then(function (res) {
+    if (mode === 'studyReportToday' || mode === 'studyReportMonth') {
+      var action2 = mode === 'studyReportToday' ? 'studyReportRankingToday' : 'studyReportRankingMonth';
+      apiPost(action2, { id: session.id }).then(function (res) {
         if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
-        renderStudyReportRanking_(res);
+        renderStudyReportRanking_(res, mode === 'studyReportToday' ? '本日' : '今月累計');
       }).catch(function () {
         els.rankingSummary.textContent = '読み込みに失敗しました。';
       });
@@ -23755,6 +23770,7 @@
     var alreadyReported = state.studyReportDate === today;
     els.studyReportBtn.disabled = alreadyReported;
     els.studyReportResult.textContent = alreadyReported ? '✅ 本日は報告済みです。また明日報告してね！' : '';
+    if (els.studyCalendarBox) els.studyCalendarBox.setAttribute('hidden', '');
   }
 
   function submitStudyReport() {
@@ -23779,10 +23795,42 @@
       saveGameState(state);
       updateGameHud();
       els.studyReportResult.textContent = '🎉 ' + studyReportTimeLabel_(minutes) + 'の勉強を報告完了！ +1MP、+1HPもらいました！（通算' + res.studyReportTotal + '回）';
+      if (els.studyCalendarBox && !els.studyCalendarBox.hidden) loadMyStudyCalendar_();
     }).catch(function () {
       els.studyReportResult.textContent = '通信に失敗しました。もう一度お試しください。';
       els.studyReportBtn.disabled = false;
     });
+  }
+
+  function renderStudyCalendarList_(calendar) {
+    if (!els.studyCalendarList) return;
+    if (!calendar || calendar.length === 0) {
+      els.studyCalendarList.innerHTML = '<p class="history-summary">今月はまだ報告がありません。</p>';
+      return;
+    }
+    els.studyCalendarList.innerHTML = calendar.map(function (c) {
+      return '<div class="hyakumasu-history-row"><span class="hyakumasu-history-date">' + c.date + '</span><span class="hyakumasu-history-time">' + studyReportTimeLabel_(c.minutes) + '</span></div>';
+    }).join('');
+  }
+
+  function loadMyStudyCalendar_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.studyCalendarList.innerHTML = '<p class="history-summary">読み込み中…</p>';
+    apiPost('studyCalendar', { id: session.id }).then(function (res) {
+      if (!res.ok) { els.studyCalendarList.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>'; return; }
+      renderStudyCalendarList_(res.calendar);
+    }).catch(function () {
+      els.studyCalendarList.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>';
+    });
+  }
+
+  function toggleMyStudyCalendar_() {
+    if (!els.studyCalendarBox) return;
+    var isHidden = els.studyCalendarBox.hasAttribute('hidden');
+    if (!isHidden) { els.studyCalendarBox.setAttribute('hidden', ''); return; }
+    els.studyCalendarBox.removeAttribute('hidden');
+    loadMyStudyCalendar_();
   }
 
   function updateReadingSubmitEnabled_() {
@@ -24735,7 +24783,8 @@
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
   els.rankingTabHyakuMasu.addEventListener('click', function () { selectRankingMode('hyakuMasu'); });
-  els.rankingTabStudyReport.addEventListener('click', function () { selectRankingMode('studyReport'); });
+  els.rankingTabStudyReport.addEventListener('click', function () { selectRankingMode('studyReportToday'); });
+  els.rankingTabStudyReportMonth.addEventListener('click', function () { selectRankingMode('studyReportMonth'); });
   els.rankingTabReading.addEventListener('click', function () { selectRankingMode('reading'); });
   if (els.subjectToggle) els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
@@ -24846,6 +24895,7 @@
   if (els.readingTitleInput) els.readingTitleInput.addEventListener('input', updateReadingSubmitEnabled_);
   if (els.readingReviewInput) els.readingReviewInput.addEventListener('input', updateReadingSubmitEnabled_);
   if (els.readingSubmitBtn) els.readingSubmitBtn.addEventListener('click', submitReading);
+  if (els.studyCalendarToggle) els.studyCalendarToggle.addEventListener('click', toggleMyStudyCalendar_);
   Array.from(els.challengeTierRow.children).forEach(function (btn) {
     btn.addEventListener('click', function () { handleChallengeTierClick(btn.dataset.tier); });
   });
