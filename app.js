@@ -23551,7 +23551,7 @@
       ? '（次は「' + WORLD_DATA[count].name + '」、レベル' + (lapStart + count * 10) + 'で制覇）'
       : (state.level < lapStart
         ? '（レベル' + lapStart + 'で1ヵ国目に到達！）'
-        : '（レベル' + (lapStart + (Math.floor((state.level - lapStart) / 10) + 1) * 10) + 'でサイコロを振って進む/戻る！）');
+        : '（レベル' + (lapStart + (Math.floor((state.level - lapStart) / 10) + 1) * 10) + 'でサイコロを振って進む！）');
     els.worldProgress.textContent = count >= total
       ? '🎉 ' + lapLabel + total + '/' + total + 'ヵ国すべて制覇しました！おめでとう！ 🎉'
       : lapLabel + count + ' / ' + total + 'ヵ国を制覇！' + nextRollText;
