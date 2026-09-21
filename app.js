@@ -20416,7 +20416,7 @@
     }
     els.readingBanner.hidden = false;
     if (els.readingBannerText) {
-      els.readingBannerText.textContent = '📢【ランキングに「読書」が追加されました！】📷テスト提出から、読み終わった本のタイトルと感想（50文字以上）を送ると+5MP・+10HPがもらえるよ（1日1回まで）。読んだ冊数で月間ランキングに参加でき、上位10人の投稿はみんなに紹介されます！';
+      els.readingBannerText.textContent = '📢【ランキングに「読書」が追加されました！】📷テスト提出から、読み終わった本のタイトルと感想（50文字以上）を送ると+5MP・+10HPがもらえるよ（1日1回まで）。読んだ冊数で月間ランキングに参加でき、上位30人の投稿はみんなに紹介されます！';
     }
   }
 
@@ -21542,7 +21542,7 @@
       els.rankingNearby.hidden = true;
       return;
     }
-    els.rankingSummary.textContent = `今月読んだ冊数の上位 ${res.ranking.length} 名（上位10名は投稿内容も紹介！）`;
+    els.rankingSummary.textContent = `今月読んだ冊数の上位 ${res.ranking.length} 名（上位30名は投稿内容も紹介！）`;
     els.rankingList.innerHTML = res.ranking.map(readingRankingRowHtml).join('');
     if (Array.isArray(res.nearby) && res.nearby.length > 0) {
       els.rankingNearby.hidden = false;
