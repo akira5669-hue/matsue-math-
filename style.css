@@ -1809,6 +1809,10 @@ h1 {
 .test-photo-file-input {
   font-size: 13px;
 }
+.reading-review-count-warn {
+  color: #dc2626;
+  font-weight: 700;
+}
 .test-photo-tier-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

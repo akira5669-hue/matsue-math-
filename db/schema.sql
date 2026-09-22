@@ -151,8 +151,8 @@ CREATE INDEX idx_hyakumasu_times_student ON hyakumasu_times (student_id);
 CREATE INDEX idx_hyakumasu_times_week ON hyakumasu_times (week_key);
 
 -- 読書の秋(2026-09-20〜)。読み終わった本のタイトルと感想(50文字以上)を提出すると
--- +5MP+10HP、1日1回まで。月間の冊数(month_key単位)でランキングし、上位10人の
--- 投稿内容は他の生徒にも表示する。退会後もCASCADEで消える。
+-- +5MP+10HP、1日に何回でも投稿可能。月間の冊数(month_key単位)でランキングし、
+-- 上位30人の投稿内容は他の生徒にも表示する。退会後もCASCADEで消える。
 -- 毎日勉強時間報告の個別記録(2026-09-20〜)。studentsのstudy_report_totalは
 -- 全期間の通算だけを見るが、本日ランキング(date_key)・今月累計ランキング
 -- (month_key合計)・自分の学習カレンダー(月ごとの日別分数)にはこの行単位の

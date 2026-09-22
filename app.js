@@ -20416,7 +20416,7 @@
     }
     els.readingBanner.hidden = false;
     if (els.readingBannerText) {
-      els.readingBannerText.textContent = '📢【ランキングに「読書」が追加されました！】📷テスト提出から、読み終わった本のタイトルと感想（50文字以上）を送ると+5MP・+10HPがもらえるよ（1日1回まで）。読んだ冊数で月間ランキングに参加でき、上位30人の投稿はみんなに紹介されます！';
+      els.readingBannerText.textContent = '📢【ランキングに「読書」が追加されました！】📷テスト提出から、読み終わった本のタイトルと感想（50文字以上）を送ると+5MP・+10HPがもらえるよ（1日に何回でも投稿できます）。読んだ冊数で月間ランキングに参加でき、上位30人の投稿はみんなに紹介されます！';
     }
   }
 
@@ -23871,14 +23871,17 @@
     loadMyStudyCalendar_();
   }
 
+  const READING_REVIEW_MIN_LENGTH_ = 50;
   function updateReadingSubmitEnabled_() {
     var titleOk = els.readingTitleInput.value.trim().length > 0;
     var reviewLen = els.readingReviewInput.value.trim().length;
-    els.readingReviewCount.textContent = reviewLen + '文字' + (reviewLen < READING_REVIEW_MIN_LENGTH_ ? '（あと' + (READING_REVIEW_MIN_LENGTH_ - reviewLen) + '文字）' : '');
+    var shortBy = READING_REVIEW_MIN_LENGTH_ - reviewLen;
+    els.readingReviewCount.textContent = reviewLen + '文字';
+    els.readingReviewCount.classList.toggle('reading-review-count-warn', shortBy > 0);
+    els.readingReviewCount.textContent += shortBy > 0 ? `（感想は50文字以上必要です。あと${shortBy}文字書いてください）` : '（条件を満たしています）';
     els.readingSubmitBtn.disabled = !(titleOk && reviewLen >= READING_REVIEW_MIN_LENGTH_);
   }
 
-  const READING_REVIEW_MIN_LENGTH_ = 50;
   function submitReading() {
     var session = loadSession();
     if (!session || !session.id) return;
@@ -23889,9 +23892,7 @@
     els.readingResult.textContent = '送信中…';
     apiPost('submitReading', { id: session.id, title: title, review: review }).then(function (res) {
       if (!res.ok) {
-        els.readingResult.textContent = res.error === 'already_submitted_today'
-          ? '本日はすでに投稿済みです（1日1回までです）。'
-          : res.error === 'missing_fields'
+        els.readingResult.textContent = res.error === 'missing_fields'
           ? 'タイトルと50文字以上の感想を入力してください。'
           : '送信に失敗しました。もう一度お試しください。';
         updateReadingSubmitEnabled_();
