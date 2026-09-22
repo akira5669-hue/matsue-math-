@@ -21525,10 +21525,34 @@
     var booksHtml = '';
     if (Array.isArray(r.books) && r.books.length > 0) {
       booksHtml = '<div class="reading-books-list">' + r.books.map(function (b) {
-        return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p></div>';
+        var likeBtnCls = 'reading-like-btn' + (b.likedByMe ? ' is-liked' : '');
+        return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p>'
+          + '<button type="button" class="' + likeBtnCls + '" data-reading-like="' + b.id + '"' + (b.likedByMe ? ' disabled' : '') + '>👍 いいね <span class="reading-like-count">' + (Number(b.likeCount) || 0) + '</span></button></div>';
       }).join('') + '</div>';
     }
     return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${r.count}冊</span></div>` + booksHtml;
+  }
+
+  function handleLikeReadingClick_(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var readingLogId = btn.getAttribute('data-reading-like');
+    btn.disabled = true;
+    apiPost('likeReading', { id: session.id, readingLogId: readingLogId }).then(function (res) {
+      if (!res.ok) { btn.disabled = false; return; }
+      btn.classList.add('is-liked');
+      var countEl = btn.querySelector('.reading-like-count');
+      if (countEl) countEl.textContent = res.likeCount;
+    }).catch(function () {
+      btn.disabled = false;
+    });
+  }
+
+  function bindReadingLikeButtons_(container) {
+    if (!container) return;
+    container.querySelectorAll('[data-reading-like]').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleLikeReadingClick_(btn); });
+    });
   }
 
   function renderReadingRanking_(res) {
@@ -21544,9 +21568,11 @@
     }
     els.rankingSummary.textContent = `今月読んだ冊数の上位 ${res.ranking.length} 名（上位30名は投稿内容も紹介！）`;
     els.rankingList.innerHTML = res.ranking.map(readingRankingRowHtml).join('');
+    bindReadingLikeButtons_(els.rankingList);
     if (Array.isArray(res.nearby) && res.nearby.length > 0) {
       els.rankingNearby.hidden = false;
       els.rankingNearbyList.innerHTML = res.nearby.map(readingRankingRowHtml).join('');
+      bindReadingLikeButtons_(els.rankingNearbyList);
     } else {
       els.rankingNearby.hidden = true;
       els.rankingNearbyList.innerHTML = '';

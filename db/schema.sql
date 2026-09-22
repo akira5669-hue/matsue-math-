@@ -184,6 +184,17 @@ CREATE TABLE reading_log (
 CREATE INDEX idx_reading_log_student ON reading_log (student_id);
 CREATE INDEX idx_reading_log_month ON reading_log (month_key);
 
+-- 読書ランキングで紹介される投稿への「いいね」。1人1投稿につき1回まで
+-- (reading_log_id, student_idのUNIQUE制約で二重いいねを防ぐ)。
+CREATE TABLE reading_likes (
+  id BIGSERIAL PRIMARY KEY,
+  reading_log_id BIGINT NOT NULL REFERENCES reading_log (id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+  ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (reading_log_id, student_id)
+);
+CREATE INDEX idx_reading_likes_log ON reading_likes (reading_log_id);
+
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,
   ts TIMESTAMPTZ NOT NULL DEFAULT now(),
