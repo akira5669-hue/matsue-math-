@@ -18439,6 +18439,10 @@
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
     worldBossActiveStage: null,
+    // 挑戦開始時点で条件を満たしていた単元idの一覧(worldBossActiveStageと同様に
+    // 端末セッション限定)。挑戦中に単元設定を変えても出題内容に影響させないための
+    // 固定スナップショット。
+    worldBossEligibleIds_: null,
     // ステージ4のように複数体を順番に倒すステージでの進行度(ステージID→次に戦う
     // ボスのインデックス、0始まり)。worldBossActiveStageと同様に端末セッション限定。
     worldBossSubIndex: {},
@@ -18929,10 +18933,18 @@
 
   function pickGenerator() {
     if (state.worldBossActiveStage) {
+      // 挑戦開始時にworldBossEligibleIds_へ固定した単元リストだけを使う。
+      // 生の state.enabled をその都度参照すると、挑戦中に設定画面で単元を
+      // 減らして極端に簡単な1単元だけにする、といったズルが可能になって
+      // しまう(生徒からのバグ報告により発覚)。挑戦開始後は単元構成を
+      // 変えても出題内容に影響しない。
+      const lockedIds = Array.isArray(state.worldBossEligibleIds_) ? state.worldBossEligibleIds_ : [];
+      const eligible = CATEGORIES.filter(c => lockedIds.indexOf(c.id) !== -1);
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
       const session = loadSession();
       const ownGrade = session && session.grade;
-      const eligible = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
-      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
+      const fallback = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
+      if (fallback.length > 0) return fallback[randInt(0, fallback.length - 1)];
     }
     const notComplete = c => !isCategoryCompleteToday(state, c.id);
     const pool = CATEGORIES.filter(c => state.enabled.has(c.id) && notComplete(c));
@@ -18948,7 +18960,7 @@
     const eligibleEnabled = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
     const hasWordProblem = eligibleEnabled.some(c => WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1);
     const ok = eligibleEnabled.length >= WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES && hasWordProblem;
-    return { ok, count: eligibleEnabled.length, hasWordProblem, required: WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES };
+    return { ok, count: eligibleEnabled.length, hasWordProblem, required: WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES, ids: eligibleEnabled.map(c => c.id) };
   }
 
   /* ---------- 間違い大魔王：間違えた問題の保存庫 ---------- */
@@ -18998,11 +19010,14 @@
   // ON中)の間違えた問題の中からランダムに1つ選ぶ。無ければnull。
   const WORLD_BOSS_STAGE4_WRONG_BIAS = 0.5;
   function pickWorldBossWrongQuestion() {
+    // pickGenerator()と同じく、挑戦開始時に固定した単元リストだけを使う
+    // (挑戦中の単元変更を出題に反映させないため)。
+    const lockedIds = Array.isArray(state.worldBossEligibleIds_) ? state.worldBossEligibleIds_ : null;
     const session = loadSession();
     const ownGrade = session && session.grade;
     const pool = [];
     CATEGORIES.forEach(c => {
-      if (!state.enabled.has(c.id) || !isAtOrAboveOwnGrade(c.id, ownGrade)) return;
+      if (lockedIds ? lockedIds.indexOf(c.id) === -1 : (!state.enabled.has(c.id) || !isAtOrAboveOwnGrade(c.id, ownGrade))) return;
       const bank = state.wrongBank[c.id];
       if (bank && bank.length > 0) bank.forEach(snap => pool.push(snap));
     });
@@ -19724,6 +19739,7 @@
         if (state.hp <= 0) {
           missLineHtml += `${bossMissQuoteHtml}${ironWallHtml}<div class="enemy-quote-banner">💥 HPが0になってしまった…ボス戦は最初からやり直しだ！</div>`;
           state.worldBossActiveStage = null;
+          state.worldBossEligibleIds_ = null;
           state.worldPendingSpell = null;
           state.worldBossDamage = 0;
         } else {
@@ -22826,6 +22842,7 @@
       if (country && state.worldAllies.indexOf(country.code) === -1) state.worldAllies.push(country.code);
       state.worldBossSubIndex[stageId] = 0;
       state.worldBossActiveStage = null;
+      state.worldBossEligibleIds_ = null;
       let titleGainedHtml = '';
       if (stageId === 4 && !state.mathGodTitleEarned) {
         state.mathGodTitleEarned = true;
@@ -23434,6 +23451,7 @@
       const cancelBtn = document.getElementById('worldBossCancelBtn');
       if (cancelBtn) cancelBtn.addEventListener('click', function () {
         state.worldBossActiveStage = null;
+        state.worldBossEligibleIds_ = null;
         state.streak = 0;
         state.worldPendingSpell = null;
         state.worldBossDamage = 0;
@@ -23468,7 +23486,8 @@
       // 減らしてもこのセクションが再描画されない限りボタンは有効なまま残る
       // (バグ報告により発覚)。ここでもう一度その場で条件を確認し、満たして
       // いなければ古い表示を最新の状態に更新して挑戦させない。
-      if (!worldBossEligibility().ok) {
+      const startElig = worldBossEligibility();
+      if (!startElig.ok) {
         renderWorldBossSection();
         window.alert('出題条件（自分の学年以上の単元を' + WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES + '個以上ON、うち文章題を1つ以上含む）を満たしていません。単元の設定を確認してください。');
         return;
@@ -23477,6 +23496,8 @@
       state.streak = 0;
       state.worldPendingSpell = null;
       state.worldBossDamage = 0;
+      // 挑戦開始時点の単元構成を固定する(挑戦中に単元を変えても出題に影響させない)。
+      state.worldBossEligibleIds_ = startElig.ids;
       saveGameState(state);
       renderWorldPanel();
       updateGameHud();
@@ -23522,6 +23543,7 @@
       applyWorldDataForLap_(state.worldLap);
       state.worldBossDefeated = {};
       state.worldBossActiveStage = null;
+      state.worldBossEligibleIds_ = null;
       state.worldAllies = [];
       saveGameState(state);
       if (typeof window !== 'undefined') {
