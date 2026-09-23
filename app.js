@@ -19137,6 +19137,11 @@
     if (els.scienceStreakText) els.scienceStreakText.textContent = `${streak}/${SCIENCE_STREAK_REQUIRED}`;
     if (els.scienceExpText) els.scienceExpText.textContent = state.scienceExp;
     if (els.statPoints) els.statPoints.textContent = state.points;
+    // HPの表示自体はupdateGameHud()(算数・数学モード用)でしか更新しておらず、
+    // 理科モードで正解を重ねてstate.hpが増えても画面上の数値が更新されないバグが
+    // あった(生徒からのバグ報告により発覚：内部の値は正しく増えていたが、表示が
+    // 固まって見えていた)。理科モードでも確実に最新のHPを表示する。
+    if (els.statHp) els.statHp.textContent = Number(state.hp) || 0;
   }
 
   function nextScienceQuestion() {
