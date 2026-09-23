@@ -23463,6 +23463,16 @@
       + '</div>';
     const challengeBtn = document.getElementById('worldBossChallengeBtn');
     if (challengeBtn) challengeBtn.addEventListener('click', function () {
+      // 挑戦条件(単元10個以上ON等)は、このセクションを描画した時点のものが
+      // ボタンのdisabled属性に反映されているだけなので、設定画面で単元を
+      // 減らしてもこのセクションが再描画されない限りボタンは有効なまま残る
+      // (バグ報告により発覚)。ここでもう一度その場で条件を確認し、満たして
+      // いなければ古い表示を最新の状態に更新して挑戦させない。
+      if (!worldBossEligibility().ok) {
+        renderWorldBossSection();
+        window.alert('出題条件（自分の学年以上の単元を' + WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES + '個以上ON、うち文章題を1つ以上含む）を満たしていません。単元の設定を確認してください。');
+        return;
+      }
       state.worldBossActiveStage = stage.id;
       state.streak = 0;
       state.worldPendingSpell = null;
