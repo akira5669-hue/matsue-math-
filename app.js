@@ -24924,6 +24924,7 @@
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
+  if (els.fujiToggle) els.fujiToggle.addEventListener('click', toggleFuji);
   if (els.worldDiceTestBtn) {
     els.worldDiceTestBtn.addEventListener('click', function () {
       rollOnceWorldCountryDice_();
