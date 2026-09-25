@@ -17492,9 +17492,12 @@
       steps = [`標本での白の割合 = ${whiteInSample}/${sampleTotal}`, `全体 ≈ ${white} × ${sampleTotal}/${whiteInSample} = ${population}`, `黒 ≈ ${population} − ${white} = ${black}`];
     } else if (pat === 2) {
       // 捕獲再捕獲法
+      // 注意: 印のついた再捕獲数m2(=p*k)は最初に印をつけた総数M(=p*s)を
+      // 超えてはいけない(印付き個体はM匹しか存在しないため)。よってk<=sを
+      // 常に満たすよう、sを先に決めてからkの上限をsで抑える。
       let p, q; do { p = randInt(1, 3); q = randInt(p + 2, p + 7); } while (gcdFrac(p, q) !== 1);
-      const k = randInt(2, 6);
       const s = randInt(2, 8);
+      const k = randInt(2, Math.min(6, s));
       const n2 = q * k;
       const m2 = p * k;
       const M = p * s;
