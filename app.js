@@ -20415,7 +20415,9 @@
   function renderFujiBanner_() {
     if (!els.fujiBanner) return;
     var today = todayKey();
-    if (!isAdminSession_() || today < FUJI_BANNER_START_ || today > FUJI_BANNER_END_) {
+    // 00001はプレビュー用に、告知開始日(9/28)前でもいつでも確認できるように
+    // 開始日ゲートをバイパスする(終了日は超えたら隠す)。
+    if (!isAdminSession_() || today > FUJI_BANNER_END_) {
       els.fujiBanner.hidden = true;
       return;
     }
@@ -22946,6 +22948,9 @@
     };
   }
   function fujiEventActive_() {
+    // 00001はプレビュー用に、期間開始(10/1)前でもいつでも挑戦・確認できるように
+    // 日付ゲートをバイパスする(00001限定表示自体はfujiCanEnter_側で別途かかる)。
+    if (isAdminSession_()) return true;
     var today = todayKey();
     return today >= FUJI_START_ && today <= FUJI_END_;
   }
