@@ -202,6 +202,7 @@
         <button id="prefectureToggle" class="ghost-btn" type="button">🗾都道府県制覇</button>
         <button id="avatarToggle" class="ghost-btn is-new" type="button">🎨アバター作成<span class="new-badge">NEW</span></button>
         <button id="worldToggle" class="ghost-btn" type="button" hidden>🌍世界制覇</button>
+        <button id="fujiToggle" class="ghost-btn" type="button" hidden>🗻極寒の富士登山</button>
         <button id="grantToggle" class="ghost-btn" type="button" hidden>🎁アイテム付与</button>
         <button id="testPhotoToggle" class="ghost-btn" type="button">📷テスト提出</button>
         <button id="weeklyQuizToggle" class="ghost-btn" type="button">🧠週替わり重要ワード</button>
@@ -383,14 +384,6 @@
       <p class="history-summary">レベルが10上がるごとに、世界の国を1つずつ制覇していくよ！（全100ヵ国）</p>
       <p class="world-progress" id="worldProgress">読み込み中…</p>
 
-      <div class="test-photo-card" id="fujiCard" hidden>
-        <h4 class="test-photo-card-title">🗻 極寒の富士登山（10月限定）</h4>
-        <img src="images/yusha_sword.jpg" alt="勇者の剣" class="shop-item-img" style="align-self:flex-start;">
-        <p class="test-photo-hint" id="fujiHint">47都道府県制覇済みなら、世界一周の途中でも挑戦できる特別ステージ！0合目から10合目(山頂)まで、10問連続正解で1つ進む(7→8合目は20問、8→9合目は30問、9→10合目は50問のタイムアタック！)。8合目からは間違えると極寒の吹雪でHPが大きく減るので気をつけて。山頂(10合目)に到達すれば、誰でも伝説の「勇者の剣」がもらえるよ！</p>
-        <p class="test-photo-hint" id="fujiStatusText"></p>
-        <button type="button" class="primary-btn" id="fujiClimbBtn" hidden>⛰️ 登る</button>
-      </div>
-
       <button type="button" class="ghost-btn" id="worldDiceTestBtn" hidden>🎲 サイコロ画面をテスト表示</button>
       <div class="world-boss-test-row" id="worldBossTestRow" hidden>
         <p class="world-boss-test-label">👑 ボス戦をテスト開始（00001のみ・進行状況は変わりません）<span id="appBuildLabel"></span></p>
@@ -410,6 +403,16 @@
       <div class="world-map-wrap world-map-zoom-wrap" id="worldMapZoomWrap"></div>
 
       <div class="world-stage-list" id="worldStageList"></div>
+    </section>
+
+    <section class="world-panel" id="fujiPanel" hidden>
+      <h3 class="history-title">🗻 極寒の富士登山（10月限定）</h3>
+      <div class="test-photo-card" id="fujiCard" hidden>
+        <img src="images/yusha_sword.jpg" alt="勇者の剣" class="shop-item-img" style="align-self:flex-start;">
+        <p class="test-photo-hint" id="fujiHint">47都道府県制覇済みなら、世界一周の途中でも挑戦できる特別ステージ！0合目から10合目(山頂)まで、10問連続正解で1つ進む(7→8合目は20問、8→9合目は30問、9→10合目は50問のタイムアタック！)。8合目からは間違えると極寒の吹雪でHPが大きく減るので気をつけて。山頂(10合目)に到達すれば、誰でも伝説の「勇者の剣」がもらえるよ！</p>
+        <p class="test-photo-hint" id="fujiStatusText"></p>
+        <button type="button" class="primary-btn" id="fujiClimbBtn" hidden>⛰️ 登る</button>
+      </div>
     </section>
 
     <section class="grant-panel" id="grantPanel" hidden>

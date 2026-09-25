@@ -18719,6 +18719,8 @@
     avatarPresetGrid: document.getElementById('avatarPresetGrid'),
     worldToggle: document.getElementById('worldToggle'),
     worldPanel: document.getElementById('worldPanel'),
+    fujiToggle: document.getElementById('fujiToggle'),
+    fujiPanel: document.getElementById('fujiPanel'),
     worldProgress: document.getElementById('worldProgress'),
     worldMapWrap: document.getElementById('worldMapWrap'),
     worldZoomTabs: document.getElementById('worldZoomTabs'),
@@ -19428,6 +19430,7 @@
     els.expBarInner.style.width = `${(((state.exp + state.scienceExp) % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
+    updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
     renderWorldLaunchBanner();
     renderCurseBanner();
@@ -19438,12 +19441,14 @@
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
-    renderSpellbookLiveBanner_();
+    // 魔法の書の告知・中2限定「証明」告知は役目を終えたため、常時非表示にする
+    // (機能自体は引き続き動作する。バナー呼び出しだけ止めている)。
+    if (els.spellbookLiveBanner) els.spellbookLiveBanner.hidden = true;
+    if (els.proofTestBanner) els.proofTestBanner.hidden = true;
     renderScienceServiceDayBanner_();
     renderFujiBanner_();
     renderReadingBanner_();
     renderSuperAkirametalBanner_();
-    renderProofTestBanner_();
   }
 
   // 世界旅行編：レベル100に到達した瞬間（再ログイン不要）にボタンを表示する。
@@ -19451,6 +19456,12 @@
     var session = loadSession();
     var isGuestSession = !session || !session.id || session.guest;
     els.worldToggle.hidden = !!isGuestSession || state.level < 100;
+  }
+
+  // 富士登山：プレビュー中は00001限定でボタン自体を表示する。
+  function updateFujiToggleVisibility() {
+    if (!els.fujiToggle) return;
+    els.fujiToggle.hidden = !isAdminSession_();
   }
 
   function updateUserAvatarBadge() {
@@ -20443,35 +20454,6 @@
     }
   }
 
-  // 魔法の書が世界一周のボス戦で使えるようになった告知(2026-09-20〜2026-09-27の1週間)。
-  var SPELLBOOK_LIVE_BANNER_END_ = '2026-09-27';
-  function renderSpellbookLiveBanner_() {
-    if (!els.spellbookLiveBanner) return;
-    if (todayKey() > SPELLBOOK_LIVE_BANNER_END_) {
-      els.spellbookLiveBanner.hidden = true;
-      return;
-    }
-    els.spellbookLiveBanner.hidden = false;
-    if (els.spellbookLiveBannerText) {
-      els.spellbookLiveBannerText.textContent = '📢【魔法の書が使えるようになりました！】なんでも屋で購入した魔法の書は、世界一周のボス戦で詠唱できます。詠唱すると自分のHPが減りますが、次の問題に正解するとボスに大ダメージを与えられます！';
-    }
-  }
-
-  // 証明の問題(2026-09-19配布、中2限定)満点提出の告知。中2(と00001のテスト用)
-  // だけに表示し、提出締切(9/26)を過ぎたら消す。
-  function renderProofTestBanner_() {
-    if (!els.proofTestBanner) return;
-    var session = loadSession();
-    var grade = session && session.grade;
-    if ((grade !== '中2' && !isAdminSession_()) || todayKey() > PROOF_TEST_DEADLINE_) {
-      els.proofTestBanner.hidden = true;
-      return;
-    }
-    els.proofTestBanner.hidden = false;
-    if (els.proofTestBannerText) {
-      els.proofTestBannerText.textContent = '📢【中2限定】9月19日に配布した証明の問題が満点だった人は、「📷テスト提出」から写真を送ると500MPもらえます！提出期限は9月26日までです。';
-    }
-  }
 
   // 単元別の級バッジを1つ表示するHTML。未達成なら何も表示しない。
   function renderCategoryRankBadge_(catId) {
@@ -20625,6 +20607,7 @@
     els.shopPanel.hidden = true;
     var session = loadSession();
     updateWorldToggleVisibility();
+    updateFujiToggleVisibility();
     els.worldPanel.hidden = true;
     els.grantToggle.hidden = !(session && session.id === '00001');
     if (els.worldDiceTestBtn) els.worldDiceTestBtn.hidden = !(session && session.id === '00001');
@@ -21417,6 +21400,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -21727,6 +21711,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -21802,6 +21787,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -22432,6 +22418,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -22484,6 +22471,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -22653,6 +22641,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -23610,7 +23599,6 @@
       els.worldProgress.textContent = '国データの読み込みに失敗しました。ページを再読み込みしてください。';
       return;
     }
-    renderFujiCard_();
     var total = WORLD_DATA.length;
     var count = worldCountForLevel(state.level);
     var lapLabel = (Number(state.worldLap) || 1) + '周目：';
@@ -23662,6 +23650,7 @@
     els.giftPanel.setAttribute('hidden', '');
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -23672,6 +23661,29 @@
 
     els.worldPanel.removeAttribute('hidden');
     renderWorldPanel();
+  }
+
+  // 極寒の富士登山：世界制覇とは別枠の専用画面(00001限定プレビュー中)。
+  function toggleFuji() {
+    if (!els.fujiPanel) return;
+    var isHidden = els.fujiPanel.hasAttribute('hidden');
+    if (!isHidden) { els.fujiPanel.setAttribute('hidden', ''); return; }
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
+
+    els.fujiPanel.removeAttribute('hidden');
+    renderFujiCard_();
   }
 
   /* ---------- アイテム付与（管理用、00001のみ表示） ---------- */
@@ -23685,6 +23697,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -23752,6 +23765,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
@@ -24323,6 +24337,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
@@ -24545,6 +24560,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
@@ -24722,6 +24738,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -24747,6 +24764,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
