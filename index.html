@@ -280,6 +280,11 @@
       <button type="button" class="ghost-btn curse-banner-btn" id="zombieBannerBtn">🏪なんでも屋でゾンビワクチンを打つ</button>
     </section>
 
+    <section class="curse-banner" id="oxygenBanner" hidden>
+      <p class="curse-text">🫁 高山病にかかっています。治るまで、正解しても不正解でも1問ごとにHPが10減ってしまいます。</p>
+      <button type="button" class="ghost-btn curse-banner-btn" id="oxygenBannerBtn">🏪なんでも屋で酸素缶を買う</button>
+    </section>
+
     <section class="special-quiz-banner" id="weeklyQuizSpecialBanner" hidden>
       <p class="special-quiz-text" id="weeklyQuizSpecialBannerText"></p>
       <button type="button" class="ghost-btn special-quiz-banner-btn" id="weeklyQuizSpecialBannerBtn">🧠週替わり重要ワードで挑戦する</button>
@@ -409,9 +414,22 @@
       <h3 class="history-title">🗻 極寒の富士登山（10月限定）</h3>
       <div class="test-photo-card" id="fujiCard" hidden>
         <img src="images/yusha_sword.jpg" alt="勇者の剣" class="shop-item-img" style="align-self:flex-start;">
-        <p class="test-photo-hint" id="fujiHint">47都道府県制覇済みなら、世界一周の途中でも挑戦できる特別ステージ！0合目から10合目(山頂)まで、10問連続正解で1つ進む(7→8合目は20問、8→9合目は30問、9→10合目は50問のタイムアタック！)。8合目からは間違えると極寒の吹雪でHPが大きく減るので気をつけて。山頂(10合目)に到達すれば、誰でも伝説の「勇者の剣」がもらえるよ！</p>
+        <p class="test-photo-hint" id="fujiHint">47都道府県制覇済みなら、世界一周の途中でも挑戦できる特別ステージ！0合目から10合目(山頂)まで、10問連続正解で1つ進む(7→8合目は20問、8→9合目は30問、9→10合目は50問のタイムアタック！)。8合目からは間違えると極寒の吹雪でHPが大きく減るうえ高山病にもかかるので気をつけて。山頂(10合目)に到達すれば、HPが2000増え、誰でも伝説の「勇者の剣」がもらえるよ！</p>
         <p class="test-photo-hint" id="fujiStatusText"></p>
+        <div class="test-photo-hint" id="fujiNoticeBox" hidden>
+          <p>⚠️ 登山を始める前に、必ず読んでください。</p>
+          <ul>
+            <li>入山料として300MPかかります。</li>
+            <li>入山してから3日以内に山頂まで登り切れない場合、または9合目のタイムアタックに失敗した場合、救助されて下山になります（HPが10まで下がり、MPが500減ります）。再挑戦するにはまた入山料300MPが必要です（失敗しても10月中なら何度でも再挑戦できます）。</li>
+            <li>3日以内に山頂まで登り切れば、HPが2000増え、伝説の「勇者の剣」が手に入ります（一度成功すると、二度と挑戦できません）。</li>
+          </ul>
+          <label class="fuji-agree-label"><input type="checkbox" id="fujiAgreeCheckbox"> 上記の内容を理解し、同意します</label>
+        </div>
         <button type="button" class="primary-btn" id="fujiClimbBtn" hidden>⛰️ 登る</button>
+      </div>
+      <div class="test-photo-card" id="fujiAdminPoolCard" hidden>
+        <p class="test-photo-hint">🛠️ 管理者用：今月の富士登山共済プール（入山料・救助ペナルティの合計の8割）を、今月の登頂成功者に均等分配します。月が変わったら実行してください。</p>
+        <button type="button" class="ghost-btn" id="fujiDistributePoolBtn">今月のプールを分配する</button>
       </div>
     </section>
 

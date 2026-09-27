@@ -97,6 +97,9 @@ CREATE TABLE students (
   fuji_station INTEGER NOT NULL DEFAULT 0,
   fuji_leg_streak INTEGER NOT NULL DEFAULT 0,
   fuji_time_attack_started_at TEXT,
+  -- 入山料(300MP)を払って今の挑戦を開始した時刻(ミリ秒epoch文字列)。3日以内に
+  -- 山頂へ到達しないと救助される制限時間の起点。挑戦が終わるとNULLに戻る。
+  fuji_climb_started_at TEXT,
   -- 毎日勉強時間報告(2026-09-20〜)。1日1回、報告のたびに+1MP+1HP(1日のMP上限を
   -- 経由しない直接加算)。study_report_dateで1日1回制限、study_report_totalは
   -- 通算報告回数で、小学生/中学生別の月間ランキングに使う。
@@ -195,6 +198,31 @@ CREATE TABLE reading_likes (
   UNIQUE (reading_log_id, student_id)
 );
 CREATE INDEX idx_reading_likes_log ON reading_likes (reading_log_id);
+
+-- 富士登山共済プールの原資記録。入山料支払い(entry_fee)・救助ペナルティ
+-- (rescue_penalty)・登頂成功(success、amountは常に0で受取対象の記録用)を
+-- 月ごとに記録し、月末にfuji_pool_distributionsで精算する。
+CREATE TABLE fuji_climb_log (
+  id BIGSERIAL PRIMARY KEY,
+  ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+  student_id TEXT NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+  name TEXT,
+  grade TEXT,
+  month_key TEXT NOT NULL,                 -- 'yyyy-MM'
+  event_type TEXT NOT NULL,                -- 'entry_fee' | 'rescue_penalty' | 'success'
+  amount INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_fuji_climb_log_month ON fuji_climb_log (month_key);
+CREATE INDEX idx_fuji_climb_log_student ON fuji_climb_log (student_id);
+
+-- 富士登山共済プールの月ごとの精算履歴(二重精算防止用)。
+CREATE TABLE fuji_pool_distributions (
+  month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
+  distributed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  pool_total INTEGER NOT NULL DEFAULT 0,
+  recipient_count INTEGER NOT NULL DEFAULT 0,
+  per_person INTEGER NOT NULL DEFAULT 0
+);
 
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,

@@ -318,11 +318,11 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
-        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
-        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt,
+        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -338,11 +338,11 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
-        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
-        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt,
+        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
       });
     }
   }
@@ -18142,6 +18142,11 @@
   // ゾンビワクチンを打つまで解除されない。
   const ZOMBIE_HP_DRAIN_ = 1;
   const ZOMBIE_VACCINE_COST_MP = 100;
+  // 富士登山の高山病：8合目以降で不正解になるとかかる状態異常。ゾンビ化と同じく
+  // 治るまで科目を問わず1問答えるたびにHPが10減る。なんでも屋で酸素缶を買うまで解除されない。
+  const FUJI_ALTITUDE_SICKNESS_DRAIN_ = 10;
+  const OXYGEN_CAN_COST_MP = 100;
+  const FUJI_ALTITUDE_SICKNESS_STATION_ = 8;
   // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。500MP。
   const SHARPEN_SWORD_COST_MP = 500;
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
@@ -18420,6 +18425,9 @@
     // 状態のため、アカウント別ストレージ(progress)を優先する。
     cursed: (savedProgress ? !!savedProgress.cursed : !!(savedGame && savedGame.cursed)),
     zombified: (savedProgress ? !!savedProgress.zombified : !!(savedGame && savedGame.zombified)),
+    // 富士登山(8合目以降)で不正解になるとかかる高山病。ゾンビ化と同じく、なんでも屋で
+    // 酸素缶を買うまで科目を問わず1問答えるたびにHPが減り続ける。
+    fujiAltitudeSick: (savedProgress ? !!savedProgress.fujiAltitudeSick : !!(savedGame && savedGame.fujiAltitudeSick)),
     // 単元ごとの1日の出題数上限(DAILY_CATEGORY_COMPLETE_AT)のカウンタ。日付が変われば
     // ensureCategoryDailyReset()でリセットされる。
     categoryDailyCounts: (savedProgress && savedProgress.categoryDailyCounts && typeof savedProgress.categoryDailyCounts === 'object') ? Object.assign({}, savedProgress.categoryDailyCounts) : ((savedGame && savedGame.categoryDailyCounts && typeof savedGame.categoryDailyCounts === 'object') ? Object.assign({}, savedGame.categoryDailyCounts) : {}),
@@ -18479,6 +18487,9 @@
     fujiStation: (savedProgress && Number(savedProgress.fujiStation)) || (savedGame && Number(savedGame.fujiStation)) || 0,
     fujiLegStreak: (savedProgress && Number(savedProgress.fujiLegStreak)) || (savedGame && Number(savedGame.fujiLegStreak)) || 0,
     fujiTimeAttackStartedAt: (savedProgress && savedProgress.fujiTimeAttackStartedAt) || (savedGame && savedGame.fujiTimeAttackStartedAt) || null,
+    // 入山料(FUJI_ENTRY_FEE_MP)を払って今の挑戦を開始した時刻。3日以内に山頂へ
+    // 到達しないと救助される制限時間の起点。挑戦が終わる(成功/救助)とnullに戻る。
+    fujiClimbStartedAt: (savedProgress && savedProgress.fujiClimbStartedAt) || (savedGame && savedGame.fujiClimbStartedAt) || null,
     // 山頂到達は一度trueになったら戻らない実績フラグ。
     fujiSummitReached: !!((savedProgress && savedProgress.fujiSummitReached) || (savedGame && savedGame.fujiSummitReached)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -18510,7 +18521,11 @@
     fujiCard: document.getElementById('fujiCard'),
     fujiHint: document.getElementById('fujiHint'),
     fujiStatusText: document.getElementById('fujiStatusText'),
+    fujiNoticeBox: document.getElementById('fujiNoticeBox'),
+    fujiAgreeCheckbox: document.getElementById('fujiAgreeCheckbox'),
     fujiClimbBtn: document.getElementById('fujiClimbBtn'),
+    fujiAdminPoolCard: document.getElementById('fujiAdminPoolCard'),
+    fujiDistributePoolBtn: document.getElementById('fujiDistributePoolBtn'),
     battleVsRow: document.getElementById('battleVsRow'),
     battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
     battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
@@ -18691,6 +18706,8 @@
     curseBannerBtn: document.getElementById('curseBannerBtn'),
     zombieBanner: document.getElementById('zombieBanner'),
     zombieBannerBtn: document.getElementById('zombieBannerBtn'),
+    oxygenBanner: document.getElementById('oxygenBanner'),
+    oxygenBannerBtn: document.getElementById('oxygenBannerBtn'),
     shopToggle: document.getElementById('shopToggle'),
     shopPanel: document.getElementById('shopPanel'),
     shopSummary: document.getElementById('shopSummary'),
@@ -19275,6 +19292,10 @@
     if (state.zombified) {
       state.hp = Math.max(0, (Number(state.hp) || 0) - ZOMBIE_HP_DRAIN_);
     }
+    // 高山病も同様に、治るまで科目を問わず1問答えるたびにHPが減る。
+    if (state.fujiAltitudeSick) {
+      state.hp = Math.max(0, (Number(state.hp) || 0) - FUJI_ALTITUDE_SICKNESS_DRAIN_);
+    }
     saveGameState(state);
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
 
@@ -19315,7 +19336,7 @@
   function nextQuestion() {
     if (ensureNotHpGameOver_()) return;
     if (state.subject === 'science') { nextScienceQuestion(); return; }
-    const fujiTimeoutHtml = checkFujiTimeAttackExpiry_();
+    const fujiTimeoutHtml = checkFujiRescueConditions_();
     if (fujiTimeoutHtml) {
       els.feedback.innerHTML = fujiTimeoutHtml;
       els.feedback.className = 'feedback incorrect';
@@ -19454,6 +19475,7 @@
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
+    renderOxygenBanner_();
     renderHpRulesBanner_();
     renderMpCapBanner_();
     renderWinterCourseBanner_();
@@ -19817,6 +19839,12 @@
         } else {
           missLineHtml += `<div class="enemy-quote-banner">${state.fujiStation}合目の最初からやり直しだ！</div>`;
         }
+        // 8合目以降で不正解になると高山病にかかる(まだかかっていなければ)。
+        // かかると科目を問わず1問答えるたびにHPが減り続け、酸素缶を買うまで治らない。
+        if (state.fujiStation >= FUJI_ALTITUDE_SICKNESS_STATION_ && !state.fujiAltitudeSick && state.hp > 0) {
+          state.fujiAltitudeSick = true;
+          missLineHtml += `<div class="enemy-quote-banner">🫁 高山病にかかってしまった…！治るまで1問答えるごとにHPが${FUJI_ALTITUDE_SICKNESS_DRAIN_}減る。なんでも屋で酸素缶を買おう。</div>`;
+        }
         saveGameState(state);
       } else if (state.rareType === 'gyoshi' && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
@@ -19885,6 +19913,11 @@
     // 合流するここに置くことで、両方のケースに確実に効かせる。
     if (state.zombified) {
       state.hp = Math.max(0, (Number(state.hp) || 0) - ZOMBIE_HP_DRAIN_);
+      saveGameState(state);
+    }
+    // 高山病も同様に、理科でも科目を問わず1問答えるたびにHPが減る。
+    if (state.fujiAltitudeSick) {
+      state.hp = Math.max(0, (Number(state.hp) || 0) - FUJI_ALTITUDE_SICKNESS_DRAIN_);
       saveGameState(state);
     }
 
@@ -20800,6 +20833,7 @@
       fujiStation: state.fujiStation,
       fujiLegStreak: state.fujiLegStreak,
       fujiTimeAttackStartedAt: state.fujiTimeAttackStartedAt,
+      fujiClimbStartedAt: state.fujiClimbStartedAt,
     };
   }
 
@@ -21868,6 +21902,11 @@
     els.zombieBanner.hidden = !state.zombified;
   }
 
+  function renderOxygenBanner_() {
+    if (!els.oxygenBanner) return;
+    els.oxygenBanner.hidden = !state.fujiAltitudeSick;
+  }
+
   function renderShopList() {
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
 
@@ -21894,6 +21933,17 @@
     var vaccineIsNew = shopItemIsNew_(ZOMBIE_VACCINE_NEW_UNTIL_);
     var vaccineNewBadgeHtml = vaccineIsNew ? '<span class="shop-new-badge">🆕NEW</span>' : '';
     var vaccineRowHtml = `<div class="gift-row${vaccineIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/zombie_vaccine.jpg" alt="ゾンビワクチン"><div class="gift-info"><span class="gift-label">🧟 ゾンビワクチン（ゾンビ化を治す）${vaccineNewBadgeHtml}</span><span class="gift-cost">${ZOMBIE_VACCINE_COST_MP}MP</span></div>${vaccineActionHtml}</div>`;
+
+    var oxygenCanAfford = state.points >= OXYGEN_CAN_COST_MP;
+    var oxygenActionHtml;
+    if (!state.fujiAltitudeSick) {
+      oxygenActionHtml = `<span class="gift-insufficient">今は高山病にかかっていません</span>`;
+    } else if (oxygenCanAfford) {
+      oxygenActionHtml = `<button type="button" class="gift-redeem-btn" id="buyOxygenCanBtn">購入する</button>`;
+    } else {
+      oxygenActionHtml = `<span class="gift-insufficient">MP不足</span>`;
+    }
+    var oxygenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/oxygen_can.jpg" alt="酸素缶"><div class="gift-info"><span class="gift-label">🫁 酸素缶（高山病を治す）</span><span class="gift-cost">${OXYGEN_CAN_COST_MP}MP</span></div>${oxygenActionHtml}</div>`;
 
     // 刀を研ぐ：勇者の剣を手に入れたことがある生徒にだけ表示する(00001限定
     // プレビュー中は富士登山自体がisAdminSession_()限定のため、実質00001のみ表示)。
@@ -21983,7 +22033,7 @@
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -22000,6 +22050,8 @@
     if (prayerBtn) prayerBtn.addEventListener('click', function () { handleAkrPrayerClick(prayerBtn); });
     var vaccineBtn = document.getElementById('zombieVaccineBtn');
     if (vaccineBtn) vaccineBtn.addEventListener('click', function () { handleZombieVaccineClick(vaccineBtn); });
+    var oxygenBuyBtn = document.getElementById('buyOxygenCanBtn');
+    if (oxygenBuyBtn) oxygenBuyBtn.addEventListener('click', function () { handleBuyOxygenCanClick(oxygenBuyBtn); });
     var sharpenBtn = document.getElementById('sharpenSwordBtn');
     if (sharpenBtn) sharpenBtn.addEventListener('click', function () { handleSharpenSwordClick(sharpenBtn); });
     var herbBtn = document.getElementById('buyHerbBtn');
@@ -22244,6 +22296,32 @@
       updateGameHud();
       renderShopList();
       window.alert('🧟💉 ゾンビワクチンを打って、ゾンビ化が治った！');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyOxygenCanClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`酸素缶を購入します（${OXYGEN_CAN_COST_MP}MP）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyOxygenCan', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.fujiAltitudeSick = false;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert('🫁 酸素缶を吸って、高山病が治った！');
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -22958,6 +23036,14 @@
   const FUJI_START_ = '2026-10-01';
   const FUJI_END_ = '2026-10-31';
   const FUJI_TOP_STATION_ = 10;
+  // 入山料・救助ペナルティ・登頂成功報酬。入山してから3日以内(または9合目の
+  // タイムアタック失敗)で救助・下山になり、再挑戦には入山料を再度払う必要がある
+  // (成功者は二度と挑戦できない。失敗しても10月中なら何度でも再挑戦できる)。
+  const FUJI_ENTRY_FEE_MP = 300;
+  const FUJI_CLIMB_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000;
+  const FUJI_RESCUE_HP_SET = 10;
+  const FUJI_RESCUE_MP_LOSS = 500;
+  const FUJI_SUCCESS_HP_GAIN = 2000;
   // インデックスiは「i合目→(i+1)合目」の区間。streakがその区間に必要な連続正解数、
   // hpPenaltyは不正解のたびに減るHP(0=ペナルティなし)。7→8until10で徐々に厳しくなる。
   const FUJI_LEGS_ = [
@@ -22992,23 +23078,63 @@
     var s = totalSec % 60;
     return m + '分' + (s < 10 ? '0' : '') + s + '秒';
   }
-  // 9合目(タイムアタック区間)で制限時間を過ぎていたら、極寒の吹雪ペナルティを
-  // 適用して9合目の最初からやり直しにする。nextQuestion()の冒頭で毎回チェックする。
-  function checkFujiTimeAttackExpiry_() {
-    if (!state.fujiActive || (Number(state.fujiStation) || 0) !== 9) return null;
-    var remaining = fujiTimeAttackRemainingMs_();
-    if (remaining === null || remaining > 0) return null;
-    var penalty = fujiCurrentLeg_().hpPenalty;
+  // 入山から3日以内に山頂へ到達したかどうか。
+  function fujiClimbDeadlineExpired_() {
+    return !!state.fujiClimbStartedAt && (Date.now() - Number(state.fujiClimbStartedAt)) > FUJI_CLIMB_DEADLINE_MS;
+  }
+  function fujiClimbDeadlineRemainingMs_() {
+    if (!state.fujiClimbStartedAt) return null;
+    return FUJI_CLIMB_DEADLINE_MS - (Date.now() - Number(state.fujiClimbStartedAt));
+  }
+  function fujiClimbDeadlineLabel_() {
+    var ms = fujiClimbDeadlineRemainingMs_();
+    if (ms === null) return '';
+    var totalMin = Math.max(0, Math.floor(ms / 60000));
+    var days = Math.floor(totalMin / (24 * 60));
+    var hours = Math.floor((totalMin % (24 * 60)) / 60);
+    return days + '日' + hours + '時間';
+  }
+  // 救助されて下山になる処理。①入山から3日経過、②9合目のタイムアタック失敗、の
+  // どちらか早い方で発生する。到達済みの合目は失われ0合目に戻り、HPは
+  // FUJI_RESCUE_HP_SETまで下がり(それより低ければそのまま)、MPはサーバー確定処理で
+  // FUJI_RESCUE_MP_LOSS減る。再挑戦するには入山料を再度払う必要がある。
+  function applyFujiRescue_(reasonText) {
+    state.fujiActive = false;
+    state.fujiStation = 0;
     state.fujiLegStreak = 0;
-    state.fujiTimeAttackStartedAt = Date.now();
-    state.hp = Math.max(0, (Number(state.hp) || 0) - penalty);
-    var html = `<div class="enemy-quote-banner">⏰ 制限時間切れ…！極寒の吹雪でHPが${penalty}減った。（残りHP: ${state.hp}）9合目の最初からやり直しだ！</div>`;
-    if (state.hp <= 0) {
-      state.fujiActive = false;
-      html += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で回復するまで登山を再開できません。</div>`;
-    }
+    state.fujiTimeAttackStartedAt = null;
+    state.fujiClimbStartedAt = null;
+    state.hp = Math.min(Number(state.hp) || 0, FUJI_RESCUE_HP_SET);
+    if (els.fujiAgreeCheckbox) els.fujiAgreeCheckbox.checked = false;
     saveGameState(state);
-    return html;
+    var session = loadSession();
+    if (session && session.id) {
+      apiPost('fujiRescuePenalty', { id: session.id }).then(function (res) {
+        if (res && res.ok) {
+          state.points = res.remainingPoints;
+          saveGameState(state);
+          updateGameHud();
+        }
+      }).catch(function () { });
+      apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    }
+    return '<div class="enemy-quote-banner">🚁 ' + reasonText + '…救助されて下山することになった！HPが' + FUJI_RESCUE_HP_SET + 'まで下がり、MPが' + FUJI_RESCUE_MP_LOSS + '減った。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが再度必要。</div>';
+  }
+  // 入山から3日経過、または9合目のタイムアタックの制限時間切れをチェックする。
+  // nextQuestion()の冒頭とrenderFujiCard_()の両方から呼び、どちらのタイミングでも
+  // 期限切れなら即座に救助・下山にする。
+  function checkFujiRescueConditions_() {
+    if (!state.fujiClimbStartedAt) return null;
+    if (fujiClimbDeadlineExpired_()) {
+      return applyFujiRescue_('3日以内に山頂まで登り切れず');
+    }
+    if ((Number(state.fujiStation) || 0) === 9) {
+      var remaining = fujiTimeAttackRemainingMs_();
+      if (remaining !== null && remaining <= 0) {
+        return applyFujiRescue_('9合目のタイムアタックに失敗し');
+      }
+    }
+    return null;
   }
   function fujiEnemyDisplayForStation_() {
     var station = Number(state.fujiStation) || 0;
@@ -23030,14 +23156,40 @@
   function fujiUnlocked_() {
     return (Number(state.prefectureCount) || 0) >= 47;
   }
+  // 富士登山共済プールの月次精算(00001限定)。自動実行(cron)の仕組みがまだ無いため、
+  // 月末に管理者が手動でタップして実行する運用。今月分を対象に、入山料・救助
+  // ペナルティの合計の8割を今月の登頂成功者で均等に分配する(月をまたいでの
+  // 二重精算はサーバー側で防止済み)。
+  function handleFujiDistributePoolClick_() {
+    var session = loadSession();
+    if (!session || !session.id || session.id !== '00001') return;
+    if (!window.confirm('今月の富士登山共済プールを精算し、今月の登頂成功者に分配します。よろしいですか？（同じ月に2回実行はできません）')) return;
+    els.fujiDistributePoolBtn.disabled = true;
+    apiPost('fujiDistributePool', { id: session.id }).then(function (res) {
+      els.fujiDistributePoolBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '精算に失敗しました。';
+        if (res.error === 'already_distributed') msg = 'この月はすでに精算済みです。';
+        else if (res.error === 'no_successful_climbers') msg = 'この月はまだ登頂成功者がいません（プール総額: ' + (res.poolTotal || 0) + 'MP）。';
+        else if (res.error === 'forbidden') msg = '権限がありません。';
+        window.alert(msg);
+        return;
+      }
+      window.alert('✅ ' + res.monthKey + 'の精算が完了しました。\nプール総額: ' + res.poolTotal + 'MP\n分配対象額(8割): ' + res.distributable + 'MP\n受取人数: ' + res.recipientCount + '人\n1人あたり: ' + res.perPerson + 'MP');
+    }).catch(function () {
+      els.fujiDistributePoolBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
   function fujiCanEnter_() {
     // 00001限定プレビュー中(本番許可が出るまで一般生徒には解放しない)。fujiActiveが
     // 既にtrueでも、登山画面に戻るために再度呼べるようにする(進行中の状態は
     // 触らない)。
     return isAdminSession_() && fujiEventActive_() && fujiUnlocked_() && !state.fujiSummitReached && !state.worldBossActiveStage;
   }
-  function startFujiClimb_() {
-    if (!fujiCanEnter_()) return;
+  // 実際に登山画面(問題出題)を開始する共通処理。入山料の支払い・期限切れ確認は
+  // startFujiClimb_側で済ませてから呼ばれる。
+  function beginFujiClimbSession_() {
     if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
     state.fujiActive = true;
     state.streak = 0;
@@ -23046,9 +23198,56 @@
       state.fujiTimeAttackStartedAt = Date.now();
     }
     saveGameState(state);
-    if (els.worldPanel) els.worldPanel.hidden = true;
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (els.fujiPanel) els.fujiPanel.hidden = true;
     updateGameHud();
     nextQuestion();
+  }
+  // 「登る」ボタンの処理。まだ挑戦を始めていなければ(fujiClimbStartedAtが無ければ)
+  // 新規の入山として、注意事項チェック済みを確認したうえで入山料(FUJI_ENTRY_FEE_MP)を
+  // サーバー確定処理で払ってから開始する。既に挑戦中なら、期限切れになっていないかだけ
+  // 確認して続きから再開する(再度の入山料は不要)。
+  function startFujiClimb_() {
+    if (!fujiCanEnter_()) return;
+    var isFreshStart = !state.fujiClimbStartedAt;
+    if (!isFreshStart) {
+      var rescueHtml = checkFujiRescueConditions_();
+      if (rescueHtml) {
+        updateGameHud();
+        renderFujiCard_();
+        window.alert('🚁 入山から3日以内に登り切れず、救助されて下山していました…！再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
+        return;
+      }
+      beginFujiClimbSession_();
+      return;
+    }
+    if (!els.fujiAgreeCheckbox || !els.fujiAgreeCheckbox.checked) {
+      window.alert('登山を始める前に、注意事項を読んでチェックを入れてください。');
+      return;
+    }
+    if ((Number(state.points) || 0) < FUJI_ENTRY_FEE_MP) {
+      window.alert('富士登山には入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
+      return;
+    }
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (els.fujiClimbBtn) els.fujiClimbBtn.disabled = true;
+    apiPost('fujiEntryFee', { id: session.id }).then(function (res) {
+      if (els.fujiClimbBtn) els.fujiClimbBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '入山料の支払いに失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.fujiClimbStartedAt = Date.now();
+      beginFujiClimbSession_();
+    }).catch(function () {
+      if (els.fujiClimbBtn) els.fujiClimbBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
   }
   // 9合目の頭に戻す(タイムアタック失敗・8→9区間でのミス等で共通して使う)。
   function fujiResetToStation_(station) {
@@ -23061,14 +23260,20 @@
     state.fujiStation = FUJI_TOP_STATION_;
     state.fujiLegStreak = 0;
     state.fujiTimeAttackStartedAt = null;
+    state.fujiClimbStartedAt = null;
     state.fujiSummitReached = true;
     state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) + 1;
     state.yushaSwordObtained = true;
+    state.hp = (Number(state.hp) || 0) + FUJI_SUCCESS_HP_GAIN;
     var swordHtml = '<div class="item-gain-banner"><img src="images/yusha_sword.jpg" class="enemy-char-img-sm" alt="">⚔️ 伝説の「勇者の剣」を手に入れた！世界一周のボス戦で、問題に正解すれば1回だけ1000ダメージを与えられる！</div>';
+    var hpHtml = '<div class="item-gain-banner">💪 3日以内に登り切ったご褒美でHPが' + FUJI_SUCCESS_HP_GAIN + '増えた！（現在HP: ' + state.hp + '）</div>';
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-    return '<div class="win-banner">🎉⛰️ 富士山の頂上に到達した！🎉</div>' + swordHtml;
+    if (session && session.id) {
+      apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      apiPost('fujiClimbSuccess', { id: session.id }).catch(function () { });
+    }
+    return '<div class="win-banner">🎉⛰️ 富士山の頂上に到達した！🎉</div>' + hpHtml + swordHtml;
   }
   // 今の区間(FUJI_LEGS_[fujiStation])の必要連続正解数に達したら、次の合目へ進める。
   // 10合目に達したら山頂到達(finishFujiClimb_)、9合目に入った瞬間はタイムアタックの
@@ -23665,34 +23870,53 @@
     // 00001限定プレビュー中(本番許可が出るまで一般生徒には表示しない)。
     if (!isAdminSession_() || !fujiEventActive_()) {
       els.fujiCard.hidden = true;
+      if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = true;
       return;
     }
+    // カードを開いた時点で入山から3日経過・9合目タイムアタック失敗になっていないか
+    // 確認し、なっていれば先に救助処理を適用してから状態を表示する。
+    var rescueHtml = checkFujiRescueConditions_();
+    if (rescueHtml) {
+      updateGameHud();
+      window.alert('🚁 入山から3日以内に登り切れず、救助されて下山しました…！HPが' + FUJI_RESCUE_HP_SET + 'まで下がり、MPが' + FUJI_RESCUE_MP_LOSS + '減りました。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
+    }
     els.fujiCard.hidden = false;
+    if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = false;
     if (state.fujiSummitReached) {
       els.fujiClimbBtn.hidden = true;
+      if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = true;
       els.fujiStatusText.textContent = state.yushaSwordObtained
         ? ('🎉 山頂に到達済みです！勇者の剣を' + ((Number(state.yushaSwordCount) || 0) > 0 ? '持っています（世界一周のボス戦で使えます）。' : '使いました（壊れましたが記念に残っています）。'))
         : '🎉 山頂に到達済みです！';
     } else if (!fujiUnlocked_()) {
       els.fujiClimbBtn.hidden = true;
+      if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = true;
       els.fujiStatusText.textContent = '🔒 47都道府県制覇（' + (Number(state.prefectureCount) || 0) + '/47）で挑戦できるようになります。';
     } else if (state.worldBossActiveStage) {
       els.fujiClimbBtn.hidden = true;
+      if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = true;
       els.fujiStatusText.textContent = '今は世界一周のボス戦の途中です。ボス戦を終えてから挑戦してください。';
     } else {
       els.fujiClimbBtn.hidden = false;
       var station = Number(state.fujiStation) || 0;
       var leg = fujiCurrentLeg_();
       var remainQ = Math.max(0, leg.streak - (Number(state.fujiLegStreak) || 0));
+      var hasStartedClimb = !!state.fujiClimbStartedAt;
       if (state.fujiActive) {
+        if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = true;
         var timeNote = leg.timeAttack ? '　⏱️残り' + fujiTimeAttackLabel_(fujiTimeAttackRemainingMs_() || 0) : '';
-        els.fujiStatusText.textContent = '⛄ 登山中…（' + station + '合目、あと' + remainQ + '問で' + (station + 1) + '合目！）' + timeNote;
+        var deadlineNote = '　🕒登山期限まで残り' + fujiClimbDeadlineLabel_();
+        els.fujiStatusText.textContent = '⛄ 登山中…（' + station + '合目、あと' + remainQ + '問で' + (station + 1) + '合目！）' + timeNote + deadlineNote;
         els.fujiClimbBtn.textContent = '⛰️ 登山画面に戻る';
+      } else if (hasStartedClimb) {
+        if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = true;
+        var deadlineNote2 = '　🕒登山期限まで残り' + fujiClimbDeadlineLabel_();
+        els.fujiStatusText.textContent = (station > 0 ? ('現在' + station + '合目まで到達済み。') : '入山済み。') + '続きから挑戦できます！' + deadlineNote2;
+        els.fujiClimbBtn.textContent = '⛰️ 続きから登る';
       } else {
-        els.fujiStatusText.textContent = station > 0
-          ? ('現在' + station + '合目まで到達済み。続きから挑戦できます！')
-          : '挑戦の準備ができています！';
-        els.fujiClimbBtn.textContent = station > 0 ? '⛰️ 続きから登る' : '⛰️ 登る';
+        if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = false;
+        els.fujiStatusText.textContent = '挑戦の準備ができています！（入山料' + FUJI_ENTRY_FEE_MP + 'MP）';
+        els.fujiClimbBtn.textContent = '⛰️ 登る';
       }
     }
   }
@@ -25019,6 +25243,7 @@
   els.shopToggle.addEventListener('click', toggleShop);
   els.curseBannerBtn.addEventListener('click', toggleShop);
   if (els.zombieBannerBtn) els.zombieBannerBtn.addEventListener('click', toggleShop);
+  if (els.oxygenBannerBtn) els.oxygenBannerBtn.addEventListener('click', toggleShop);
   if (els.hpGameOverLogoutBtn) els.hpGameOverLogoutBtn.addEventListener('click', handleLogout);
   if (els.hpGameOverShopBtn) els.hpGameOverShopBtn.addEventListener('click', toggleShop);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
@@ -25064,6 +25289,7 @@
     });
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
+  if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.worldDiceCloseBtn) {

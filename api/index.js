@@ -10,7 +10,7 @@ const {
   handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook, handleSuperAkirametalPenalty } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan } = require('../lib/handlers/shop');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
@@ -18,6 +18,7 @@ const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRankingMonth, handleStudyCalendar } = require('../lib/handlers/studyReport');
 const { handleSubmitReading, handleReadingRanking, handleLikeReading } = require('../lib/handlers/reading');
+const { handleFujiClimbSuccess, handleFujiDistributePool } = require('../lib/handlers/fuji');
 
 const ACTIONS = {
   getPoints: handleGetPoints,
@@ -59,11 +60,16 @@ const ACTIONS = {
   buyIronWall: handleBuyIronWall,
   buySteelArmor: handleBuySteelArmor,
   buyIceSword: handleBuyIceSword,
+  buyOxygenCan: handleBuyOxygenCan,
   buyTreasureKey: handleBuyTreasureKey,
   sellTreasureRing: handleSellTreasureRing,
   openTreasureChest: handleOpenTreasureChest,
   buySpellbook: handleBuySpellbook,
   superAkirametalPenalty: handleSuperAkirametalPenalty,
+  fujiEntryFee: handleFujiEntryFee,
+  fujiRescuePenalty: handleFujiRescuePenalty,
+  fujiClimbSuccess: handleFujiClimbSuccess,
+  fujiDistributePool: handleFujiDistributePool,
   registerGuardian: handleRegisterGuardian,
   withdraw: handleWithdraw,
   weeklyQuizGet: handleWeeklyQuizGet,
