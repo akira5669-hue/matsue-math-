@@ -18458,6 +18458,9 @@
     // 端末セッション限定)。挑戦中に単元設定を変えても出題内容に影響させないための
     // 固定スナップショット。
     worldBossEligibleIds_: null,
+    // 富士登山8合目以降で条件を満たしていた単元idの一覧(worldBossEligibleIds_と同様の
+    // 固定スナップショット、端末セッション限定)。
+    fujiEligibleIds_: null,
     // ステージ4のように複数体を順番に倒すステージでの進行度(ステージID→次に戦う
     // ボスのインデックス、0始まり)。worldBossActiveStageと同様に端末セッション限定。
     worldBossSubIndex: {},
@@ -18975,6 +18978,17 @@
       const fallback = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
       if (fallback.length > 0) return fallback[randInt(0, fallback.length - 1)];
     }
+    if (state.fujiActive && (Number(state.fujiStation) || 0) >= FUJI_HIGH_ALTITUDE_STATION_) {
+      // 富士登山の8合目以降も、ボス戦と同じく挑戦開始/再開時にfujiEligibleIds_へ
+      // 固定した単元リストだけを使う(単元設定を変えても出題内容に影響しない)。
+      const lockedIds = Array.isArray(state.fujiEligibleIds_) ? state.fujiEligibleIds_ : [];
+      const eligible = CATEGORIES.filter(c => lockedIds.indexOf(c.id) !== -1);
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
+      const session = loadSession();
+      const ownGrade = session && session.grade;
+      const fallback = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
+      if (fallback.length > 0) return fallback[randInt(0, fallback.length - 1)];
+    }
     const notComplete = c => !isCategoryCompleteToday(state, c.id);
     const pool = CATEGORIES.filter(c => state.enabled.has(c.id) && notComplete(c));
     const src = pool.length > 0 ? pool : CATEGORIES.filter(notComplete);
@@ -18990,6 +19004,33 @@
     const hasWordProblem = eligibleEnabled.some(c => WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1);
     const ok = eligibleEnabled.length >= WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES && hasWordProblem;
     return { ok, count: eligibleEnabled.length, hasWordProblem, required: WORLD_BOSS_MIN_ELIGIBLE_CATEGORIES, ids: eligibleEnabled.map(c => c.id) };
+  }
+  // 富士登山の8合目以降(極寒の道のり)は、ボス戦と同じ「自分の学年以上の単元を
+  // 10個以上ON」に加え、より厳しく「そのうち文章題を5個以上含む」ことを要求する。
+  const FUJI_HIGH_ALTITUDE_STATION_ = 8;
+  const FUJI_MIN_ELIGIBLE_CATEGORIES_ = 10;
+  const FUJI_MIN_WORD_PROBLEM_CATEGORIES_ = 5;
+  function fujiHighAltitudeEligibility_() {
+    const session = loadSession();
+    const ownGrade = session && session.grade;
+    const eligibleEnabled = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
+    const wordProblemCount = eligibleEnabled.filter(c => WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1).length;
+    const ok = eligibleEnabled.length >= FUJI_MIN_ELIGIBLE_CATEGORIES_ && wordProblemCount >= FUJI_MIN_WORD_PROBLEM_CATEGORIES_;
+    return { ok, count: eligibleEnabled.length, wordProblemCount, ids: eligibleEnabled.map(c => c.id) };
+  }
+  // 8合目以降に入る/居続けるための条件チェック。満たしていればfujiEligibleIds_へ
+  // 固定スナップショットを取り、満たしていなければfalseを返す(呼び出し側で案内・
+  // 登山中断などの処理を行う)。8合目未満はチェック不要で常にtrueを返す。
+  function ensureFujiHighAltitudeEligible_() {
+    var station = Number(state.fujiStation) || 0;
+    if (station < FUJI_HIGH_ALTITUDE_STATION_) {
+      state.fujiEligibleIds_ = null;
+      return true;
+    }
+    var elig = fujiHighAltitudeEligibility_();
+    if (!elig.ok) return false;
+    state.fujiEligibleIds_ = elig.ids;
+    return true;
   }
 
   /* ---------- 間違い大魔王：間違えた問題の保存庫 ---------- */
@@ -20762,6 +20803,19 @@
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
         state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
+        // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
+        // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
+        // 作られてしまうため、再ログイン時にaccountProgress(progress)から明示的に
+        // 復元する(でないと進行中の登山・入手済みの勇者の剣・山頂到達実績が消えて
+        // 見え、さらに登山を再開しようとすると「未挑戦」扱いで入山料を二重に
+        // 取られてしまう)。
+        state.fujiSummitReached = !!(state.fujiSummitReached || progress.fujiSummitReached);
+        state.yushaSwordObtained = !!(state.yushaSwordObtained || progress.yushaSwordObtained);
+        state.yushaSwordCount = Number(progress.yushaSwordCount) || state.yushaSwordCount;
+        state.fujiStation = Number(progress.fujiStation) || state.fujiStation;
+        state.fujiLegStreak = Number(progress.fujiLegStreak) || state.fujiLegStreak;
+        state.fujiTimeAttackStartedAt = progress.fujiTimeAttackStartedAt || state.fujiTimeAttackStartedAt;
+        state.fujiClimbStartedAt = progress.fujiClimbStartedAt || state.fujiClimbStartedAt;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -23043,7 +23097,6 @@
   // (成功者は二度と挑戦できない。失敗しても10月中なら何度でも再挑戦できる)。
   const FUJI_ENTRY_FEE_MP = 300;
   const FUJI_CLIMB_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000;
-  const FUJI_RESCUE_HP_SET = 10;
   const FUJI_RESCUE_MP_LOSS = 500;
   const FUJI_SUCCESS_HP_GAIN = 2000;
   // インデックスiは「i合目→(i+1)合目」の区間。streakがその区間に必要な連続正解数、
@@ -23097,16 +23150,17 @@
     return days + '日' + hours + '時間';
   }
   // 救助されて下山になる処理。①入山から3日経過、②9合目のタイムアタック失敗、の
-  // どちらか早い方で発生する。到達済みの合目は失われ0合目に戻り、HPは
-  // FUJI_RESCUE_HP_SETまで下がり(それより低ければそのまま)、MPはサーバー確定処理で
-  // FUJI_RESCUE_MP_LOSS減る。再挑戦するには入山料を再度払う必要がある。
+  // どちらか早い方で発生する。到達済みの合目は失われ0合目に戻り、HPは半分になり、
+  // MPはサーバー確定処理でFUJI_RESCUE_MP_LOSS減る。再挑戦するには入山料を再度払う必要がある。
   function applyFujiRescue_(reasonText) {
     state.fujiActive = false;
     state.fujiStation = 0;
     state.fujiLegStreak = 0;
     state.fujiTimeAttackStartedAt = null;
     state.fujiClimbStartedAt = null;
-    state.hp = Math.min(Number(state.hp) || 0, FUJI_RESCUE_HP_SET);
+    state.fujiEligibleIds_ = null;
+    var hpBeforeRescue = Number(state.hp) || 0;
+    state.hp = Math.floor(hpBeforeRescue / 2);
     if (els.fujiAgreeCheckbox) els.fujiAgreeCheckbox.checked = false;
     saveGameState(state);
     var session = loadSession();
@@ -23120,7 +23174,7 @@
       }).catch(function () { });
       apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     }
-    return '<div class="enemy-quote-banner">🚁 ' + reasonText + '…救助されて下山することになった！HPが' + FUJI_RESCUE_HP_SET + 'まで下がり、MPが' + FUJI_RESCUE_MP_LOSS + '減った。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが再度必要。</div>';
+    return '<div class="enemy-quote-banner">🚁 ' + reasonText + '…救助されて下山することになった！HPが半分（' + state.hp + '）になり、MPが' + FUJI_RESCUE_MP_LOSS + '減った。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが再度必要。</div>';
   }
   // 入山から3日経過、または9合目のタイムアタックの制限時間切れをチェックする。
   // nextQuestion()の冒頭とrenderFujiCard_()の両方から呼び、どちらのタイミングでも
@@ -23234,6 +23288,13 @@
   // 実際に登山画面(問題出題)を開始する共通処理。入山料の支払い・期限切れ確認は
   // startFujiClimb_側で済ませてから呼ばれる。
   function beginFujiClimbSession_() {
+    // 8合目以降(到達済みで続きから登る場合を含む)は、ボス戦と同じ単元条件
+    // (自分の学年以上の単元10個以上・うち文章題5個以上)を満たしているか確認する。
+    // 満たしていなければ開始せず、単元設定を見直すよう案内する。
+    if (!ensureFujiHighAltitudeEligible_()) {
+      window.alert('8合目から先に挑戦するには、出題条件（自分の学年以上の単元を' + FUJI_MIN_ELIGIBLE_CATEGORIES_ + '個以上ON、うち文章題を' + FUJI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上含む）を満たす必要があります。単元の設定を確認してください。');
+      return;
+    }
     if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
     state.fujiActive = true;
     state.streak = 0;
@@ -23305,6 +23366,7 @@
     state.fujiLegStreak = 0;
     state.fujiTimeAttackStartedAt = null;
     state.fujiClimbStartedAt = null;
+    state.fujiEligibleIds_ = null;
     state.fujiSummitReached = true;
     state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) + 1;
     state.yushaSwordObtained = true;
@@ -23328,6 +23390,20 @@
     if (state.fujiStation >= FUJI_TOP_STATION_) {
       return finishFujiClimb_();
     }
+    // 1合目到達で+10HP、2合目到達で+20HP、…9合目到達で+90HPと、合目ごとに
+    // 段階的にHPがもらえる(10合目の山頂到達は別途finishFujiClimb_でFUJI_SUCCESS_HP_GAIN)。
+    var hpGain = state.fujiStation * 10;
+    state.hp = (Number(state.hp) || 0) + hpGain;
+    var hpGainHtml = '<div class="item-gain-banner">💪 HPが' + hpGain + '増えた！（現在HP: ' + state.hp + '）</div>';
+    // 8合目に到達した瞬間、ボス戦と同じ単元条件を満たしているか確認する。満たして
+    // いなければここで登山を中断し、単元設定の見直しを促す(到達した合目自体は
+    // 失われない。設定を直せば続きから再開できる)。
+    if (state.fujiStation === FUJI_HIGH_ALTITUDE_STATION_ && !ensureFujiHighAltitudeEligible_()) {
+      state.fujiActive = false;
+      saveGameState(state);
+      return '<div class="win-banner">🎉 ' + state.fujiStation + '合目に到達！🎉</div>' + hpGainHtml
+        + '<div class="enemy-quote-banner">⚠️ ここから先(8合目以降)に挑戦するには、出題条件（自分の学年以上の単元を' + FUJI_MIN_ELIGIBLE_CATEGORIES_ + '個以上ON、うち文章題を' + FUJI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上含む）を満たす必要があります。単元の設定を見直してから、続きから登ってください。</div>';
+    }
     var timeAttackHtml = '';
     if (state.fujiStation === 9) {
       state.fujiTimeAttackStartedAt = Date.now();
@@ -23335,7 +23411,7 @@
       timeAttackHtml = '<div class="enemy-quote-banner">⏱️ここからはタイムアタック！' + fujiTimeAttackLabel_(fujiTimeAttackLimitMs_(session && session.grade)) + '以内に50問正解しよう！</div>';
     }
     saveGameState(state);
-    return '<div class="win-banner">🎉 ' + state.fujiStation + '合目に到達！🎉</div>' + timeAttackHtml;
+    return '<div class="win-banner">🎉 ' + state.fujiStation + '合目に到達！🎉</div>' + hpGainHtml + timeAttackHtml;
   }
   // 勇者の剣：世界一周のボス戦中に1回だけ使える特別攻撃。魔法の書と同じく、
   // 抜いた直後の問題に正解して初めて1000ダメージが入る(不正解だとかわされて
@@ -23922,7 +23998,7 @@
     var rescueHtml = checkFujiRescueConditions_();
     if (rescueHtml) {
       updateGameHud();
-      window.alert('🚁 入山から3日以内に登り切れず、救助されて下山しました…！HPが' + FUJI_RESCUE_HP_SET + 'まで下がり、MPが' + FUJI_RESCUE_MP_LOSS + '減りました。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
+      window.alert('🚁 入山から3日以内に登り切れず、救助されて下山しました…！HPが半分になり、MPが' + FUJI_RESCUE_MP_LOSS + '減りました。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
     }
     els.fujiCard.hidden = false;
     if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = false;
