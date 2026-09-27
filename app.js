@@ -320,7 +320,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt,
       }));
@@ -340,7 +340,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt,
       });
@@ -18377,6 +18377,10 @@
     // なんでも屋で買える消費アイテム「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)。
     // ボス戦以外の不正解のたびに1消費してHP減少を防ぎ、10回使い切ると壊れてなくなる。
     steelArmorCharges: (savedProgress && Number(savedProgress.steelArmorCharges)) || (savedGame && Number(savedGame.steelArmorCharges)) || 0,
+    // なんでも屋で買える消費アイテム「氷の剣」の残りチャージ数(0〜3、複数保有不可)。
+    // 勇者の剣と同じくボス戦で使う攻撃アイテムだが、壊れて消えるのではなく
+    // チャージ制で3回まで使える。
+    iceSwordCharges: (savedProgress && Number(savedProgress.iceSwordCharges)) || (savedGame && Number(savedGame.iceSwordCharges)) || 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -18461,6 +18465,8 @@
     worldPendingSpell: null,
     // 抜いた勇者の剣が結果待ちかどうか(worldPendingSpellと同じ、端末セッション限定)。
     worldPendingSword: false,
+    // 振るった氷の剣が結果待ちかどうか(worldPendingSwordと同じ、端末セッション限定)。
+    worldPendingIceSword: false,
     // 今のボスに与えた累計ダメージ(正解1問ごとの通常ダメージ＋魔法のダメージ)。
     // 連続正解数(streak)とは切り離して数えるので、不正解でもボスのHPは戻らない。
     // worldBossActiveStageと同様に端末セッション限定。
@@ -18500,6 +18506,7 @@
     memoToggle: document.getElementById('memoToggle'),
     worldSpellRow: document.getElementById('worldSpellRow'),
     fujiSwordBtn: document.getElementById('fujiSwordBtn'),
+    iceSwordBtn: document.getElementById('iceSwordBtn'),
     fujiCard: document.getElementById('fujiCard'),
     fujiHint: document.getElementById('fujiHint'),
     fujiStatusText: document.getElementById('fujiStatusText'),
@@ -19393,6 +19400,15 @@
     if (els.fujiSwordBtn) {
       els.fujiSwordBtn.hidden = !(isBossFight && !state.worldPendingSword && (Number(state.yushaSwordCount) || 0) > 0);
     }
+    // 氷の剣：勇者の剣と同じくボス戦専用だが、なんでも屋で買えるチャージ制の
+    // 攻撃アイテム(最大3回分)。残り回数をボタンの表示に反映する。
+    if (els.iceSwordBtn) {
+      var iceSwordChargesForBtn_ = Number(state.iceSwordCharges) || 0;
+      els.iceSwordBtn.hidden = !(isBossFight && !state.worldPendingIceSword && iceSwordChargesForBtn_ > 0);
+      if (!els.iceSwordBtn.hidden) {
+        els.iceSwordBtn.textContent = '🧊 氷の剣を使う（1回で' + ICE_SWORD_DAMAGE_ + 'ダメージ・残り' + iceSwordChargesForBtn_ + '回分）';
+      }
+    }
     // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
     // 00001限定プレビュー中(本番許可が出るまでlap1のボス戦にも出さない)。
     if (els.battleVsRow) {
@@ -19604,6 +19620,12 @@
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + YUSHA_SWORD_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">⚔️ 勇者の剣が命中！ボスに${YUSHA_SWORD_DAMAGE_}ダメージ！⚔️</div>`;
       }
+      // 氷の剣を振るった直後の問題に正解した場合、ここで初めてボスに500ダメージが入る。
+      if (state.worldBossActiveStage && state.worldPendingIceSword) {
+        state.worldPendingIceSword = false;
+        state.worldBossDamage = (Number(state.worldBossDamage) || 0) + ICE_SWORD_DAMAGE_;
+        missLineHtml += `<div class="item-gain-banner">🧊 氷の剣が命中！ボスに${ICE_SWORD_DAMAGE_}ダメージ！🧊</div>`;
+      }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
@@ -19736,6 +19758,12 @@
         if (state.worldPendingSword) {
           state.worldPendingSword = false;
           missLineHtml += `<div class="enemy-quote-banner">💨 勇者の剣はボスにかわされた…！攻撃は当たらなかった。</div>`;
+        }
+        // 氷の剣も同様に、振るった直後の問題を間違えるとかわされて不発になる
+        // (この時点で既にチャージは消費済みなので、消費が戻ることはない)。
+        if (state.worldPendingIceSword) {
+          state.worldPendingIceSword = false;
+          missLineHtml += `<div class="enemy-quote-banner">💨 氷の剣はボスにかわされた…！攻撃は当たらなかった。</div>`;
         }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
@@ -20279,6 +20307,10 @@
   function hasSteelArmorCharge_() {
     return (Number(state.steelArmorCharges) || 0) > 0;
   }
+  // なんでも屋の消費アイテム「氷の剣」：ボス戦で使える攻撃アイテム(1回で
+  // ICE_SWORD_DAMAGE_ダメージ)。最大3回分まで保有でき、使い切ったら再購入できる。
+  const ICE_SWORD_COST_MP = 500;
+  const ICE_SWORD_MAX_CHARGES = 3;
 
   // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
   // 戻り値trueのとき、呼び出し元(nextQuestion)は出題処理を中断する。
@@ -20693,6 +20725,7 @@
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
+        state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
@@ -20750,6 +20783,7 @@
       speedSeedCount: state.speedSeedCount,
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
+      iceSwordCharges: state.iceSwordCharges,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -21285,6 +21319,11 @@
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     if (steelArmorCharges > 0) {
       html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.jpg" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span></div>`;
+    }
+    // 氷の剣も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
+    var iceSwordCharges = Number(state.iceSwordCharges) || 0;
+    if (iceSwordCharges > 0) {
+      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、振るった直後の問題に正解すればボスに500ダメージを与えられる"><span class="badge-icon"><img src="images/ice_sword.jpg" alt=""></span><span class="badge-name">氷の剣（残り${iceSwordCharges}回）</span></div>`;
     }
     // 勇者の剣(富士登山の山頂到達報酬)は、他の消費アイテムと違い使い切って
     // 壊れた後も記念として図鑑に残り続ける(手に入れたこと自体がyushaSwordObtained
@@ -21929,10 +21968,22 @@
     }
     var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.jpg" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
 
+    var iceSwordCharges = Number(state.iceSwordCharges) || 0;
+    var iceSwordCanAfford = state.points >= ICE_SWORD_COST_MP;
+    var iceSwordActionHtml;
+    if (iceSwordCharges > 0) {
+      iceSwordActionHtml = `<span class="gift-insufficient">使用中（残り${iceSwordCharges}回）</span>`;
+    } else if (iceSwordCanAfford) {
+      iceSwordActionHtml = `<button type="button" class="gift-redeem-btn" id="buyIceSwordBtn">購入する</button>`;
+    } else {
+      iceSwordActionHtml = `<span class="gift-insufficient">MP不足</span>`;
+    }
+    var iceSwordRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ice_sword.jpg" alt="氷の剣"><div class="gift-info"><span class="gift-label">🧊 氷の剣（1個だけ保有可・最大${ICE_SWORD_MAX_CHARGES}回分）</span><span class="gift-cost">${ICE_SWORD_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${ICE_SWORD_DAMAGE_}ダメージ。${ICE_SWORD_MAX_CHARGES}回使うと壊れてなくなる</span></div>${iceSwordActionHtml}</div>`;
+
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -21965,6 +22016,8 @@
     if (ironWallBtn) ironWallBtn.addEventListener('click', function () { handleBuyIronWallClick(ironWallBtn); });
     var steelArmorBtn = document.getElementById('buySteelArmorBtn');
     if (steelArmorBtn) steelArmorBtn.addEventListener('click', function () { handleBuySteelArmorClick(steelArmorBtn); });
+    var iceSwordBuyBtn = document.getElementById('buyIceSwordBtn');
+    if (iceSwordBuyBtn) iceSwordBuyBtn.addEventListener('click', function () { handleBuyIceSwordClick(iceSwordBuyBtn); });
   }
 
   // 宝箱・鍵・指輪のなんでも屋UI。ティアごとに「鍵を買う」
@@ -22406,6 +22459,34 @@
       renderShopList();
       renderItems();
       window.alert(`🛡️ 鋼の鎧を手に入れた！（残り${state.steelArmorCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyIceSwordClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`氷の剣を購入します（${ICE_SWORD_COST_MP}MP）。世界一周のボス戦で使える攻撃アイテムです（振るった直後の問題に正解すると${ICE_SWORD_DAMAGE_}ダメージ、最大${ICE_SWORD_MAX_CHARGES}回、使い切ると壊れてなくなります）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyIceSword', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'already_owned') msg = 'すでに氷の剣を持っています。使い切ってから購入してください。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.iceSwordCharges = res.iceSwordCharges;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`🧊 氷の剣を手に入れた！（残り${state.iceSwordCharges}回分）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -23013,7 +23094,7 @@
   // (yushaSwordObtained)は残り続ける。
   const YUSHA_SWORD_DAMAGE_ = 1000;
   function castYushaSword_() {
-    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell) return;
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword) return;
     if ((Number(state.yushaSwordCount) || 0) <= 0) return;
     if (!window.confirm('勇者の剣を使いますか？次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。剣はこれで壊れてなくなります。')) return;
     state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) - 1;
@@ -23027,11 +23108,30 @@
     els.feedback.classList.add('correct');
   }
 
+  // 氷の剣：なんでも屋で買える消費アイテム(500MP・最大3回分)。勇者の剣と同じ
+  // 「振るった直後の問題に正解すれば命中」方式だが、壊れて消えるのではなく
+  // チャージ制で、1回使うごとにチャージが1減り、0になるまで繰り返し使える。
+  const ICE_SWORD_DAMAGE_ = 500;
+  function castIceSword_() {
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword) return;
+    if ((Number(state.iceSwordCharges) || 0) <= 0) return;
+    if (!window.confirm('氷の剣を使いますか？次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。（残り' + state.iceSwordCharges + '回分）')) return;
+    state.iceSwordCharges = (Number(state.iceSwordCharges) || 0) - 1;
+    state.worldPendingIceSword = true;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    els.feedback.innerHTML = '<span class="fb-result">🧊 氷の剣を振るった！次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.iceSwordCharges + '回分）</span>';
+    els.feedback.classList.remove('incorrect');
+    els.feedback.classList.add('correct');
+  }
+
   // 今のボスに使える魔法の書を、1冊ごとにボタンとして並べる(1体のボスに複数の
   // 書があるため)。詠唱済みで結果待ちの間は、二重詠唱を防ぐため全部隠す。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellRow) return;
-    if (state.worldPendingSpell || state.worldPendingSword) {
+    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword) {
       els.worldSpellRow.hidden = true;
       els.worldSpellRow.innerHTML = '';
       return;
@@ -23170,7 +23270,7 @@
   // (handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて不発になる
   // (handleAnswerの不正解側で解決)。
   function castWorldSpell_(bookId) {
-    if (state.worldPendingSpell || state.worldPendingSword) return;
+    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword) return;
     const book = spellbookById_(bookId);
     if (!book) return;
     // 今のボスに有効な書かどうかを、ここでも必ず確認する。
@@ -24965,6 +25065,7 @@
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
+  if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.worldDiceCloseBtn) {
     els.worldDiceCloseBtn.addEventListener('click', function () {
       if (worldDiceRollQueue_.length > 0) {
