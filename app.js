@@ -19434,6 +19434,7 @@
     // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
     // 00001限定プレビュー中(本番許可が出るまでlap1のボス戦にも出さない)。
     if (els.battleVsRow) {
+      updateFujiVsPhotoBg_(isFuji, state.fujiStation);
       if ((isBossFight || isFuji) && isAdminSession_()) {
         els.battleVsRow.hidden = false;
         // 1箇所で例外が出てもHUD全体(この後のMP/HP/レベル表示)が巻き添えで
@@ -23170,6 +23171,23 @@
     var wanted = fujiSceneClassForStation_(station);
     FUJI_SCENE_CLASSES_.forEach(function (c) {
       els.mathArea.classList.toggle(c, c === wanted);
+    });
+  }
+  // VS表示(#battleVsRow)の背景は、実際の富士山の写真(0〜10合目・山頂)を合目ごとに
+  // 1枚ずつ切り替える(こちらはmathAreaのCSSグラデーションとは別の演出)。
+  const FUJI_PHOTO_CLASSES_ = Array.from({ length: 11 }, function (_, i) { return 'fuji-photo-' + i; });
+  function updateFujiVsPhotoBg_(isFuji, station) {
+    if (!els.battleVsRow) return;
+    if (!isFuji) {
+      els.battleVsRow.classList.remove('fuji-photo-scene');
+      els.battleVsRow.classList.remove.apply(els.battleVsRow.classList, FUJI_PHOTO_CLASSES_);
+      return;
+    }
+    var s = Math.max(0, Math.min(10, Number(station) || 0));
+    var wanted = 'fuji-photo-' + s;
+    els.battleVsRow.classList.add('fuji-photo-scene');
+    FUJI_PHOTO_CLASSES_.forEach(function (c) {
+      els.battleVsRow.classList.toggle(c, c === wanted);
     });
   }
   function fujiEventActive_() {

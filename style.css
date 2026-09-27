@@ -139,6 +139,29 @@ h1 {
 .battle-hp-bar-outer { flex: 1; height: 10px; background: var(--c-bg); border: 1px solid var(--c-line); border-radius: 999px; overflow: hidden; min-width: 60px; }
 .battle-hp-bar-inner { height: 100%; width: 100%; background: #22c55e; border-radius: 999px; transition: width 0.4s ease, background 0.4s ease; }
 .battle-hp-text { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--c-ink-soft); white-space: nowrap; }
+/* 富士登山中のVS表示：実際の富士山の写真を合目ごとに背景として切り替える。
+   8合目以降は「極寒」を強調するため、白〜氷色のオーバーレイを少しずつ濃くする。 */
+.battle-vs-row.fuji-photo-scene {
+  background-size: cover;
+  background-position: center;
+  transition: background-image 0.6s ease;
+}
+.battle-vs-row.fuji-photo-scene .battle-avatar-caption,
+.battle-vs-row.fuji-photo-scene .battle-hp-text,
+.battle-vs-row.fuji-photo-scene .battle-vs-label {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.95), 0 0 4px rgba(255, 255, 255, 0.95);
+}
+.battle-vs-row.fuji-photo-0 { background-image: linear-gradient(rgba(255,255,255,.35), rgba(255,255,255,.35)), url('images/fuji_scene_0.jpg'); }
+.battle-vs-row.fuji-photo-1 { background-image: linear-gradient(rgba(255,255,255,.35), rgba(255,255,255,.35)), url('images/fuji_scene_1.jpg'); }
+.battle-vs-row.fuji-photo-2 { background-image: linear-gradient(rgba(255,255,255,.35), rgba(255,255,255,.35)), url('images/fuji_scene_2.jpg'); }
+.battle-vs-row.fuji-photo-3 { background-image: linear-gradient(rgba(255,255,255,.35), rgba(255,255,255,.35)), url('images/fuji_scene_3.jpg'); }
+.battle-vs-row.fuji-photo-4 { background-image: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,.4)), url('images/fuji_scene_4.jpg'); }
+.battle-vs-row.fuji-photo-5 { background-image: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,.4)), url('images/fuji_scene_5.jpg'); }
+.battle-vs-row.fuji-photo-6 { background-image: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,.4)), url('images/fuji_scene_6.jpg'); }
+.battle-vs-row.fuji-photo-7 { background-image: linear-gradient(rgba(255,255,255,.42), rgba(255,255,255,.42)), url('images/fuji_scene_7.jpg'); }
+.battle-vs-row.fuji-photo-8 { background-image: linear-gradient(rgba(214,232,255,.55), rgba(214,232,255,.55)), url('images/fuji_scene_8.jpg'); }
+.battle-vs-row.fuji-photo-9 { background-image: linear-gradient(rgba(214,232,255,.65), rgba(214,232,255,.65)), url('images/fuji_scene_9.jpg'); }
+.battle-vs-row.fuji-photo-10 { background-image: linear-gradient(rgba(224,238,255,.7), rgba(224,238,255,.7)), url('images/fuji_scene_10.jpg'); }
 
 /* Enemy area */
 .enemy-area {
