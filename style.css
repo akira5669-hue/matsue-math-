@@ -152,6 +152,23 @@ h1 {
   margin-bottom: 16px;
   gap: 12px;
 }
+/* 富士登山中、到達合目に応じて背景の景色を変える(麓の緑→樹林帯→岩場→雲海の上→
+   極寒の山頂→ご来光)。 */
+.enemy-area[class*="fuji-scene-"] {
+  transition: background 0.8s ease;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.enemy-area.fuji-scene-0 { background: linear-gradient(180deg, #9fd6ff 0%, #cdeab0 55%, #7ec850 100%); }
+.enemy-area.fuji-scene-1 { background: linear-gradient(180deg, #8ecbef 0%, #a9cf8a 45%, #5f8f4e 100%); }
+.enemy-area.fuji-scene-2 { background: linear-gradient(180deg, #a9c8dd 0%, #b9ab8e 50%, #7d6a52 100%); }
+.enemy-area.fuji-scene-3 { background: linear-gradient(180deg, #2f6fb3 0%, #7ea9d6 45%, #eef3f8 100%); }
+.enemy-area.fuji-scene-4 { background: linear-gradient(180deg, #0d2a4a 0%, #4d7ea8 45%, #eaf6ff 100%); }
+.enemy-area.fuji-scene-5 { background: linear-gradient(180deg, #ff9a56 0%, #ffd27a 40%, #fff3d6 100%); }
+.enemy-area.fuji-scene-3 .enemy-name,
+.enemy-area.fuji-scene-4 .enemy-name {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
 .enemy-left {
   display: flex;
   align-items: center;

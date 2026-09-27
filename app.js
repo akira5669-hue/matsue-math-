@@ -19401,6 +19401,7 @@
       : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
       : Math.max(0, requiredStreak - state.streak);
     const enemy = isFuji ? fujiEnemyDisplayForStation_() : isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
+    updateFujiSceneBg_(isFuji, state.fujiStation);
     const isRare = !isBossFight && !isFuji && !!state.rareType;
     if (enemy.img) {
       els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
@@ -23145,6 +23146,31 @@
       emoji: '🗻',
       lines: { appear: timeAttackNote ? '⏱️ここからはタイムアタック！制限時間内に登り切れ！' : '⛄ここから先は極寒の道のり…最後まで登り切れるか！？' },
     };
+  }
+  // 到達合目に応じて、麓の緑→樹林帯→岩場→雲海の上→極寒の山頂→ご来光、と
+  // 景色が変わっていくように6段階のCSSクラス名を返す(fuji-scene-0〜5)。
+  const FUJI_SCENE_CLASSES_ = ['fuji-scene-0', 'fuji-scene-1', 'fuji-scene-2', 'fuji-scene-3', 'fuji-scene-4', 'fuji-scene-5'];
+  function fujiSceneClassForStation_(station) {
+    var s = Number(station) || 0;
+    if (s >= 10) return 'fuji-scene-5';
+    if (s >= 8) return 'fuji-scene-4';
+    if (s >= 6) return 'fuji-scene-3';
+    if (s >= 4) return 'fuji-scene-2';
+    if (s >= 2) return 'fuji-scene-1';
+    return 'fuji-scene-0';
+  }
+  // 富士登山中だけ、対戦エリア(#mathArea)の背景を到達合目に応じた景色に切り替える。
+  // それ以外(通常の敵・ボス戦)では景色クラスを全て外し、元の背景に戻す。
+  function updateFujiSceneBg_(isFuji, station) {
+    if (!els.mathArea) return;
+    if (!isFuji) {
+      els.mathArea.classList.remove.apply(els.mathArea.classList, FUJI_SCENE_CLASSES_);
+      return;
+    }
+    var wanted = fujiSceneClassForStation_(station);
+    FUJI_SCENE_CLASSES_.forEach(function (c) {
+      els.mathArea.classList.toggle(c, c === wanted);
+    });
   }
   function fujiEventActive_() {
     // 00001はプレビュー用に、期間開始(10/1)前でもいつでも挑戦・確認できるように
