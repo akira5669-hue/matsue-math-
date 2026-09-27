@@ -18530,6 +18530,7 @@
     fujiAdminPoolCard: document.getElementById('fujiAdminPoolCard'),
     fujiDistributePoolBtn: document.getElementById('fujiDistributePoolBtn'),
     battleVsRow: document.getElementById('battleVsRow'),
+    battleFujiTimer: document.getElementById('battleFujiTimer'),
     battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
     battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
     battleEnemyCaption: document.getElementById('battleEnemyCaption'),
@@ -19443,6 +19444,7 @@
       : Math.max(0, requiredStreak - state.streak);
     const enemy = isFuji ? fujiEnemyDisplayForStation_() : isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
     updateFujiSceneBg_(isFuji, state.fujiStation);
+    updateFujiBattleTimer_(isFuji, isFuji ? fujiCurrentLeg_() : null);
     const isRare = !isBossFight && !isFuji && !!state.rareType;
     if (enemy.img) {
       els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
@@ -23132,6 +23134,32 @@
     var m = Math.floor(totalSec / 60);
     var s = totalSec % 60;
     return m + '分' + (s < 10 ? '0' : '') + s + '秒';
+  }
+  // 9合目のタイムアタック中、対戦画面(VS表示)の中にも残り時間をリアルタイムで
+  // 表示する。updateGameHud()は問題に答えたときしか呼ばれないため、答えずに
+  // 考えている間も表示が止まって見えないよう、1秒ごとに更新するタイマーを
+  // 別途回す(タイムアタック区間を離れたら止めて隠す)。
+  var fujiBattleTimerInterval_ = null;
+  function updateFujiBattleTimer_(isFuji, leg) {
+    if (!els.battleFujiTimer) return;
+    var active = isFuji && state.fujiActive && leg && leg.timeAttack;
+    if (!active) {
+      els.battleFujiTimer.hidden = true;
+      if (fujiBattleTimerInterval_) {
+        window.clearInterval(fujiBattleTimerInterval_);
+        fujiBattleTimerInterval_ = null;
+      }
+      return;
+    }
+    els.battleFujiTimer.hidden = false;
+    function tick() {
+      var remaining = Math.max(0, fujiTimeAttackRemainingMs_() || 0);
+      els.battleFujiTimer.textContent = '⏱️ タイムアタック残り ' + fujiTimeAttackLabel_(remaining);
+    }
+    tick();
+    if (!fujiBattleTimerInterval_) {
+      fujiBattleTimerInterval_ = window.setInterval(tick, 1000);
+    }
   }
   // 入山から3日以内に山頂へ到達したかどうか。
   function fujiClimbDeadlineExpired_() {

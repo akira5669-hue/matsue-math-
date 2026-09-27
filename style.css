@@ -134,6 +134,18 @@ h1 {
 .battle-avatar-box-enemy { border-color: #ef4444; }
 .battle-avatar-caption { font-size: 13px; font-weight: 700; color: var(--c-ink-soft); }
 .battle-vs-label { font-size: 26px; flex-shrink: 0; }
+.battle-fuji-timer {
+  flex-basis: 100%;
+  order: -1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: #b91c1c;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
 .battle-hp-line { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--c-ink); }
 .battle-hp-row { display: flex; align-items: center; gap: 6px; width: 100%; }
 .battle-hp-bar-outer { flex: 1; height: 10px; background: var(--c-bg); border: 1px solid var(--c-line); border-radius: 999px; overflow: hidden; min-width: 60px; }
