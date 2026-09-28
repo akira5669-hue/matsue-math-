@@ -20505,7 +20505,7 @@
   }
 
   // 新キャラ「スーパーアキラメタル」の告知(2026-09-18〜2026-09-30、全生徒に表示)。
-  var SUPERAKIRAMETAL_BANNER_END_ = '2026-09-30';
+  var SUPERAKIRAMETAL_BANNER_END_ = '2026-09-27';
   function renderSuperAkirametalBanner_() {
     if (!els.superAkirametalBanner) return;
     if (todayKey() > SUPERAKIRAMETAL_BANNER_END_) {
@@ -20547,9 +20547,12 @@
     }
     els.fujiBanner.hidden = false;
     if (els.fujiBannerText) {
-      els.fujiBannerText.textContent = fujiEventActive_()
-        ? '📢【極寒の富士登山、開催中！】47都道府県制覇していれば、世界一周の途中でも挑戦可能！山頂(10合目)に到達すれば、伝説の「勇者の剣」（ボスに1回1000ダメージ）がもらえるよ！10月末まで。'
-        : '📢【予告：極寒の富士登山、10月限定で登場！】47都道府県制覇していれば挑戦できるようになるよ。山頂に到達すれば、伝説の「勇者の剣」がもらえる！今のうちに都道府県制覇を目指そう。';
+      // isAdminSession_()はfujiEventActive_()の開始日ゲートを常にバイパスしてしまう
+      // ため、文言の出し分けは実際の暦日(today)とFUJI_START_で判定する(admin確認中も
+      // 10/1前は「予告」、10/1以降は「開催中」の文言が正しく出るように)。
+      els.fujiBannerText.textContent = today >= FUJI_START_
+        ? '📢【極寒の富士登山、開催中！】47都道府県制覇していれば挑戦可能（入山料300MP）。山頂(10合目)に到達すれば、伝説の「勇者の剣」とHP+2000がもらえるよ！10月末まで。'
+        : '📢【予告：極寒の富士登山、10月1日スタート！】47都道府県制覇していれば挑戦できるようになるよ。入山料300MPを払って挑戦し、山頂に到達すれば伝説の「勇者の剣」とHP+2000がもらえる！今のうちに都道府県制覇を目指そう。';
     }
   }
 
