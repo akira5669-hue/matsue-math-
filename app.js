@@ -19010,7 +19010,7 @@
   // 10個以上ON」に加え、より厳しく「そのうち文章題を5個以上含む」ことを要求する。
   const FUJI_HIGH_ALTITUDE_STATION_ = 8;
   const FUJI_MIN_ELIGIBLE_CATEGORIES_ = 10;
-  const FUJI_MIN_WORD_PROBLEM_CATEGORIES_ = 5;
+  const FUJI_MIN_WORD_PROBLEM_CATEGORIES_ = 1;
   function fujiHighAltitudeEligibility_() {
     const session = loadSession();
     const ownGrade = session && session.grade;
