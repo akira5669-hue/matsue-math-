@@ -20827,6 +20827,13 @@
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.shurikenCount = Number(progress.shurikenCount) || state.shurikenCount;
+        // cursed/zombified/fujiAltitudeSickも、fujiStation等と同じくここで復元されて
+        // おらず、アプリを開き直す(ログイン処理が走る)たびに状態が消えて見える不具合が
+        // あったため、明示的に復元する(いずれも一度trueになったら治すまで持続する
+        // 状態異常のため、OR方式ではなくprogress側の値をそのまま採用する)。
+        state.cursed = progress.cursed !== undefined ? !!progress.cursed : state.cursed;
+        state.zombified = progress.zombified !== undefined ? !!progress.zombified : state.zombified;
+        state.fujiAltitudeSick = progress.fujiAltitudeSick !== undefined ? !!progress.fujiAltitudeSick : state.fujiAltitudeSick;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
         state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
