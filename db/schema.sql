@@ -226,6 +226,21 @@ CREATE TABLE fuji_pool_distributions (
   per_person INTEGER NOT NULL DEFAULT 0
 );
 
+-- なんでも屋の購入履歴(2026-09-30〜)。00001が確認できるよう、購入のたびに
+-- 記録する。直近2ヶ月分のみ表示し(handleShopPurchaseHistory側でWHERE句により
+-- 絞り込む)、それより古い行は自動削除の仕組みは無いが表示上は出てこない。
+CREATE TABLE shop_purchase_log (
+  id BIGSERIAL PRIMARY KEY,
+  ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+  student_id TEXT NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+  name TEXT,
+  grade TEXT,
+  item_label TEXT NOT NULL,
+  cost_mp INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_shop_purchase_log_ts ON shop_purchase_log (ts);
+CREATE INDEX idx_shop_purchase_log_student ON shop_purchase_log (student_id);
+
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,
   ts TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -18729,6 +18729,9 @@
     shopPanel: document.getElementById('shopPanel'),
     shopSummary: document.getElementById('shopSummary'),
     shopList: document.getElementById('shopList'),
+    shopPurchaseHistoryCard: document.getElementById('shopPurchaseHistoryCard'),
+    shopPurchaseHistoryBtn: document.getElementById('shopPurchaseHistoryBtn'),
+    shopPurchaseHistoryBox: document.getElementById('shopPurchaseHistoryBox'),
     prefectureToggle: document.getElementById('prefectureToggle'),
     prefecturePanel: document.getElementById('prefecturePanel'),
     prefectureProgress: document.getElementById('prefectureProgress'),
@@ -22007,6 +22010,7 @@
 
   function renderShopList() {
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
+    if (els.shopPurchaseHistoryCard) els.shopPurchaseHistoryCard.hidden = !isAdminSession_();
 
     var prayerCanAfford = state.points >= AKR_PRAYER_COST_MP;
     var prayerActionHtml;
@@ -22356,6 +22360,37 @@
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
+    });
+  }
+
+  // なんでも屋の購入履歴(直近2ヶ月・00001限定)を取得して表示する。開くたびに
+  // 最新の状態を取り直す(トグル式：開いていれば閉じるだけ)。
+  function handleShopPurchaseHistoryClick_() {
+    var session = loadSession();
+    if (!session || !session.id || session.id !== '00001') return;
+    if (!els.shopPurchaseHistoryBox) return;
+    if (!els.shopPurchaseHistoryBox.hidden) {
+      els.shopPurchaseHistoryBox.hidden = true;
+      return;
+    }
+    els.shopPurchaseHistoryBox.hidden = false;
+    els.shopPurchaseHistoryBox.innerHTML = '<p class="test-photo-hint">読み込み中…</p>';
+    apiPost('shopPurchaseHistory', { id: session.id }).then(function (res) {
+      if (!res.ok || !Array.isArray(res.rows)) {
+        els.shopPurchaseHistoryBox.innerHTML = '<p class="test-photo-hint">読み込みに失敗しました。</p>';
+        return;
+      }
+      if (res.rows.length === 0) {
+        els.shopPurchaseHistoryBox.innerHTML = '<p class="test-photo-hint">直近2ヶ月の購入履歴はありません。</p>';
+        return;
+      }
+      els.shopPurchaseHistoryBox.innerHTML = '<div class="gift-list">' + res.rows.map(function (r) {
+        var d = new Date(r.ts);
+        var dateLabel = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return '<div class="gift-row"><div class="gift-info"><span class="gift-label">' + dateLabel + '　' + (r.grade || '') + ' ' + (r.name || '') + '（' + r.student_id + '）</span><span class="gift-cost">' + r.item_label + '　' + r.cost_mp + 'MP</span></div></div>';
+      }).join('') + '</div>';
+    }).catch(function () {
+      els.shopPurchaseHistoryBox.innerHTML = '<p class="test-photo-hint">通信に失敗しました。</p>';
     });
   }
 
@@ -25545,6 +25580,7 @@
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
+  if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.shurikenBtn) els.shurikenBtn.addEventListener('click', castShuriken_);
