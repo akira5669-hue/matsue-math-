@@ -19499,11 +19499,10 @@
         els.shurikenBtn.textContent = '✴️ 手裏剣を投げる（50%で' + SHURIKEN_DAMAGE_ + 'ダメージ・残り' + shurikenCountForBtn_ + '本）';
       }
     }
-    // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
-    // 00001限定プレビュー中(本番許可が出るまでlap1のボス戦にも出さない)。
+    // ボス戦・富士登山のときだけ、自分と相手のアバターを対戦画面のように並べて表示する。
     if (els.battleVsRow) {
       updateFujiVsPhotoBg_(isFuji, state.fujiStation);
-      if ((isBossFight || isFuji) && isAdminSession_()) {
+      if (isBossFight || isFuji) {
         els.battleVsRow.hidden = false;
         // 1箇所で例外が出てもHUD全体(この後のMP/HP/レベル表示)が巻き添えで
         // 止まらないよう、この区画だけは個別にガードする。
@@ -19572,7 +19571,7 @@
   // 富士登山：プレビュー中は00001限定でボタン自体を表示する。
   function updateFujiToggleVisibility() {
     if (!els.fujiToggle) return;
-    els.fujiToggle.hidden = !isAdminSession_();
+    els.fujiToggle.hidden = !fujiEventActive_();
   }
 
   function updateUserAvatarBadge() {
@@ -23422,10 +23421,9 @@
     });
   }
   function fujiCanEnter_() {
-    // 00001限定プレビュー中(本番許可が出るまで一般生徒には解放しない)。fujiActiveが
-    // 既にtrueでも、登山画面に戻るために再度呼べるようにする(進行中の状態は
-    // 触らない)。
-    return isAdminSession_() && fujiEventActive_() && fujiUnlocked_() && !state.fujiSummitReached && !state.worldBossActiveStage;
+    // fujiActiveが既にtrueでも、登山画面に戻るために再度呼べるようにする
+    // (進行中の状態は触らない)。
+    return fujiEventActive_() && fujiUnlocked_() && !state.fujiSummitReached && !state.worldBossActiveStage;
   }
   // 実際に登山画面(問題出題)を開始する共通処理。入山料の支払い・期限切れ確認は
   // startFujiClimb_側で済ませてから呼ばれる。
@@ -24157,8 +24155,7 @@
 
   function renderFujiCard_() {
     if (!els.fujiCard) return;
-    // 00001限定プレビュー中(本番許可が出るまで一般生徒には表示しない)。
-    if (!isAdminSession_() || !fujiEventActive_()) {
+    if (!fujiEventActive_()) {
       els.fujiCard.hidden = true;
       if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = true;
       return;
@@ -24171,7 +24168,8 @@
       window.alert('🚁 入山から3日以内に登り切れず、救助されて下山しました…！HPが' + FUJI_RESCUE_HP_LOSS + '減り、MPが' + FUJI_RESCUE_MP_LOSS + '減りました。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
     }
     els.fujiCard.hidden = false;
-    if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = false;
+    // 共済プールの精算ツールは引き続き00001限定(登山機能自体は全生徒に公開)。
+    if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = !isAdminSession_();
     if (state.fujiSummitReached) {
       els.fujiClimbBtn.hidden = true;
       if (els.fujiNoticeBox) els.fujiNoticeBox.hidden = true;
