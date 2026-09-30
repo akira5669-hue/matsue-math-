@@ -16456,7 +16456,10 @@
           a: '∠ABC=∠ACD（仮定）',
           w: ['∠ACB=∠ADC', '∠BAC=∠CAD', 'AB:AC=AC:AD'],
           s: ['①∠Aは共通', '②∠ABC=∠ACD（仮定）', '①②より2組の角がそれぞれ等しいから △ABC∽△ACD'],
-          svg: '<svg width="124" height="96" viewBox="0 0 124 96" style="display:block;margin:0 auto 8px"><path d="M46,12 L5,84 L82,84 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><path d="M46,12 L82,84 L108,44 Z" fill="none" stroke="#888" stroke-width="1.5"/><text x="39" y="10" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="0" y="93" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="78" y="93" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="110" y="47" font-size="11" font-weight="bold" fill="#1c2127">D</text></svg>',
+          // D は辺AB上の点(でないと「∠Aは共通」が成り立たない)。以前はDをC付近の
+          // 外側に離して描いていたため、図と証明の前提(∠BACと∠CADが同じ角)が
+          // 一致せず生徒が混乱していた(実際の指摘により修正)。
+          svg: '<svg width="124" height="96" viewBox="0 0 124 96" style="display:block;margin:0 auto 8px"><path d="M46,12 L5,84 L88,84 Z" fill="none" stroke="#1c2127" stroke-width="1.5"/><line x1="88" y1="84" x2="23" y2="52" stroke="#888" stroke-width="1.5"/><text x="39" y="10" font-size="11" font-weight="bold" fill="#1c2127">A</text><text x="0" y="93" font-size="11" font-weight="bold" fill="#1c2127">B</text><text x="90" y="93" font-size="11" font-weight="bold" fill="#1c2127">C</text><text x="1" y="49" font-size="11" font-weight="bold" fill="#1c2127">D</text></svg>',
         },
         {
           q: '△ABC ∽ △AED の証明。BC∥DEより∠ABC=∠AED①。②に入るものは？',
