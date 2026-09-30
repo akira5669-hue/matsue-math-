@@ -63,6 +63,7 @@ CREATE TABLE students (
   points_today_calc INTEGER NOT NULL DEFAULT 0,  -- 当日、計算問題で加算されたMP(上限50)
   points_today_word INTEGER NOT NULL DEFAULT 0,  -- 当日、文章題で加算されたMP(上限50)
   points_today_bonus INTEGER NOT NULL DEFAULT 0, -- 当日、ダブル成功・今日のミッションなど上限を経由しない加算の合計(上限なし、端末間はマージのみ)
+  curse_bonus_today INTEGER NOT NULL DEFAULT 0, -- 当日、ボン・ミスコの呪い中に稼いだMPの累計(points_today_bonusの内数、クライアント側でBONMISUKO_CURSE_DAILY_CAP_MP=100に制限)
   -- 今日のミッション(1日1回、10問正解で+20MP)も同様に端末ローカルでしか
   -- 「達成済みか」を管理しておらず、複数端末で2回達成扱いにできてしまったため、
   -- 「今日、既に達成したか」だけはサーバー側でも保持し、端末間でOR(一度でも

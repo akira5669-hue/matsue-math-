@@ -309,7 +309,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
-        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, enemyIdx: s.enemyIdx,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, curseBonusToday: s.curseBonusToday, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
@@ -329,7 +329,7 @@
     if (sess && sess.id) {
       saveAccountProgress_(sess.id, {
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
-        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, curseBonusToday: s.curseBonusToday,
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
@@ -18135,6 +18135,9 @@
   // 10問連続正解してもMP報酬が上限5に制限される。なんでも屋でAKRの祈り(100MP)を
   // 受けるまで解除されない。
   const BONMISUKO_CURSE_MP_CAP = 5;
+  // 呪い中に稼げるMPの1日の上限。AKRの祈り(100MP)を1回払えるだけの額に留め、
+  // 無制限にMPを稼げてしまわないようにする(生徒からのバグ報告により追加)。
+  const BONMISUKO_CURSE_DAILY_CAP_MP = 100;
   const AKR_PRAYER_COST_MP = 100;
   // ゾンビ化：レアキャラ「ゾンビAKR」との対決中に不正解になるとかかる。ゾンビ化して
   // いる間は、算数・数学の文章題(通常10問正解でHP獲得)や理科(5問正解)を含め、どんな
@@ -18403,6 +18406,10 @@
     // ダブル成功・今日のミッションなど、1日上限を経由しない加算の当日合計
     // (サーバー側でも保持し、複数端末で二重に加算されないようにする用)。
     pointsTodayBonus: (savedProgress && Number(savedProgress.pointsTodayBonus)) || (savedGame && Number(savedGame.pointsTodayBonus)) || 0,
+    // ボン・ミスコの呪い中に稼いだMPの当日累計(pointsDateが変わるとリセット)。
+    // 呪い解除に必要な100MPまでは稼げるが、それ以上は1日上限として頭打ちにする
+    // (無制限MP稼ぎ防止、生徒からのバグ報告により追加)。
+    curseBonusToday: (savedProgress && Number(savedProgress.curseBonusToday)) || (savedGame && Number(savedGame.curseBonusToday)) || 0,
     enemyIdx: (savedGame && savedGame.enemyIdx) || 0,
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedProgress && Array.isArray(savedProgress.items)) ? savedProgress.items.slice() : ((savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : []),
@@ -19293,7 +19300,7 @@
       state.scienceStreak = (state.scienceStreak || 0) + 1;
       if (state.scienceStreak >= SCIENCE_STREAK_REQUIRED) {
         const today = todayKey();
-        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
+        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
         // 理科は文章題ではないので「計算問題」側の1日上限(50MP)を共有する。
         const pointsToAdd = Math.max(0, Math.min(SCIENCE_STREAK_MP, POINTS_DAILY_CAP_CALC - state.pointsTodayCalc));
         state.points += pointsToAdd;
@@ -20015,7 +20022,7 @@
       winHtml = finishWorldBossWin_(state.worldBossActiveStage, bossSubIndexForWin);
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
-      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : 0;
@@ -20033,10 +20040,14 @@
       // 上限に達してしまい、その日はずっと呪いから抜け出せなくなる。そのため
       // 呪い中の報酬はミッション報酬などと同じ「1日上限を経由しないボーナス」
       // 扱いとする(pointsTodayBonusは元々端末間の二重加算防止のみが目的で、
-      // 固定上限を持たない)。
+      // 固定上限を持たない)。ただしこれだと10問正解を延々繰り返すだけでMPを
+      // 無制限に稼げてしまうため(生徒からのバグ報告で発覚)、呪い中に稼げる額
+      // 自体はcurseBonusTodayで別途1日BONMISUKO_CURSE_DAILY_CAP_MPまでに制限する。
       let pointsToAdd;
       if (state.cursed) {
-        pointsToAdd = Math.max(0, basePoints);
+        var curseBonusTodaySoFar = Number(state.curseBonusToday) || 0;
+        pointsToAdd = Math.max(0, Math.min(basePoints, BONMISUKO_CURSE_DAILY_CAP_MP - curseBonusTodaySoFar));
+        state.curseBonusToday = curseBonusTodaySoFar + pointsToAdd;
         state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + pointsToAdd;
       } else {
         const dailyCapForThis = isWordProblem ? POINTS_DAILY_CAP_WORD : POINTS_DAILY_CAP_CALC;
@@ -20691,7 +20702,7 @@
     // HPボーナスの1日1回判定用に既にあるhpLoginBonusDate(サーバー側で端末をまたいで
     // マージ済み)を、MPボーナスの判定にも流用する。
     var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     var alreadyClaimedLoginBonusToday = state.hpLoginBonusDate === today;
     var pointsToAdd = 0;
     var hpBonusAwarded = 0;
@@ -20791,6 +20802,7 @@
         state.pointsTodayCalc = Number(progress.pointsTodayCalc) || 0;
         state.pointsTodayWord = Number(progress.pointsTodayWord) || 0;
         state.pointsTodayBonus = Number(progress.pointsTodayBonus) || 0;
+        state.curseBonusToday = Number(progress.curseBonusToday) || 0;
         state.items = Array.isArray(progress.items) ? progress.items.slice() : state.items;
         state.rareDefeats = (progress.rareDefeats && typeof progress.rareDefeats === 'object') ? Object.assign({}, progress.rareDefeats) : state.rareDefeats;
         state.rareCollected = Array.isArray(progress.rareCollected) ? progress.rareCollected.slice() : state.rareCollected;
@@ -20894,6 +20906,7 @@
       // 超えないようになる(詳しくはlib/handlers/sync.js参照)。
       pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord,
       pointsTodayBonus: state.pointsTodayBonus,
+      curseBonusToday: state.curseBonusToday,
       missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
       hpLoginBonusDate: state.hpLoginBonusDate,
       categoryRanks: state.categoryRanks || {},
@@ -22263,7 +22276,7 @@
 
     btn.disabled = true;
     var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; }
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     var reward = TREASURE_CHEST_REWARD_[tier];
     // 宝箱のMP報酬は(指輪の売却と違って)1日の上限100MP(計算50+文章題50)に
     // 含める。今日まだ獲得できる分だけをmpGrantとしてサーバーに伝える。
@@ -23156,6 +23169,7 @@
   const FUJI_ENTRY_FEE_MP = 300;
   const FUJI_CLIMB_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000;
   const FUJI_RESCUE_MP_LOSS = 500;
+  const FUJI_RESCUE_HP_LOSS = 300;
   const FUJI_SUCCESS_HP_GAIN = 2000;
   // インデックスiは「i合目→(i+1)合目」の区間。streakがその区間に必要な連続正解数、
   // hpPenaltyは不正解のたびに減るHP(0=ペナルティなし)。7→8until10で徐々に厳しくなる。
@@ -23234,8 +23248,8 @@
     return days + '日' + hours + '時間';
   }
   // 救助されて下山になる処理。①入山から3日経過、②9合目のタイムアタック失敗、の
-  // どちらか早い方で発生する。到達済みの合目は失われ0合目に戻り、HPは半分になり、
-  // MPはサーバー確定処理でFUJI_RESCUE_MP_LOSS減る。再挑戦するには入山料を再度払う必要がある。
+  // どちらか早い方で発生する。到達済みの合目は失われ0合目に戻り、HPはFUJI_RESCUE_HP_LOSS
+  // 減り、MPはサーバー確定処理でFUJI_RESCUE_MP_LOSS減る。再挑戦するには入山料を再度払う必要がある。
   function applyFujiRescue_(reasonText) {
     state.fujiActive = false;
     state.fujiStation = 0;
@@ -23243,8 +23257,7 @@
     state.fujiTimeAttackStartedAt = null;
     state.fujiClimbStartedAt = null;
     state.fujiEligibleIds_ = null;
-    var hpBeforeRescue = Number(state.hp) || 0;
-    state.hp = Math.floor(hpBeforeRescue / 2);
+    state.hp = Math.max(0, (Number(state.hp) || 0) - FUJI_RESCUE_HP_LOSS);
     if (els.fujiAgreeCheckbox) els.fujiAgreeCheckbox.checked = false;
     saveGameState(state);
     var session = loadSession();
@@ -23258,7 +23271,7 @@
       }).catch(function () { });
       apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     }
-    return '<div class="enemy-quote-banner">🚁 ' + reasonText + '…救助されて下山することになった！HPが半分（' + state.hp + '）になり、MPが' + FUJI_RESCUE_MP_LOSS + '減った。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが再度必要。</div>';
+    return '<div class="enemy-quote-banner">🚁 ' + reasonText + '…救助されて下山することになった！HPが' + FUJI_RESCUE_HP_LOSS + '減り（残りHP: ' + state.hp + '）、MPが' + FUJI_RESCUE_MP_LOSS + '減った。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが再度必要。</div>';
   }
   // 入山から3日経過、または9合目のタイムアタックの制限時間切れをチェックする。
   // nextQuestion()の冒頭とrenderFujiCard_()の両方から呼び、どちらのタイミングでも
@@ -24109,7 +24122,7 @@
     var rescueHtml = checkFujiRescueConditions_();
     if (rescueHtml) {
       updateGameHud();
-      window.alert('🚁 入山から3日以内に登り切れず、救助されて下山しました…！HPが半分になり、MPが' + FUJI_RESCUE_MP_LOSS + '減りました。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
+      window.alert('🚁 入山から3日以内に登り切れず、救助されて下山しました…！HPが' + FUJI_RESCUE_HP_LOSS + '減り、MPが' + FUJI_RESCUE_MP_LOSS + '減りました。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが必要です。');
     }
     els.fujiCard.hidden = false;
     if (els.fujiAdminPoolCard) els.fujiAdminPoolCard.hidden = false;
