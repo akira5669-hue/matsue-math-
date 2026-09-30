@@ -320,7 +320,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
       }));
@@ -340,7 +340,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
       });
@@ -18377,6 +18377,8 @@
     })()),
     // なんでも屋で買える消費アイテム「すばやさの種」の所持数。
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
+    // なんでも屋で買える消費アイテム「折り紙の手裏剣」の所持数(00001限定プレビュー中)。
+    shurikenCount: (savedProgress && Number(savedProgress.shurikenCount)) || (savedGame && Number(savedGame.shurikenCount)) || 0,
     // なんでも屋で買える消費アイテム「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)。
     ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
     // なんでも屋で買える消費アイテム「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)。
@@ -18521,6 +18523,7 @@
     worldSpellRow: document.getElementById('worldSpellRow'),
     fujiSwordBtn: document.getElementById('fujiSwordBtn'),
     iceSwordBtn: document.getElementById('iceSwordBtn'),
+    shurikenBtn: document.getElementById('shurikenBtn'),
     fujiCard: document.getElementById('fujiCard'),
     fujiHint: document.getElementById('fujiHint'),
     fujiStatusText: document.getElementById('fujiStatusText'),
@@ -19472,6 +19475,15 @@
       els.iceSwordBtn.hidden = !(isBossFight && !state.worldPendingIceSword && iceSwordChargesForBtn_ > 0);
       if (!els.iceSwordBtn.hidden) {
         els.iceSwordBtn.textContent = '🧊 氷の剣を使う（1回で' + ICE_SWORD_DAMAGE_ + 'ダメージ・残り' + iceSwordChargesForBtn_ + '回分）';
+      }
+    }
+    // 手裏剣：氷の剣と同じくボス戦専用の消費アイテムだが、投げた瞬間に50%の
+    // 確率で命中する(00001限定プレビュー中)。
+    if (els.shurikenBtn) {
+      var shurikenCountForBtn_ = Number(state.shurikenCount) || 0;
+      els.shurikenBtn.hidden = !(isBossFight && isAdminSession_() && shurikenCountForBtn_ > 0);
+      if (!els.shurikenBtn.hidden) {
+        els.shurikenBtn.textContent = '✴️ 手裏剣を投げる（50%で' + SHURIKEN_DAMAGE_ + 'ダメージ・残り' + shurikenCountForBtn_ + '本）';
       }
     }
     // ボス戦のときだけ、自分とボスのアバターを対戦画面のように並べて表示する。
@@ -20799,6 +20811,7 @@
         state.worldBossDefeated = (progress.worldBossDefeated && typeof progress.worldBossDefeated === 'object') ? Object.assign({}, progress.worldBossDefeated) : state.worldBossDefeated;
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
+        state.shurikenCount = Number(progress.shurikenCount) || state.shurikenCount;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
         state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
@@ -20870,6 +20883,7 @@
       treasureItems: state.treasureItems || {},
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
+      shurikenCount: state.shurikenCount,
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
       iceSwordCharges: state.iceSwordCharges,
@@ -21399,6 +21413,11 @@
     var speedSeedCount = Number(state.speedSeedCount) || 0;
     if (speedSeedCount > 0) {
       html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.jpg" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
+    }
+    // 折り紙の手裏剣も消費アイテムなので所持数で表示する(00001限定プレビュー中)。
+    var shurikenCount = Number(state.shurikenCount) || 0;
+    if (shurikenCount > 0) {
+      html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon">✴️</span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span></div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -22050,6 +22069,16 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span></div>${speedSeedActionHtml}</div>`;
 
+    // 折り紙で作った手裏剣：00001限定プレビュー中。
+    var shurikenRowHtml = '';
+    if (isAdminSession_()) {
+      var shurikenCanAfford = state.points >= SHURIKEN_COST_MP;
+      var shurikenActionHtml = shurikenCanAfford
+        ? `<button type="button" class="gift-redeem-btn" id="buyShurikenBtn">購入する</button>`
+        : `<span class="gift-insufficient">MP不足</span>`;
+      shurikenRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🥷✴️ 折り紙で作った手裏剣（所持数: ${state.shurikenCount || 0}本）</span><span class="gift-cost">${SHURIKEN_COST_MP}MP</span><span class="shop-item-note">ボス戦で投げると、2回に1回（50%）の確率で${SHURIKEN_DAMAGE_}ダメージを与える。外れても1本消費する</span></div>${shurikenActionHtml}</div>`;
+    }
+
     var ironWallCharges = Number(state.ironWallCharges) || 0;
     var ironWallCanAfford = state.points >= IRONWALL_COST_MP;
     var ironWallActionHtml;
@@ -22089,7 +22118,7 @@
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -22120,6 +22149,8 @@
     if (seimeiMizuBtn) seimeiMizuBtn.addEventListener('click', function () { handleBuySeimeiMizuClick(seimeiMizuBtn); });
     var speedSeedBtn = document.getElementById('buySpeedSeedBtn');
     if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
+    var shurikenBuyBtn = document.getElementById('buyShurikenBtn');
+    if (shurikenBuyBtn) shurikenBuyBtn.addEventListener('click', function () { handleBuyShurikenClick(shurikenBuyBtn); });
     var ironWallBtn = document.getElementById('buyIronWallBtn');
     if (ironWallBtn) ironWallBtn.addEventListener('click', function () { handleBuyIronWallClick(ironWallBtn); });
     var steelArmorBtn = document.getElementById('buySteelArmorBtn');
@@ -22537,6 +22568,33 @@
       renderShopList();
       renderItems();
       window.alert(`🌱 すばやさの種を手に入れた！（所持数: ${state.speedSeedCount}個）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyShurikenClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`折り紙の手裏剣を購入します（${SHURIKEN_COST_MP}MP）。ボス戦で投げると、2回に1回（50%）の確率で${SHURIKEN_DAMAGE_}ダメージを与えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyShuriken', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.shurikenCount = res.shurikenCount;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`✴️ 折り紙の手裏剣を手に入れた！（所持数: ${state.shurikenCount}本）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -23476,6 +23534,33 @@
     els.feedback.innerHTML = '<span class="fb-result">🧊 氷の剣を振るった！次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.iceSwordCharges + '回分）</span>';
     els.feedback.classList.remove('incorrect');
     els.feedback.classList.add('correct');
+  }
+
+  // 折り紙で作った手裏剣：なんでも屋で1本30MPで買える消費アイテム(00001限定
+  // プレビュー中)。氷の剣等と違い次の問題の正解を待たず、投げた瞬間に2回に1回
+  // (50%)の確率でボスに100ダメージが入る(外れても1本消費される)。
+  const SHURIKEN_DAMAGE_ = 100;
+  const SHURIKEN_HIT_CHANCE_ = 0.5;
+  function castShuriken_() {
+    if (!state.worldBossActiveStage) return;
+    if ((Number(state.shurikenCount) || 0) <= 0) return;
+    if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword) return;
+    if (!window.confirm('手裏剣を投げますか？2回に1回（50%）の確率でボスに' + SHURIKEN_DAMAGE_ + 'ダメージを与えます。外れても1本消費します。（残り' + state.shurikenCount + '本）')) return;
+    state.shurikenCount = (Number(state.shurikenCount) || 0) - 1;
+    var hit = Math.random() < SHURIKEN_HIT_CHANCE_;
+    if (hit) {
+      state.worldBossDamage = (Number(state.worldBossDamage) || 0) + SHURIKEN_DAMAGE_;
+    }
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    if (els.worldPanel && !els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
+    els.feedback.innerHTML = hit
+      ? '<span class="fb-result">✴️ 手裏剣が命中！ボスに' + SHURIKEN_DAMAGE_ + 'ダメージ！（残り' + state.shurikenCount + '本）</span>'
+      : '<span class="fb-result">💨 手裏剣は外れてしまった…！（残り' + state.shurikenCount + '本）</span>';
+    els.feedback.classList.remove(hit ? 'incorrect' : 'correct');
+    els.feedback.classList.add(hit ? 'correct' : 'incorrect');
   }
 
   // 今のボスに使える魔法の書を、1冊ごとにボタンとして並べる(1体のボスに複数の
@@ -25438,6 +25523,7 @@
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
+  if (els.shurikenBtn) els.shurikenBtn.addEventListener('click', castShuriken_);
   if (els.worldDiceCloseBtn) {
     els.worldDiceCloseBtn.addEventListener('click', function () {
       if (worldDiceRollQueue_.length > 0) {

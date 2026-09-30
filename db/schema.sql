@@ -42,6 +42,7 @@ CREATE TABLE students (
   challenge_correct_total INTEGER NOT NULL DEFAULT 0,
   pending_notice TEXT,                     -- 次回ログイン時に1回だけ表示するお知らせ(表示後NULLに戻す)
   speed_seed_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「すばやさの種」の所持数(消費型)
+  shuriken_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「折り紙の手裏剣」の所持数(消費型、00001限定プレビュー中)
   iron_wall_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)
   steel_armor_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)
   ice_sword_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「氷の剣」の残りチャージ数(0〜3、複数保有不可)
