@@ -23555,6 +23555,7 @@
   // 折り紙で作った手裏剣：なんでも屋で1本30MPで買える消費アイテム(00001限定
   // プレビュー中)。氷の剣等と違い次の問題の正解を待たず、投げた瞬間に2回に1回
   // (50%)の確率でボスに100ダメージが入る(外れても1本消費される)。
+  const SHURIKEN_COST_MP = 30;
   const SHURIKEN_DAMAGE_ = 100;
   const SHURIKEN_HIT_CHANCE_ = 0.5;
   function castShuriken_() {
