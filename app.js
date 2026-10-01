@@ -19710,12 +19710,14 @@
         state.worldPendingSword = false;
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + YUSHA_SWORD_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">⚔️ 勇者の剣が命中！ボスに${YUSHA_SWORD_DAMAGE_}ダメージ！⚔️</div>`;
+        spellFxPending_ = { book: { emoji: '⚔️', fx: '#f59e0b', dmg: YUSHA_SWORD_DAMAGE_ }, phase: 'hit' };
       }
       // 氷の剣を振るった直後の問題に正解した場合、ここで初めてボスに500ダメージが入る。
       if (state.worldBossActiveStage && state.worldPendingIceSword) {
         state.worldPendingIceSword = false;
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + ICE_SWORD_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">🧊 氷の剣が命中！ボスに${ICE_SWORD_DAMAGE_}ダメージ！🧊</div>`;
+        spellFxPending_ = { book: { emoji: '🧊', fx: '#38bdf8', dmg: ICE_SWORD_DAMAGE_ }, phase: 'hit' };
       }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
@@ -19849,12 +19851,14 @@
         if (state.worldPendingSword) {
           state.worldPendingSword = false;
           missLineHtml += `<div class="enemy-quote-banner">💨 勇者の剣はボスにかわされた…！攻撃は当たらなかった。</div>`;
+          spellFxPending_ = { book: { emoji: '⚔️', fx: '#f59e0b', dmg: YUSHA_SWORD_DAMAGE_ }, phase: 'miss' };
         }
         // 氷の剣も同様に、振るった直後の問題を間違えるとかわされて不発になる
         // (この時点で既にチャージは消費済みなので、消費が戻ることはない)。
         if (state.worldPendingIceSword) {
           state.worldPendingIceSword = false;
           missLineHtml += `<div class="enemy-quote-banner">💨 氷の剣はボスにかわされた…！攻撃は当たらなかった。</div>`;
+          spellFxPending_ = { book: { emoji: '🧊', fx: '#38bdf8', dmg: ICE_SWORD_DAMAGE_ }, phase: 'miss' };
         }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
@@ -21442,7 +21446,7 @@
     // 折り紙の手裏剣も消費アイテムなので所持数で表示する(00001限定プレビュー中)。
     var shurikenCount = Number(state.shurikenCount) || 0;
     if (shurikenCount > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon">✴️</span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span></div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -22102,7 +22106,7 @@
       var shurikenActionHtml = shurikenCanAfford
         ? `<button type="button" class="gift-redeem-btn" id="buyShurikenBtn">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      shurikenRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🥷✴️ 折り紙で作った手裏剣（所持数: ${state.shurikenCount || 0}本）</span><span class="gift-cost">${SHURIKEN_COST_MP}MP</span><span class="shop-item-note">ボス戦で投げると、2回に1回（50%）の確率で${SHURIKEN_DAMAGE_}ダメージを与える。外れても1本消費する</span></div>${shurikenActionHtml}</div>`;
+      shurikenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/shuriken.jpg" alt="折り紙の手裏剣"><div class="gift-info"><span class="gift-label">🥷 折り紙で作った手裏剣（所持数: ${state.shurikenCount || 0}本）</span><span class="gift-cost">${SHURIKEN_COST_MP}MP</span><span class="shop-item-note">ボス戦で投げると、2回に1回（50%）の確率で${SHURIKEN_DAMAGE_}ダメージを与える。外れても1本消費する</span></div>${shurikenActionHtml}</div>`;
     }
 
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -23568,6 +23572,7 @@
     var session = loadSession();
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     updateGameHud();
+    playSpellFx_({ emoji: '⚔️', fx: '#f59e0b' }, 'cast');
     els.feedback.innerHTML = '<span class="fb-result">⚔️ 勇者の剣を抜いた！次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…</span>';
     els.feedback.classList.remove('incorrect');
     els.feedback.classList.add('correct');
@@ -23587,6 +23592,7 @@
     var session = loadSession();
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     updateGameHud();
+    playSpellFx_({ emoji: '🧊', fx: '#38bdf8' }, 'cast');
     els.feedback.innerHTML = '<span class="fb-result">🧊 氷の剣を振るった！次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.iceSwordCharges + '回分）</span>';
     els.feedback.classList.remove('incorrect');
     els.feedback.classList.add('correct');
