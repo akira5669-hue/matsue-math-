@@ -22207,12 +22207,12 @@
       var keyActionHtml = state.points >= keyCost
         ? `<button type="button" class="gift-redeem-btn" data-treasure-buy-key="${tier}">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      var keyRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の鍵（所持: ${keyCount}個）</span><span class="gift-cost">${keyCost}MP</span></div>${keyActionHtml}</div>`;
+      var keyRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/key_${tier}.jpg" alt="${label}の鍵"><div class="gift-info"><span class="gift-label">${emoji} ${label}の鍵（所持: ${keyCount}個）</span><span class="gift-cost">${keyCost}MP</span></div>${keyActionHtml}</div>`;
 
       var openActionHtml = (chestCount > 0 && keyCount > 0)
         ? `<button type="button" class="gift-redeem-btn" data-treasure-open="${tier}">開ける</button>`
         : `<span class="gift-insufficient">${chestCount > 0 ? '鍵が必要' : '宝箱なし'}</span>`;
-      var openRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の宝箱（所持: ${chestCount}個）</span><span class="gift-cost">開けると+${reward.mp}MP・+${reward.hp}HP・${label}の指輪</span></div>${openActionHtml}</div>`;
+      var openRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chest_${tier}.jpg" alt="${label}の宝箱"><div class="gift-info"><span class="gift-label">${emoji} ${label}の宝箱（所持: ${chestCount}個）</span><span class="gift-cost">開けると+${reward.mp}MP・+${reward.hp}HP・${label}の指輪</span></div>${openActionHtml}</div>`;
 
       var sellActionHtml = ringCount > 0
         ? `<button type="button" class="gift-redeem-btn" data-treasure-sell-ring="${tier}">売却する</button>`
@@ -22221,7 +22221,7 @@
       var shieldNoteHtml = shieldCharges
         ? `<span class="shop-item-note">持っているとボス戦のダメージを${shieldCharges}回防いでくれる（使い切ると壊れてなくなる）</span>`
         : '';
-      var sellRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}</div>${sellActionHtml}</div>`;
+      var sellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ring_${tier}.jpg" alt="${label}の指輪"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}</div>${sellActionHtml}</div>`;
 
       return keyRowHtml + openRowHtml + sellRowHtml;
     }).join('');
