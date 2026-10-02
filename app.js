@@ -18154,7 +18154,7 @@
   const OXYGEN_CAN_COST_MP = 100;
   const FUJI_ALTITUDE_SICKNESS_STATION_ = 8;
   // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。500MP。
-  const SHARPEN_SWORD_COST_MP = 500;
+  const SHARPEN_SWORD_COST_MP = 300;
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
   const HERB_COST_MP = 300;
   const HERB_HP_GAIN = 100;
@@ -22069,10 +22069,10 @@
     }
     var oxygenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/oxygen_can.jpg" alt="酸素缶"><div class="gift-info"><span class="gift-label">🫁 酸素缶（高山病を治す）</span><span class="gift-cost">${OXYGEN_CAN_COST_MP}MP</span></div>${oxygenActionHtml}</div>`;
 
-    // 刀を研ぐ：勇者の剣を手に入れたことがある生徒にだけ表示する(00001限定
-    // プレビュー中は富士登山自体がisAdminSession_()限定のため、実質00001のみ表示)。
+    // 刀を研ぐ：富士登山の山頂到達で勇者の剣を手に入れたことがある生徒にだけ
+    // 表示する(富士登山が全生徒公開になったため、この項目も全生徒に表示)。
     var sharpenRowHtml = '';
-    if (isAdminSession_() && state.yushaSwordObtained) {
+    if (state.yushaSwordObtained) {
       var sharpenNeeded = (Number(state.yushaSwordCount) || 0) <= 0;
       var sharpenCanAfford = state.points >= SHARPEN_SWORD_COST_MP;
       var sharpenActionHtml;
@@ -22083,7 +22083,7 @@
       } else {
         sharpenActionHtml = `<span class="gift-insufficient">MP不足</span>`;
       }
-      sharpenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/yusha_sword.jpg" alt="勇者の剣"><div class="gift-info"><span class="gift-label">🗡️ 刀を研ぐ（壊れた勇者の剣を直す）</span><span class="gift-cost">${SHARPEN_SWORD_COST_MP}MP</span></div>${sharpenActionHtml}</div>`;
+      sharpenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/yusha_sword.jpg" alt="勇者の剣"><div class="gift-info"><span class="gift-label">🗡️ 刀を研ぐ（壊れた勇者の剣を直す）</span><span class="gift-cost">${SHARPEN_SWORD_COST_MP}MP</span><span class="shop-item-note">勇者の剣を持っている人だけが使える。使用済み（壊れた）勇者の剣を、また1回使えるように直す</span></div>${sharpenActionHtml}</div>`;
     }
 
     var herbCanAfford = state.points >= HERB_COST_MP;
