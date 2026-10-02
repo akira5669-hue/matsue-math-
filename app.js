@@ -18692,6 +18692,8 @@
     mpCapBannerText: document.getElementById('mpCapBannerText'),
     winterCourseBanner: document.getElementById('winterCourseBanner'),
     winterCourseBannerText: document.getElementById('winterCourseBannerText'),
+    teamEventSeptResultBanner: document.getElementById('teamEventSeptResultBanner'),
+    teamEventSeptResultBannerText: document.getElementById('teamEventSeptResultBannerText'),
     quizPerfectBanner: document.getElementById('quizPerfectBanner'),
     quizPerfectBannerText: document.getElementById('quizPerfectBannerText'),
     charArtBanner: document.getElementById('charArtBanner'),
@@ -19548,6 +19550,7 @@
     renderHpRulesBanner_();
     renderMpCapBanner_();
     renderWinterCourseBanner_();
+    renderTeamEventSeptResultBanner_();
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
@@ -20483,6 +20486,22 @@
     els.winterCourseBanner.hidden = false;
     if (els.winterCourseBannerText) {
       els.winterCourseBannerText.textContent = '📢【冬期講習の講座のご案内】小6対象の中学準備講座と算数の総復習講座（無料）を、冬期講習から行います。対象は小6の外部生です。塾を検討している小6のお友達がいたら、ぜひご連絡ください。紹介したお友達が授業に参加された場合、紹介した生徒さんに1000MPを付与します。在籍している方は、小6の算数の授業が冬期講習から総復習になります。そのまま受講できます。';
+    }
+  }
+
+  // 9月のチーム対抗経験値バトル結果発表(2026-10-01〜2026-10-15)。
+  var TEAM_EVENT_SEPT_RESULT_START_ = '2026-10-01';
+  var TEAM_EVENT_SEPT_RESULT_END_ = '2026-10-15';
+  function renderTeamEventSeptResultBanner_() {
+    if (!els.teamEventSeptResultBanner) return;
+    var today = todayKey();
+    if (today < TEAM_EVENT_SEPT_RESULT_START_ || today > TEAM_EVENT_SEPT_RESULT_END_) {
+      els.teamEventSeptResultBanner.hidden = true;
+      return;
+    }
+    els.teamEventSeptResultBanner.hidden = false;
+    if (els.teamEventSeptResultBannerText) {
+      els.teamEventSeptResultBannerText.textContent = '📢【チーム対抗経験値バトル、9月分の結果発表！】上位5チームのメンバーに、チーム内で稼いだ経験値の量に応じてMPを分配しました！1位「玄武イーグルス」10000MP、2位「無敵ホークス」7000MP、3位「極光ジャガーズ」5000MP、4位「轟音ナイツ」3000MP、5位「一撃スパルタンズ」1000MP。みんなお疲れ様でした！';
     }
   }
 
