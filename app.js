@@ -19996,6 +19996,14 @@
       state.hp = Math.max(0, (Number(state.hp) || 0) - FUJI_ALTITUDE_SICKNESS_DRAIN_);
       saveGameState(state);
     }
+    // 富士登山8合目以降で単元条件(自分の学年以上10個以上・文章題1個以上)を満たせず
+    // 足止めされている生徒は、普段の演習中は気づきにくい。10問に1回お知らせする
+    // (富士登山画面を開いていなくても表示される)。
+    if (state.fujiStation >= FUJI_HIGH_ALTITUDE_STATION_ && !state.fujiSummitReached && state.total % 10 === 0) {
+      if (!fujiHighAltitudeEligibility_().ok) {
+        missLineHtml += '<div class="enemy-quote-banner">🗻 富士登山が8合目で止まっていませんか？8合目から先に進むには、出題範囲で「自分の学年以上の単元を10個以上ON、うち文章題を1個以上」にする必要があります。「出題範囲を選ぶ」から設定を見直してみよう！</div>';
+      }
+    }
 
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
