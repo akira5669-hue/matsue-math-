@@ -115,7 +115,13 @@ CREATE TABLE students (
   -- 戻らない永続フラグとして別に持つ(fuji_summit_reachedと同じOR方式でマージ)。
   streak7_title_earned BOOLEAN NOT NULL DEFAULT false,
   streak15_title_earned BOOLEAN NOT NULL DEFAULT false,
-  streak30_title_earned BOOLEAN NOT NULL DEFAULT false
+  streak30_title_earned BOOLEAN NOT NULL DEFAULT false,
+  -- 富士登山「お鉢巡り」(2026-10-10〜10-31限定、富士登山の成功者のみ挑戦可)の
+  -- 成功フラグ。fuji_summit_reachedと同じく一度trueになったら戻らない。
+  ohachi_completed BOOLEAN NOT NULL DEFAULT false,
+  -- 賢さの種：月間いいね数トップ3にだけ配布される秘密アイテム(所持数)。
+  -- speed_seed_count/shuriken_countと同じくクライアントを信頼してそのままSETする。
+  wisdom_seed_count INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
@@ -246,6 +252,14 @@ CREATE TABLE shop_purchase_log (
 );
 CREATE INDEX idx_shop_purchase_log_ts ON shop_purchase_log (ts);
 CREATE INDEX idx_shop_purchase_log_student ON shop_purchase_log (student_id);
+
+-- 賢さの種：月間の読書いいね数合計トップ3にだけ配布される秘密アイテムの配布履歴
+-- (二重配布防止用。fuji_pool_distributionsと同じ仕組み)。
+CREATE TABLE wisdom_seed_distributions (
+  month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
+  distributed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  recipient_ids JSONB NOT NULL DEFAULT '[]'
+);
 
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,

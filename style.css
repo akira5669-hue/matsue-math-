@@ -1160,6 +1160,7 @@ h1 {
   border-radius: 10px;
   flex-shrink: 0;
 }
+.shop-item-emoji { display: flex; align-items: center; justify-content: center; font-size: 28px; background: #f3f4f6; }
 .gift-info { display: flex; flex-direction: column; gap: 2px; }
 .gift-label { font-size: 13px; font-weight: 700; }
 .gift-cost { font-family: var(--font-mono); font-size: 12px; color: var(--c-ink-soft); }

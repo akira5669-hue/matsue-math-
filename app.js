@@ -206,7 +206,7 @@
   var POINTS_DAILY_CAP_CALC = 50;
   var POINTS_DAILY_CAP_WORD = 50;
   var EXP_PER_LEVEL = 10;
-  var MAX_LEVEL = 9999;
+  var MAX_LEVEL = 99999;
 
   // 同じ単元ばかり周回してポイント・経験値を稼ぐのを防ぐため、単元ごとに1日の出題数へ
   // 上限を設ける。COMPLETE_AT問解いた時点でその日は「コンプリート」扱いとしてチェックを
@@ -324,6 +324,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
+        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -345,6 +346,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
+        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount,
       });
     }
   }
@@ -18439,6 +18441,9 @@
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
     // なんでも屋で買える消費アイテム「折り紙の手裏剣」の所持数(00001限定プレビュー中)。
     shurikenCount: (savedProgress && Number(savedProgress.shurikenCount)) || (savedGame && Number(savedGame.shurikenCount)) || 0,
+    // 賢さの種：月間の読書いいね数ランキング上位3名にだけ配布される秘密アイテムの
+    // 所持数。なんでも屋で「食べる」(+1000HP)か「売る」(1000MPで売却)ができる。
+    wisdomSeedCount: (savedProgress && Number(savedProgress.wisdomSeedCount)) || (savedGame && Number(savedGame.wisdomSeedCount)) || 0,
     // なんでも屋で買える消費アイテム「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)。
     ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
     // なんでも屋で買える消費アイテム「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)。
@@ -18567,6 +18572,15 @@
     fujiClimbStartedAt: (savedProgress && savedProgress.fujiClimbStartedAt) || (savedGame && savedGame.fujiClimbStartedAt) || null,
     // 山頂到達は一度trueになったら戻らない実績フラグ。
     fujiSummitReached: !!((savedProgress && savedProgress.fujiSummitReached) || (savedGame && savedGame.fujiSummitReached)),
+    // お鉢巡り(2026-10-10〜10-31限定、富士登山の成功者のみ挑戦可)。worldBossActiveStage
+    // と同じく今まさに挑戦中かどうかは端末セッション限定(あえて永続化しない。挑戦は
+    // 1回300MPの使い切りで、ログアウトしたらその回の挑戦は諦めて再度払う想定)。
+    ohachiActive: false,
+    ohachiStreak: 0,
+    ohachiStartedAt: null,
+    ohachiEligibleIds_: null,
+    // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
+    ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
     // 1回使うと壊れて消える。ironWallCharges等と同じ「端末を信頼してSET」方式。
     yushaSwordCount: (savedProgress && Number(savedProgress.yushaSwordCount)) || (savedGame && Number(savedGame.yushaSwordCount)) || 0,
@@ -18602,8 +18616,13 @@
     fujiClimbBtn: document.getElementById('fujiClimbBtn'),
     fujiAdminPoolCard: document.getElementById('fujiAdminPoolCard'),
     fujiDistributePoolBtn: document.getElementById('fujiDistributePoolBtn'),
+    ohachiCard: document.getElementById('ohachiCard'),
+    ohachiHint: document.getElementById('ohachiHint'),
+    ohachiStatusText: document.getElementById('ohachiStatusText'),
+    ohachiStartBtn: document.getElementById('ohachiStartBtn'),
     battleVsRow: document.getElementById('battleVsRow'),
     battleFujiTimer: document.getElementById('battleFujiTimer'),
+    battleOhachiTimer: document.getElementById('battleOhachiTimer'),
     battlePlayerAvatar: document.getElementById('battlePlayerAvatar'),
     battleEnemyAvatar: document.getElementById('battleEnemyAvatar'),
     battleEnemyCaption: document.getElementById('battleEnemyCaption'),
@@ -18768,6 +18787,8 @@
     scienceServiceDayBannerText: document.getElementById('scienceServiceDayBannerText'),
     fujiBanner: document.getElementById('fujiBanner'),
     fujiBannerText: document.getElementById('fujiBannerText'),
+    ohachiBanner: document.getElementById('ohachiBanner'),
+    ohachiBannerText: document.getElementById('ohachiBannerText'),
     readingBanner: document.getElementById('readingBanner'),
     readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
@@ -18793,6 +18814,9 @@
     shopList: document.getElementById('shopList'),
     shopPurchaseHistoryCard: document.getElementById('shopPurchaseHistoryCard'),
     shopPurchaseHistoryBtn: document.getElementById('shopPurchaseHistoryBtn'),
+    wisdomSeedAdminCard: document.getElementById('wisdomSeedAdminCard'),
+    wisdomSeedDistributeBtn: document.getElementById('wisdomSeedDistributeBtn'),
+    wisdomSeedDistributeResult: document.getElementById('wisdomSeedDistributeResult'),
     shopPurchaseHistoryBox: document.getElementById('shopPurchaseHistoryBox'),
     prefectureToggle: document.getElementById('prefectureToggle'),
     prefecturePanel: document.getElementById('prefecturePanel'),
@@ -19068,6 +19092,17 @@
       const fallback = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
       if (fallback.length > 0) return fallback[randInt(0, fallback.length - 1)];
     }
+    if (state.ohachiActive) {
+      // お鉢巡りは、挑戦開始時にohachiEligibleIds_へ固定した「自分の学年のみ」の
+      // 単元リストだけを使う(単元設定を変えても出題内容に影響しない)。
+      const lockedIds = Array.isArray(state.ohachiEligibleIds_) ? state.ohachiEligibleIds_ : [];
+      const eligible = CATEGORIES.filter(c => lockedIds.indexOf(c.id) !== -1);
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
+      const session = loadSession();
+      const ownGrade = session && session.grade;
+      const fallback = CATEGORIES.filter(c => state.enabled.has(c.id) && categoryGrade[c.id] === ownGrade);
+      if (fallback.length > 0) return fallback[randInt(0, fallback.length - 1)];
+    }
     const notComplete = c => !isCategoryCompleteToday(state, c.id);
     const pool = CATEGORIES.filter(c => state.enabled.has(c.id) && notComplete(c));
     const src = pool.length > 0 ? pool : CATEGORIES.filter(notComplete);
@@ -19110,6 +19145,87 @@
     if (!elig.ok) return false;
     state.fujiEligibleIds_ = elig.ids;
     return true;
+  }
+
+  // 富士登山「お鉢巡り」：富士登山の成功者(fujiSummitReached)だけが挑戦できる
+  // 2026-10-10〜2026-10-31限定のやり込み要素。300MPの参加料を払い、自分の学年
+  // "のみ"の単元を10個以上ON(うち文章題1個以上)にした状態で、50問連続正解を
+  // 目指す。不正解になっても(通常の富士登山と違って)挑戦自体は終わらず続けられる
+  // が、ただ時間をかけて50問に到達しただけではHPはもらえない。実際にかかった
+  // 時間が速いほど複数のタイム枠を同時に満たし、その分だけ足し算でHPがもらえる
+  // (OHACHI_TIERS_LOW_/HIGH_参照、速い枠を満たせば遅い枠の分も必ず満たすため)。
+  // 成功は一度きり(成功したら再挑戦不可)、失敗(未達成)は10月中なら何度でも
+  // 再挑戦可能(その都度300MP必要)。
+  var OHACHI_START_ = '2026-10-10';
+  var OHACHI_END_ = '2026-10-31';
+  const OHACHI_ENTRY_FEE_MP = 300;
+  const OHACHI_REQUIRED_STREAK_ = 50;
+  const OHACHI_MIN_ELIGIBLE_CATEGORIES_ = 10;
+  const OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ = 1;
+  // 小学生・中1用のタイム枠(分以内→追加HP、速い枠ほど下の枠の分も足し算でもらえる)
+  const OHACHI_TIERS_LOW_ = [
+    { min: 15, hp: 500 },
+    { min: 10, hp: 1000 },
+    { min: 8, hp: 1500 },
+    { min: 6, hp: 3000 },
+  ];
+  // 中2・中3用のタイム枠
+  const OHACHI_TIERS_HIGH_ = [
+    { min: 25, hp: 500 },
+    { min: 22, hp: 1000 },
+    { min: 20, hp: 1500 },
+    { min: 17, hp: 2000 },
+    { min: 15, hp: 2500 },
+    { min: 12, hp: 3500 },
+  ];
+  function ohachiTiersForGrade_(grade) {
+    var g = String(grade || '');
+    return (g.charAt(0) === '小' || g === '中1') ? OHACHI_TIERS_LOW_ : OHACHI_TIERS_HIGH_;
+  }
+  function ohachiEventActive_() {
+    var today = todayKey();
+    return today >= OHACHI_START_ && today <= OHACHI_END_;
+  }
+  // お鉢巡りカードの表示/挑戦可否は、00001限定プレビュー中は開催期間前でも
+  // テストできるよう、管理者だけ日付ゲートを素通りできる(公開告知バナー自体の
+  // 文言はrenderOhachiBanner_でohachiEventActive_の素の判定のまま使う)。
+  function ohachiCardActive_() {
+    return isAdminSession_() || ohachiEventActive_();
+  }
+  // 実際にかかった時間(ミリ秒)から、満たした全てのタイム枠のHPを合計する。
+  function ohachiRewardForElapsedMs_(grade, elapsedMs) {
+    var minutes = elapsedMs / 60000;
+    var tiers = ohachiTiersForGrade_(grade);
+    var total = 0;
+    var fastestMin = null;
+    tiers.forEach(function (t) {
+      if (minutes <= t.min) {
+        total += t.hp;
+        if (fastestMin === null || t.min < fastestMin) fastestMin = t.min;
+      }
+    });
+    return { hp: total, fastestTierMin: fastestMin };
+  }
+  // お鉢巡りに挑戦できるか判定。世界一周ボス戦・富士登山8合目以降と似た仕組みだが、
+  // 「自分の学年以上」ではなく「自分の学年のみ」の単元が対象という点が異なる。
+  function ohachiEligibility_() {
+    const session = loadSession();
+    const ownGrade = session && session.grade;
+    const eligibleEnabled = CATEGORIES.filter(c => state.enabled.has(c.id) && categoryGrade[c.id] === ownGrade);
+    const wordProblemCount = eligibleEnabled.filter(c => WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1).length;
+    const ok = eligibleEnabled.length >= OHACHI_MIN_ELIGIBLE_CATEGORIES_ && wordProblemCount >= OHACHI_MIN_WORD_PROBLEM_CATEGORIES_;
+    return { ok, count: eligibleEnabled.length, wordProblemCount, ids: eligibleEnabled.map(c => c.id) };
+  }
+  // お鉢巡り中の敵表示：進んだ連続正解数に応じて、クレーターを巡る6つの峰の写真を
+  // 順番に切り替える(演出のみ、出題内容には影響しない)。
+  const OHACHI_PEAK_NAMES_ = ['浅間岳', '久須志岳', '剣ヶ峰', '白山岳', '駒ヶ岳', '大日岳'];
+  function ohachiPeakIndexForStreak_(streak) {
+    var step = Math.ceil(OHACHI_REQUIRED_STREAK_ / OHACHI_PEAK_NAMES_.length);
+    return Math.max(0, Math.min(OHACHI_PEAK_NAMES_.length - 1, Math.floor((Number(streak) || 0) / step)));
+  }
+  function ohachiEnemyDisplay_() {
+    var idx = ohachiPeakIndexForStreak_(state.ohachiStreak);
+    return { name: 'お鉢巡り：' + OHACHI_PEAK_NAMES_[idx], img: 'images/ohachi_peak_' + (idx + 1) + '.jpg' };
   }
 
   /* ---------- 間違い大魔王：間違えた問題の保存庫 ---------- */
@@ -19477,8 +19593,12 @@
     }
     clearMemoCanvas();
     // ボン・ミスコの呪いにかかっている間も、間違い大魔王/算数デビルちゃんと同じ
-    // 「間違えた問題の保存庫」から出題する。
-    let mistakeQ = state.rareType === 'percentkun' ? pickPercentKunQuestion()
+    // 「間違えた問題の保存庫」から出題する。お鉢巡り中は「自分の学年のみ」という
+    // 出題条件を必ず守らせるため、この間違えた問題の保存庫は使わない(間違い大魔王/
+    // 算数デビルちゃん/ボン・ミスコの呪い中にお鉢巡りへ入っても、固定した単元
+    // リストからの出題を優先する)。
+    let mistakeQ = state.ohachiActive ? null
+      : state.rareType === 'percentkun' ? pickPercentKunQuestion()
       : (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
       mistakeQ = pickWorldBossWrongQuestion();
@@ -19524,26 +19644,30 @@
   function updateGameHud() {
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
+    const isOhachi = !!state.ohachiActive;
     const bossSubIndex = isBossFight ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
     // requiredStreakは「敵のHP」。通常の敵・レアキャラは1問1ダメージなので
     // 「あと何問」とHPが一致するが、ボス戦は周ごとのダメージ量(と魔法)で削る。
     const requiredStreak = isFuji ? fujiCurrentLeg_().streak
       : isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak
+      : isOhachi ? OHACHI_REQUIRED_STREAK_
       : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : 10);
     const hp = isFuji ? Math.max(0, fujiCurrentLeg_().streak - (Number(state.fujiLegStreak) || 0))
       : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
+      : isOhachi ? Math.max(0, OHACHI_REQUIRED_STREAK_ - (Number(state.ohachiStreak) || 0))
       : Math.max(0, requiredStreak - state.streak);
-    const enemy = isFuji ? fujiEnemyDisplayForStation_() : isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : currentEnemyDisplay(state);
+    const enemy = isFuji ? fujiEnemyDisplayForStation_() : isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : isOhachi ? ohachiEnemyDisplay_() : currentEnemyDisplay(state);
     updateFujiSceneBg_(isFuji, state.fujiStation);
     updateFujiBattleTimer_(isFuji, isFuji ? fujiCurrentLeg_() : null);
-    const isRare = !isBossFight && !isFuji && !!state.rareType;
+    updateOhachiBattleTimer_(isOhachi);
+    const isRare = !isBossFight && !isFuji && !isOhachi && !!state.rareType;
     if (enemy.img) {
       els.enemyEmoji.innerHTML = `<img src="${enemy.img}" alt="${enemy.name}" class="enemy-char-img${isRare ? ' is-rare' : ''}">`;
     } else {
       els.enemyEmoji.textContent = enemy.emoji;
     }
     els.enemyEmoji.classList.toggle('is-rare', isRare);
-    els.enemyName.textContent = ((isBossFight || isFuji) ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + ((isBossFight || isFuji) ? ' 👑' : isRare ? ' ✨' : '');
+    els.enemyName.textContent = ((isBossFight || isFuji || isOhachi) ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + ((isBossFight || isFuji || isOhachi) ? ' 👑' : isRare ? ' ✨' : '');
     els.enemyName.classList.toggle('is-rare-name', isRare);
     if ((isRare || isBossFight || isFuji) && enemy.lines && enemy.lines.appear) {
       els.enemySpeech.textContent = enemy.lines.appear;
@@ -19633,6 +19757,7 @@
     if (els.proofTestBanner) els.proofTestBanner.hidden = true;
     renderScienceServiceDayBanner_();
     renderFujiBanner_();
+    renderOhachiBanner_();
     renderReadingBanner_();
     renderSuperAkirametalBanner_();
   }
@@ -19769,6 +19894,11 @@
       // 富士登山も同様に、1問正解するごとに今の区間の連続正解数を積み上げる。
       if (state.fujiActive) {
         state.fujiLegStreak = (Number(state.fujiLegStreak) || 0) + 1;
+      }
+      // お鉢巡りも同様に、1問正解するごとに連続正解数を積み上げる(不正解でも
+      // 挑戦自体は続くが、0に戻ってしまうのでタイム枠達成が遠のく)。
+      if (state.ohachiActive) {
+        state.ohachiStreak = (Number(state.ohachiStreak) || 0) + 1;
       }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
@@ -20001,6 +20131,14 @@
           missLineHtml += `<div class="enemy-quote-banner">🫁 高山病にかかってしまった…！治るまで1問答えるごとにHPが${FUJI_ALTITUDE_SICKNESS_DRAIN_}減る。なんでも屋で酸素缶を買おう。</div>`;
         }
         saveGameState(state);
+      } else if (state.ohachiActive) {
+        // お鉢巡りの不正解は、通常の富士登山と違ってHPペナルティなし・挑戦自体も
+        // 終わらない(続行可能)。ただし連続正解数は0に戻るので、50問に到達する
+        // までの時間がかかるほど、もらえるタイム枠ボーナスが小さくなる(0になる
+        // こともある)。
+        state.ohachiStreak = 0;
+        missLineHtml += `<div class="enemy-quote-banner">お鉢巡り：不正解…50問連続正解を最初から数え直しだ！（タイムは止まらない）</div>`;
+        saveGameState(state);
       } else if (state.rareType === 'gyoshi' && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         missLineHtml += state.steelArmorCharges > 0
@@ -20122,8 +20260,13 @@
     const bossSubIndexForWin = state.worldBossActiveStage ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
     const requiredStreak = state.fujiActive ? fujiCurrentLeg_().streak
       : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
+      : state.ohachiActive ? OHACHI_REQUIRED_STREAK_
       : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : 10);
-    if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
+    if (isCorrect && state.ohachiActive && (Number(state.ohachiStreak) || 0) >= OHACHI_REQUIRED_STREAK_) {
+      // お鉢巡り達成：MP/経験値の通常報酬ではなく、かかった時間に応じたHP
+      // ボーナスの特別演出。
+      winHtml = finishOhachiMeguri_();
+    } else if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
       // 富士登山、区間クリア：MP/経験値の通常報酬ではなく、次の合目に進む(または
       // 10合目=山頂到達の)特別演出。
       winHtml = advanceFujiStationIfReady_();
@@ -20711,6 +20854,25 @@
     }
   }
 
+  // 富士登山「お鉢巡り」(2026-10-10〜10-31限定、富士登山の成功者のみ)の告知。
+  // renderFujiBanner_と同じく、告知バナーは全生徒に公開するが、機能自体
+  // (お鉢巡りカード)は引き続き00001限定プレビュー。
+  var OHACHI_BANNER_END_ = '2026-10-31';
+  function renderOhachiBanner_() {
+    if (!els.ohachiBanner) return;
+    var today = todayKey();
+    if (today > OHACHI_BANNER_END_) {
+      els.ohachiBanner.hidden = true;
+      return;
+    }
+    els.ohachiBanner.hidden = false;
+    if (els.ohachiBannerText) {
+      els.ohachiBannerText.textContent = today >= OHACHI_START_
+        ? '📢【富士登山「お鉢巡り」、開催中！】富士登山に成功した人だけが挑戦できる追加チャレンジ。300MPを払って、自分の学年の単元だけで50問連続正解を目指そう！速ければ速いほどHPボーナスがアップ（最大3000〜3500HP）。10月末まで。'
+        : '📢【予告：富士登山「お鉢巡り」、10月10日スタート！】富士登山に成功した人だけが挑戦できる追加チャレンジが近日登場。今のうちに富士登山の成功を目指そう。';
+    }
+  }
+
   // 「読書の秋」機能追加の告知(全生徒に表示)。
   var READING_BANNER_END_ = '2026-10-10';
   function renderReadingBanner_() {
@@ -20961,6 +21123,7 @@
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.shurikenCount = Number(progress.shurikenCount) || state.shurikenCount;
+        state.wisdomSeedCount = Number(progress.wisdomSeedCount) || state.wisdomSeedCount;
         // cursed/zombified/fujiAltitudeSickも、fujiStation等と同じくここで復元されて
         // おらず、アプリを開き直す(ログイン処理が走る)たびに状態が消えて見える不具合が
         // あったため、明示的に復元する(いずれも一度trueになったら治すまで持続する
@@ -20988,6 +21151,7 @@
         state.streak7TitleEarned = !!(state.streak7TitleEarned || progress.streak7TitleEarned);
         state.streak15TitleEarned = !!(state.streak15TitleEarned || progress.streak15TitleEarned);
         state.streak30TitleEarned = !!(state.streak30TitleEarned || progress.streak30TitleEarned);
+        state.ohachiCompleted = !!(state.ohachiCompleted || progress.ohachiCompleted);
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -21067,6 +21231,8 @@
       streak7TitleEarned: state.streak7TitleEarned,
       streak15TitleEarned: state.streak15TitleEarned,
       streak30TitleEarned: state.streak30TitleEarned,
+      ohachiCompleted: state.ohachiCompleted,
+      wisdomSeedCount: state.wisdomSeedCount,
     };
   }
 
@@ -21592,6 +21758,12 @@
     var shurikenCount = Number(state.shurikenCount) || 0;
     if (shurikenCount > 0) {
       html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span></div>`;
+    }
+    // 賢さの種：入手方法は非公開の秘密アイテム。所持数で表示し、使い切ったら
+    // 図鑑から消える(すばやさの種・折り紙の手裏剣と同じ表示方式)。
+    var wisdomSeedCount = Number(state.wisdomSeedCount) || 0;
+    if (wisdomSeedCount > 0) {
+      html += `<div class="badge-item badge-earned" title="なんでも屋で「食べる」か「売る」ができる、入手方法が謎の特別な種"><span class="badge-icon">🌰</span><span class="badge-name">賢さの種 ×${wisdomSeedCount}</span></div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -22177,6 +22349,7 @@
   function renderShopList() {
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
     if (els.shopPurchaseHistoryCard) els.shopPurchaseHistoryCard.hidden = !isAdminSession_();
+    if (els.wisdomSeedAdminCard) els.wisdomSeedAdminCard.hidden = !isAdminSession_();
 
     var prayerCanAfford = state.points >= AKR_PRAYER_COST_MP;
     var prayerActionHtml;
@@ -22311,7 +22484,17 @@
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    // 賢さの種：購入はできない(月間いいねランキング上位3名だけへの秘密の配布品)。
+    // 所持している時だけ「食べる」「売る」の2行を表示する。
+    var wisdomSeedCount_ = Number(state.wisdomSeedCount) || 0;
+    var wisdomSeedRowHtml = '';
+    if (wisdomSeedCount_ > 0) {
+      var wisdomEatRowHtml = `<div class="gift-row"><span class="shop-item-img shop-item-emoji">🌰</span><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span></div><button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button></div>`;
+      var wisdomSellRowHtml = `<div class="gift-row"><span class="shop-item-img shop-item-emoji">🌰</span><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span></div><button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button></div>`;
+      wisdomSeedRowHtml = wisdomEatRowHtml + wisdomSellRowHtml;
+    }
+
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + wisdomSeedRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -22350,6 +22533,10 @@
     if (steelArmorBtn) steelArmorBtn.addEventListener('click', function () { handleBuySteelArmorClick(steelArmorBtn); });
     var iceSwordBuyBtn = document.getElementById('buyIceSwordBtn');
     if (iceSwordBuyBtn) iceSwordBuyBtn.addEventListener('click', function () { handleBuyIceSwordClick(iceSwordBuyBtn); });
+    var eatWisdomSeedBtn = document.getElementById('eatWisdomSeedBtn');
+    if (eatWisdomSeedBtn) eatWisdomSeedBtn.addEventListener('click', eatWisdomSeedClick_);
+    var sellWisdomSeedBtn = document.getElementById('sellWisdomSeedBtn');
+    if (sellWisdomSeedBtn) sellWisdomSeedBtn.addEventListener('click', sellWisdomSeedClick_);
   }
 
   // 宝箱・鍵・指輪のなんでも屋UI。ティアごとに「鍵を買う」
@@ -23442,6 +23629,32 @@
       fujiBattleTimerInterval_ = window.setInterval(tick, 1000);
     }
   }
+  // お鉢巡り挑戦中、対戦画面(VS表示)の中に経過時間をリアルタイムで表示する
+  // (updateFujiBattleTimer_と同じ仕組みだが、カウントダウンではなくカウントアップ)。
+  var ohachiBattleTimerInterval_ = null;
+  function updateOhachiBattleTimer_(isOhachi) {
+    if (!els.battleOhachiTimer) return;
+    if (!isOhachi || !state.ohachiStartedAt) {
+      els.battleOhachiTimer.hidden = true;
+      if (ohachiBattleTimerInterval_) {
+        window.clearInterval(ohachiBattleTimerInterval_);
+        ohachiBattleTimerInterval_ = null;
+      }
+      return;
+    }
+    els.battleOhachiTimer.hidden = false;
+    function tick() {
+      var elapsed = Math.max(0, Date.now() - Number(state.ohachiStartedAt));
+      var totalSec = Math.floor(elapsed / 1000);
+      var m = Math.floor(totalSec / 60);
+      var s = totalSec % 60;
+      els.battleOhachiTimer.textContent = '⏱️ 経過時間 ' + m + '分' + (s < 10 ? '0' : '') + s + '秒（' + (Number(state.ohachiStreak) || 0) + '/' + OHACHI_REQUIRED_STREAK_ + '問）';
+    }
+    tick();
+    if (!ohachiBattleTimerInterval_) {
+      ohachiBattleTimerInterval_ = window.setInterval(tick, 1000);
+    }
+  }
   // 入山から3日以内に山頂へ到達したかどうか。
   function fujiClimbDeadlineExpired_() {
     return !!state.fujiClimbStartedAt && (Date.now() - Number(state.fujiClimbStartedAt)) > FUJI_CLIMB_DEADLINE_MS;
@@ -23587,6 +23800,34 @@
       window.alert('通信に失敗しました。もう一度お試しください。');
     });
   }
+  // 読書いいねランキング特典の月次配布(00001限定)。自動実行(cron)の仕組みが
+  // まだ無いため、月末に管理者が手動でタップして実行する運用。今月分を対象に、
+  // 1〜3位へ賢さの種、1〜25位へ順位に応じたHPボーナスを配布する(月をまたいでの
+  // 二重配布はサーバー側で防止済み)。
+  function handleWisdomSeedDistributeClick_() {
+    var session = loadSession();
+    if (!session || !session.id || session.id !== '00001') return;
+    if (!window.confirm('今月の読書いいねランキング特典（1〜3位に賢さの種、1〜25位にHPボーナス）を配布します。よろしいですか？（同じ月に2回実行はできません）')) return;
+    els.wisdomSeedDistributeBtn.disabled = true;
+    apiPost('distributeWisdomSeeds', { id: session.id }).then(function (res) {
+      els.wisdomSeedDistributeBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '配布に失敗しました。';
+        if (res.error === 'already_distributed') msg = 'この月はすでに配布済みです。';
+        else if (res.error === 'no_likes_this_month') msg = 'この月はまだいいねがついた投稿がありません。';
+        else if (res.error === 'forbidden') msg = '権限がありません。';
+        if (els.wisdomSeedDistributeResult) els.wisdomSeedDistributeResult.textContent = msg;
+        window.alert(msg);
+        return;
+      }
+      var lines = res.recipients.map(function (r, idx) { return (idx + 1) + '位: ' + r.student_id + '（' + r.like_count + 'いいね）'; }).join('\n');
+      if (els.wisdomSeedDistributeResult) els.wisdomSeedDistributeResult.textContent = res.monthKey + 'を配布済み（' + res.recipients.length + '人）';
+      window.alert('✅ ' + res.monthKey + 'の読書いいね特典を配布しました。\n' + lines);
+    }).catch(function () {
+      els.wisdomSeedDistributeBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
   function fujiCanEnter_() {
     // fujiActiveが既にtrueでも、登山画面に戻るために再度呼べるようにする
     // (進行中の状態は触らない)。
@@ -23720,6 +23961,104 @@
     saveGameState(state);
     return '<div class="win-banner">🎉 ' + state.fujiStation + '合目に到達！🎉</div>' + hpGainHtml + timeAttackHtml;
   }
+
+  // お鉢巡りに挑戦できるか(入り口の条件)。富士登山の成功者限定・開催期間中・
+  // まだ成功していない・現在挑戦中でない、の全てを満たす必要がある。
+  function ohachiCanEnter_() {
+    return isAdminSession_() && ohachiCardActive_() && !!state.fujiSummitReached && !state.ohachiCompleted && !state.ohachiActive;
+  }
+  // 「挑戦する」ボタンの処理。注意事項は無く、単元条件を満たしていれば即、
+  // 入山料(OHACHI_ENTRY_FEE_MP)をサーバー確定処理で払ってから開始する。
+  function startOhachiMeguri_() {
+    if (!ohachiCanEnter_()) return;
+    var elig = ohachiEligibility_();
+    if (!elig.ok) {
+      window.alert('お鉢巡りに挑戦するには、出題条件（自分の学年の単元を' + OHACHI_MIN_ELIGIBLE_CATEGORIES_ + '個以上ON、うち文章題を' + OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上含む）を満たす必要があります。単元の設定を確認してください。');
+      return;
+    }
+    if ((Number(state.points) || 0) < OHACHI_ENTRY_FEE_MP) {
+      window.alert('お鉢巡りには参加料' + OHACHI_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
+      return;
+    }
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (els.ohachiStartBtn) els.ohachiStartBtn.disabled = true;
+    apiPost('ohachiEntryFee', { id: session.id }).then(function (res) {
+      if (els.ohachiStartBtn) els.ohachiStartBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '参加料の支払いに失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'fuji_not_cleared') msg = '富士登山の成功者だけが挑戦できます。';
+        else if (res.error === 'already_completed') msg = 'お鉢巡りは既に達成済みです。再挑戦はできません。';
+        window.alert(msg);
+        return;
+      }
+      state.points = res.points;
+      state.ohachiEligibleIds_ = elig.ids;
+      state.ohachiActive = true;
+      state.ohachiStreak = 0;
+      state.ohachiStartedAt = Date.now();
+      state.streak = 0;
+      if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
+      saveGameState(state);
+      if (els.fujiPanel) els.fujiPanel.hidden = true;
+      updateGameHud();
+      nextQuestion();
+    }).catch(function () {
+      if (els.ohachiStartBtn) els.ohachiStartBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
+  function finishOhachiMeguri_() {
+    var session = loadSession();
+    var grade = session && session.grade;
+    var elapsedMs = Date.now() - Number(state.ohachiStartedAt || Date.now());
+    var reward = ohachiRewardForElapsedMs_(grade, elapsedMs);
+    var totalSec = Math.floor(elapsedMs / 1000);
+    var mLabel = Math.floor(totalSec / 60) + '分' + (totalSec % 60 < 10 ? '0' : '') + (totalSec % 60) + '秒';
+    state.ohachiActive = false;
+    state.ohachiStreak = 0;
+    state.ohachiStartedAt = null;
+    state.ohachiEligibleIds_ = null;
+    state.ohachiCompleted = true;
+    if (reward.hp > 0) state.hp = (Number(state.hp) || 0) + reward.hp;
+    saveGameState(state);
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    var hpHtml = reward.hp > 0
+      ? '<div class="item-gain-banner">💪 タイム' + mLabel + '！HPが' + reward.hp + '増えた！（現在HP: ' + state.hp + '）</div>'
+      : '<div class="item-gain-banner">タイムは' + mLabel + 'でした。規定のタイム枠に入らなかったため、HPボーナスはありません。</div>';
+    return '<div class="win-banner">🎉🔄 お鉢巡りを達成した！🎉</div>' + hpHtml;
+  }
+  // お鉢巡りカードの表示更新(00001限定プレビュー中)。
+  function renderOhachiCard_() {
+    if (!els.ohachiCard) return;
+    if (!isAdminSession_() || !ohachiCardActive_()) { els.ohachiCard.hidden = true; return; }
+    els.ohachiCard.hidden = false;
+    var tiers = ohachiTiersForGrade_((loadSession() || {}).grade);
+    var tierLines = tiers.slice().sort(function (a, b) { return b.min - a.min; })
+      .map(function (t) { return t.min + '分以内に' + OHACHI_REQUIRED_STREAK_ + '問連続正解で+' + t.hp + 'HP'; }).join('／');
+    if (els.ohachiHint) {
+      els.ohachiHint.textContent = '富士登山の成功者限定の追加チャレンジ！参加料' + OHACHI_ENTRY_FEE_MP + 'MPを払い、自分の学年の単元を' + OHACHI_MIN_ELIGIBLE_CATEGORIES_ + '個以上ON（うち文章題を' + OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上）にした状態で、' + OHACHI_REQUIRED_STREAK_ + '問連続正解を目指そう。不正解でも挑戦は続けられるが、連続正解数は0に戻る。かかった時間が速いほど複数の枠を同時に満たせる（' + tierLines + '、速い枠を満たせば遅い枠の分も合計でもらえる）。成功は一度きり、失敗しても10月中は何度でも再挑戦できる（その都度' + OHACHI_ENTRY_FEE_MP + 'MP必要）。';
+    }
+    if (els.ohachiStatusText) {
+      if (state.ohachiCompleted) {
+        els.ohachiStatusText.textContent = '✅ お鉢巡り達成済みです。';
+      } else if (!state.fujiSummitReached) {
+        els.ohachiStatusText.textContent = '富士登山に成功すると挑戦できるようになります。';
+      } else if (state.ohachiActive) {
+        els.ohachiStatusText.textContent = '挑戦中です。下の問題に答えて進めましょう！';
+      } else {
+        var elig = ohachiEligibility_();
+        els.ohachiStatusText.textContent = elig.ok
+          ? '挑戦条件を満たしています。'
+          : '出題条件が不足しています（現在: 自分の学年の単元' + elig.count + '個・うち文章題' + elig.wordProblemCount + '個。必要: ' + OHACHI_MIN_ELIGIBLE_CATEGORIES_ + '個以上・文章題' + OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上）。';
+      }
+    }
+    if (els.ohachiStartBtn) {
+      els.ohachiStartBtn.hidden = !ohachiCanEnter_();
+    }
+  }
+
   // 勇者の剣：世界一周のボス戦中に1回だけ使える特別攻撃。魔法の書と同じく、
   // 抜いた直後の問題に正解して初めて1000ダメージが入る(不正解だとかわされて
   // 不発になる)。抜いた時点で所持数は減り(壊れる)、手に入れたこと自体の記念
@@ -23787,6 +24126,34 @@
       : '<span class="fb-result">💨 手裏剣は外れてしまった…！（残り' + state.shurikenCount + '本）</span>';
     els.feedback.classList.remove(hit ? 'incorrect' : 'correct');
     els.feedback.classList.add(hit ? 'correct' : 'incorrect');
+  }
+
+  // 賢さの種：購入不可(月間いいねランキング上位3名だけへの秘密の配布品)。
+  // 1個につき「食べる」でHP+1000、または「売る」で1000MPに変えられる
+  // (MPの増加はsyncPointsの通常マージで反映されるため専用エンドポイント不要)。
+  const WISDOM_SEED_HP_GAIN_ = 1000;
+  const WISDOM_SEED_SELL_MP_ = 1000;
+  function eatWisdomSeedClick_() {
+    if ((Number(state.wisdomSeedCount) || 0) <= 0) return;
+    state.wisdomSeedCount = (Number(state.wisdomSeedCount) || 0) - 1;
+    state.hp = (Number(state.hp) || 0) + WISDOM_SEED_HP_GAIN_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderShopList();
+    renderItems();
+  }
+  function sellWisdomSeedClick_() {
+    if ((Number(state.wisdomSeedCount) || 0) <= 0) return;
+    state.wisdomSeedCount = (Number(state.wisdomSeedCount) || 0) - 1;
+    state.points = (Number(state.points) || 0) + WISDOM_SEED_SELL_MP_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderShopList();
+    renderItems();
   }
 
   // 今のボスに使える魔法の書を、1冊ごとにボタンとして並べる(1体のボスに複数の
@@ -24376,6 +24743,7 @@
         els.fujiClimbBtn.textContent = '⛰️ 登る';
       }
     }
+    renderOhachiCard_();
   }
 
   function renderWorldPanel() {
@@ -25746,8 +26114,10 @@
     });
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
+  if (els.ohachiStartBtn) els.ohachiStartBtn.addEventListener('click', startOhachiMeguri_);
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
+  if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.shurikenBtn) els.shurikenBtn.addEventListener('click', castShuriken_);

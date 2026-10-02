@@ -237,6 +237,10 @@
       <p class="mp-cap-banner-text" id="fujiBannerText"></p>
     </section>
 
+    <section class="mp-cap-banner" id="ohachiBanner" hidden>
+      <p class="mp-cap-banner-text" id="ohachiBannerText"></p>
+    </section>
+
     <section class="mp-cap-banner" id="readingBanner" hidden>
       <p class="mp-cap-banner-text" id="readingBannerText"></p>
     </section>
@@ -323,6 +327,11 @@
       <div class="test-photo-card" id="shopPurchaseHistoryCard" hidden>
         <button type="button" class="ghost-btn" id="shopPurchaseHistoryBtn">📜 購入履歴を見る（直近2ヶ月・00001限定）</button>
         <div id="shopPurchaseHistoryBox" hidden></div>
+      </div>
+      <div class="test-photo-card" id="wisdomSeedAdminCard" hidden>
+        <p class="test-photo-hint">🛠️ 管理者用：今月の読書いいねランキング特典（1〜3位に賢さの種、1〜25位にHPボーナス）を配布します。月が変わったら実行してください（同じ月は二重配布できません）。</p>
+        <button type="button" class="ghost-btn" id="wisdomSeedDistributeBtn">今月の読書いいね特典を配布する</button>
+        <p class="test-photo-result" id="wisdomSeedDistributeResult"></p>
       </div>
       <div class="gift-list" id="shopList"></div>
     </section>
@@ -441,6 +450,13 @@
       <div class="test-photo-card" id="fujiAdminPoolCard" hidden>
         <p class="test-photo-hint">🛠️ 管理者用：今月の富士登山共済プール（入山料・救助ペナルティの合計の8割）を、今月の登頂成功者に均等分配します。月が変わったら実行してください。</p>
         <button type="button" class="ghost-btn" id="fujiDistributePoolBtn">今月のプールを分配する</button>
+      </div>
+      <div class="test-photo-card" id="ohachiCard" hidden>
+        <h4 class="test-photo-card-title">🔄 お鉢巡り（10月10日〜10月31日限定）</h4>
+        <img src="images/ohachi_overview.jpg" alt="お鉢巡り" class="shop-item-img" style="align-self:stretch;width:100%;height:auto;border-radius:10px;">
+        <p class="test-photo-hint" id="ohachiHint"></p>
+        <p class="test-photo-hint" id="ohachiStatusText"></p>
+        <button type="button" class="primary-btn" id="ohachiStartBtn" hidden>🔄 お鉢巡りに挑戦する（300MP）</button>
       </div>
     </section>
 
@@ -739,6 +755,7 @@
 
     <div class="battle-vs-row" id="battleVsRow" hidden>
       <div class="battle-fuji-timer" id="battleFujiTimer" hidden></div>
+      <div class="battle-fuji-timer" id="battleOhachiTimer" hidden></div>
       <div class="battle-avatar-side">
         <div class="battle-avatar-box" id="battlePlayerAvatar"></div>
         <span class="battle-avatar-caption">あなた</span>
