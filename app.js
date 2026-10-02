@@ -18154,7 +18154,7 @@
   const OXYGEN_CAN_COST_MP = 100;
   const FUJI_ALTITUDE_SICKNESS_STATION_ = 8;
   // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。500MP。
-  const SHARPEN_SWORD_COST_MP = 300;
+  const SHARPEN_SWORD_COST_MP = 500;
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
   const HERB_COST_MP = 300;
   const HERB_HP_GAIN = 100;
