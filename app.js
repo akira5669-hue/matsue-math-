@@ -323,6 +323,7 @@
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
+        streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -343,6 +344,7 @@
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
+        streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
       });
     }
   }
@@ -17946,6 +17948,21 @@
         miss: '％ゲットだぜ…またね！',
       },
     },
+    // 丸バツ君：2026-10-03〜2026-10-09の1週間限定レアキャラ。他のレアキャラと違い
+    // 1問正解しただけで倒せる(requiredStreakが1になる、updateGameHud/handleAnswer
+    // 両方を参照)。間違えても逃げず(FLEEING_RARE_TYPES_に含めない)、その場に
+    // 居座って不正解のたびにHPを100奪う(鋼の鎧があれば無効化、漁師AKRと同じ扱い)。
+    // 倒すとMPの代わりにHPを100もらえる。出現率は最初の3日間(10/3〜10/5)だけ
+    // 固定5%、残りの4日間(10/6〜10/9)は他のレアキャラと同じRARE_SCALEのプールに
+    // 混ざる(maruBatsuKunChance_参照)。期間外は出現しない。
+    marubatsukun: {
+      id: 'marubatsukun', name: '丸バツ君', img: 'images/marubatsukun.jpg',
+      lines: {
+        appear: '丸かバツか、1問勝負だ！正解すればお前の勝ち、間違えたらHPを100もらうぞ！',
+        defeat: 'やられた…！約束どおりHPを100あげるよ！',
+        miss: 'バツ！HPを100もらっていくぞ！',
+      },
+    },
     // 世界一周のステージボス。倒すとレアキャラコレクションに追加される(通常のレア
     // キャラと違い、1回倒すだけでコレクション入り。WORLD_BOSS_COLLECTIBLE_IDS参照)。
     wboss_baby: {
@@ -18026,7 +18043,7 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi', 'superakirametal', 'percentkun'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi', 'superakirametal', 'percentkun', 'marubatsukun'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
@@ -18282,6 +18299,22 @@
   // lib/handlers/shop.jsのSUPERAKIRAMETAL_MP_PENALTY/HP_PENALTYと必ず揃えること。
   const SUPERAKIRAMETAL_MP_PENALTY_ = 10;
   const SUPERAKIRAMETAL_HP_PENALTY_ = 10;
+  // 丸バツ君：1週間限定(2026-10-03〜2026-10-09)の高出現率レアキャラ。最初の3日間
+  // (10/3〜10/5)は固定5%、残りの4日間(10/6〜10/9)は他のレアキャラと同じ
+  // RARE_SCALEのプールに混ぜる(間違い大魔王と同じ1/10の相対比率)。期間外は0。
+  const MARUBATSUKUN_START_ = '2026-10-03';
+  const MARUBATSUKUN_HIGH_END_ = '2026-10-05';
+  const MARUBATSUKUN_END_ = '2026-10-09';
+  const MARUBATSUKUN_HIGH_CHANCE_ = 0.05;
+  const RARE_CHANCE_MARUBATSUKUN = (1 / 10) * RARE_SCALE;
+  function maruBatsuKunChance_() {
+    const today = todayKey();
+    if (today < MARUBATSUKUN_START_ || today > MARUBATSUKUN_END_) return 0;
+    if (today <= MARUBATSUKUN_HIGH_END_) return MARUBATSUKUN_HIGH_CHANCE_;
+    return RARE_CHANCE_MARUBATSUKUN;
+  }
+  const MARUBATSUKUN_HP_GAIN_ = 100;
+  const MARUBATSUKUN_HP_LOSS_ = 100;
   const SPECIAL_ITEM_FLAME_SWORD = 'flameSword';
   const SPECIAL_ITEM_SMILE_MASK = 'smileMask';
   const SPECIAL_ITEM_CAT_PENCIL = 'catPencil';
@@ -18325,6 +18358,7 @@
       ['gyoshi', RARE_CHANCE_GYOSHI],
       ['superakirametal', superAkirametalChance_()],
       ['percentkun', RARE_CHANCE_PERCENTKUN],
+      ['marubatsukun', maruBatsuKunChance_()],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -18499,6 +18533,12 @@
     // 世界一周の最終ボス(ステージ4)を初めて倒すと永続的にtrueになる称号フラグ。
     // 2周目以降にworldBossDefeatedがリセットされても、この称号は失われない。
     mathGodTitleEarned: !!((savedProgress && savedProgress.mathGodTitleEarned) || (savedGame && savedGame.mathGodTitleEarned)),
+    // 連続学習日数の称号(7日/15日/30日)。一度trueになったら戻らない永続フラグ
+    // (fujiSummitReachedと同じ扱い)。renderHistory内で、その時点の連続日数が
+    // しきい値以上なら初めてtrueにする(日をまたいで連続記録が途切れても消えない)。
+    streak7TitleEarned: !!((savedProgress && savedProgress.streak7TitleEarned) || (savedGame && savedGame.streak7TitleEarned)),
+    streak15TitleEarned: !!((savedProgress && savedProgress.streak15TitleEarned) || (savedGame && savedGame.streak15TitleEarned)),
+    streak30TitleEarned: !!((savedProgress && savedProgress.streak30TitleEarned) || (savedGame && savedGame.streak30TitleEarned)),
     // 魔法の書(2周目/9月のボス戦専用消費アイテム)の所持冊数。{fire,ice,thunder,...}
     // のように属性ごとに数える。treasureItemsと同じ「端末を信頼してSET」方式。
     spellbooks: (savedProgress && savedProgress.spellbooks && typeof savedProgress.spellbooks === 'object') ? Object.assign({}, savedProgress.spellbooks) : ((savedGame && savedGame.spellbooks && typeof savedGame.spellbooks === 'object') ? Object.assign({}, savedGame.spellbooks) : {}),
@@ -19489,7 +19529,7 @@
     // 「あと何問」とHPが一致するが、ボス戦は周ごとのダメージ量(と魔法)で削る。
     const requiredStreak = isFuji ? fujiCurrentLeg_().streak
       : isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : 10);
     const hp = isFuji ? Math.max(0, fujiCurrentLeg_().streak - (Number(state.fujiLegStreak) || 0))
       : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
       : Math.max(0, requiredStreak - state.streak);
@@ -19977,6 +20017,21 @@
           missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
+      } else if (state.rareType === 'marubatsukun' && hasSteelArmorCharge_()) {
+        state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+        missLineHtml += state.steelArmorCharges > 0
+          ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
+          : `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！…鎧は壊れてなくなった。</div>`;
+        saveGameState(state);
+      } else if (state.rareType === 'marubatsukun') {
+        // 丸バツ君も漁師AKRと同じく逃げないタイプ。1問でも間違えるとHPを100奪われる
+        // (その代わり1問正解すれば即撃破でHPを100もらえる、requiredStreak参照)。
+        state.hp = Math.max(0, (Number(state.hp) || 0) - MARUBATSUKUN_HP_LOSS_);
+        missLineHtml += `<div class="enemy-quote-banner">❌ 丸バツ君に、HPを${MARUBATSUKUN_HP_LOSS_}奪われた！（残りHP: ${state.hp}）</div>`;
+        if (state.hp <= 0) {
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+        }
+        saveGameState(state);
       } else if (state.rareType === 'superakirametal' && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         missLineHtml += state.steelArmorCharges > 0
@@ -20067,7 +20122,7 @@
     const bossSubIndexForWin = state.worldBossActiveStage ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
     const requiredStreak = state.fujiActive ? fujiCurrentLeg_().streak
       : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : 10);
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : 10);
     if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
       // 富士登山、区間クリア：MP/経験値の通常報酬ではなく、次の合目に進む(または
       // 10合目=山頂到達の)特別演出。
@@ -20133,6 +20188,11 @@
         const hpGain = catId === 'circleSector6' ? CIRCLE_SECTOR6_FIXED_HP_GAIN : wordProblemHpGainForGrade_(ownGrade);
         state.hp = (Number(state.hp) || 0) + hpGain;
         hpBonusHtml = ` +${hpGain}HP`;
+      }
+      // 丸バツ君は1問正解しただけで倒せる代わりに、MPではなくHPを100もらえる特別報酬。
+      if (wasRareType === 'marubatsukun' && !state.zombified) {
+        state.hp = (Number(state.hp) || 0) + MARUBATSUKUN_HP_GAIN_;
+        hpBonusHtml += ` +${MARUBATSUKUN_HP_GAIN_}HP`;
       }
 
       let itemGainedHtml = '';
@@ -20272,6 +20332,7 @@
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
         : wasRareType === 'superakirametal' ? '<span class="rare-badge">🎸スーパーレア撃破！🎸</span>'
         : wasRareType === 'percentkun' ? ('<span class="rare-badge">％激レア撃破！+' + PERCENTKUN_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'marubatsukun' ? ('<span class="rare-badge">⭕レア撃破！+' + MARUBATSUKUN_HP_GAIN_ + 'HP✨</span>')
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
@@ -20924,6 +20985,9 @@
         state.fujiLegStreak = Number(progress.fujiLegStreak) || state.fujiLegStreak;
         state.fujiTimeAttackStartedAt = progress.fujiTimeAttackStartedAt || state.fujiTimeAttackStartedAt;
         state.fujiClimbStartedAt = progress.fujiClimbStartedAt || state.fujiClimbStartedAt;
+        state.streak7TitleEarned = !!(state.streak7TitleEarned || progress.streak7TitleEarned);
+        state.streak15TitleEarned = !!(state.streak15TitleEarned || progress.streak15TitleEarned);
+        state.streak30TitleEarned = !!(state.streak30TitleEarned || progress.streak30TitleEarned);
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
@@ -21000,6 +21064,9 @@
       fujiLegStreak: state.fujiLegStreak,
       fujiTimeAttackStartedAt: state.fujiTimeAttackStartedAt,
       fujiClimbStartedAt: state.fujiClimbStartedAt,
+      streak7TitleEarned: state.streak7TitleEarned,
+      streak15TitleEarned: state.streak15TitleEarned,
+      streak30TitleEarned: state.streak30TitleEarned,
     };
   }
 
@@ -21106,6 +21173,9 @@
     // 富士登山の山頂到達は一度trueになったら戻らない実績フラグなのでOR、
     // 勇者の剣の所持数はironWallCharges等と同じく大きい方を採用する。
     if (server.fujiSummitReached && !state.fujiSummitReached) { state.fujiSummitReached = true; changed = true; }
+    if (server.streak7TitleEarned && !state.streak7TitleEarned) { state.streak7TitleEarned = true; changed = true; }
+    if (server.streak15TitleEarned && !state.streak15TitleEarned) { state.streak15TitleEarned = true; changed = true; }
+    if (server.streak30TitleEarned && !state.streak30TitleEarned) { state.streak30TitleEarned = true; changed = true; }
     var sYushaSwordCount = Number(server.yushaSwordCount) || 0;
     if (sYushaSwordCount > (Number(state.yushaSwordCount) || 0)) { state.yushaSwordCount = sYushaSwordCount; changed = true; }
     if (server.yushaSwordObtained && !state.yushaSwordObtained) { state.yushaSwordObtained = true; changed = true; }
@@ -21468,7 +21538,9 @@
 
   const BADGES = [
     { id: 'allCategories', icon: '🏆', name: '全カテゴリ制覇', desc: '全ての単元で1問以上正解した' },
-    { id: 'streak7',       icon: '🔥', name: '7日連続ログイン', desc: '7日連続で学習した' },
+    { id: 'streak7',       icon: '🔥', name: '7日連続ログイン', desc: '7日連続で学習した(一度達成すれば記録が途切れても称号は消えない)' },
+    { id: 'streak15',      icon: '🔥', name: '15日連続ログイン', desc: '15日連続で学習した(一度達成すれば記録が途切れても称号は消えない)' },
+    { id: 'streak30',      icon: '🔥', name: '30日連続ログイン', desc: '30日連続で学習した(一度達成すれば記録が途切れても称号は消えない)' },
     { id: 'level100',      icon: '🥉', name: 'レベル100',      desc: 'レベル100に到達した' },
     { id: 'level200',      icon: '🥈', name: 'レベル200',      desc: 'レベル200に到達した' },
     { id: 'level300',      icon: '🥇', name: 'レベル300',      desc: 'レベル300に到達した' },
@@ -21484,7 +21556,13 @@
     const allCatIds = CATEGORIES.map(c => c.id);
     const clearedCats = new Set((data.byCategory || []).filter(c => c.correct > 0).map(c => c.category));
     if (allCatIds.length > 0 && allCatIds.every(id => clearedCats.has(id))) earned.add('allCategories');
-    if ((data.streak || 0) >= 7) earned.add('streak7');
+    // 連続ログイン日数の称号は、毎回計算し直される「今の連続日数」(data.streak)
+    // ではなく、一度達成したら戻らない永続フラグ(state.streakXTitleEarned)で
+    // 判定する(記録が途切れると称号が消えてしまうバグを防ぐため。付与自体は
+    // renderHistory内で行う)。
+    if (state.streak7TitleEarned) earned.add('streak7');
+    if (state.streak15TitleEarned) earned.add('streak15');
+    if (state.streak30TitleEarned) earned.add('streak30');
     [100, 200, 300, 500, 1000, 2000, 3000, 5000].forEach(n => { if (state.level >= n) earned.add('level' + n); });
     return earned;
   }
@@ -21602,8 +21680,26 @@
     }).join('');
   }
 
+  // 連続学習日数の称号(7日/15日/30日)を、履歴取得のたびにチェックして初めて
+  // 達成した分だけ永続フラグをtrueにする。data.streakは日をまたぐとリセットされる
+  // 「今の連続日数」なので、ここで一度でもしきい値を超えたことを検知したら
+  // state側に固定し、以後は記録が途切れても称号が消えないようにする。
+  function checkStreakTitles_(data) {
+    const d = Number(data.streak) || 0;
+    let newlyEarned = false;
+    if (d >= 7 && !state.streak7TitleEarned) { state.streak7TitleEarned = true; newlyEarned = true; }
+    if (d >= 15 && !state.streak15TitleEarned) { state.streak15TitleEarned = true; newlyEarned = true; }
+    if (d >= 30 && !state.streak30TitleEarned) { state.streak30TitleEarned = true; newlyEarned = true; }
+    if (newlyEarned) {
+      saveGameState(state);
+      const session = loadSession();
+      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    }
+  }
+
   function renderHistory(data) {
     backfillCategoryRanksFromHistory_(data.byCategory);
+    checkStreakTitles_(data);
     renderBadges(data);
     renderRareCollection();
     renderItems();

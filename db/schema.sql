@@ -109,7 +109,13 @@ CREATE TABLE students (
   study_report_total INTEGER NOT NULL DEFAULT 0,
   -- 報告のたびに選んだ勉強時間(分、30分刻み)の累計。ランキングには使わず
   -- 記録用(将来の表示・分析用)。
-  study_report_minutes_total INTEGER NOT NULL DEFAULT 0
+  study_report_minutes_total INTEGER NOT NULL DEFAULT 0,
+  -- 連続学習日数の称号(7日/15日/30日)。handleHistoryが毎回計算する「現在の
+  -- 連続日数」は日をまたぐとリセットされるため、称号自体は一度trueになったら
+  -- 戻らない永続フラグとして別に持つ(fuji_summit_reachedと同じOR方式でマージ)。
+  streak7_title_earned BOOLEAN NOT NULL DEFAULT false,
+  streak15_title_earned BOOLEAN NOT NULL DEFAULT false,
+  streak30_title_earned BOOLEAN NOT NULL DEFAULT false
 );
 CREATE INDEX idx_students_points ON students (points DESC);
 CREATE INDEX idx_students_hp ON students (hp DESC);
