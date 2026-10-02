@@ -18789,6 +18789,8 @@
     fujiBannerText: document.getElementById('fujiBannerText'),
     ohachiBanner: document.getElementById('ohachiBanner'),
     ohachiBannerText: document.getElementById('ohachiBannerText'),
+    enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
+    enrollmentNoticeBannerText: document.getElementById('enrollmentNoticeBannerText'),
     readingBanner: document.getElementById('readingBanner'),
     readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
@@ -19740,6 +19742,7 @@
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
+    renderEnrollmentNoticeBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
@@ -20870,6 +20873,21 @@
       els.ohachiBannerText.textContent = today >= OHACHI_START_
         ? '📢【富士登山「お鉢巡り」、開催中！】富士登山に成功した人だけが挑戦できる追加チャレンジ。300MPを払って、自分の学年の単元だけで50問連続正解を目指そう！速ければ速いほどHPボーナスがアップ（最大3000〜3500HP）。10月末まで。'
         : '📢【予告：富士登山「お鉢巡り」、10月10日スタート！】富士登山に成功した人だけが挑戦できる追加チャレンジが近日登場。今のうちに富士登山の成功を目指そう。';
+    }
+  }
+
+  // 対象学年・コースの案内(全生徒に表示)。小4〜中3の本科・単科理系以外の生徒には
+  // 退会手続きを案内する(今月末まで表示)。
+  var ENROLLMENT_NOTICE_BANNER_END_ = '2026-10-31';
+  function renderEnrollmentNoticeBanner_() {
+    if (!els.enrollmentNoticeBanner) return;
+    if (todayKey() > ENROLLMENT_NOTICE_BANNER_END_) {
+      els.enrollmentNoticeBanner.hidden = true;
+      return;
+    }
+    els.enrollmentNoticeBanner.hidden = false;
+    if (els.enrollmentNoticeBannerText) {
+      els.enrollmentNoticeBannerText.textContent = '📢【ご案内】このアプリは、小4から中3の本科・単科理系の生徒さんのみご利用いただけます。それ以外の学年・コースの生徒さんは、お手数ですが画面上の「退会」から退会手続きをお願いします。（今月末まで）';
     }
   }
 
