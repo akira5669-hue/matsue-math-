@@ -17932,6 +17932,20 @@
         defeat: '関ヶ原の戦場のど真ん中を敵陣突破して薩摩に帰った、あの「島津の退き口」の主が儂じゃ。鬼島津と恐れられたわい。',
       },
     },
+    // パーセント君：超レアキャラ(出現率0.01%、他のレアキャラと違いRARE_SCALEで
+    // スケールしない固定値。rollRareType参照)。他の「逃げる」系レアキャラと同じく
+    // 1問でも間違えると逃げる(FLEEING_RARE_TYPES_)。出題は選択中の出題範囲
+    // (state.enabled)に関係なく、今まで間違えた全カテゴリの問題からランダムに
+    // 出題する(pickPercentKunQuestion参照、mistakeking/sansudevilと違い範囲を
+    // 無視する点が異なる)。5回撃破でレアキャラ図鑑にも載る(RARE_COLLECTIBLE_IDS)。
+    percentkun: {
+      id: 'percentkun', name: 'パーセント君', img: 'images/percentkun.jpg',
+      lines: {
+        appear: '％ど根性！パーセント君参上！お前が今まで間違えた問題、全部見せてもらうぞ！1問でも間違えたら逃げるからな！',
+        defeat: '100％の実力、見せてもらったぜ！またどこかで会おう！',
+        miss: '％ゲットだぜ…またね！',
+      },
+    },
     // 世界一周のステージボス。倒すとレアキャラコレクションに追加される(通常のレア
     // キャラと違い、1回倒すだけでコレクション入り。WORLD_BOSS_COLLECTIBLE_IDS参照)。
     wboss_baby: {
@@ -18012,7 +18026,7 @@
     return WARLORD_IDS[idx];
   }
   const RARE_COLLECTION_THRESHOLD = 5;
-  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi', 'superakirametal'].concat(WARLORD_IDS);
+  const RARE_COLLECTIBLE_IDS = ['zombie', 'santa', 'smile', 'nekoda', 'warisu', 'inuda', 'iine', 'nattoman', 'fugoupakkun', 'goumaji', 'angelTears', 'gyoshi', 'superakirametal', 'percentkun'].concat(WARLORD_IDS);
   // レアキャラを追加するたびに個別の確率をそのまま積み上げると、合計出現率が
   // 際限なく膨らんでしまう(実際に42%まで積み上がっていた)。各キャラの相対的な
   // 出現しやすさの比率は保ったまま、合計が約20%になるよう一律スケールする。
@@ -18033,6 +18047,8 @@
   const RARE_CHANCE_FUGOUPAKKUN = (1 / 30) * RARE_SCALE;
   const RARE_CHANCE_GOUMAJI = (1 / 50) * RARE_SCALE;
   const RARE_CHANCE_GYOSHI = (1 / 20) * RARE_SCALE;
+  // パーセント君：固定0.01%(他のレアキャラと違いRARE_SCALEでスケールしない絶対値)。
+  const RARE_CHANCE_PERCENTKUN = 0.0001;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -18047,6 +18063,9 @@
   // FLEEING_RARE_TYPES_に含めないことで実現、HP減少は上のhandleAnswer内で処理)。
   const GYOSHI_BONUS_MP = 20;
   const GYOSHI_HP_STEAL_ = 2;
+  // パーセント君：出現率0.01%の超レアキャラなので、通常のレアボーナス(10〜30MP)より
+  // 高めの固定ボーナスとする。
+  const PERCENTKUN_BONUS_MP = 50;
   // 宝箱・鍵・指輪：レアキャラを撃破すると確率で、その時解いていた問題の学年に
   // 応じたティアの宝箱を手に入れる(小学生→銅、中1→銀、中2→金、中3→虹色)。
   // 8/29・30は「宝箱イベントデー」として5分の1の高確率、8/31以降は通常確率の
@@ -18179,7 +18198,7 @@
   // 挑戦できる(使うと図鑑から減っていき、0個になると表示から消える)。
   const SPEEDSEED_COST_MP = 100;
   // 「逃げる」演出があるレアキャラのrareType一覧(handleAnswerの不正解分岐と一致させる)。
-  const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji'];
+  const FLEEING_RARE_TYPES_ = ['santa', 'nekoda', 'warisu', 'inuda', 'iine', 'soubusen', 'nattoman', 'fugoupakkun', 'goumaji', 'percentkun'];
   // なんでも屋の消費アイテム「鉄壁の盾」：500MPで購入し、ボス戦で間違えるたびに
   // 自動で1チャージ消費して、そのミスのダメージを半分にする(最大3チャージ)。
   // すばやさの種と異なり複数個は保有できず、3回使い切ると壊れて消える。
@@ -18305,6 +18324,7 @@
       ['goumaji', RARE_CHANCE_GOUMAJI],
       ['gyoshi', RARE_CHANCE_GYOSHI],
       ['superakirametal', superAkirametalChance_()],
+      ['percentkun', RARE_CHANCE_PERCENTKUN],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -19084,6 +19104,18 @@
     if (pool.length === 0) return null;
     return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
   }
+  // パーセント君：間違い大魔王/算数デビルちゃんと同じ「間違えた問題を出題」仕組み
+  // だが、選択中の出題範囲(state.enabled)とは関係なく、今まで間違えた全カテゴリの
+  // 問題を対象にする点が異なる(ユーザー指定のとおり「指定した範囲とは関係なく」)。
+  function pickPercentKunQuestion() {
+    const pool = [];
+    Object.keys(state.wrongBank).forEach(catId => {
+      const bank = state.wrongBank[catId];
+      if (bank && bank.length > 0) bank.forEach(snap => pool.push(snap));
+    });
+    if (pool.length === 0) return null;
+    return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
+  }
   // ハナマルコ(理科の通常キャラ)：選択中(ON)の理科単元の中から、間違えた問題を
   // ランダムに1つ選ぶ。無ければnull(その場合は通常のランダム出題にフォールバック)。
   function pickScienceMistakeQuestion() {
@@ -19406,7 +19438,8 @@
     clearMemoCanvas();
     // ボン・ミスコの呪いにかかっている間も、間違い大魔王/算数デビルちゃんと同じ
     // 「間違えた問題の保存庫」から出題する。
-    let mistakeQ = (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
+    let mistakeQ = state.rareType === 'percentkun' ? pickPercentKunQuestion()
+      : (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
       mistakeQ = pickWorldBossWrongQuestion();
     }
@@ -19758,6 +19791,7 @@
       const nattomanFled = !speedSeedSaved && state.rareType === 'nattoman';
       const fugoupakkunFled = !speedSeedSaved && state.rareType === 'fugoupakkun';
       const goumajiFled = !speedSeedSaved && state.rareType === 'goumaji';
+      const percentkunFled = !speedSeedSaved && state.rareType === 'percentkun';
       state.streak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
@@ -19801,6 +19835,11 @@
         saveGameState(state);
       } else if (goumajiFled) {
         missLineHtml += `<div class="enemy-quote-banner">💨 ごーまじは逃げてしまった…</div>`;
+        state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+        state.rareType = assignRareType(state);
+        saveGameState(state);
+      } else if (percentkunFled) {
+        missLineHtml += `<div class="enemy-quote-banner">％💨 パーセント君は逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
         state.rareType = assignRareType(state);
         saveGameState(state);
@@ -20045,7 +20084,7 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(5 or 10)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
@@ -20232,6 +20271,7 @@
         : wasRareType === 'fugoupakkun' ? ('<span class="rare-badge">🔢レア撃破！+' + FUGOUPAKKUN_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'hikizaru' ? '<span class="rare-badge">🐒レベル400記念撃破！🐒</span>'
         : wasRareType === 'superakirametal' ? '<span class="rare-badge">🎸スーパーレア撃破！🎸</span>'
+        : wasRareType === 'percentkun' ? ('<span class="rare-badge">％激レア撃破！+' + PERCENTKUN_BONUS_MP + 'MP✨</span>')
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
