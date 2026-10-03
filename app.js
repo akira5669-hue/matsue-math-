@@ -20885,7 +20885,7 @@
     }
     els.enrollmentNoticeBanner.hidden = false;
     if (els.enrollmentNoticeBannerText) {
-      els.enrollmentNoticeBannerText.textContent = '📢【ご案内】このアプリは、小4から中3の本科・単科理系の生徒さんのみご利用いただけます。それ以外の学年・コースの生徒さんは、お手数ですが画面上の「退会」から退会手続きをお願いします。（今月末まで）';
+      els.enrollmentNoticeBannerText.textContent = '📢【ご案内】このアプリは、小4から中3の本科・単科理系の生徒さんのみご利用いただけます。それ以外の学年・コースの生徒さんは、お手数ですが画面上の「退会」から退会手続きをお願いします。';
     }
   }
 
@@ -23664,7 +23664,16 @@
       var totalSec = Math.floor(elapsed / 1000);
       var m = Math.floor(totalSec / 60);
       var s = totalSec % 60;
-      els.battleOhachiTimer.textContent = '⏱️ 経過時間 ' + m + '分' + (s < 10 ? '0' : '') + s + '秒（' + (Number(state.ohachiStreak) || 0) + '/' + OHACHI_REQUIRED_STREAK_ + '問）';
+      var minutesNow = elapsed / 60000;
+      var session = loadSession();
+      // 今もらえるタイム枠は太字、既に過ぎた(間に合わなくなった)枠は打ち消し線で
+      // 薄く表示し、挑戦中にも目標がひと目でわかるようにする。
+      var tiers = ohachiTiersForGrade_(session && session.grade).slice().sort(function (a, b) { return b.min - a.min; });
+      var tierHtml = tiers.map(function (t) {
+        var achievable = minutesNow <= t.min;
+        return '<span style="' + (achievable ? 'font-weight:700;' : 'text-decoration:line-through;opacity:.5;') + '">' + t.min + '分:+' + t.hp + 'HP</span>';
+      }).join('／');
+      els.battleOhachiTimer.innerHTML = '⏱️ 経過時間 ' + m + '分' + (s < 10 ? '0' : '') + s + '秒（' + (Number(state.ohachiStreak) || 0) + '/' + OHACHI_REQUIRED_STREAK_ + '問）<br>' + tierHtml;
     }
     tick();
     if (!ohachiBattleTimerInterval_) {
