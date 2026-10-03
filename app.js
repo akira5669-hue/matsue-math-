@@ -18326,15 +18326,20 @@
   const SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA = 'goumajiMedamajikara';
   const SPECIAL_ITEM_AKR_STAFF = 'akrStaff';
   const SPECIAL_ITEMS = [
-    { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣' },
-    { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面' },
-    { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン' },
-    { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）' },
-    { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム' },
-    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）' },
-    { id: SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA, icon: '👀', name: 'ゴーマジの目力', desc: 'ごーまじを撃破して手に入れた特別なアイテム（5分の1の確率）' },
-    { id: SPECIAL_ITEM_AKR_STAFF, icon: '<img src="images/akr_staff.jpg" alt="">', name: 'AKRの杖', desc: 'ゾンビAKRを撃破して手に入れた不思議な杖' },
+    { id: SPECIAL_ITEM_FLAME_SWORD, icon: '🔥⚔️', name: '炎の剣', desc: 'サンタAKRを撃破して手に入れた伝説の剣', stars: 2 },
+    { id: SPECIAL_ITEM_SMILE_MASK, icon: '😊🎭', name: 'ほほえみの仮面', desc: 'ほほえみAKRを撃破して手に入れた仮面', stars: 2 },
+    { id: SPECIAL_ITEM_CAT_PENCIL, icon: '🐈', name: 'ネコのシャーペン', desc: 'ネコダを撃破して手に入れた特別なシャーペン', stars: 2 },
+    { id: SPECIAL_ITEM_ZANTETSUKEN, icon: '⚔️', name: '斬鉄剣', desc: 'いいねAKRを撃破して手に入れた伝説の剣（5分の1の確率）', stars: 3 },
+    { id: SPECIAL_ITEM_NATTO_GOKORO, icon: '🧑‍🍳', name: '納豆心', desc: 'ナットマンを撃破して手に入れた特別なアイテム', stars: 2 },
+    { id: SPECIAL_ITEM_SUTOBOKE_SWORD, icon: '🗡️', name: 'スットボケの剣', desc: '文章題限定のレアキャラ「スットボケAKR」を撃破して手に入れた剣（10分の1の確率）', stars: 3 },
+    { id: SPECIAL_ITEM_GOUMAJI_MEDAMAJIKARA, icon: '👀', name: 'ゴーマジの目力', desc: 'ごーまじを撃破して手に入れた特別なアイテム（5分の1の確率）', stars: 4 },
+    { id: SPECIAL_ITEM_AKR_STAFF, icon: '<img src="images/akr_staff.jpg" alt="">', name: 'AKRの杖', desc: 'ゾンビAKRを撃破して手に入れた不思議な杖', stars: 1 },
   ];
+  // 入手難易度を⭐1〜5で表示する共通ヘルパー(足りない分は☆で埋める)。
+  function difficultyStarsHtml_(n) {
+    var filled = Math.max(1, Math.min(5, Number(n) || 1));
+    return '<span class="item-difficulty">入手難易度' + '⭐'.repeat(filled) + '☆'.repeat(5 - filled) + '</span>';
+  }
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
   // 出現確率を配列で並べ、実行時に累積和を取ることでその種のバグを防ぐ。
@@ -21818,44 +21823,44 @@
     var html = SPECIAL_ITEMS.map(function (it) {
       const owned = state.items.includes(it.id);
       const cls = 'badge-item' + (owned ? ' badge-earned' : ' badge-locked');
-      return `<div class="${cls}" title="${it.desc}"><span class="badge-icon">${it.icon}</span><span class="badge-name">${it.name}</span></div>`;
+      return `<div class="${cls}" title="${it.desc}"><span class="badge-icon">${it.icon}</span><span class="badge-name">${it.name}</span>${difficultyStarsHtml_(it.stars)}</div>`;
     }).join('');
     // すばやさの種はなんでも屋で買える消費アイテムなので、他のアイテムと違い所持数で
     // 表示し、使い切って0個になったら図鑑から消える。
     var speedSeedCount = Number(state.speedSeedCount) || 0;
     if (speedSeedCount > 0) {
-      html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.jpg" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span></div>`;
+      html += `<div class="badge-item badge-earned" title="逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ"><span class="badge-icon"><img src="images/speed_seed.jpg" alt=""></span><span class="badge-name">すばやさの種 ×${speedSeedCount}</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 折り紙の手裏剣も消費アイテムなので所持数で表示する(00001限定プレビュー中)。
     var shurikenCount = Number(state.shurikenCount) || 0;
     if (shurikenCount > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 賢さの種：入手方法は非公開の秘密アイテム。所持数で表示し、使い切ったら
     // 図鑑から消える(すばやさの種・折り紙の手裏剣と同じ表示方式)。
     var wisdomSeedCount = Number(state.wisdomSeedCount) || 0;
     if (wisdomSeedCount > 0) {
-      html += `<div class="badge-item badge-earned" title="なんでも屋で「食べる」か「売る」ができる、入手方法が謎の特別な種"><span class="badge-icon"><img src="images/wisdom_seed.jpg" alt=""></span><span class="badge-name">賢さの種 ×${wisdomSeedCount}</span></div>`;
+      html += `<div class="badge-item badge-earned" title="なんでも屋で「食べる」か「売る」ができる、入手方法が謎の特別な種"><span class="badge-icon"><img src="images/wisdom_seed.jpg" alt=""></span><span class="badge-name">賢さの種 ×${wisdomSeedCount}</span>${difficultyStarsHtml_(4)}</div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
     if (ironWallCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.jpg" alt=""></span><span class="badge-name">鉄壁の盾（残り${ironWallCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージを半分にする"><span class="badge-icon"><img src="images/iron_wall_seed.jpg" alt=""></span><span class="badge-name">鉄壁の盾（残り${ironWallCharges}回）</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 鋼の鎧も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     if (steelArmorCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.jpg" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ"><span class="badge-icon"><img src="images/steel_armor.jpg" alt=""></span><span class="badge-name">鋼の鎧（残り${steelArmorCharges}回）</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 氷の剣も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var iceSwordCharges = Number(state.iceSwordCharges) || 0;
     if (iceSwordCharges > 0) {
-      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、振るった直後の問題に正解すればボスに500ダメージを与えられる"><span class="badge-icon"><img src="images/ice_sword.jpg" alt=""></span><span class="badge-name">氷の剣（残り${iceSwordCharges}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、振るった直後の問題に正解すればボスに500ダメージを与えられる"><span class="badge-icon"><img src="images/ice_sword.jpg" alt=""></span><span class="badge-name">氷の剣（残り${iceSwordCharges}回）</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 天空の槍も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var skySpearChargesForItem_ = Number(state.skySpearCharges) || 0;
     if (skySpearChargesForItem_ > 0) {
-      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、投げた直後の問題に正解すればボスに100ダメージを与えられる"><span class="badge-icon"><img src="images/sky_spear.jpg" alt=""></span><span class="badge-name">天空の槍（残り${skySpearChargesForItem_}回）</span></div>`;
+      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、投げた直後の問題に正解すればボスに100ダメージを与えられる"><span class="badge-icon"><img src="images/sky_spear.jpg" alt=""></span><span class="badge-name">天空の槍（残り${skySpearChargesForItem_}回）</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 勇者の剣(富士登山の山頂到達報酬)は、他の消費アイテムと違い使い切って
     // 壊れた後も記念として図鑑に残り続ける(手に入れたこと自体がyushaSwordObtained
@@ -21863,8 +21868,8 @@
     if (state.yushaSwordObtained) {
       var yushaSwordCount = Number(state.yushaSwordCount) || 0;
       html += yushaSwordCount > 0
-        ? `<div class="badge-item badge-earned" title="世界一周のボス戦で、問題に正解すれば1回だけ1000ダメージを与えられる"><span class="badge-icon"><img src="images/yusha_sword.jpg" alt=""></span><span class="badge-name">勇者の剣（未使用）</span></div>`
-        : `<div class="badge-item badge-earned" title="使用済み。なんでも屋で「刀を研ぐ」となんでも屋で直せる"><span class="badge-icon"><img src="images/yusha_sword.jpg" alt="" style="filter:grayscale(1);"></span><span class="badge-name">勇者の剣（使用済み）</span></div>`;
+        ? `<div class="badge-item badge-earned" title="世界一周のボス戦で、問題に正解すれば1回だけ1000ダメージを与えられる"><span class="badge-icon"><img src="images/yusha_sword.jpg" alt=""></span><span class="badge-name">勇者の剣（未使用）</span>${difficultyStarsHtml_(5)}</div>`
+        : `<div class="badge-item badge-earned" title="使用済み。なんでも屋で「刀を研ぐ」となんでも屋で直せる"><span class="badge-icon"><img src="images/yusha_sword.jpg" alt="" style="filter:grayscale(1);"></span><span class="badge-name">勇者の剣（使用済み）</span>${difficultyStarsHtml_(5)}</div>`;
     }
     els.historyItems.innerHTML = html;
   }
@@ -22437,7 +22442,7 @@
     } else {
       prayerActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var prayerRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.jpg" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span></div>${prayerActionHtml}</div>`;
+    var prayerRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/akr_prayer.jpg" alt="AKRの祈り"><div class="gift-info"><span class="gift-label">🙏 AKRの祈り（ボン・ミスコの呪いを解く）</span><span class="gift-cost">${AKR_PRAYER_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${prayerActionHtml}</div>`;
 
     var vaccineCanAfford = state.points >= ZOMBIE_VACCINE_COST_MP;
     var vaccineActionHtml;
@@ -22450,7 +22455,7 @@
     }
     var vaccineIsNew = shopItemIsNew_(ZOMBIE_VACCINE_NEW_UNTIL_);
     var vaccineNewBadgeHtml = vaccineIsNew ? '<span class="shop-new-badge">🆕NEW</span>' : '';
-    var vaccineRowHtml = `<div class="gift-row${vaccineIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/zombie_vaccine.jpg" alt="ゾンビワクチン"><div class="gift-info"><span class="gift-label">🧟 ゾンビワクチン（ゾンビ化を治す）${vaccineNewBadgeHtml}</span><span class="gift-cost">${ZOMBIE_VACCINE_COST_MP}MP</span></div>${vaccineActionHtml}</div>`;
+    var vaccineRowHtml = `<div class="gift-row${vaccineIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/zombie_vaccine.jpg" alt="ゾンビワクチン"><div class="gift-info"><span class="gift-label">🧟 ゾンビワクチン（ゾンビ化を治す）${vaccineNewBadgeHtml}</span><span class="gift-cost">${ZOMBIE_VACCINE_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${vaccineActionHtml}</div>`;
 
     var oxygenCanAfford = state.points >= OXYGEN_CAN_COST_MP;
     var oxygenActionHtml;
@@ -22461,7 +22466,7 @@
     } else {
       oxygenActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var oxygenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/oxygen_can.jpg" alt="酸素缶"><div class="gift-info"><span class="gift-label">🫁 酸素缶（高山病を治す）</span><span class="gift-cost">${OXYGEN_CAN_COST_MP}MP</span></div>${oxygenActionHtml}</div>`;
+    var oxygenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/oxygen_can.jpg" alt="酸素缶"><div class="gift-info"><span class="gift-label">🫁 酸素缶（高山病を治す）</span><span class="gift-cost">${OXYGEN_CAN_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${oxygenActionHtml}</div>`;
 
     // 刀を研ぐ：富士登山の山頂到達で勇者の剣を手に入れたことがある生徒にだけ
     // 表示する(富士登山が全生徒公開になったため、この項目も全生徒に表示)。
@@ -22477,26 +22482,26 @@
       } else {
         sharpenActionHtml = `<span class="gift-insufficient">MP不足</span>`;
       }
-      sharpenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/yusha_sword.jpg" alt="勇者の剣"><div class="gift-info"><span class="gift-label">🗡️ 刀を研ぐ（壊れた勇者の剣を直す）</span><span class="gift-cost">${SHARPEN_SWORD_COST_MP}MP</span><span class="shop-item-note">勇者の剣を持っている人だけが使える。使用済み（壊れた）勇者の剣を、また1回使えるように直す</span></div>${sharpenActionHtml}</div>`;
+      sharpenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/yusha_sword.jpg" alt="勇者の剣"><div class="gift-info"><span class="gift-label">🗡️ 刀を研ぐ（壊れた勇者の剣を直す）</span><span class="gift-cost">${SHARPEN_SWORD_COST_MP}MP</span><span class="shop-item-note">勇者の剣を持っている人だけが使える。使用済み（壊れた）勇者の剣を、また1回使えるように直す</span>${difficultyStarsHtml_(1)}</div>${sharpenActionHtml}</div>`;
     }
 
     var herbCanAfford = state.points >= HERB_COST_MP;
     var herbActionHtml = herbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyHerbBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var herbRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🌿 薬草（HPを${HERB_HP_GAIN}増やす）</span><span class="gift-cost">${HERB_COST_MP}MP</span></div>${herbActionHtml}</div>`;
+    var herbRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🌿 薬草（HPを${HERB_HP_GAIN}増やす）</span><span class="gift-cost">${HERB_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${herbActionHtml}</div>`;
 
     var bakuHerbCanAfford = state.points >= BAKUHERB_COST_MP;
     var bakuHerbActionHtml = bakuHerbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyBakuHerbBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var bakuHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/bakuretsu_herb.jpg" alt="爆裂薬草"><div class="gift-info"><span class="gift-label">💥 爆裂薬草（HPを${BAKUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${BAKUHERB_COST_MP}MP</span></div>${bakuHerbActionHtml}</div>`;
+    var bakuHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/bakuretsu_herb.jpg" alt="爆裂薬草"><div class="gift-info"><span class="gift-label">💥 爆裂薬草（HPを${BAKUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${BAKUHERB_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${bakuHerbActionHtml}</div>`;
 
     var chouHerbCanAfford = state.points >= CHOUHERB_COST_MP;
     var chouHerbActionHtml = chouHerbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyChouHerbBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.jpg" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span></div>${chouHerbActionHtml}</div>`;
+    var chouHerbRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chouzetsu_herb.jpg" alt="超絶薬草"><div class="gift-info"><span class="gift-label">🌟 超絶薬草（HPを${CHOUHERB_HP_GAIN}増やす）</span><span class="gift-cost">${CHOUHERB_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦の前に購入をお勧め</span>${difficultyStarsHtml_(2)}</div>${chouHerbActionHtml}</div>`;
 
     var seimeiMizuCanAfford = state.points >= SEIMEI_MIZU_COST_MP;
     var seimeiMizuActionHtml = seimeiMizuCanAfford
@@ -22504,13 +22509,13 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var seimeiMizuIsNew = shopItemIsNew_(SEIMEI_MIZU_NEW_UNTIL_);
     var seimeiMizuNewBadgeHtml = seimeiMizuIsNew ? '<span class="shop-new-badge">🆕NEW</span>' : '';
-    var seimeiMizuRowHtml = `<div class="gift-row${seimeiMizuIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/seimei_mizu.jpg" alt="命の水"><div class="gift-info"><span class="gift-label">💧 命の水（HPを${SEIMEI_MIZU_HP_GAIN}増やす）${seimeiMizuNewBadgeHtml}</span><span class="gift-cost">${SEIMEI_MIZU_COST_MP}MP</span></div>${seimeiMizuActionHtml}</div>`;
+    var seimeiMizuRowHtml = `<div class="gift-row${seimeiMizuIsNew ? ' gift-row-new' : ''}"><img class="shop-item-img" src="images/seimei_mizu.jpg" alt="命の水"><div class="gift-info"><span class="gift-label">💧 命の水（HPを${SEIMEI_MIZU_HP_GAIN}増やす）${seimeiMizuNewBadgeHtml}</span><span class="gift-cost">${SEIMEI_MIZU_COST_MP}MP</span>${difficultyStarsHtml_(2)}</div>${seimeiMizuActionHtml}</div>`;
 
     var speedSeedCanAfford = state.points >= SPEEDSEED_COST_MP;
     var speedSeedActionHtml = speedSeedCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buySpeedSeedBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span></div>${speedSeedActionHtml}</div>`;
+    var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span>${difficultyStarsHtml_(1)}</div>${speedSeedActionHtml}</div>`;
 
     // 折り紙で作った手裏剣：00001限定プレビュー中。
     var shurikenRowHtml = '';
@@ -22519,7 +22524,7 @@
       var shurikenActionHtml = shurikenCanAfford
         ? `<button type="button" class="gift-redeem-btn" id="buyShurikenBtn">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      shurikenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/shuriken.jpg" alt="折り紙の手裏剣"><div class="gift-info"><span class="gift-label">🥷 折り紙で作った手裏剣（所持数: ${state.shurikenCount || 0}本）</span><span class="gift-cost">${SHURIKEN_COST_MP}MP</span><span class="shop-item-note">ボス戦で投げると、2回に1回（50%）の確率で${SHURIKEN_DAMAGE_}ダメージを与える。外れても1本消費する</span></div>${shurikenActionHtml}</div>`;
+      shurikenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/shuriken.jpg" alt="折り紙の手裏剣"><div class="gift-info"><span class="gift-label">🥷 折り紙で作った手裏剣（所持数: ${state.shurikenCount || 0}本）</span><span class="gift-cost">${SHURIKEN_COST_MP}MP</span><span class="shop-item-note">ボス戦で投げると、2回に1回（50%）の確率で${SHURIKEN_DAMAGE_}ダメージを与える。外れても1本消費する</span>${difficultyStarsHtml_(1)}</div>${shurikenActionHtml}</div>`;
     }
 
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -22532,7 +22537,7 @@
     } else {
       ironWallActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.jpg" alt="鉄壁の盾"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span></div>${ironWallActionHtml}</div>`;
+    var ironWallRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/iron_wall_seed.jpg" alt="鉄壁の盾"><div class="gift-info"><span class="gift-label">🛡️ 鉄壁の盾（1個だけ保有可・最大3回分）</span><span class="gift-cost">${IRONWALL_COST_MP}MP</span><span class="shop-item-note">ボス戦で間違えるたびに自動で1回分使われ、そのミスのダメージが半分になる。3回使うと壊れてなくなる</span>${difficultyStarsHtml_(1)}</div>${ironWallActionHtml}</div>`;
 
     var steelArmorCharges = Number(state.steelArmorCharges) || 0;
     var steelArmorCanAfford = state.points >= STEELARMOR_COST_MP;
@@ -22544,7 +22549,7 @@
     } else {
       steelArmorActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.jpg" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span></div>${steelArmorActionHtml}</div>`;
+    var steelArmorRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/steel_armor.jpg" alt="鋼の鎧"><div class="gift-info"><span class="gift-label">🛡️ 鋼の鎧（1個だけ保有可・最大${STEELARMOR_MAX_CHARGES}回分）</span><span class="gift-cost">${STEELARMOR_COST_MP}MP</span><span class="shop-item-note">ボス戦以外の間違いのたびに自動で1回分使われ、HP減少を防ぐ。${STEELARMOR_MAX_CHARGES}回使うと壊れてなくなる</span>${difficultyStarsHtml_(1)}</div>${steelArmorActionHtml}</div>`;
 
     var iceSwordCharges = Number(state.iceSwordCharges) || 0;
     var iceSwordCanAfford = state.points >= ICE_SWORD_COST_MP;
@@ -22556,7 +22561,7 @@
     } else {
       iceSwordActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var iceSwordRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ice_sword.jpg" alt="氷の剣"><div class="gift-info"><span class="gift-label">🧊 氷の剣（1個だけ保有可・最大${ICE_SWORD_MAX_CHARGES}回分）</span><span class="gift-cost">${ICE_SWORD_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${ICE_SWORD_DAMAGE_}ダメージ。${ICE_SWORD_MAX_CHARGES}回使うと壊れてなくなる</span></div>${iceSwordActionHtml}</div>`;
+    var iceSwordRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ice_sword.jpg" alt="氷の剣"><div class="gift-info"><span class="gift-label">🧊 氷の剣（1個だけ保有可・最大${ICE_SWORD_MAX_CHARGES}回分）</span><span class="gift-cost">${ICE_SWORD_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${ICE_SWORD_DAMAGE_}ダメージ。${ICE_SWORD_MAX_CHARGES}回使うと壊れてなくなる</span>${difficultyStarsHtml_(1)}</div>${iceSwordActionHtml}</div>`;
 
     // 天空の槍：氷の剣と違い保有上限が無く、既に持っていても何度でも買い足せる
     // (ボタンは常に「購入する」のまま、買うたびに+5回分)。
@@ -22564,7 +22569,7 @@
     var skySpearActionHtml = state.points >= SKY_SPEAR_COST_MP
       ? `<button type="button" class="gift-redeem-btn" id="buySkySpearBtn">購入する</button>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var skySpearRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/sky_spear.jpg" alt="天空の槍"><div class="gift-info"><span class="gift-label">🔱 天空の槍（所持: ${skySpearCharges}回分・何個でも購入可）</span><span class="gift-cost">${SKY_SPEAR_COST_MP}MP（1回購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。投げた直後の問題に正解すればボスに${SKY_SPEAR_DAMAGE_}ダメージ</span></div>${skySpearActionHtml}</div>`;
+    var skySpearRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/sky_spear.jpg" alt="天空の槍"><div class="gift-info"><span class="gift-label">🔱 天空の槍（所持: ${skySpearCharges}回分・何個でも購入可）</span><span class="gift-cost">${SKY_SPEAR_COST_MP}MP（1回購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。投げた直後の問題に正解すればボスに${SKY_SPEAR_DAMAGE_}ダメージ</span>${difficultyStarsHtml_(1)}</div>${skySpearActionHtml}</div>`;
 
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
@@ -22574,8 +22579,8 @@
     var wisdomSeedCount_ = Number(state.wisdomSeedCount) || 0;
     var wisdomSeedRowHtml = '';
     if (wisdomSeedCount_ > 0) {
-      var wisdomEatRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span></div><button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button></div>`;
-      var wisdomSellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span></div><button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button></div>`;
+      var wisdomEatRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(4)}</div><button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button></div>`;
+      var wisdomSellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(4)}</div><button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button></div>`;
       wisdomSeedRowHtml = wisdomEatRowHtml + wisdomSellRowHtml;
     }
 
@@ -22628,6 +22633,9 @@
 
   // 宝箱・鍵・指輪のなんでも屋UI。ティアごとに「鍵を買う」
   // 「宝箱を開ける」「指輪を売る」の3行を並べる。日付ゲート前は何も表示しない。
+  // 宝箱・指輪の入手難易度は、鍵と違ってドロップ運に左右されるためティアごとに
+  // 段階をつける(鍵自体はMPさえあれば買えるので一律⭐1)。
+  const TREASURE_TIER_STARS_ = { bronze: 2, silver: 2, gold: 3, rainbow: 4 };
   function treasureShopRowsHtml_() {
     if (!isTreasureChestActive_()) return '';
     var items = state.treasureItems || {};
@@ -22640,16 +22648,17 @@
       var keyCost = TREASURE_KEY_COST_MP_[tier];
       var ringSell = TREASURE_RING_SELL_MP_[tier];
       var reward = TREASURE_CHEST_REWARD_[tier];
+      var tierStars = TREASURE_TIER_STARS_[tier];
 
       var keyActionHtml = state.points >= keyCost
         ? `<button type="button" class="gift-redeem-btn" data-treasure-buy-key="${tier}">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      var keyRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/key_${tier}.jpg" alt="${label}の鍵"><div class="gift-info"><span class="gift-label">${emoji} ${label}の鍵（所持: ${keyCount}個）</span><span class="gift-cost">${keyCost}MP</span></div>${keyActionHtml}</div>`;
+      var keyRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/key_${tier}.jpg" alt="${label}の鍵"><div class="gift-info"><span class="gift-label">${emoji} ${label}の鍵（所持: ${keyCount}個）</span><span class="gift-cost">${keyCost}MP</span>${difficultyStarsHtml_(1)}</div>${keyActionHtml}</div>`;
 
       var openActionHtml = (chestCount > 0 && keyCount > 0)
         ? `<button type="button" class="gift-redeem-btn" data-treasure-open="${tier}">開ける</button>`
         : `<span class="gift-insufficient">${chestCount > 0 ? '鍵が必要' : '宝箱なし'}</span>`;
-      var openRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chest_${tier}.jpg" alt="${label}の宝箱"><div class="gift-info"><span class="gift-label">${emoji} ${label}の宝箱（所持: ${chestCount}個）</span><span class="gift-cost">開けると+${reward.mp}MP・+${reward.hp}HP・${label}の指輪</span></div>${openActionHtml}</div>`;
+      var openRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/chest_${tier}.jpg" alt="${label}の宝箱"><div class="gift-info"><span class="gift-label">${emoji} ${label}の宝箱（所持: ${chestCount}個）</span><span class="gift-cost">開けると+${reward.mp}MP・+${reward.hp}HP・${label}の指輪</span>${difficultyStarsHtml_(tierStars)}</div>${openActionHtml}</div>`;
 
       var sellActionHtml = ringCount > 0
         ? `<button type="button" class="gift-redeem-btn" data-treasure-sell-ring="${tier}">売却する</button>`
@@ -22658,7 +22667,7 @@
       var shieldNoteHtml = shieldCharges
         ? `<span class="shop-item-note">持っているとボス戦のダメージを${shieldCharges}回防いでくれる（使い切ると壊れてなくなる）</span>`
         : '';
-      var sellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ring_${tier}.jpg" alt="${label}の指輪"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}</div>${sellActionHtml}</div>`;
+      var sellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ring_${tier}.jpg" alt="${label}の指輪"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}${difficultyStarsHtml_(tierStars)}</div>${sellActionHtml}</div>`;
 
       return keyRowHtml + openRowHtml + sellRowHtml;
     }).join('');
@@ -22771,7 +22780,7 @@
       var actionHtml = state.points >= b.cost
         ? `<button type="button" class="gift-redeem-btn" data-spellbook-buy="${b.id}">購入する</button>`
         : `<span class="gift-insufficient">MP不足</span>`;
-      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${b.emoji} 魔法の書「${b.label}」（所持: ${count}冊）</span><span class="gift-cost">${b.cost}MP</span><span class="shop-item-note">${b.target}のボスに有効。詠唱すると自分のHPが${b.selfDmg}減り、次の問題に正解すると相手のHPを${b.dmg}減らす（不正解だとボスにかわされて不発）</span></div>${actionHtml}</div>`;
+      return `<div class="gift-row"><div class="gift-info"><span class="gift-label">${b.emoji} 魔法の書「${b.label}」（所持: ${count}冊）</span><span class="gift-cost">${b.cost}MP</span><span class="shop-item-note">${b.target}のボスに有効。詠唱すると自分のHPが${b.selfDmg}減り、次の問題に正解すると相手のHPを${b.dmg}減らす（不正解だとボスにかわされて不発）</span>${difficultyStarsHtml_(1)}</div>${actionHtml}</div>`;
     }).join('');
     return `<div class="shop-section-title">📖 魔法の書</div>` + rowsHtml;
   }
