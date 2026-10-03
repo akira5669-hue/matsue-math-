@@ -320,7 +320,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -342,7 +342,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -18453,6 +18453,9 @@
     // 勇者の剣と同じくボス戦で使う攻撃アイテムだが、壊れて消えるのではなく
     // チャージ制で3回まで使える。
     iceSwordCharges: (savedProgress && Number(savedProgress.iceSwordCharges)) || (savedGame && Number(savedGame.iceSwordCharges)) || 0,
+    // なんでも屋で買える消費アイテム「天空の槍」の残りチャージ数。氷の剣等と違い
+    // 1個の保有上限が無く、買うたびに5回分ずつ積み上がっていく(何個も所持可能)。
+    skySpearCharges: (savedProgress && Number(savedProgress.skySpearCharges)) || (savedGame && Number(savedGame.skySpearCharges)) || 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -18555,6 +18558,8 @@
     worldPendingSword: false,
     // 振るった氷の剣が結果待ちかどうか(worldPendingSwordと同じ、端末セッション限定)。
     worldPendingIceSword: false,
+    // 投げた天空の槍が結果待ちかどうか(worldPendingIceSwordと同じ、端末セッション限定)。
+    worldPendingSkySpear: false,
     // 今のボスに与えた累計ダメージ(正解1問ごとの通常ダメージ＋魔法のダメージ)。
     // 連続正解数(streak)とは切り離して数えるので、不正解でもボスのHPは戻らない。
     // worldBossActiveStageと同様に端末セッション限定。
@@ -18607,6 +18612,7 @@
     worldSpellRow: document.getElementById('worldSpellRow'),
     fujiSwordBtn: document.getElementById('fujiSwordBtn'),
     iceSwordBtn: document.getElementById('iceSwordBtn'),
+    skySpearBtn: document.getElementById('skySpearBtn'),
     shurikenBtn: document.getElementById('shurikenBtn'),
     fujiCard: document.getElementById('fujiCard'),
     fujiHint: document.getElementById('fujiHint'),
@@ -19166,6 +19172,8 @@
   const OHACHI_REQUIRED_STREAK_ = 50;
   const OHACHI_MIN_ELIGIBLE_CATEGORIES_ = 10;
   const OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ = 1;
+  // お鉢巡り達成のご褒美(タイム枠とは別に必ずもらえる、なんでも屋アイテム「天空の槍」の回数)。
+  const OHACHI_SKY_SPEAR_REWARD_ = 10;
   // 小学生・中1用のタイム枠(分以内→HP。複数の枠を満たしても合計ではなく、
   // 満たした中で最高額の1枠分だけがもらえる)
   const OHACHI_TIERS_LOW_ = [
@@ -19691,6 +19699,15 @@
         els.iceSwordBtn.textContent = '🧊 氷の剣を使う（1回で' + ICE_SWORD_DAMAGE_ + 'ダメージ・残り' + iceSwordChargesForBtn_ + '回分）';
       }
     }
+    // 天空の槍：氷の剣と同じ方式だが、1個の保有上限が無く何個も買い足せる
+    // (買うたびに5回分ずつ積み上がる)消費アイテム。残り回数をボタンに反映する。
+    if (els.skySpearBtn) {
+      var skySpearChargesForBtn_ = Number(state.skySpearCharges) || 0;
+      els.skySpearBtn.hidden = !(isBossFight && !state.worldPendingSkySpear && skySpearChargesForBtn_ > 0);
+      if (!els.skySpearBtn.hidden) {
+        els.skySpearBtn.textContent = '🔱 天空の槍を投げる（1回で' + SKY_SPEAR_DAMAGE_ + 'ダメージ・残り' + skySpearChargesForBtn_ + '回分）';
+      }
+    }
     // 手裏剣：氷の剣と同じくボス戦専用の消費アイテムだが、投げた瞬間に50%の
     // 確率で命中する(00001限定プレビュー中)。
     if (els.shurikenBtn) {
@@ -19929,6 +19946,13 @@
         missLineHtml += `<div class="item-gain-banner">🧊 氷の剣が命中！ボスに${ICE_SWORD_DAMAGE_}ダメージ！🧊</div>`;
         spellFxPending_ = { book: { emoji: '🧊', fx: '#38bdf8', dmg: ICE_SWORD_DAMAGE_ }, phase: 'hit' };
       }
+      // 天空の槍を投げた直後の問題に正解した場合、ここで初めてボスに100ダメージが入る。
+      if (state.worldBossActiveStage && state.worldPendingSkySpear) {
+        state.worldPendingSkySpear = false;
+        state.worldBossDamage = (Number(state.worldBossDamage) || 0) + SKY_SPEAR_DAMAGE_;
+        missLineHtml += `<div class="item-gain-banner">🔱 天空の槍が命中！ボスに${SKY_SPEAR_DAMAGE_}ダメージ！🔱</div>`;
+        spellFxPending_ = { book: { emoji: '🔱', fx: '#60a5fa', dmg: SKY_SPEAR_DAMAGE_ }, phase: 'hit' };
+      }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
@@ -20075,6 +20099,13 @@
           state.worldPendingIceSword = false;
           missLineHtml += `<div class="enemy-quote-banner">💨 氷の剣はボスにかわされた…！攻撃は当たらなかった。</div>`;
           spellFxPending_ = { book: { emoji: '🧊', fx: '#38bdf8', dmg: ICE_SWORD_DAMAGE_ }, phase: 'miss' };
+        }
+        // 天空の槍も同様に、投げた直後の問題を間違えるとかわされて不発になる
+        // (この時点で既にチャージは消費済みなので、消費が戻ることはない)。
+        if (state.worldPendingSkySpear) {
+          state.worldPendingSkySpear = false;
+          missLineHtml += `<div class="enemy-quote-banner">💨 天空の槍はボスにかわされた…！攻撃は当たらなかった。</div>`;
+          spellFxPending_ = { book: { emoji: '🔱', fx: '#60a5fa', dmg: SKY_SPEAR_DAMAGE_ }, phase: 'miss' };
         }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
@@ -20680,6 +20711,10 @@
   // ICE_SWORD_DAMAGE_ダメージ)。最大3回分まで保有でき、使い切ったら再購入できる。
   const ICE_SWORD_COST_MP = 500;
   const ICE_SWORD_MAX_CHARGES = 3;
+  // なんでも屋の消費アイテム「天空の槍」：氷の剣と似た攻撃アイテムだが、保有上限が
+  // 無く、買うたびに5回分ずつ積み上がっていく(何個でも購入可)。
+  const SKY_SPEAR_COST_MP = 100;
+  const SKY_SPEAR_CHARGES_PER_PURCHASE_ = 5;
 
   // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
   // 戻り値trueのとき、呼び出し元(nextQuestion)は出題処理を中断する。
@@ -21169,6 +21204,7 @@
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
         state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
+        state.skySpearCharges = Number(progress.skySpearCharges) || state.skySpearCharges;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
         // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
         // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
@@ -21245,6 +21281,7 @@
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
       iceSwordCharges: state.iceSwordCharges,
+      skySpearCharges: state.skySpearCharges,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -21814,6 +21851,11 @@
     var iceSwordCharges = Number(state.iceSwordCharges) || 0;
     if (iceSwordCharges > 0) {
       html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、振るった直後の問題に正解すればボスに500ダメージを与えられる"><span class="badge-icon"><img src="images/ice_sword.jpg" alt=""></span><span class="badge-name">氷の剣（残り${iceSwordCharges}回）</span></div>`;
+    }
+    // 天空の槍も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
+    var skySpearChargesForItem_ = Number(state.skySpearCharges) || 0;
+    if (skySpearChargesForItem_ > 0) {
+      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、投げた直後の問題に正解すればボスに100ダメージを与えられる"><span class="badge-icon"><img src="images/sky_spear.jpg" alt=""></span><span class="badge-name">天空の槍（残り${skySpearChargesForItem_}回）</span></div>`;
     }
     // 勇者の剣(富士登山の山頂到達報酬)は、他の消費アイテムと違い使い切って
     // 壊れた後も記念として図鑑に残り続ける(手に入れたこと自体がyushaSwordObtained
@@ -22516,6 +22558,14 @@
     }
     var iceSwordRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ice_sword.jpg" alt="氷の剣"><div class="gift-info"><span class="gift-label">🧊 氷の剣（1個だけ保有可・最大${ICE_SWORD_MAX_CHARGES}回分）</span><span class="gift-cost">${ICE_SWORD_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${ICE_SWORD_DAMAGE_}ダメージ。${ICE_SWORD_MAX_CHARGES}回使うと壊れてなくなる</span></div>${iceSwordActionHtml}</div>`;
 
+    // 天空の槍：氷の剣と違い保有上限が無く、既に持っていても何度でも買い足せる
+    // (ボタンは常に「購入する」のまま、買うたびに+5回分)。
+    var skySpearCharges = Number(state.skySpearCharges) || 0;
+    var skySpearActionHtml = state.points >= SKY_SPEAR_COST_MP
+      ? `<button type="button" class="gift-redeem-btn" id="buySkySpearBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var skySpearRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/sky_spear.jpg" alt="天空の槍"><div class="gift-info"><span class="gift-label">🔱 天空の槍（所持: ${skySpearCharges}回分・何個でも購入可）</span><span class="gift-cost">${SKY_SPEAR_COST_MP}MP（1回購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。投げた直後の問題に正解すればボスに${SKY_SPEAR_DAMAGE_}ダメージ</span></div>${skySpearActionHtml}</div>`;
+
     var treasureRowsHtml = treasureShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
@@ -22529,7 +22579,7 @@
       wisdomSeedRowHtml = wisdomEatRowHtml + wisdomSellRowHtml;
     }
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + wisdomSeedRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + wisdomSeedRowHtml + treasureRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -22568,6 +22618,8 @@
     if (steelArmorBtn) steelArmorBtn.addEventListener('click', function () { handleBuySteelArmorClick(steelArmorBtn); });
     var iceSwordBuyBtn = document.getElementById('buyIceSwordBtn');
     if (iceSwordBuyBtn) iceSwordBuyBtn.addEventListener('click', function () { handleBuyIceSwordClick(iceSwordBuyBtn); });
+    var skySpearBuyBtn = document.getElementById('buySkySpearBtn');
+    if (skySpearBuyBtn) skySpearBuyBtn.addEventListener('click', function () { handleBuySkySpearClick(skySpearBuyBtn); });
     var eatWisdomSeedBtn = document.getElementById('eatWisdomSeedBtn');
     if (eatWisdomSeedBtn) eatWisdomSeedBtn.addEventListener('click', eatWisdomSeedClick_);
     var sellWisdomSeedBtn = document.getElementById('sellWisdomSeedBtn');
@@ -23125,6 +23177,33 @@
       renderShopList();
       renderItems();
       window.alert(`🧊 氷の剣を手に入れた！（残り${state.iceSwordCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuySkySpearClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`天空の槍を購入します（${SKY_SPEAR_COST_MP}MP）。世界一周のボス戦で使える攻撃アイテムです（投げた直後の問題に正解すると${SKY_SPEAR_DAMAGE_}ダメージ、1回の購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分、何個でも買い足せます）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buySkySpear', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.skySpearCharges = res.skySpearCharges;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`🔱 天空の槍を手に入れた！（残り${state.skySpearCharges}回分）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -24066,12 +24145,15 @@
     state.ohachiEligibleIds_ = null;
     state.ohachiCompleted = true;
     if (reward.hp > 0) state.hp = (Number(state.hp) || 0) + reward.hp;
+    // お鉢巡り達成のご褒美として、タイム枠とは関係なく天空の槍を10回分もらえる。
+    state.skySpearCharges = (Number(state.skySpearCharges) || 0) + OHACHI_SKY_SPEAR_REWARD_;
     saveGameState(state);
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     var hpHtml = reward.hp > 0
       ? '<div class="item-gain-banner">💪 タイム' + mLabel + '！HPが' + reward.hp + '増えた！（現在HP: ' + state.hp + '）</div>'
       : '<div class="item-gain-banner">タイムは' + mLabel + 'でした。規定のタイム枠に入らなかったため、HPボーナスはありません。</div>';
-    return '<div class="win-banner">🎉🔄 お鉢巡りを達成した！🎉</div>' + hpHtml;
+    var spearHtml = '<div class="item-gain-banner">🔱 達成のご褒美で天空の槍を' + OHACHI_SKY_SPEAR_REWARD_ + '回分手に入れた！（残り' + state.skySpearCharges + '回分）</div>';
+    return '<div class="win-banner">🎉🔄 お鉢巡りを達成した！🎉</div>' + hpHtml + spearHtml;
   }
   // お鉢巡りカードの表示更新(全生徒に公開済み、日付ゲートはohachiCardActive_参照)。
   function renderOhachiCard_() {
@@ -24109,7 +24191,7 @@
   // (yushaSwordObtained)は残り続ける。
   const YUSHA_SWORD_DAMAGE_ = 1000;
   function castYushaSword_() {
-    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword) return;
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
     if ((Number(state.yushaSwordCount) || 0) <= 0) return;
     if (!window.confirm('勇者の剣を使いますか？次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。剣はこれで壊れてなくなります。')) return;
     state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) - 1;
@@ -24139,7 +24221,7 @@
   // チャージ制で、1回使うごとにチャージが1減り、0になるまで繰り返し使える。
   const ICE_SWORD_DAMAGE_ = 500;
   function castIceSword_() {
-    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword) return;
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
     if ((Number(state.iceSwordCharges) || 0) <= 0) return;
     if (!window.confirm('氷の剣を使いますか？次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。（残り' + state.iceSwordCharges + '回分）')) return;
     state.iceSwordCharges = (Number(state.iceSwordCharges) || 0) - 1;
@@ -24154,6 +24236,26 @@
     els.feedback.classList.add('correct');
   }
 
+  // 天空の槍：なんでも屋で買える消費アイテム(100MP・1回の購入で5回分)。氷の剣と
+  // 同じ「投げた直後の問題に正解すれば命中」方式だが、1個の保有上限が無く、
+  // 既に持っていても何度でも買い足せる(買うたびに+5回分、何個も所持可能)。
+  const SKY_SPEAR_DAMAGE_ = 100;
+  function castSkySpear_() {
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
+    if ((Number(state.skySpearCharges) || 0) <= 0) return;
+    if (!window.confirm('天空の槍を使いますか？次の問題に正解すればボスに' + SKY_SPEAR_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。（残り' + state.skySpearCharges + '回分）')) return;
+    state.skySpearCharges = (Number(state.skySpearCharges) || 0) - 1;
+    state.worldPendingSkySpear = true;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    playSpellFx_({ emoji: '🔱', fx: '#60a5fa' }, 'cast');
+    els.feedback.innerHTML = '<span class="fb-result">🔱 天空の槍を投げた！次の問題に正解すればボスに' + SKY_SPEAR_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.skySpearCharges + '回分）</span>';
+    els.feedback.classList.remove('incorrect');
+    els.feedback.classList.add('correct');
+  }
+
   // 折り紙で作った手裏剣：なんでも屋で1本30MPで買える消費アイテム(00001限定
   // プレビュー中)。氷の剣等と違い次の問題の正解を待たず、投げた瞬間に2回に1回
   // (50%)の確率でボスに100ダメージが入る(外れても1本消費される)。
@@ -24163,7 +24265,7 @@
   function castShuriken_() {
     if (!state.worldBossActiveStage) return;
     if ((Number(state.shurikenCount) || 0) <= 0) return;
-    if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword) return;
+    if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
     if (!window.confirm('手裏剣を投げますか？2回に1回（50%）の確率でボスに' + SHURIKEN_DAMAGE_ + 'ダメージを与えます。外れても1本消費します。（残り' + state.shurikenCount + '本）')) return;
     state.shurikenCount = (Number(state.shurikenCount) || 0) - 1;
     var hit = Math.random() < SHURIKEN_HIT_CHANCE_;
@@ -24214,7 +24316,7 @@
   // 書があるため)。詠唱済みで結果待ちの間は、二重詠唱を防ぐため全部隠す。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellRow) return;
-    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword) {
+    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword || state.worldPendingSkySpear) {
       els.worldSpellRow.hidden = true;
       els.worldSpellRow.innerHTML = '';
       return;
@@ -24353,7 +24455,7 @@
   // (handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて不発になる
   // (handleAnswerの不正解側で解決)。
   function castWorldSpell_(bookId) {
-    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword) return;
+    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword || state.worldPendingSkySpear) return;
     const book = spellbookById_(bookId);
     if (!book) return;
     // 今のボスに有効な書かどうかを、ここでも必ず確認する。
@@ -26176,6 +26278,7 @@
   if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
+  if (els.skySpearBtn) els.skySpearBtn.addEventListener('click', castSkySpear_);
   if (els.shurikenBtn) els.shurikenBtn.addEventListener('click', castShuriken_);
   if (els.worldDiceCloseBtn) {
     els.worldDiceCloseBtn.addEventListener('click', function () {

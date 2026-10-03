@@ -46,6 +46,7 @@ CREATE TABLE students (
   iron_wall_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)
   steel_armor_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)
   ice_sword_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「氷の剣」の残りチャージ数(0〜3、複数保有不可)
+  sky_spear_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「天空の槍」の残りチャージ数(保有上限なし、購入ごとに+5)
   world_country INTEGER NOT NULL DEFAULT 0, -- 世界一周の制覇済みヵ国数(2026-09-01からサイコロ方式、クライアント管理・直接SET)
   world_continent_bonus JSONB NOT NULL DEFAULT '{}', -- 大陸制覇ボーナス(500MP)を今の周で既に受け取った大陸のID一覧(重複付与防止用、周が変わるとリセット)
   treasure_items JSONB NOT NULL DEFAULT '{}', -- 宝箱・鍵・指輪(2026-08-28〜)の所持数。{chestBronze,keyBronze,ringBronze,...}のようにティア(bronze/silver/gold/rainbow)ごとに数える。鍵の購入・指輪の売却・宝箱を開ける処理はサーバー側で検証してから更新する
