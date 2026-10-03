@@ -24097,7 +24097,17 @@
     state.worldPendingSword = true;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    // 所持数の減少は、他の消費アイテムと違って端末からのsyncPoints(SET方式)に
+    // 任せると、別端末の古いキャッシュに巻き戻されることがある(2026-10-03、
+    // 00220で確認)。専用エンドポイントでサーバー側に確定的に反映する。
+    if (session && session.id) {
+      apiPost('useYushaSword', { id: session.id }).then(function (res) {
+        if (res && res.ok) {
+          state.yushaSwordCount = res.yushaSwordCount;
+          saveGameState(state);
+        }
+      }).catch(function () { });
+    }
     updateGameHud();
     playSpellFx_({ emoji: '⚔️', fx: '#f59e0b' }, 'cast');
     els.feedback.innerHTML = '<span class="fb-result">⚔️ 勇者の剣を抜いた！次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…</span>';

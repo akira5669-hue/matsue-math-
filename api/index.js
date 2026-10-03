@@ -18,7 +18,7 @@ const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRankingMonth, handleStudyCalendar } = require('../lib/handlers/studyReport');
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleDistributeWisdomSeeds } = require('../lib/handlers/reading');
-const { handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee } = require('../lib/handlers/fuji');
+const { handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
 
 const ACTIONS = {
   getPoints: handleGetPoints,
@@ -73,6 +73,7 @@ const ACTIONS = {
   fujiClimbSuccess: handleFujiClimbSuccess,
   fujiDistributePool: handleFujiDistributePool,
   ohachiEntryFee: handleOhachiEntryFee,
+  useYushaSword: handleUseYushaSword,
   distributeWisdomSeeds: handleDistributeWisdomSeeds,
   registerGuardian: handleRegisterGuardian,
   withdraw: handleWithdraw,
