@@ -19154,8 +19154,8 @@
   // "のみ"の単元を10個以上ON(うち文章題1個以上)にした状態で、50問連続正解を
   // 目指す。不正解になっても(通常の富士登山と違って)挑戦自体は終わらず続けられる
   // が、ただ時間をかけて50問に到達しただけではHPはもらえない。実際にかかった
-  // 時間が速いほど複数のタイム枠を同時に満たし、その分だけ足し算でHPがもらえる
-  // (OHACHI_TIERS_LOW_/HIGH_参照、速い枠を満たせば遅い枠の分も必ず満たすため)。
+  // 時間が収まる最も速いタイム枠(OHACHI_TIERS_LOW_/HIGH_参照)のHPだけがもらえる
+  // (合計ではなく、満たした枠の中で最高額の1枠分のみ)。
   // 成功は一度きり(成功したら再挑戦不可)、失敗(未達成)は10月中なら何度でも
   // 再挑戦可能(その都度300MP必要)。
   var OHACHI_START_ = '2026-10-10';
@@ -19164,7 +19164,8 @@
   const OHACHI_REQUIRED_STREAK_ = 50;
   const OHACHI_MIN_ELIGIBLE_CATEGORIES_ = 10;
   const OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ = 1;
-  // 小学生・中1用のタイム枠(分以内→追加HP、速い枠ほど下の枠の分も足し算でもらえる)
+  // 小学生・中1用のタイム枠(分以内→HP。複数の枠を満たしても合計ではなく、
+  // 満たした中で最高額の1枠分だけがもらえる)
   const OHACHI_TIERS_LOW_ = [
     { min: 15, hp: 500 },
     { min: 10, hp: 1000 },
@@ -19194,19 +19195,16 @@
   function ohachiCardActive_() {
     return isAdminSession_() || ohachiEventActive_();
   }
-  // 実際にかかった時間(ミリ秒)から、満たした全てのタイム枠のHPを合計する。
+  // 実際にかかった時間(ミリ秒)から、満たした枠の中で最高額の1枠分だけを返す
+  // (複数の枠を満たしても合計にはしない)。
   function ohachiRewardForElapsedMs_(grade, elapsedMs) {
     var minutes = elapsedMs / 60000;
     var tiers = ohachiTiersForGrade_(grade);
-    var total = 0;
-    var fastestMin = null;
+    var best = null;
     tiers.forEach(function (t) {
-      if (minutes <= t.min) {
-        total += t.hp;
-        if (fastestMin === null || t.min < fastestMin) fastestMin = t.min;
-      }
+      if (minutes <= t.min && (!best || t.hp > best.hp)) best = t;
     });
-    return { hp: total, fastestTierMin: fastestMin };
+    return { hp: best ? best.hp : 0, fastestTierMin: best ? best.min : null };
   }
   // お鉢巡りに挑戦できるか判定。世界一周ボス戦・富士登山8合目以降と似た仕組みだが、
   // 「自分の学年以上」ではなく「自分の学年のみ」の単元が対象という点が異なる。
@@ -23983,7 +23981,7 @@
   // お鉢巡りに挑戦できるか(入り口の条件)。富士登山の成功者限定・開催期間中・
   // まだ成功していない・現在挑戦中でない、の全てを満たす必要がある。
   function ohachiCanEnter_() {
-    return isAdminSession_() && ohachiCardActive_() && !!state.fujiSummitReached && !state.ohachiCompleted && !state.ohachiActive;
+    return ohachiCardActive_() && !!state.fujiSummitReached && !state.ohachiCompleted && !state.ohachiActive;
   }
   // 「挑戦する」ボタンの処理。注意事項は無く、単元条件を満たしていれば即、
   // 入山料(OHACHI_ENTRY_FEE_MP)をサーバー確定処理で払ってから開始する。
@@ -24047,16 +24045,16 @@
       : '<div class="item-gain-banner">タイムは' + mLabel + 'でした。規定のタイム枠に入らなかったため、HPボーナスはありません。</div>';
     return '<div class="win-banner">🎉🔄 お鉢巡りを達成した！🎉</div>' + hpHtml;
   }
-  // お鉢巡りカードの表示更新(00001限定プレビュー中)。
+  // お鉢巡りカードの表示更新(全生徒に公開済み、日付ゲートはohachiCardActive_参照)。
   function renderOhachiCard_() {
     if (!els.ohachiCard) return;
-    if (!isAdminSession_() || !ohachiCardActive_()) { els.ohachiCard.hidden = true; return; }
+    if (!ohachiCardActive_()) { els.ohachiCard.hidden = true; return; }
     els.ohachiCard.hidden = false;
     var tiers = ohachiTiersForGrade_((loadSession() || {}).grade);
     var tierLines = tiers.slice().sort(function (a, b) { return b.min - a.min; })
       .map(function (t) { return t.min + '分以内に' + OHACHI_REQUIRED_STREAK_ + '問連続正解で+' + t.hp + 'HP'; }).join('／');
     if (els.ohachiHint) {
-      els.ohachiHint.textContent = '富士登山の成功者限定の追加チャレンジ！参加料' + OHACHI_ENTRY_FEE_MP + 'MPを払い、自分の学年の単元を' + OHACHI_MIN_ELIGIBLE_CATEGORIES_ + '個以上ON（うち文章題を' + OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上）にした状態で、' + OHACHI_REQUIRED_STREAK_ + '問連続正解を目指そう。不正解でも挑戦は続けられるが、連続正解数は0に戻る。かかった時間が速いほど複数の枠を同時に満たせる（' + tierLines + '、速い枠を満たせば遅い枠の分も合計でもらえる）。成功は一度きり、失敗しても10月中は何度でも再挑戦できる（その都度' + OHACHI_ENTRY_FEE_MP + 'MP必要）。';
+      els.ohachiHint.textContent = '富士登山の成功者限定の追加チャレンジ！参加料' + OHACHI_ENTRY_FEE_MP + 'MPを払い、自分の学年の単元を' + OHACHI_MIN_ELIGIBLE_CATEGORIES_ + '個以上ON（うち文章題を' + OHACHI_MIN_WORD_PROBLEM_CATEGORIES_ + '個以上）にした状態で、' + OHACHI_REQUIRED_STREAK_ + '問連続正解を目指そう。不正解でも挑戦は続けられるが、連続正解数は0に戻る。かかった時間に応じて、あてはまるタイム枠のうち最も高いHPがもらえる（' + tierLines + '、複数の枠を満たしても合計にはならず1枠分のみ）。成功は一度きり、失敗しても10月中は何度でも再挑戦できる（その都度' + OHACHI_ENTRY_FEE_MP + 'MP必要）。';
     }
     if (els.ohachiStatusText) {
       if (state.ohachiCompleted) {
