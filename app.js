@@ -19698,10 +19698,10 @@
         els.shurikenBtn.textContent = '✴️ 手裏剣を投げる（50%で' + SHURIKEN_DAMAGE_ + 'ダメージ・残り' + shurikenCountForBtn_ + '本）';
       }
     }
-    // ボス戦・富士登山のときだけ、自分と相手のアバターを対戦画面のように並べて表示する。
+    // ボス戦・富士登山・お鉢巡りのときだけ、自分と相手のアバターを対戦画面のように並べて表示する。
     if (els.battleVsRow) {
       updateFujiVsPhotoBg_(isFuji, state.fujiStation);
-      if (isBossFight || isFuji) {
+      if (isBossFight || isFuji || isOhachi) {
         els.battleVsRow.hidden = false;
         // 1箇所で例外が出てもHUD全体(この後のMP/HP/レベル表示)が巻き添えで
         // 止まらないよう、この区画だけは個別にガードする。
