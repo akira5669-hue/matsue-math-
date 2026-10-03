@@ -18791,6 +18791,8 @@
     ohachiBannerText: document.getElementById('ohachiBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
     enrollmentNoticeBannerText: document.getElementById('enrollmentNoticeBannerText'),
+    readingDuplicateNoticeBanner: document.getElementById('readingDuplicateNoticeBanner'),
+    readingDuplicateNoticeBannerText: document.getElementById('readingDuplicateNoticeBannerText'),
     readingBanner: document.getElementById('readingBanner'),
     readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
@@ -19752,14 +19754,15 @@
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
-    // 魔法の書の告知・中2限定「証明」告知は役目を終えたため、常時非表示にする
-    // (機能自体は引き続き動作する。バナー呼び出しだけ止めている)。
+    // 魔法の書の告知・中2限定「証明」告知・読書ランキング追加の告知は役目を終えた
+    // ため、常時非表示にする(機能自体は引き続き動作する。バナー呼び出しだけ止めている)。
     if (els.spellbookLiveBanner) els.spellbookLiveBanner.hidden = true;
     if (els.proofTestBanner) els.proofTestBanner.hidden = true;
+    if (els.readingBanner) els.readingBanner.hidden = true;
     renderScienceServiceDayBanner_();
     renderFujiBanner_();
     renderOhachiBanner_();
-    renderReadingBanner_();
+    renderReadingDuplicateNoticeBanner_();
     renderSuperAkirametalBanner_();
   }
 
@@ -20886,6 +20889,22 @@
     els.enrollmentNoticeBanner.hidden = false;
     if (els.enrollmentNoticeBannerText) {
       els.enrollmentNoticeBannerText.textContent = '📢【ご案内】このアプリは、小4から中3の本科・単科理系の生徒さんのみご利用いただけます。それ以外の学年・コースの生徒さんは、お手数ですが画面上の「退会」から退会手続きをお願いします。';
+    }
+  }
+
+  // 読書ランキングで、同じ月に同じタイトルを何度も投稿してランキング・MPを
+  // 水増しする生徒がいたため、同じ月・同じタイトルの投稿を1回までに制限した
+  // ことの告知(全生徒に表示、重複していた投稿は削除済みであることも知らせる)。
+  var READING_DUPLICATE_NOTICE_BANNER_END_ = '2026-10-31';
+  function renderReadingDuplicateNoticeBanner_() {
+    if (!els.readingDuplicateNoticeBanner) return;
+    if (todayKey() > READING_DUPLICATE_NOTICE_BANNER_END_) {
+      els.readingDuplicateNoticeBanner.hidden = true;
+      return;
+    }
+    els.readingDuplicateNoticeBanner.hidden = false;
+    if (els.readingDuplicateNoticeBannerText) {
+      els.readingDuplicateNoticeBannerText.textContent = '📢【読書ランキングについて】同じ月に同じタイトルの本を複数回投稿することはできなくなりました（1冊まで）。これに伴い、同じ月に同じタイトルで重複していた投稿は削除しました。';
     }
   }
 
@@ -25163,6 +25182,8 @@
       if (!res.ok) {
         els.readingResult.textContent = res.error === 'missing_fields'
           ? 'タイトルと50文字以上の感想を入力してください。'
+          : res.error === 'duplicate_title_this_month'
+          ? '同じ月に同じタイトルの本をもう一度投稿することはできません（1冊まで）。'
           : '送信に失敗しました。もう一度お試しください。';
         updateReadingSubmitEnabled_();
         return;
