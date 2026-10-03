@@ -18821,6 +18821,8 @@
     enrollmentNoticeBannerText: document.getElementById('enrollmentNoticeBannerText'),
     readingDuplicateNoticeBanner: document.getElementById('readingDuplicateNoticeBanner'),
     readingDuplicateNoticeBannerText: document.getElementById('readingDuplicateNoticeBannerText'),
+    professionNoticeBanner: document.getElementById('professionNoticeBanner'),
+    professionNoticeBannerText: document.getElementById('professionNoticeBannerText'),
     readingBanner: document.getElementById('readingBanner'),
     readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
@@ -18853,6 +18855,7 @@
     professionStatusText: document.getElementById('professionStatusText'),
     professionInputRow: document.getElementById('professionInputRow'),
     professionInput: document.getElementById('professionInput'),
+    professionCustomInput: document.getElementById('professionCustomInput'),
     professionSaveBtn: document.getElementById('professionSaveBtn'),
     shopPurchaseHistoryBox: document.getElementById('shopPurchaseHistoryBox'),
     prefectureToggle: document.getElementById('prefectureToggle'),
@@ -19807,6 +19810,7 @@
     renderFujiBanner_();
     renderOhachiBanner_();
     renderReadingDuplicateNoticeBanner_();
+    renderProfessionNoticeBanner_();
     renderSuperAkirametalBanner_();
   }
 
@@ -20970,6 +20974,15 @@
     }
   }
 
+  // レベルアップで「職業」を選べるようになることの告知(全生徒に表示)。
+  function renderProfessionNoticeBanner_() {
+    if (!els.professionNoticeBanner) return;
+    els.professionNoticeBanner.hidden = false;
+    if (els.professionNoticeBannerText) {
+      els.professionNoticeBannerText.textContent = '📢【ご案内】レベルが上がると「職業」を選べるようになります！レベル100・300・500・800・1000と上がるごとに選べる職業の種類が増えていき（一部は7日連続ログインも必要）、設定した職業はランキングの自分のニックネームの後ろに表示されます。レベルが上がれば何度でも転職できます。';
+    }
+  }
+
   // 「読書の秋」機能追加の告知(全生徒に表示)。
   var READING_BANNER_END_ = '2026-10-10';
   function renderReadingBanner_() {
@@ -21911,45 +21924,114 @@
     els.historyItems.innerHTML = html;
   }
 
-  // 職業：設定できるのは00001限定プレビュー(7日連続ログインの称号とレベル1000の
-  // 両方が条件)だが、設定した内容は誰が見てもランキング上のニックネーム
-  // (例:黒龍の王)の後ろに「（医者）」のように表示される(本人限定表示ではない)。
-  function professionEligible_() {
-    return !!state.streak7TitleEarned && (Number(state.level) || 0) >= 1000;
+  // 職業：設定できるのは00001限定プレビュー。レベル(と一部は7日連続ログインの
+  // 称号)に応じて5段階のティアがあり、ティアが上がるごとに選べる職業リストが
+  // 丸ごと入れ替わる(上位ティアだからといって下位ティアの職業も選べる訳ではない、
+  // それぞれ独立したリスト)。到達した最高ティアのリストから選び直せる(転職)。
+  // レベル1000(+7日連続ログイン)だけは例外で、リストからの選択に加えて
+  // 自由入力(10文字まで)も使える。設定した内容は誰が見てもランキング上の
+  // ニックネーム(例:黒龍の王)の後ろに「（医者）」のように表示される
+  // (本人限定表示ではない)。
+  const PROFESSION_JOBS_800_ = [
+    'サッカー選手', '野球選手', '医師', 'YouTuber', 'ゲームクリエイター', 'パティシエ', '保育士', '看護師', '美容師', '学校の先生',
+    '警察官', '消防士', 'パイロット', '獣医師', 'イラストレーター', '漫画家', 'プロゲーマー', 'バスケットボール選手', '薬剤師', '建築士',
+    '宇宙飛行士', 'アイドル', '歌手', '俳優', '声優', 'ダンサー', '芸人', 'アニメーター', '小説家', '絵本作家',
+    'プログラマー', 'AIエンジニア', 'ロボットエンジニア', 'Webデザイナー', '動画クリエイター', 'VTuber', 'ストリーマー', 'ゲーム実況者', 'アプリ開発者', 'CGクリエイター',
+    '科学者', '研究者', '発明家', '恐竜研究者', '海洋生物学者', '天文学者', '気象予報士', '動物飼育員', '水族館スタッフ', 'ドッグトレーナー',
+    'トリマー', '動物カメラマン', '農家', '漁師', '花屋', 'ケーキ屋', 'パン職人', '料理人', '寿司職人', 'カフェ店員',
+    'ショコラティエ', '栄養士', 'ファッションデザイナー', 'メイクアップアーティスト', 'ネイリスト', 'モデル', 'カメラマン', 'デザイナー', '宝石デザイナー', '大工',
+    '自動車整備士', 'レーシングドライバー', '電車の運転士', '新幹線の運転士', 'バス運転手', '船長', 'キャビンアテンダント', '救急救命士', '自衛官', '海上保安官',
+    '弁護士', '裁判官', '公務員', '会社経営者', '起業家', '銀行員', '投資家', 'スポーツトレーナー', 'サッカー監督', '野球監督',
+    'プロゴルファー', 'テニス選手', '卓球選手', 'バレーボール選手', '陸上選手', 'スケートボード選手', '将棋棋士', 'プロダーツ選手', '塾の先生', '松江塾の先生 😆',
+  ];
+  const PROFESSION_CUSTOM_MAX_LENGTH_ = 10;
+  const PROFESSION_TIERS_ = [
+    {
+      level: 100, needsStreak7: false,
+      jobs: ['会社員', 'フリーター'],
+    },
+    {
+      level: 300, needsStreak7: false,
+      jobs: ['会社員', '警察官', '消防士', 'パティシエ', '保育士', '教師', '看護師', 'プログラマー', 'イラストレーター', 'ダンサー', '栄養士', 'メイクアップアーティスト', '農家', '漁師', '花屋', 'パン職人', 'フリーター'],
+    },
+    {
+      level: 500, needsStreak7: true,
+      jobs: ['会社員', '警察官', '消防士', 'パティシエ', '保育士', '教師', '看護師', 'プログラマー', 'イラストレーター', 'ダンサー', '栄養士', 'メイクアップアーティスト', '農家', '漁師', '花屋', '電車の運転士', 'バス運転手', 'パン職人', '船長', '料理人', '寿司職人', 'カフェ店員', '薬剤師', '建築士', 'キャビンアテンダント', 'フリーター'],
+    },
+    {
+      level: 800, needsStreak7: true,
+      jobs: PROFESSION_JOBS_800_,
+    },
+    {
+      level: 1000, needsStreak7: true,
+      jobs: PROFESSION_JOBS_800_, allowCustom: true,
+    },
+  ];
+  function currentProfessionTier_() {
+    var lvl = Number(state.level) || 0;
+    var best = null;
+    PROFESSION_TIERS_.forEach(function (t) {
+      if (lvl >= t.level && (!t.needsStreak7 || state.streak7TitleEarned)) best = t;
+    });
+    return best;
   }
+  function professionEligible_() {
+    return !!currentProfessionTier_();
+  }
+  const PROFESSION_CUSTOM_VALUE_ = '__custom__';
   function renderProfessionCard_() {
     if (!els.professionCard) return;
     if (!isAdminSession_()) { els.professionCard.hidden = true; return; }
     els.professionCard.hidden = false;
-    var eligible = professionEligible_();
-    if (els.professionInputRow) els.professionInputRow.hidden = !eligible;
+    var tier = currentProfessionTier_();
+    if (els.professionInputRow) els.professionInputRow.hidden = !tier;
     if (els.professionStatusText) {
-      els.professionStatusText.textContent = eligible
+      els.professionStatusText.textContent = tier
         ? (state.desiredProfession
-          ? '設定中：' + state.desiredProfession + '（ランキングの自分のニックネームの後ろに、他の生徒からも見える形で表示されます）'
-          : '7日連続ログイン＋レベル1000達成、おめでとう！職業を自由に入力できます。')
-        : '🔒 7日連続ログインの称号とレベル1000の両方を達成すると、職業を設定できるようになります。';
+          ? '設定中：' + state.desiredProfession + '（ランキングの自分のニックネームの後ろに、他の生徒からも見える形で表示されます。レベルが上がれば転職もできます）'
+          : 'レベル' + tier.level + (tier.needsStreak7 ? '＋7日連続ログイン' : '') + '達成、おめでとう！下のリストから職業を選べます。' + (tier.allowCustom ? '自由入力（10文字まで）もできます。' : ''))
+        : '🔒 レベル100で職業を選べるようになります（レベル300・500+7日連続ログイン・800+7日連続ログイン・1000+7日連続ログイン(自由入力も可)で選べる職業がどんどん増えます）。';
     }
-    if (els.professionInput && document.activeElement !== els.professionInput) {
-      els.professionInput.value = state.desiredProfession || '';
+    if (els.professionInput && tier) {
+      var jobs = tier.jobs;
+      var isCustomCurrent = !!state.desiredProfession && !jobs.includes(state.desiredProfession);
+      var html = jobs.map(function (j) { return '<option value="' + j + '">' + j + '</option>'; }).join('');
+      if (tier.allowCustom) html += '<option value="' + PROFESSION_CUSTOM_VALUE_ + '">✏️ 自由入力する</option>';
+      if (!jobs.includes(state.desiredProfession) && !isCustomCurrent) {
+        html = '<option value="">選んでください</option>' + html;
+      }
+      els.professionInput.innerHTML = html;
+      els.professionInput.value = jobs.includes(state.desiredProfession) ? state.desiredProfession
+        : (isCustomCurrent && tier.allowCustom) ? PROFESSION_CUSTOM_VALUE_ : '';
+      if (els.professionCustomInput) {
+        var showCustom = tier.allowCustom && els.professionInput.value === PROFESSION_CUSTOM_VALUE_;
+        els.professionCustomInput.hidden = !showCustom;
+        if (isCustomCurrent) els.professionCustomInput.value = state.desiredProfession;
+      }
     }
   }
   function saveProfessionClick_() {
-    if (!professionEligible_()) return;
+    var tier = currentProfessionTier_();
+    if (!tier) return;
     var session = loadSession();
     if (!session || !session.id) return;
-    var profession = (els.professionInput.value || '').trim();
+    var selected = els.professionInput.value || '';
+    var profession = selected;
+    if (tier.allowCustom && selected === PROFESSION_CUSTOM_VALUE_) {
+      profession = (els.professionCustomInput.value || '').trim().slice(0, PROFESSION_CUSTOM_MAX_LENGTH_);
+    }
+    if (!profession) { window.alert('職業を選ぶか、入力してください。'); return; }
     els.professionSaveBtn.disabled = true;
     apiPost('saveProfession', { id: session.id, profession: profession }).then(function (res) {
       els.professionSaveBtn.disabled = false;
       if (!res.ok) {
-        window.alert('保存に失敗しました。もう一度お試しください。');
+        window.alert(res.error === 'invalid_profession' ? 'そのティアでは選べない職業です。もう一度選び直してください。' : '保存に失敗しました。もう一度お試しください。');
         return;
       }
       state.desiredProfession = res.profession;
       saveGameState(state);
       renderProfessionCard_();
-      window.alert('👔 職業を保存しました！');
+      window.alert('👔 職業を「' + res.profession + '」にしました！');
     }).catch(function () {
       els.professionSaveBtn.disabled = false;
       window.alert('通信に失敗しました。もう一度お試しください。');
@@ -26428,6 +26510,9 @@
   if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
   if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
   if (els.professionSaveBtn) els.professionSaveBtn.addEventListener('click', saveProfessionClick_);
+  if (els.professionInput) els.professionInput.addEventListener('change', function () {
+    if (els.professionCustomInput) els.professionCustomInput.hidden = els.professionInput.value !== PROFESSION_CUSTOM_VALUE_;
+  });
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.skySpearBtn) els.skySpearBtn.addEventListener('click', castSkySpear_);

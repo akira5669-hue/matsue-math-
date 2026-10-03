@@ -221,6 +221,10 @@
       <p class="mp-cap-banner-text" id="readingDuplicateNoticeBannerText"></p>
     </section>
 
+    <section class="mp-cap-banner" id="professionNoticeBanner" hidden>
+      <p class="mp-cap-banner-text" id="professionNoticeBannerText"></p>
+    </section>
+
     <section class="mp-cap-banner" id="charArtBanner" hidden>
       <p class="mp-cap-banner-text" id="charArtBannerText"></p>
     </section>
@@ -733,8 +737,9 @@
         <h4 class="test-photo-card-title">👔 職業（設定は00001限定プレビュー）</h4>
         <p class="test-photo-hint" id="professionStatusText"></p>
         <div id="professionInputRow" hidden>
-          <input type="text" id="professionInput" class="login-input" maxlength="20" placeholder="例：医者" />
-          <button type="button" class="primary-btn" id="professionSaveBtn">保存する</button>
+          <select id="professionInput" class="login-input"></select>
+          <input type="text" id="professionCustomInput" class="login-input" maxlength="10" placeholder="自由に入力（10文字まで）" hidden />
+          <button type="button" class="primary-btn" id="professionSaveBtn">この職業にする</button>
         </div>
       </div>
       <div class="history-items" id="historyItems"></div>
