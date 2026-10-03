@@ -21798,7 +21798,7 @@
     // 図鑑から消える(すばやさの種・折り紙の手裏剣と同じ表示方式)。
     var wisdomSeedCount = Number(state.wisdomSeedCount) || 0;
     if (wisdomSeedCount > 0) {
-      html += `<div class="badge-item badge-earned" title="なんでも屋で「食べる」か「売る」ができる、入手方法が謎の特別な種"><span class="badge-icon">🌰</span><span class="badge-name">賢さの種 ×${wisdomSeedCount}</span></div>`;
+      html += `<div class="badge-item badge-earned" title="なんでも屋で「食べる」か「売る」ができる、入手方法が謎の特別な種"><span class="badge-icon"><img src="images/wisdom_seed.jpg" alt=""></span><span class="badge-name">賢さの種 ×${wisdomSeedCount}</span></div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -22524,8 +22524,8 @@
     var wisdomSeedCount_ = Number(state.wisdomSeedCount) || 0;
     var wisdomSeedRowHtml = '';
     if (wisdomSeedCount_ > 0) {
-      var wisdomEatRowHtml = `<div class="gift-row"><span class="shop-item-img shop-item-emoji">🌰</span><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span></div><button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button></div>`;
-      var wisdomSellRowHtml = `<div class="gift-row"><span class="shop-item-img shop-item-emoji">🌰</span><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span></div><button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button></div>`;
+      var wisdomEatRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span></div><button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button></div>`;
+      var wisdomSellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span></div><button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button></div>`;
       wisdomSeedRowHtml = wisdomEatRowHtml + wisdomSellRowHtml;
     }
 
