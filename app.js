@@ -18544,8 +18544,8 @@
     // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
     treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
     gemItems: (savedProgress && savedProgress.gemItems && typeof savedProgress.gemItems === 'object') ? Object.assign({}, savedProgress.gemItems) : ((savedGame && savedGame.gemItems && typeof savedGame.gemItems === 'object') ? Object.assign({}, savedGame.gemItems) : {}),
-    // 職業(設定は00001限定プレビュー、7日連続ログイン称号+レベル1000で解禁。
-    // 設定内容自体はランキングで誰からも見える)。
+    // 職業(全生徒に公開済み。レベル/7日連続ログイン称号のティアに応じて解禁。
+    // 設定内容はランキングで誰からも見える)。
     desiredProfession: (savedProgress && savedProgress.desiredProfession) || (savedGame && savedGame.desiredProfession) || '',
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
@@ -21924,7 +21924,7 @@
     els.historyItems.innerHTML = html;
   }
 
-  // 職業：設定できるのは00001限定プレビュー。レベル(と一部は7日連続ログインの
+  // 職業：全生徒に公開済み。レベル(と一部は7日連続ログインの
   // 称号)に応じて5段階のティアがあり、ティアが上がるごとに選べる職業リストが
   // 丸ごと入れ替わる(上位ティアだからといって下位ティアの職業も選べる訳ではない、
   // それぞれ独立したリスト)。到達した最高ティアのリストから選び直せる(転職)。
@@ -21981,7 +21981,6 @@
   const PROFESSION_CUSTOM_VALUE_ = '__custom__';
   function renderProfessionCard_() {
     if (!els.professionCard) return;
-    if (!isAdminSession_()) { els.professionCard.hidden = true; return; }
     els.professionCard.hidden = false;
     var tier = currentProfessionTier_();
     if (els.professionInputRow) els.professionInputRow.hidden = !tier;
