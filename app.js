@@ -324,7 +324,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
-        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount,
+        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -346,7 +346,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
-        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount,
+        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession,
       });
     }
   }
@@ -18544,6 +18544,8 @@
     // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
     treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
     gemItems: (savedProgress && savedProgress.gemItems && typeof savedProgress.gemItems === 'object') ? Object.assign({}, savedProgress.gemItems) : ((savedGame && savedGame.gemItems && typeof savedGame.gemItems === 'object') ? Object.assign({}, savedGame.gemItems) : {}),
+    // なりたい職業(00001限定プレビュー、7日連続ログイン称号+レベル1000で解禁)。
+    desiredProfession: (savedProgress && savedProgress.desiredProfession) || (savedGame && savedGame.desiredProfession) || '',
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
     worldBossActiveStage: null,
@@ -18846,6 +18848,11 @@
     wisdomSeedAdminCard: document.getElementById('wisdomSeedAdminCard'),
     wisdomSeedDistributeBtn: document.getElementById('wisdomSeedDistributeBtn'),
     wisdomSeedDistributeResult: document.getElementById('wisdomSeedDistributeResult'),
+    professionCard: document.getElementById('professionCard'),
+    professionStatusText: document.getElementById('professionStatusText'),
+    professionInputRow: document.getElementById('professionInputRow'),
+    professionInput: document.getElementById('professionInput'),
+    professionSaveBtn: document.getElementById('professionSaveBtn'),
     shopPurchaseHistoryBox: document.getElementById('shopPurchaseHistoryBox'),
     prefectureToggle: document.getElementById('prefectureToggle'),
     prefecturePanel: document.getElementById('prefecturePanel'),
@@ -21213,6 +21220,7 @@
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.shurikenCount = Number(progress.shurikenCount) || state.shurikenCount;
         state.wisdomSeedCount = Number(progress.wisdomSeedCount) || state.wisdomSeedCount;
+        state.desiredProfession = progress.desiredProfession || state.desiredProfession;
         // cursed/zombified/fujiAltitudeSickも、fujiStation等と同じくここで復元されて
         // おらず、アプリを開き直す(ログイン処理が走る)たびに状態が消えて見える不具合が
         // あったため、明示的に復元する(いずれも一度trueになったら治すまで持続する
@@ -21902,6 +21910,53 @@
     els.historyItems.innerHTML = html;
   }
 
+  // なりたい職業：00001限定プレビュー。7日連続ログインの称号とレベル1000の
+  // 両方を達成すると、自由記述で「なりたい職業」を設定できるようになる。
+  // 設定すると、ランキング上の自分のニックネーム(例:黒龍の王)の後ろに
+  // 「（医者）」のように表示される(サーバー側でリクエスト者=本人の時だけ
+  // 付加するため、00001以外の目には一切触れない)。
+  function professionEligible_() {
+    return !!state.streak7TitleEarned && (Number(state.level) || 0) >= 1000;
+  }
+  function renderProfessionCard_() {
+    if (!els.professionCard) return;
+    if (!isAdminSession_()) { els.professionCard.hidden = true; return; }
+    els.professionCard.hidden = false;
+    var eligible = professionEligible_();
+    if (els.professionInputRow) els.professionInputRow.hidden = !eligible;
+    if (els.professionStatusText) {
+      els.professionStatusText.textContent = eligible
+        ? (state.desiredProfession
+          ? '設定中：' + state.desiredProfession + '（ランキングの自分のニックネームの後ろに表示されます。本人以外には表示されません）'
+          : '7日連続ログイン＋レベル1000達成、おめでとう！なりたい職業を自由に入力できます。')
+        : '🔒 7日連続ログインの称号とレベル1000の両方を達成すると、なりたい職業を設定できるようになります。';
+    }
+    if (els.professionInput && document.activeElement !== els.professionInput) {
+      els.professionInput.value = state.desiredProfession || '';
+    }
+  }
+  function saveProfessionClick_() {
+    if (!professionEligible_()) return;
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var profession = (els.professionInput.value || '').trim();
+    els.professionSaveBtn.disabled = true;
+    apiPost('saveProfession', { id: session.id, profession: profession }).then(function (res) {
+      els.professionSaveBtn.disabled = false;
+      if (!res.ok) {
+        window.alert('保存に失敗しました。もう一度お試しください。');
+        return;
+      }
+      state.desiredProfession = res.profession;
+      saveGameState(state);
+      renderProfessionCard_();
+      window.alert('👔 なりたい職業を保存しました！');
+    }).catch(function () {
+      els.professionSaveBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
+
   // 管理者(ID 00001)がgrantItemsで付与予約したアイテム・レアキャラ図鑑を、
   // ログイン/再開時に受け取ってstateへ反映する。
   function applyPendingItemGrants(itemIds) {
@@ -21985,6 +22040,7 @@
     renderBadges(data);
     renderRareCollection();
     renderItems();
+    renderProfessionCard_();
     els.historySummary.textContent = data.total === 0
       ? 'まだ記録がありません。問題を解いてみましょう。'
       : `のべ ${data.total} 問中 ${data.correct} 問正解（正答率 ${Math.round((data.correct / data.total) * 100)}%）`;
@@ -26372,6 +26428,7 @@
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
   if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
+  if (els.professionSaveBtn) els.professionSaveBtn.addEventListener('click', saveProfessionClick_);
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.skySpearBtn) els.skySpearBtn.addEventListener('click', castSkySpear_);
