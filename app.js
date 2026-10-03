@@ -317,7 +317,7 @@
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
-        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges,
@@ -339,7 +339,7 @@
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
-        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges,
@@ -18145,6 +18145,19 @@
     'ringBronze', 'ringSilver', 'ringGold', 'ringRainbow',
     'ringShieldChargesSilver', 'ringShieldChargesGold', 'ringShieldChargesRainbow',
   ];
+  // 宝箱を開けた時にごく稀に出る宝石(購入不可、なんでも屋で星の数に応じた
+  // 固定額のMPに売却できるのみ。いくつでも所持可能)。
+  const GEM_DEFS_ = {
+    gemRedDiamond: { star: 5, label: 'レッドダイヤモンド', emoji: '🔴💎' },
+    gemBlueDiamond: { star: 5, label: 'ブルーダイヤモンド', emoji: '🔵💎' },
+    gemPinkDiamond: { star: 5, label: 'ピンクダイヤモンド', emoji: '🩷💎' },
+    gemDiamond: { star: 4, label: 'ダイヤモンド', emoji: '💎' },
+    gemRuby: { star: 3, label: 'ルビー', emoji: '🔴💎' },
+    gemEmerald: { star: 3, label: 'エメラルド', emoji: '💚💎' },
+    gemSapphire: { star: 3, label: 'サファイア', emoji: '💙💎' },
+  };
+  const GEM_ITEM_ALL_KEYS_ = Object.keys(GEM_DEFS_);
+  const GEM_SELL_MP_ = { 5: 1000, 4: 700, 3: 300 };
   function consumeRingShieldIfAvailable_() {
     state.treasureItems = state.treasureItems || {};
     for (let i = 0; i < RING_SHIELD_TIER_ORDER_.length; i++) {
@@ -18530,6 +18543,7 @@
     // 宝箱・鍵・指輪の所持数。{chestBronze,keyBronze,ringBronze,...}
     // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
     treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
+    gemItems: (savedProgress && savedProgress.gemItems && typeof savedProgress.gemItems === 'object') ? Object.assign({}, savedProgress.gemItems) : ((savedGame && savedGame.gemItems && typeof savedGame.gemItems === 'object') ? Object.assign({}, savedGame.gemItems) : {}),
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
     worldBossActiveStage: null,
@@ -21280,6 +21294,7 @@
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
       treasureItems: state.treasureItems || {},
+      gemItems: state.gemItems || {},
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
       shurikenCount: state.shurikenCount,
@@ -21353,6 +21368,7 @@
     var sWorldAllies = Array.isArray(server.worldAllies) ? server.worldAllies : [];
     var sMathGodTitleEarned = !!server.mathGodTitleEarned;
     var sTreasureItems = (server.treasureItems && typeof server.treasureItems === 'object') ? server.treasureItems : {};
+    var sGemItems = (server.gemItems && typeof server.gemItems === 'object') ? server.gemItems : {};
     var sSpellbooks = (server.spellbooks && typeof server.spellbooks === 'object') ? server.spellbooks : {};
     var sCategoryRanks = (server.categoryRanks && typeof server.categoryRanks === 'object') ? server.categoryRanks : {};
     var changed = false;
@@ -21408,6 +21424,10 @@
     TREASURE_ITEM_ALL_KEYS_.forEach(function (k) {
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
+    });
+    GEM_ITEM_ALL_KEYS_.forEach(function (k) {
+      var sv = Number(sGemItems[k]) || 0;
+      if (sv > (Number(state.gemItems[k]) || 0)) { state.gemItems[k] = sv; changed = true; }
     });
     SPELLBOOK_IDS_.forEach(function (el) {
       var sv = Number(sSpellbooks[el]) || 0;
@@ -21525,6 +21545,7 @@
       || (localWorldLap === sWorldLap && Object.keys(state.worldBossDefeated).some(function (k) { return state.worldBossDefeated[k] && !sWorldBossDefeated[k]; }))
       || state.worldAllies.some(function (x) { return sWorldAllies.indexOf(x) === -1; })
       || TREASURE_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.treasureItems[k]) || 0) > (Number(sTreasureItems[k]) || 0); })
+      || GEM_ITEM_ALL_KEYS_.some(function (k) { return (Number(state.gemItems[k]) || 0) > (Number(sGemItems[k]) || 0); })
       || SPELLBOOK_IDS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); })
       || dailyLocalAhead;
     if (localAhead) {
@@ -21862,6 +21883,13 @@
     if (skySpearChargesForItem_ > 0) {
       html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、投げた直後の問題に正解すればボスに100ダメージを与えられる"><span class="badge-icon"><img src="images/sky_spear.jpg" alt=""></span><span class="badge-name">天空の槍（残り${skySpearChargesForItem_}回）</span>${difficultyStarsHtml_(1)}</div>`;
     }
+    // 宝石も所持数で表示する(宝箱を開けた時のごく稀なドロップでしか手に入らない)。
+    GEM_ITEM_ALL_KEYS_.forEach(function (gemId) {
+      var gemCount = Number((state.gemItems || {})[gemId]) || 0;
+      if (gemCount <= 0) return;
+      var def = GEM_DEFS_[gemId];
+      html += `<div class="badge-item badge-earned" title="宝箱を開けた時のごく稀なドロップでしか手に入らない激レアアイテム"><span class="badge-icon">${def.emoji}</span><span class="badge-name">${def.label} ×${gemCount}</span>${difficultyStarsHtml_(def.star)}</div>`;
+    });
     // 勇者の剣(富士登山の山頂到達報酬)は、他の消費アイテムと違い使い切って
     // 壊れた後も記念として図鑑に残り続ける(手に入れたこと自体がyushaSwordObtained
     // で永続的に記録される)。
@@ -22572,6 +22600,7 @@
     var skySpearRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/sky_spear.jpg" alt="天空の槍"><div class="gift-info"><span class="gift-label">🔱 天空の槍（所持: ${skySpearCharges}回分・何個でも購入可）</span><span class="gift-cost">${SKY_SPEAR_COST_MP}MP（1回購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。投げた直後の問題に正解すればボスに${SKY_SPEAR_DAMAGE_}ダメージ</span>${difficultyStarsHtml_(1)}</div>${skySpearActionHtml}</div>`;
 
     var treasureRowsHtml = treasureShopRowsHtml_();
+    var gemRowsHtml = gemShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
     // 賢さの種：購入はできない(月間いいねランキング上位3名だけへの秘密の配布品)。
@@ -22584,12 +22613,15 @@
       wisdomSeedRowHtml = wisdomEatRowHtml + wisdomSellRowHtml;
     }
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + wisdomSeedRowHtml + treasureRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + wisdomSeedRowHtml + treasureRowsHtml + gemRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
     els.shopList.querySelectorAll('[data-treasure-open]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleOpenTreasureChestClick(btn.getAttribute('data-treasure-open'), btn); });
+    });
+    els.shopList.querySelectorAll('[data-gem-sell]').forEach(function (btn) {
+      btn.addEventListener('click', function () { handleSellGemClick(btn.getAttribute('data-gem-sell'), btn); });
     });
     els.shopList.querySelectorAll('[data-treasure-sell-ring]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleSellTreasureRingClick(btn.getAttribute('data-treasure-sell-ring'), btn); });
@@ -22758,14 +22790,69 @@
       state.points = res.remainingPoints;
       state.hp = res.hp;
       state.treasureItems = res.treasureItems;
+      if (res.gemItems) state.gemItems = res.gemItems;
       state.pointsToday = (Number(state.pointsToday) || 0) + granted;
       state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + granted;
       state.pointsDate = today;
       saveGameState(state);
       updateGameHud();
       renderShopList();
+      renderItems();
       var mpNote = granted < reward.mp ? `+${granted}MP（本日のMP上限のため一部のみ）` : `+${granted}MP`;
       window.alert(`🎁 ${label}の宝箱を開けた！ ${mpNote}・+${reward.hp}HP・${label}の指輪をゲット！`);
+      // 宝石は宝箱を開けた時だけ、ごく稀に追加でもらえる激レアアイテム。
+      if (Array.isArray(res.gemsWon) && res.gemsWon.length > 0) {
+        var gemLines = res.gemsWon.map(function (gemId) {
+          var def = GEM_DEFS_[gemId];
+          return def ? (def.emoji + ' ' + def.label + '（⭐' + def.star + '）') : gemId;
+        }).join('\n');
+        window.setTimeout(function () {
+          window.alert('💎✨ 激レア！宝石を手に入れた！✨💎\n' + gemLines);
+        }, 50);
+      }
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  // 宝石のなんでも屋UI：購入は不可、宝箱を開けた時のごく稀なドロップでしか
+  // 手に入らない。所持している宝石だけ、星の数に応じた固定額で売却できる。
+  function gemShopRowsHtml_() {
+    var gems = state.gemItems || {};
+    var rowsHtml = GEM_ITEM_ALL_KEYS_.map(function (gemId) {
+      var count = Number(gems[gemId]) || 0;
+      if (count <= 0) return '';
+      var def = GEM_DEFS_[gemId];
+      var sellMp = GEM_SELL_MP_[def.star];
+      return `<div class="gift-row"><span class="shop-item-img shop-item-img-emoji">${def.emoji}</span><div class="gift-info"><span class="gift-label">${def.emoji} ${def.label}（所持: ${count}個）</span><span class="gift-cost">${sellMp}MPで売却</span><span class="shop-item-note">宝箱を開けた時のごく稀なドロップでしか手に入らない激レアアイテム</span>${difficultyStarsHtml_(def.star)}</div><button type="button" class="gift-redeem-btn" data-gem-sell="${gemId}">売却する</button></div>`;
+    }).join('');
+    if (!rowsHtml) return '';
+    return `<div class="shop-section-title">💎 宝石（宝箱からのごく稀なドロップのみ）</div>` + rowsHtml;
+  }
+
+  function handleSellGemClick(gemId, btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var def = GEM_DEFS_[gemId];
+    if (!def) return;
+    var sellMp = GEM_SELL_MP_[def.star];
+    if (!window.confirm(`${def.label}を${sellMp}MPで売却します。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('sellGem', { id: session.id, gemId: gemId }).then(function (res) {
+      if (!res.ok) {
+        window.alert(res.error === 'no_gem' ? 'その宝石は持っていません。' : '売却に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.gemItems = res.gemItems;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`💎 ${def.label}を売却した！（+${sellMp}MP）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
