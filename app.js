@@ -18544,7 +18544,8 @@
     // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
     treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
     gemItems: (savedProgress && savedProgress.gemItems && typeof savedProgress.gemItems === 'object') ? Object.assign({}, savedProgress.gemItems) : ((savedGame && savedGame.gemItems && typeof savedGame.gemItems === 'object') ? Object.assign({}, savedGame.gemItems) : {}),
-    // なりたい職業(00001限定プレビュー、7日連続ログイン称号+レベル1000で解禁)。
+    // 職業(設定は00001限定プレビュー、7日連続ログイン称号+レベル1000で解禁。
+    // 設定内容自体はランキングで誰からも見える)。
     desiredProfession: (savedProgress && savedProgress.desiredProfession) || (savedGame && savedGame.desiredProfession) || '',
     // 現在挑戦中のボス戦のステージID(挑戦していなければnull)。
     // 挑戦中かどうかは端末セッション限定(ページ再読み込みでリセット)。あえて永続化しない。
@@ -21910,11 +21911,9 @@
     els.historyItems.innerHTML = html;
   }
 
-  // なりたい職業：00001限定プレビュー。7日連続ログインの称号とレベル1000の
-  // 両方を達成すると、自由記述で「なりたい職業」を設定できるようになる。
-  // 設定すると、ランキング上の自分のニックネーム(例:黒龍の王)の後ろに
-  // 「（医者）」のように表示される(サーバー側でリクエスト者=本人の時だけ
-  // 付加するため、00001以外の目には一切触れない)。
+  // 職業：設定できるのは00001限定プレビュー(7日連続ログインの称号とレベル1000の
+  // 両方が条件)だが、設定した内容は誰が見てもランキング上のニックネーム
+  // (例:黒龍の王)の後ろに「（医者）」のように表示される(本人限定表示ではない)。
   function professionEligible_() {
     return !!state.streak7TitleEarned && (Number(state.level) || 0) >= 1000;
   }
@@ -21927,9 +21926,9 @@
     if (els.professionStatusText) {
       els.professionStatusText.textContent = eligible
         ? (state.desiredProfession
-          ? '設定中：' + state.desiredProfession + '（ランキングの自分のニックネームの後ろに表示されます。本人以外には表示されません）'
-          : '7日連続ログイン＋レベル1000達成、おめでとう！なりたい職業を自由に入力できます。')
-        : '🔒 7日連続ログインの称号とレベル1000の両方を達成すると、なりたい職業を設定できるようになります。';
+          ? '設定中：' + state.desiredProfession + '（ランキングの自分のニックネームの後ろに、他の生徒からも見える形で表示されます）'
+          : '7日連続ログイン＋レベル1000達成、おめでとう！職業を自由に入力できます。')
+        : '🔒 7日連続ログインの称号とレベル1000の両方を達成すると、職業を設定できるようになります。';
     }
     if (els.professionInput && document.activeElement !== els.professionInput) {
       els.professionInput.value = state.desiredProfession || '';
@@ -21950,7 +21949,7 @@
       state.desiredProfession = res.profession;
       saveGameState(state);
       renderProfessionCard_();
-      window.alert('👔 なりたい職業を保存しました！');
+      window.alert('👔 職業を保存しました！');
     }).catch(function () {
       els.professionSaveBtn.disabled = false;
       window.alert('通信に失敗しました。もう一度お試しください。');
