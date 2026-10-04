@@ -18823,6 +18823,8 @@
     readingDuplicateNoticeBannerText: document.getElementById('readingDuplicateNoticeBannerText'),
     professionNoticeBanner: document.getElementById('professionNoticeBanner'),
     professionNoticeBannerText: document.getElementById('professionNoticeBannerText'),
+    worldBossChestBanner: document.getElementById('worldBossChestBanner'),
+    worldBossChestBannerText: document.getElementById('worldBossChestBannerText'),
     readingBanner: document.getElementById('readingBanner'),
     readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
@@ -19811,6 +19813,7 @@
     renderOhachiBanner_();
     renderReadingDuplicateNoticeBanner_();
     renderProfessionNoticeBanner_();
+    renderWorldBossChestBanner_();
     renderSuperAkirametalBanner_();
   }
 
@@ -20980,6 +20983,19 @@
     els.professionNoticeBanner.hidden = false;
     if (els.professionNoticeBannerText) {
       els.professionNoticeBannerText.textContent = '📢【ご案内】レベルが上がると「職業」を選べるようになります！レベル100・300・500・800・1000と上がるごとに選べる職業の種類が増えていき（一部は7日連続ログインも必要）、設定した職業はランキングの自分のニックネームの後ろに表示されます。レベルが上がれば何度でも転職できます。';
+    }
+  }
+
+  // 今月限定：世界一周のボスを倒すと必ず虹色の宝箱がもらえることの告知(全生徒に表示)。
+  function renderWorldBossChestBanner_() {
+    if (!els.worldBossChestBanner) return;
+    if (todayKey() > WORLD_BOSS_GUARANTEED_CHEST_END_) {
+      els.worldBossChestBanner.hidden = true;
+      return;
+    }
+    els.worldBossChestBanner.hidden = false;
+    if (els.worldBossChestBannerText) {
+      els.worldBossChestBannerText.textContent = '📢【今月限定！】世界一周のボスを倒すと、学年に関係なく必ず🌈虹色の宝箱が1個もらえます！なんでも屋で虹色の鍵を買って開けてみよう。10月末まで。';
     }
   }
 
@@ -23839,6 +23855,14 @@
 
   // ボス撃破時の共通処理(コレクション登録・次のボスへの進行・ステージクリア判定)。
   // 通常の正解での撃破と、魔法でトドメを刺した場合の両方から呼ばれる。
+  // 10月限定：世界一周のボスを倒すと、学年に関係なく必ず虹色の宝箱が1個もらえる
+  // (通常のレアキャラ撃破ドロップ(確率制・学年に応じたティア)とは別枠の特典)。
+  var WORLD_BOSS_GUARANTEED_CHEST_START_ = '2026-10-01';
+  var WORLD_BOSS_GUARANTEED_CHEST_END_ = '2026-10-31';
+  function worldBossGuaranteedChestActive_() {
+    var today = todayKey();
+    return today >= WORLD_BOSS_GUARANTEED_CHEST_START_ && today <= WORLD_BOSS_GUARANTEED_CHEST_END_;
+  }
   function finishWorldBossWin_(stageId, subIndex) {
     const session = loadSession();
     const sequence = worldBossSequenceForStage(stageId);
@@ -23858,6 +23882,13 @@
     if ((Number(state.worldLap) || 1) >= 2 && defeatedSub && defeatedSub.id) {
       state.hp = (Number(state.hp) || 0) + WORLD_BOSS_LAP2_HP_BONUS_;
       hpBonusGainedHtml = `<div class="item-gain-banner">💚 +${WORLD_BOSS_LAP2_HP_BONUS_}HP！</div>`;
+    }
+    let worldBossChestHtml = '';
+    if (worldBossGuaranteedChestActive_()) {
+      state.treasureItems = state.treasureItems || {};
+      const chestKeyWB_ = treasureItemKey_('chest', 'rainbow');
+      state.treasureItems[chestKeyWB_] = (Number(state.treasureItems[chestKeyWB_]) || 0) + 1;
+      worldBossChestHtml = `<div class="item-gain-banner">🌈 10月限定！ボス撃破で虹色の宝箱を手に入れた！🌈</div>`;
     }
     // 次のボスへは持ち越さない(魔法で与えたダメージも撃破と同時にリセット)。
     state.streak = 0;
@@ -23882,7 +23913,7 @@
       if (session && session.id) {
         apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       }
-      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}${titleGainedHtml}`;
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}${worldBossChestHtml}${titleGainedHtml}`;
     } else {
       state.worldBossSubIndex[stageId] = nextSubIndex;
       saveGameState(state);
@@ -23890,7 +23921,7 @@
         apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
       }
       const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
-      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
+      winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}${worldBossChestHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
     }
     return winHtml;
   }
