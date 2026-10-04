@@ -324,7 +324,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
-        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession,
+        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -346,7 +346,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
-        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession,
+        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
       });
     }
   }
@@ -18462,6 +18462,10 @@
     // 賢さの種：月間の読書いいね数ランキング上位3名にだけ配布される秘密アイテムの
     // 所持数。なんでも屋で「食べる」(+1000HP)か「売る」(1000MPで売却)ができる。
     wisdomSeedCount: (savedProgress && Number(savedProgress.wisdomSeedCount)) || (savedGame && Number(savedGame.wisdomSeedCount)) || 0,
+    // 賢さの実：月間チャレンジ問題正解数ランキング上位者への配布品。
+    wisdomFruitCount: (savedProgress && Number(savedProgress.wisdomFruitCount)) || (savedGame && Number(savedGame.wisdomFruitCount)) || 0,
+    // 努力の種：勉強時間ランキング(日間・月間)上位者への配布品。
+    effortSeedCount: (savedProgress && Number(savedProgress.effortSeedCount)) || (savedGame && Number(savedGame.effortSeedCount)) || 0,
     // なんでも屋で買える消費アイテム「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)。
     ironWallCharges: (savedProgress && Number(savedProgress.ironWallCharges)) || (savedGame && Number(savedGame.ironWallCharges)) || 0,
     // なんでも屋で買える消費アイテム「鋼の鎧」の残りチャージ数(0〜10、複数保有不可)。
@@ -18853,6 +18857,15 @@
     wisdomSeedAdminCard: document.getElementById('wisdomSeedAdminCard'),
     wisdomSeedDistributeBtn: document.getElementById('wisdomSeedDistributeBtn'),
     wisdomSeedDistributeResult: document.getElementById('wisdomSeedDistributeResult'),
+    wisdomFruitAdminCard: document.getElementById('wisdomFruitAdminCard'),
+    wisdomFruitDistributeBtn: document.getElementById('wisdomFruitDistributeBtn'),
+    wisdomFruitDistributeResult: document.getElementById('wisdomFruitDistributeResult'),
+    effortSeedDailyAdminCard: document.getElementById('effortSeedDailyAdminCard'),
+    effortSeedDailyDistributeBtn: document.getElementById('effortSeedDailyDistributeBtn'),
+    effortSeedDailyDistributeResult: document.getElementById('effortSeedDailyDistributeResult'),
+    effortSeedMonthlyAdminCard: document.getElementById('effortSeedMonthlyAdminCard'),
+    effortSeedMonthlyDistributeBtn: document.getElementById('effortSeedMonthlyDistributeBtn'),
+    effortSeedMonthlyDistributeResult: document.getElementById('effortSeedMonthlyDistributeResult'),
     professionCard: document.getElementById('professionCard'),
     professionStatusText: document.getElementById('professionStatusText'),
     professionInputRow: document.getElementById('professionInputRow'),
@@ -21250,6 +21263,8 @@
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.shurikenCount = Number(progress.shurikenCount) || state.shurikenCount;
         state.wisdomSeedCount = Number(progress.wisdomSeedCount) || state.wisdomSeedCount;
+        state.wisdomFruitCount = Number(progress.wisdomFruitCount) || state.wisdomFruitCount;
+        state.effortSeedCount = Number(progress.effortSeedCount) || state.effortSeedCount;
         state.desiredProfession = progress.desiredProfession || state.desiredProfession;
         // cursed/zombified/fujiAltitudeSickも、fujiStation等と同じくここで復元されて
         // おらず、アプリを開き直す(ログイン処理が走る)たびに状態が消えて見える不具合が
@@ -21363,6 +21378,8 @@
       streak30TitleEarned: state.streak30TitleEarned,
       ohachiCompleted: state.ohachiCompleted,
       wisdomSeedCount: state.wisdomSeedCount,
+      wisdomFruitCount: state.wisdomFruitCount,
+      effortSeedCount: state.effortSeedCount,
     };
   }
 
@@ -21900,6 +21917,16 @@
     var wisdomSeedCount = Number(state.wisdomSeedCount) || 0;
     if (wisdomSeedCount > 0) {
       html += `<div class="badge-item badge-earned" title="なんでも屋で「食べる」か「売る」ができる、入手方法が謎の特別な種"><span class="badge-icon"><img src="images/wisdom_seed.jpg" alt=""></span><span class="badge-name">賢さの種 ×${wisdomSeedCount}</span>${difficultyStarsHtml_(4)}</div>`;
+    }
+    // 賢さの実：月間チャレンジ問題正解数ランキング上位者への配布品。
+    var wisdomFruitCount = Number(state.wisdomFruitCount) || 0;
+    if (wisdomFruitCount > 0) {
+      html += `<div class="badge-item badge-earned" title="月間チャレンジ問題正解数ランキング上位者への配布品。なんでも屋で「食べる」か「売る」ができる"><span class="badge-icon"><img src="images/wisdom_fruit.jpg" alt=""></span><span class="badge-name">賢さの実 ×${wisdomFruitCount}</span>${difficultyStarsHtml_(3)}</div>`;
+    }
+    // 努力の種：勉強時間ランキング(日間・月間)上位者への配布品。
+    var effortSeedCount = Number(state.effortSeedCount) || 0;
+    if (effortSeedCount > 0) {
+      html += `<div class="badge-item badge-earned" title="勉強時間ランキングの上位者への配布品。なんでも屋で「食べる」か「売る」ができる"><span class="badge-icon"><img src="images/effort_seed.jpg" alt=""></span><span class="badge-name">努力の種 ×${effortSeedCount}</span>${difficultyStarsHtml_(2)}</div>`;
     }
     // 鉄壁の盾も消費アイテムなので残りチャージ数で表示し、使い切ったら図鑑から消える。
     var ironWallCharges = Number(state.ironWallCharges) || 0;
@@ -22612,6 +22639,9 @@
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
     if (els.shopPurchaseHistoryCard) els.shopPurchaseHistoryCard.hidden = !isAdminSession_();
     if (els.wisdomSeedAdminCard) els.wisdomSeedAdminCard.hidden = !isAdminSession_();
+    if (els.wisdomFruitAdminCard) els.wisdomFruitAdminCard.hidden = !isAdminSession_();
+    if (els.effortSeedDailyAdminCard) els.effortSeedDailyAdminCard.hidden = !isAdminSession_();
+    if (els.effortSeedMonthlyAdminCard) els.effortSeedMonthlyAdminCard.hidden = !isAdminSession_();
 
     var prayerCanAfford = state.points >= AKR_PRAYER_COST_MP;
     var prayerActionHtml;
@@ -22756,16 +22786,29 @@
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
     // 賢さの種：購入はできない(月間いいねランキング上位3名だけへの秘密の配布品)。
-    // 所持している時だけ「食べる」「売る」の2行を表示する。
+    // 所持していなくても「食べる」「売る」の行自体は常に表示し、0個のときは
+    // ボタンの代わりに所持数不足の表示にする。
     var wisdomSeedCount_ = Number(state.wisdomSeedCount) || 0;
-    var wisdomSeedRowHtml = '';
-    if (wisdomSeedCount_ > 0) {
-      var wisdomEatRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(4)}</div><button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button></div>`;
-      var wisdomSellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(4)}</div><button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button></div>`;
-      wisdomSeedRowHtml = wisdomEatRowHtml + wisdomSellRowHtml;
-    }
+    var wisdomEatActionHtml = wisdomSeedCount_ > 0 ? `<button type="button" class="gift-redeem-btn" id="eatWisdomSeedBtn">食べる</button>` : `<span class="gift-insufficient">未所持</span>`;
+    var wisdomSellActionHtml = wisdomSeedCount_ > 0 ? `<button type="button" class="gift-redeem-btn" id="sellWisdomSeedBtn">売る</button>` : `<span class="gift-insufficient">未所持</span>`;
+    var wisdomSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を食べる（所持: ${wisdomSeedCount_}個）</span><span class="shop-item-note">入手方法は謎の特別な種。1個食べるとHPが${WISDOM_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(4)}</div>${wisdomEatActionHtml}</div>`
+      + `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_seed.jpg" alt="賢さの種"><div class="gift-info"><span class="gift-label">🌰 賢さの種を売る（所持: ${wisdomSeedCount_}個）</span><span class="gift-cost">${WISDOM_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(4)}</div>${wisdomSellActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + wisdomSeedRowHtml + treasureRowsHtml + gemRowsHtml + spellbookRowsHtml;
+    // 賢さの実：購入はできない(月間チャレンジ問題正解数ランキング上位者への配布品)。
+    var wisdomFruitCount_ = Number(state.wisdomFruitCount) || 0;
+    var wisdomFruitEatActionHtml = wisdomFruitCount_ > 0 ? `<button type="button" class="gift-redeem-btn" id="eatWisdomFruitBtn">食べる</button>` : `<span class="gift-insufficient">未所持</span>`;
+    var wisdomFruitSellActionHtml = wisdomFruitCount_ > 0 ? `<button type="button" class="gift-redeem-btn" id="sellWisdomFruitBtn">売る</button>` : `<span class="gift-insufficient">未所持</span>`;
+    var wisdomFruitRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_fruit.jpg" alt="賢さの実"><div class="gift-info"><span class="gift-label">💎 賢さの実を食べる（所持: ${wisdomFruitCount_}個）</span><span class="shop-item-note">月間チャレンジ問題正解数ランキング上位者への配布品。1個食べるとHPが${WISDOM_FRUIT_HP_GAIN_}増える</span>${difficultyStarsHtml_(3)}</div>${wisdomFruitEatActionHtml}</div>`
+      + `<div class="gift-row"><img class="shop-item-img" src="images/wisdom_fruit.jpg" alt="賢さの実"><div class="gift-info"><span class="gift-label">💎 賢さの実を売る（所持: ${wisdomFruitCount_}個）</span><span class="gift-cost">${WISDOM_FRUIT_SELL_MP_}MP</span>${difficultyStarsHtml_(3)}</div>${wisdomFruitSellActionHtml}</div>`;
+
+    // 努力の種：購入はできない(勉強時間ランキングの日間・月間上位者への配布品)。
+    var effortSeedCount_ = Number(state.effortSeedCount) || 0;
+    var effortSeedEatActionHtml = effortSeedCount_ > 0 ? `<button type="button" class="gift-redeem-btn" id="eatEffortSeedBtn">食べる</button>` : `<span class="gift-insufficient">未所持</span>`;
+    var effortSeedSellActionHtml = effortSeedCount_ > 0 ? `<button type="button" class="gift-redeem-btn" id="sellEffortSeedBtn">売る</button>` : `<span class="gift-insufficient">未所持</span>`;
+    var effortSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を食べる（所持: ${effortSeedCount_}個）</span><span class="shop-item-note">勉強時間ランキングの上位者への配布品。1個食べるとHPが${EFFORT_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(2)}</div>${effortSeedEatActionHtml}</div>`
+      + `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を売る（所持: ${effortSeedCount_}個）</span><span class="gift-cost">${EFFORT_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(2)}</div>${effortSeedSellActionHtml}</div>`;
+
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -22813,6 +22856,14 @@
     if (eatWisdomSeedBtn) eatWisdomSeedBtn.addEventListener('click', eatWisdomSeedClick_);
     var sellWisdomSeedBtn = document.getElementById('sellWisdomSeedBtn');
     if (sellWisdomSeedBtn) sellWisdomSeedBtn.addEventListener('click', sellWisdomSeedClick_);
+    var eatWisdomFruitBtn = document.getElementById('eatWisdomFruitBtn');
+    if (eatWisdomFruitBtn) eatWisdomFruitBtn.addEventListener('click', eatWisdomFruitClick_);
+    var sellWisdomFruitBtn = document.getElementById('sellWisdomFruitBtn');
+    if (sellWisdomFruitBtn) sellWisdomFruitBtn.addEventListener('click', sellWisdomFruitClick_);
+    var eatEffortSeedBtn = document.getElementById('eatEffortSeedBtn');
+    if (eatEffortSeedBtn) eatEffortSeedBtn.addEventListener('click', eatEffortSeedClick_);
+    var sellEffortSeedBtn = document.getElementById('sellEffortSeedBtn');
+    if (sellEffortSeedBtn) sellEffortSeedBtn.addEventListener('click', sellEffortSeedClick_);
   }
 
   // 宝箱・鍵・指輪のなんでも屋UI。ティアごとに「鍵を買う」
@@ -24214,6 +24265,83 @@
       window.alert('通信に失敗しました。もう一度お試しください。');
     });
   }
+  // 賢さの実：月間チャレンジ問題正解数ランキング(小学生・中学生それぞれ上位30位)への
+  // 配布(00001限定)。
+  function handleWisdomFruitDistributeClick_() {
+    var session = loadSession();
+    if (!session || !session.id || session.id !== '00001') return;
+    if (!window.confirm('今月のチャレンジ問題正解数ランキング特典（1〜10位:3個、11〜20位:2個、21〜30位:1個、小学生・中学生それぞれ）を配布します。よろしいですか？（同じ月に2回実行はできません）')) return;
+    els.wisdomFruitDistributeBtn.disabled = true;
+    apiPost('distributeChallengeFruits', { id: session.id }).then(function (res) {
+      els.wisdomFruitDistributeBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '配布に失敗しました。';
+        if (res.error === 'already_distributed') msg = 'この月はすでに配布済みです。';
+        else if (res.error === 'no_entries') msg = 'この月はまだチャレンジ問題の提出がありません。';
+        else if (res.error === 'forbidden') msg = '権限がありません。';
+        if (els.wisdomFruitDistributeResult) els.wisdomFruitDistributeResult.textContent = msg;
+        window.alert(msg);
+        return;
+      }
+      var lines = res.recipients.map(function (r) { return r.id + '：' + r.count + '個'; }).join('\n');
+      if (els.wisdomFruitDistributeResult) els.wisdomFruitDistributeResult.textContent = res.monthKey + 'を配布済み（' + res.recipients.length + '人）';
+      window.alert('✅ ' + res.monthKey + 'のチャレンジ特典を配布しました。\n' + lines);
+    }).catch(function () {
+      els.wisdomFruitDistributeBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
+  // 努力の種(日間)：今日の勉強時間トップ(小学生・中学生それぞれ1名)への配布(00001限定)。
+  function handleEffortSeedDailyDistributeClick_() {
+    var session = loadSession();
+    if (!session || !session.id || session.id !== '00001') return;
+    if (!window.confirm('今日の勉強時間トップ（小学生・中学生それぞれ1名）に努力の種を配布します。よろしいですか？（同じ日に2回実行はできません）')) return;
+    els.effortSeedDailyDistributeBtn.disabled = true;
+    apiPost('distributeDailyEffortSeed', { id: session.id }).then(function (res) {
+      els.effortSeedDailyDistributeBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '配布に失敗しました。';
+        if (res.error === 'already_distributed') msg = '今日はすでに配布済みです。';
+        else if (res.error === 'no_entries') msg = '今日はまだ勉強時間の報告がありません。';
+        else if (res.error === 'forbidden') msg = '権限がありません。';
+        if (els.effortSeedDailyDistributeResult) els.effortSeedDailyDistributeResult.textContent = msg;
+        window.alert(msg);
+        return;
+      }
+      var lines = res.recipients.map(function (r) { return r.id + '：' + r.count + '個'; }).join('\n');
+      if (els.effortSeedDailyDistributeResult) els.effortSeedDailyDistributeResult.textContent = res.dateKey + 'を配布済み（' + res.recipients.length + '人）';
+      window.alert('✅ ' + res.dateKey + 'の勉強時間トップに配布しました。\n' + lines);
+    }).catch(function () {
+      els.effortSeedDailyDistributeBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
+  // 努力の種(月間)：今月の勉強時間ランキング(小学生・中学生それぞれ上位50位)への
+  // 配布(00001限定)。
+  function handleEffortSeedMonthlyDistributeClick_() {
+    var session = loadSession();
+    if (!session || !session.id || session.id !== '00001') return;
+    if (!window.confirm('今月の勉強時間ランキング特典（1〜10位:10個、11〜15位:8個、16〜20位:5個、21〜30位:3個、31〜50位:1個、小学生・中学生それぞれ）を配布します。よろしいですか？（同じ月に2回実行はできません）')) return;
+    els.effortSeedMonthlyDistributeBtn.disabled = true;
+    apiPost('distributeMonthlyEffortSeed', { id: session.id }).then(function (res) {
+      els.effortSeedMonthlyDistributeBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '配布に失敗しました。';
+        if (res.error === 'already_distributed') msg = 'この月はすでに配布済みです。';
+        else if (res.error === 'no_entries') msg = 'この月はまだ勉強時間の報告がありません。';
+        else if (res.error === 'forbidden') msg = '権限がありません。';
+        if (els.effortSeedMonthlyDistributeResult) els.effortSeedMonthlyDistributeResult.textContent = msg;
+        window.alert(msg);
+        return;
+      }
+      var lines = res.recipients.map(function (r) { return r.id + '：' + r.count + '個'; }).join('\n');
+      if (els.effortSeedMonthlyDistributeResult) els.effortSeedMonthlyDistributeResult.textContent = res.monthKey + 'を配布済み（' + res.recipients.length + '人）';
+      window.alert('✅ ' + res.monthKey + 'の勉強時間特典を配布しました。\n' + lines);
+    }).catch(function () {
+      els.effortSeedMonthlyDistributeBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
   function fujiCanEnter_() {
     // fujiActiveが既にtrueでも、登山画面に戻るために再度呼べるようにする
     // (進行中の状態は触らない)。
@@ -24567,6 +24695,60 @@
     if ((Number(state.wisdomSeedCount) || 0) <= 0) return;
     state.wisdomSeedCount = (Number(state.wisdomSeedCount) || 0) - 1;
     state.points = (Number(state.points) || 0) + WISDOM_SEED_SELL_MP_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderShopList();
+    renderItems();
+  }
+
+  // 賢さの実：購入不可(月間チャレンジ問題正解数ランキング上位者への配布品)。
+  // 1個につき「食べる」でHP+200、または「売る」で100MPに変えられる。
+  const WISDOM_FRUIT_HP_GAIN_ = 200;
+  const WISDOM_FRUIT_SELL_MP_ = 100;
+  function eatWisdomFruitClick_() {
+    if ((Number(state.wisdomFruitCount) || 0) <= 0) return;
+    state.wisdomFruitCount = (Number(state.wisdomFruitCount) || 0) - 1;
+    state.hp = (Number(state.hp) || 0) + WISDOM_FRUIT_HP_GAIN_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderShopList();
+    renderItems();
+  }
+  function sellWisdomFruitClick_() {
+    if ((Number(state.wisdomFruitCount) || 0) <= 0) return;
+    state.wisdomFruitCount = (Number(state.wisdomFruitCount) || 0) - 1;
+    state.points = (Number(state.points) || 0) + WISDOM_FRUIT_SELL_MP_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderShopList();
+    renderItems();
+  }
+
+  // 努力の種：購入不可(勉強時間ランキングの日間・月間上位者への配布品)。
+  // 1個につき「食べる」でHP+30、または「売る」で20MPに変えられる。
+  const EFFORT_SEED_HP_GAIN_ = 30;
+  const EFFORT_SEED_SELL_MP_ = 20;
+  function eatEffortSeedClick_() {
+    if ((Number(state.effortSeedCount) || 0) <= 0) return;
+    state.effortSeedCount = (Number(state.effortSeedCount) || 0) - 1;
+    state.hp = (Number(state.hp) || 0) + EFFORT_SEED_HP_GAIN_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderShopList();
+    renderItems();
+  }
+  function sellEffortSeedClick_() {
+    if ((Number(state.effortSeedCount) || 0) <= 0) return;
+    state.effortSeedCount = (Number(state.effortSeedCount) || 0) - 1;
+    state.points = (Number(state.points) || 0) + EFFORT_SEED_SELL_MP_;
     saveGameState(state);
     var session = loadSession();
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
@@ -26539,6 +26721,9 @@
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
   if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
+  if (els.wisdomFruitDistributeBtn) els.wisdomFruitDistributeBtn.addEventListener('click', handleWisdomFruitDistributeClick_);
+  if (els.effortSeedDailyDistributeBtn) els.effortSeedDailyDistributeBtn.addEventListener('click', handleEffortSeedDailyDistributeClick_);
+  if (els.effortSeedMonthlyDistributeBtn) els.effortSeedMonthlyDistributeBtn.addEventListener('click', handleEffortSeedMonthlyDistributeClick_);
   if (els.professionSaveBtn) els.professionSaveBtn.addEventListener('click', saveProfessionClick_);
   if (els.professionInput) els.professionInput.addEventListener('change', function () {
     if (els.professionCustomInput) els.professionCustomInput.hidden = els.professionInput.value !== PROFESSION_CUSTOM_VALUE_;

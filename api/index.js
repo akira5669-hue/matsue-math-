@@ -20,6 +20,8 @@ const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRanki
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleDistributeWisdomSeeds } = require('../lib/handlers/reading');
 const { handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
 const { handleSaveProfession } = require('../lib/handlers/profession');
+const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
+const { handleDistributeDailyEffortSeed, handleDistributeMonthlyEffortSeed } = require('../lib/handlers/effortSeedReward');
 
 const ACTIONS = {
   getPoints: handleGetPoints,
@@ -78,6 +80,9 @@ const ACTIONS = {
   ohachiEntryFee: handleOhachiEntryFee,
   useYushaSword: handleUseYushaSword,
   saveProfession: handleSaveProfession,
+  distributeChallengeFruits: handleDistributeChallengeFruits,
+  distributeDailyEffortSeed: handleDistributeDailyEffortSeed,
+  distributeMonthlyEffortSeed: handleDistributeMonthlyEffortSeed,
   distributeWisdomSeeds: handleDistributeWisdomSeeds,
   registerGuardian: handleRegisterGuardian,
   withdraw: handleWithdraw,

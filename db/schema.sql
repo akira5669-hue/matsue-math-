@@ -40,6 +40,10 @@ CREATE TABLE students (
   world_boss_defeated JSONB NOT NULL DEFAULT '{}',
   world_allies JSONB NOT NULL DEFAULT '[]',
   challenge_correct_total INTEGER NOT NULL DEFAULT 0,
+  challenge_month_key TEXT, -- チャレンジ問題正解数ランキング(2026-10〜月間集計)の対象月。今月と違えばchallenge_month_totalは0扱い
+  challenge_month_total INTEGER NOT NULL DEFAULT 0,
+  wisdom_fruit_count INTEGER NOT NULL DEFAULT 0, -- 賢さの実(月間チャレンジランキング上位者への配布品)の所持数。食べると+200HP、なんでも屋で1個100MPに売却可。いくつでも所持可能
+  effort_seed_count INTEGER NOT NULL DEFAULT 0, -- 努力の種(勉強時間ランキングの日間・月間上位者への配布品)の所持数。食べると+30HP、なんでも屋で1個20MPに売却可。いくつでも所持可能
   pending_notice TEXT,                     -- 次回ログイン時に1回だけ表示するお知らせ(表示後NULLに戻す)
   speed_seed_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「すばやさの種」の所持数(消費型)
   shuriken_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「折り紙の手裏剣」の所持数(消費型、00001限定プレビュー中)
@@ -51,7 +55,7 @@ CREATE TABLE students (
   world_continent_bonus JSONB NOT NULL DEFAULT '{}', -- 大陸制覇ボーナス(500MP)を今の周で既に受け取った大陸のID一覧(重複付与防止用、周が変わるとリセット)
   treasure_items JSONB NOT NULL DEFAULT '{}', -- 宝箱・鍵・指輪(2026-08-28〜)の所持数。{chestBronze,keyBronze,ringBronze,...}のようにティア(bronze/silver/gold/rainbow)ごとに数える。鍵の購入・指輪の売却・宝箱を開ける処理はサーバー側で検証してから更新する
   gem_items JSONB NOT NULL DEFAULT '{}', -- 宝箱を開けた時にごく稀に出る宝石(2026-10-04〜)の所持数。{gemRedDiamond,gemBlueDiamond,gemPinkDiamond,gemDiamond,gemRuby,gemEmerald,gemSapphire}。購入不可、なんでも屋で星の数に応じた固定額のMPに売却できるのみ。いくつでも所持可能
-  desired_profession TEXT -- なりたい職業(2026-10-04〜、00001限定プレビュー)。7日連続ログイン称号+レベル1000で設定可能になり、ランキングの自分のニックネームの後ろに(本人が見た時だけ)表示される
+  desired_profession TEXT, -- 職業(全生徒に公開済み)。レベル/7日連続ログイン称号のティアに応じて選べる。ランキングの自分のニックネームの後ろに誰からも見える形で表示される
   spellbooks JSONB NOT NULL DEFAULT '{}', -- なんでも屋で購入する魔法の書(2周目/9月のボス戦専用消費アイテム)の所持冊数。{fire,ice,thunder,...}のように属性ごとに数える。購入はサーバー側でMP検証してから実行する
   photo_avatar_consent BOOLEAN NOT NULL DEFAULT false, -- 写真アバター機能(顔写真をアバターにする機能)の保護者同意。保護者登録フォーム(handleRegisterGuardian)で、お子様のID・パスワードを検証したうえで同意チェックが入っていれば自動的にtrueになる(先生による手動フラグ付けは不要)
   -- 1日のMP獲得上限のサーバー側管理(2026-09-07〜)。以前は端末のlocalStorageだけで
@@ -262,6 +266,30 @@ CREATE TABLE wisdom_seed_distributions (
   month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
   distributed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   recipient_ids JSONB NOT NULL DEFAULT '[]'
+);
+
+-- 賢さの実：月間チャレンジ問題正解数ランキング(小学生・中学生それぞれ上位30位)への
+-- 配布履歴(二重配布防止用。wisdom_seed_distributionsと同じ仕組み)。
+CREATE TABLE challenge_fruit_distributions (
+  month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
+  distributed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  recipients JSONB NOT NULL DEFAULT '{}'
+);
+
+-- 努力の種：その日の勉強時間トップ(小学生・中学生それぞれ1名)への配布履歴
+-- (二重配布防止用、date_key単位)。
+CREATE TABLE effort_seed_daily_distributions (
+  date_key TEXT PRIMARY KEY,               -- 'yyyy-MM-dd'
+  distributed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  recipients JSONB NOT NULL DEFAULT '{}'
+);
+
+-- 努力の種：月間勉強時間ランキング(小学生・中学生それぞれ上位50位)への配布履歴
+-- (二重配布防止用、month_key単位)。
+CREATE TABLE effort_seed_monthly_distributions (
+  month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
+  distributed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  recipients JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE weekly_quiz_answers (
