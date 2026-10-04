@@ -25562,7 +25562,7 @@
     els.hyakuMasuCard.hidden = !hyakuMasuAllowed;
     if (hyakuMasuAllowed) {
       var targetLabel = HYAKUMASU_TARGET_TIME_LABELS_[grade];
-      els.hyakuMasuHint.textContent = '100マス計算（50問）を目標タイム（' + targetLabel + '）内に解いて、その写真を提出すると20MPもらえます。提出は週1回（月〜日）までです。';
+      els.hyakuMasuHint.textContent = '100マス計算（50問）を目標タイム（' + targetLabel + '）内に解いて、その写真を提出すると20MPもらえます。1分以内のタイムならすばやさの種も1個もらえます！提出は週1回（月〜日）までです。';
     }
     els.hyakuMasuConfirmCheckbox.checked = false;
     els.hyakuMasuFileInput.value = '';
@@ -25951,12 +25951,20 @@
         return;
       }
       applyTestPhotoPointsResult(res);
+      // 100マス計算で1分以内のタイムを出すと、すばやさの種が1個もらえる(2026-10-05〜)。
+      var speedSeedMsg = '';
+      if (res.speedSeedCount !== undefined) {
+        state.speedSeedCount = res.speedSeedCount;
+        saveGameState(state);
+        renderItems();
+        speedSeedMsg = '\n🌱 1分以内タイム達成！すばやさの種を1個手に入れた！（所持: ' + res.speedSeedCount + '個）';
+      }
       els.hyakuMasuFileInput.value = '';
       els.hyakuMasuConfirmCheckbox.checked = false;
       els.hyakuMasuMinutesInput.value = '';
       els.hyakuMasuSecondsInput.value = '';
       els.hyakuMasuSubmitBtn.disabled = true;
-      els.hyakuMasuResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！';
+      els.hyakuMasuResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！' + speedSeedMsg;
       if (els.hyakuMasuHistoryBox && !els.hyakuMasuHistoryBox.hidden) loadHyakuMasuHistory();
     }).catch(function () {
       els.hyakuMasuResult.textContent = '送信に失敗しました。もう一度お試しください。';
