@@ -19812,17 +19812,18 @@
     renderHpRulesBanner_();
     renderMpCapBanner_();
     renderWinterCourseBanner_();
-    renderTeamEventSeptResultBanner_();
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
-    // 魔法の書の告知・中2限定「証明」告知・読書ランキング追加の告知は役目を終えた
-    // ため、常時非表示にする(機能自体は引き続き動作する。バナー呼び出しだけ止めている)。
+    // 魔法の書の告知・中2限定「証明」告知・読書ランキング追加の告知・チーム対抗戦の
+    // 結果発表・極寒の富士登山の告知は役目を終えたため、常時非表示にする(機能自体は
+    // 引き続き動作する。バナー呼び出しだけ止めている)。
     if (els.spellbookLiveBanner) els.spellbookLiveBanner.hidden = true;
     if (els.proofTestBanner) els.proofTestBanner.hidden = true;
     if (els.readingBanner) els.readingBanner.hidden = true;
+    if (els.teamEventSeptResultBanner) els.teamEventSeptResultBanner.hidden = true;
+    if (els.fujiBanner) els.fujiBanner.hidden = true;
     renderScienceServiceDayBanner_();
-    renderFujiBanner_();
     renderOhachiBanner_();
     renderReadingDuplicateNoticeBanner_();
     renderProfessionNoticeBanner_();
