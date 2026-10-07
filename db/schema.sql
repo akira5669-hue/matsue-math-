@@ -45,6 +45,7 @@ CREATE TABLE students (
   wisdom_fruit_count INTEGER NOT NULL DEFAULT 0, -- 賢さの実(月間チャレンジランキング上位者への配布品)の所持数。食べると+200HP、なんでも屋で1個100MPに売却可。いくつでも所持可能
   effort_seed_count INTEGER NOT NULL DEFAULT 0, -- 努力の種(勉強時間ランキングの日間・月間上位者への配布品)の所持数。食べると+30HP、なんでも屋で1個20MPに売却可。いくつでも所持可能
   pending_notice TEXT,                     -- 次回ログイン時に1回だけ表示するお知らせ(表示後NULLに戻す)
+  force_withdraw_notice BOOLEAN NOT NULL DEFAULT false, -- 対象外学年の生徒に退会を促す表示(2026-10-08〜)。pending_noticeと違い、退会する(行が消える)までアプリを開くたびに毎回表示する
   speed_seed_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「すばやさの種」の所持数(消費型)
   shuriken_count INTEGER NOT NULL DEFAULT 0, -- なんでも屋「折り紙の手裏剣」の所持数(消費型、00001限定プレビュー中)
   iron_wall_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「鉄壁の盾」の残りチャージ数(0〜3、複数保有不可)

@@ -199,6 +199,9 @@
   /* ---------- ゲーム状態（ポイント・レベル・EXP）の永続化 ---------- */
 
   var GAME_KEY = 'matsue-math-game';
+  // 対象外学年の生徒に退会を促す表示(2026-10-08〜)。forceWithdrawNoticeフラグが
+  // 立っている間、アプリを開くたびに毎回表示する(退会するまで=行が消えるまで続く)。
+  var FORCE_WITHDRAW_NOTICE_TEXT_ = 'このアプリは、小4から中3の生徒さん限定のアプリです。お手数ですが、画面上の「退会」ボタンから退会手続きをお願いします。';
   var POINTS_DAILY_CAP = 100;
   // 1日のMP上限を「計算問題(理科含む)」と「文章題」で別々の50MPずつに分ける
   // (合計は今までと同じ100MPのまま)。計算問題は10問正解あたりのMPも
@@ -21298,6 +21301,7 @@
         state.ohachiCompleted = !!(state.ohachiCompleted || progress.ohachiCompleted);
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
+      if (res.forceWithdrawNotice) window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
       // reconcilePointsを呼ぶ前にローカルへ加算しておく。先にreconcileしてしまうと、
       // 端末側の方が(付与前の値で)大きかった場合、その古い値がサーバーへ書き戻されて
@@ -26856,6 +26860,9 @@
           reconcilePoints(existingSession.id, res);
           if (res.pendingNotice) {
             window.alert(res.pendingNotice);
+          }
+          if (res.forceWithdrawNotice) {
+            window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
           }
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
