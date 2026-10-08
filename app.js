@@ -19354,15 +19354,15 @@
   // 他の生徒には公開しない)。100MPの参加料を払い、自分の学年"ちょうど"の理科
   // 単元からランダム出題される問題に答えて、アメリカの50州を1つずつ進んでいく
   // (都道府県制覇と同じく、州を1つ制覇するたびに名前とトリビアが表示される)。
-  // 正解すると1州前進、不正解だと10州後退(0未満にはならない)＋HPが10減る
-  // (不正解で挑戦自体が終わることはない)。50州すべて制覇すると、★3の宝石
+  // 5問連続正解するたびに1州前進(州が後退することはない)、不正解だと連続
+  // 正解数がリセットされ、HPが10減る(不正解で挑戦自体が終わることはない)。
+  // 50州すべて制覇すると、★3の宝石
   // (ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・
   // HP1000が手に入る。成功後も何度でも再挑戦できる(その都度100MP必要)。
   var USA_CROSSING_START_ = '2026-12-01';
   var USA_CROSSING_END_ = '2026-12-31';
   const USA_CROSSING_ENTRY_FEE_MP = 100;
   const USA_CROSSING_GOAL_ = 50;
-  const USA_CROSSING_MISS_STATE_PENALTY_ = 10;
   const USA_CROSSING_MISS_HP_PENALTY_ = 10;
   const USA_CROSSING_HP_REWARD_ = 1000;
   const USA_CROSSING_GEM_IDS_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
@@ -19808,28 +19808,27 @@
         winHtml = (pointsToAdd > 0
           ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${scienceExpThisWin_}${scienceHpGainHtml}！🎉</div>`
           : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${scienceExpThisWin_}${scienceHpGainHtml}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
-      }
-      // アメリカ横断・理科バトル中は、5問連続正解とは別に、正解するたびに
-      // 1州ずつ進む(都道府県制覇と同じ「進むたびに名前とトリビアを表示」方式)。
-      if (state.usaCrossingActive) {
-        state.usaCrossingProgress = Math.min(USA_CROSSING_GOAL_, (Number(state.usaCrossingProgress) || 0) + 1);
-        const newUsaState = USA_STATE_DATA[state.usaCrossingProgress - 1];
-        if (newUsaState) {
-          winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
-        }
-        if (state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
-          winHtml += finishUsaCrossing_();
+        // アメリカ横断・理科バトル中は、5問連続正解を達成するたびに1州ずつ進む
+        // (都道府県制覇と同じ「進むたびに名前とトリビアを表示」方式)。
+        if (state.usaCrossingActive) {
+          state.usaCrossingProgress = Math.min(USA_CROSSING_GOAL_, (Number(state.usaCrossingProgress) || 0) + 1);
+          const newUsaState = USA_STATE_DATA[state.usaCrossingProgress - 1];
+          if (newUsaState) {
+            winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
+          }
+          if (state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
+            winHtml += finishUsaCrossing_();
+          }
         }
       }
     } else {
       state.scienceStreak = 0;
       recordWrongQuestion(state.current);
       if (state.usaCrossingActive) {
-        // アメリカ横断中の不正解は、通常の-1HPルールとは別の専用ペナルティ
-        // (10州後退＋HP-10)。挑戦自体は終わらない。
-        state.usaCrossingProgress = Math.max(0, (Number(state.usaCrossingProgress) || 0) - USA_CROSSING_MISS_STATE_PENALTY_);
+        // アメリカ横断中の不正解は州の後退はなし(5問連続正解がリセットされるだけ)、
+        // HPのみ通常の-1HPルールとは別の専用ペナルティ(-10)が入る。挑戦自体は終わらない。
         state.hp = Math.max(0, (Number(state.hp) || 0) - USA_CROSSING_MISS_HP_PENALTY_);
-        winHtml = `<div class="enemy-quote-banner">💥 間違えた！${USA_CROSSING_MISS_STATE_PENALTY_}州後退！HPが${USA_CROSSING_MISS_HP_PENALTY_}減った…（現在地：${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}州）</div>`;
+        winHtml = `<div class="enemy-quote-banner">💥 間違えた！5問連続正解がリセットされた…HPが${USA_CROSSING_MISS_HP_PENALTY_}減った（現在地：${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}州）</div>`;
         if (state.hp <= 0) {
           winHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
         }
@@ -25228,7 +25227,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。正解すると1州前進、不正解だと' + USA_CROSSING_MISS_STATE_PENALTY_ + '州後退＋HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功後も何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。5問連続正解するたびに1州前進(州が後退することはない)、不正解だと連続正解数がリセットされ、HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功後も何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
     }
     if (els.usaCrossingStatusText) {
       els.usaCrossingStatusText.textContent = state.usaCrossingActive
