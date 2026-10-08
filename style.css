@@ -1199,6 +1199,11 @@ h1 {
   opacity: 0.6;
   margin-right: 4px;
 }
+.gift-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .gift-redeem-btn {
   background: var(--c-ink);
   color: #fff;

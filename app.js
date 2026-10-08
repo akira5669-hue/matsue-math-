@@ -20821,6 +20821,9 @@
   // 買うたびに3回分ずつ積み上がる)の攻撃アイテム。
   const RAIDEN_AXE_COST_MP = 300;
   const RAIDEN_AXE_CHARGES_PER_PURCHASE_ = 3;
+  // 「研ぐ」：通常購入と同じ300MPだが、こちらは5回分もらえる(買うよりお得な
+  // もう一つの入手経路。勇者の剣の「刀を研ぐ」とは別物で、何回でも利用可能)。
+  const RAIDEN_AXE_SHARPEN_CHARGES_ = 5;
 
   // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
   // 戻り値trueのとき、呼び出し元(nextQuestion)は出題処理を中断する。
@@ -22934,10 +22937,11 @@
     var skySpearRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/sky_spear.jpg" alt="天空の槍"><div class="gift-info"><span class="gift-label">🔱 天空の槍（所持: ${skySpearCharges}回分・何個でも購入可）</span><span class="gift-cost">${SKY_SPEAR_COST_MP}MP（1回購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。投げた直後の問題に正解すればボスに${SKY_SPEAR_DAMAGE_}ダメージ</span>${difficultyStarsHtml_(1)}</div>${skySpearActionHtml}</div>`;
 
     var raidenAxeCharges = Number(state.raidenAxeCharges) || 0;
-    var raidenAxeActionHtml = state.points >= RAIDEN_AXE_COST_MP
-      ? `<button type="button" class="gift-redeem-btn" id="buyRaidenAxeBtn">購入する</button>`
+    var raidenAxeCanAfford = state.points >= RAIDEN_AXE_COST_MP;
+    var raidenAxeActionHtml = raidenAxeCanAfford
+      ? `<div class="gift-action-group"><button type="button" class="gift-redeem-btn" id="buyRaidenAxeBtn">購入（${RAIDEN_AXE_CHARGES_PER_PURCHASE_}回分）</button><button type="button" class="gift-redeem-btn" id="sharpenRaidenAxeBtn">研ぐ（${RAIDEN_AXE_SHARPEN_CHARGES_}回分）</button></div>`
       : `<span class="gift-insufficient">MP不足</span>`;
-    var raidenAxeRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/raiden_axe.jpg" alt="雷電の斧"><div class="gift-info"><span class="gift-label">⚡ 雷電の斧（所持: ${raidenAxeCharges}回分・何個でも購入可）</span><span class="gift-cost">${RAIDEN_AXE_COST_MP}MP（1回購入で${RAIDEN_AXE_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${RAIDEN_AXE_DAMAGE_}ダメージ</span>${difficultyStarsHtml_(1)}</div>${raidenAxeActionHtml}</div>`;
+    var raidenAxeRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/raiden_axe.jpg" alt="雷電の斧"><div class="gift-info"><span class="gift-label">⚡ 雷電の斧（所持: ${raidenAxeCharges}回分・何個でも購入可）</span><span class="gift-cost">${RAIDEN_AXE_COST_MP}MP</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${RAIDEN_AXE_DAMAGE_}ダメージ。「研ぐ」のほうが同じMPで多くもらえます</span>${difficultyStarsHtml_(1)}</div>${raidenAxeActionHtml}</div>`;
 
     var treasureRowsHtml = treasureShopRowsHtml_();
     var gemRowsHtml = gemShopRowsHtml_();
@@ -23012,6 +23016,8 @@
     if (skySpearBuyBtn) skySpearBuyBtn.addEventListener('click', function () { handleBuySkySpearClick(skySpearBuyBtn); });
     var raidenAxeBuyBtn = document.getElementById('buyRaidenAxeBtn');
     if (raidenAxeBuyBtn) raidenAxeBuyBtn.addEventListener('click', function () { handleBuyRaidenAxeClick(raidenAxeBuyBtn); });
+    var raidenAxeSharpenBtn = document.getElementById('sharpenRaidenAxeBtn');
+    if (raidenAxeSharpenBtn) raidenAxeSharpenBtn.addEventListener('click', function () { handleSharpenRaidenAxeClick(raidenAxeSharpenBtn); });
     var onigiriBuyBtn = document.getElementById('buyOnigiriBtn');
     if (onigiriBuyBtn) onigiriBuyBtn.addEventListener('click', function () { handleBuyOnigiriClick(onigiriBuyBtn); });
     var steakBuyBtn = document.getElementById('buySteakBtn');
@@ -23694,6 +23700,33 @@
       renderShopList();
       renderItems();
       window.alert(`⚡ 雷電の斧を手に入れた！（残り${state.raidenAxeCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleSharpenRaidenAxeClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`雷電の斧を研ぎます（${RAIDEN_AXE_COST_MP}MP）。購入より効率よく${RAIDEN_AXE_SHARPEN_CHARGES_}回分手に入ります。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('sharpenRaidenAxe', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '処理に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.raidenAxeCharges = res.raidenAxeCharges;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`⚡ 雷電の斧を研いだ！（残り${state.raidenAxeCharges}回分）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
