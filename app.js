@@ -11,6 +11,10 @@
   var PREFECTURE_DATA = (typeof PREFECTURE_INFO !== 'undefined') ? PREFECTURE_INFO : [];
   var PREFECTURE_MAP_SVG_SAFE = (typeof JAPAN_MAP_SVG !== 'undefined') ? JAPAN_MAP_SVG : '';
 
+  // アメリカ横断データ（usa-state-data.js）が読み込めなくてもアプリ全体が
+  // 壊れないようフォールバックする。
+  var USA_STATE_DATA = (typeof USA_STATE_INFO !== 'undefined') ? USA_STATE_INFO : [];
+
   // アバター作成データ（avatar-data.js）が読み込めなくてもアプリ全体が
   // 壊れないようフォールバックする。
   var AVATAR_HAIR_SAFE = (typeof AVATAR_HAIR !== 'undefined') ? AVATAR_HAIR : [];
@@ -323,7 +327,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -345,7 +349,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -18736,6 +18740,15 @@
     ohachiStreak: 0,
     ohachiStartedAt: null,
     ohachiEligibleIds_: null,
+    // アメリカ横断・理科バトル(2026-12限定、00001専用プレビュー)。お鉢巡りと
+    // 同じく挑戦中かどうかは端末セッション限定(あえて永続化しない。挑戦は
+    // 1回100MPの使い切りで、ログアウトしたらその回の挑戦は諦めて再度払う想定)。
+    usaCrossingActive: false,
+    usaCrossingProgress: 0,
+    // 謎のおばさんに渡した宝石の数(クリスマスにダイヤの指輪に変わるまで保留中の数)。
+    usaLadyGiftPending: (savedProgress && Number(savedProgress.usaLadyGiftPending)) || (savedGame && Number(savedGame.usaLadyGiftPending)) || 0,
+    // ダイヤの指輪の所持数。なんでも屋で2000MPに交換できる(購入不可)。
+    diamondRingCount: (savedProgress && Number(savedProgress.diamondRingCount)) || (savedGame && Number(savedGame.diamondRingCount)) || 0,
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -18779,6 +18792,11 @@
     ohachiHint: document.getElementById('ohachiHint'),
     ohachiStatusText: document.getElementById('ohachiStatusText'),
     ohachiStartBtn: document.getElementById('ohachiStartBtn'),
+    usaCrossingCard: document.getElementById('usaCrossingCard'),
+    usaCrossingHint: document.getElementById('usaCrossingHint'),
+    usaCrossingStatusText: document.getElementById('usaCrossingStatusText'),
+    usaCrossingStartBtn: document.getElementById('usaCrossingStartBtn'),
+    usaCrossingStateList: document.getElementById('usaCrossingStateList'),
     battleVsRow: document.getElementById('battleVsRow'),
     battleFujiTimer: document.getElementById('battleFujiTimer'),
     battleOhachiTimer: document.getElementById('battleOhachiTimer'),
@@ -19332,6 +19350,30 @@
     return true;
   }
 
+  // アメリカ横断・理科バトル：2026年12月限定、00001専用プレビュー(作成中、まだ
+  // 他の生徒には公開しない)。100MPの参加料を払い、自分の学年"ちょうど"の理科
+  // 単元からランダム出題される問題に答えて、アメリカの50州を1つずつ進んでいく
+  // (都道府県制覇と同じく、州を1つ制覇するたびに名前とトリビアが表示される)。
+  // 正解すると1州前進、不正解だと10州後退(0未満にはならない)＋HPが10減る
+  // (不正解で挑戦自体が終わることはない)。50州すべて制覇すると、★3の宝石
+  // (ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・
+  // HP1000が手に入る。成功後も何度でも再挑戦できる(その都度100MP必要)。
+  var USA_CROSSING_START_ = '2026-12-01';
+  var USA_CROSSING_END_ = '2026-12-31';
+  const USA_CROSSING_ENTRY_FEE_MP = 100;
+  const USA_CROSSING_GOAL_ = 50;
+  const USA_CROSSING_MISS_STATE_PENALTY_ = 10;
+  const USA_CROSSING_MISS_HP_PENALTY_ = 10;
+  const USA_CROSSING_HP_REWARD_ = 1000;
+  const USA_CROSSING_GEM_IDS_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
+  const USA_CROSSING_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
+  // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
+  // 将来、一般公開するときはお鉢巡りと同じ「管理者は常にバイパス、それ以外は
+  // 日付窓(USA_CROSSING_START_〜END_)」の判定に切り替える。
+  function usaCrossingCardActive_() {
+    return isAdminSession_();
+  }
+
   // 富士登山「お鉢巡り」：富士登山の成功者(fujiSummitReached)だけが挑戦できる
   // 2026-10-10〜2026-10-31限定のやり込み要素。300MPの参加料を払い、自分の学年
   // "のみ"の単元を10個以上ON(うち文章題1個以上)にした状態で、50問連続正解を
@@ -19591,6 +19633,18 @@
     return src[randInt(0, src.length - 1)];
   }
 
+  // アメリカ横断・理科バトル用：選択中(ON/OFF)の設定とは無関係に、自分の
+  // 学年「ちょうど」の理科単元からランダムに1問出題する(ズル防止のため、
+  // お鉢巡りの出題条件と同じく学年以上ではなく自分の学年のみを対象にする)。
+  function pickUsaCrossingQuestion() {
+    const session = loadSession();
+    const ownGrade = session && session.grade;
+    const allowed = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
+    const pool = allowed.filter(c => categoryGrade[c.id] === ownGrade);
+    const src = pool.length > 0 ? pool : allowed;
+    return src[randInt(0, src.length - 1)].gen();
+  }
+
   // ハナマルコ：理科の通常キャラ(レアではなく、一定確率で毎回の出題時に登場しうる)。
   // 登場すると、選択中の理科単元の中から過去に間違えた問題を再出題する。
   // 間違えた問題が無ければ通常のランダム出題にフォールバックする。
@@ -19620,6 +19674,33 @@
 
   function nextScienceQuestion() {
     clearMemoCanvas();
+    // アメリカ横断・理科バトル中は、選択中の単元やハナマルコに関係なく、
+    // 自分の学年の理科単元からランダムに出題する(固定範囲、毎回抽選)。
+    if (state.usaCrossingActive) {
+      const q = pickUsaCrossingQuestion();
+      state.current = q;
+      state.answered = false;
+      if (els.scienceCharBanner) { els.scienceCharBanner.hidden = true; els.scienceCharBanner.innerHTML = ''; }
+      els.categoryTag.textContent = categoryLabel[q.category] || q.category;
+      if (q.questionHtml) { els.questionText.innerHTML = q.questionHtml; }
+      else { els.questionText.innerHTML = ''; els.questionText.appendChild(document.createTextNode(q.question)); }
+      els.feedback.innerHTML = '';
+      els.feedback.className = 'feedback';
+      els.nextBtn.disabled = true;
+      els.choices.innerHTML = '';
+      q.choices.forEach(choiceRaw => {
+        const choiceStr = String(choiceRaw);
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.type = 'button';
+        btn.dataset.value = choiceStr;
+        btn.innerHTML = stepToHtml(choiceStr);
+        btn.addEventListener('click', () => handleScienceAnswer(btn, choiceStr));
+        els.choices.appendChild(btn);
+      });
+      updateScienceHud();
+      return;
+    }
     const mistakeQ = (!hanamarukoLastShown_ && Math.random() < HANAMARUKO_APPEAR_CHANCE_) ? pickScienceMistakeQuestion() : null;
     hanamarukoLastShown_ = !!mistakeQ;
     const q = mistakeQ || pickScienceGenerator().gen();
@@ -19728,10 +19809,31 @@
           ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${scienceExpThisWin_}${scienceHpGainHtml}！🎉</div>`
           : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${scienceExpThisWin_}${scienceHpGainHtml}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
       }
+      // アメリカ横断・理科バトル中は、5問連続正解とは別に、正解するたびに
+      // 1州ずつ進む(都道府県制覇と同じ「進むたびに名前とトリビアを表示」方式)。
+      if (state.usaCrossingActive) {
+        state.usaCrossingProgress = Math.min(USA_CROSSING_GOAL_, (Number(state.usaCrossingProgress) || 0) + 1);
+        const newUsaState = USA_STATE_DATA[state.usaCrossingProgress - 1];
+        if (newUsaState) {
+          winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
+        }
+        if (state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
+          winHtml += finishUsaCrossing_();
+        }
+      }
     } else {
       state.scienceStreak = 0;
       recordWrongQuestion(state.current);
-      if (isHpDamageActive_() && hasSteelArmorCharge_()) {
+      if (state.usaCrossingActive) {
+        // アメリカ横断中の不正解は、通常の-1HPルールとは別の専用ペナルティ
+        // (10州後退＋HP-10)。挑戦自体は終わらない。
+        state.usaCrossingProgress = Math.max(0, (Number(state.usaCrossingProgress) || 0) - USA_CROSSING_MISS_STATE_PENALTY_);
+        state.hp = Math.max(0, (Number(state.hp) || 0) - USA_CROSSING_MISS_HP_PENALTY_);
+        winHtml = `<div class="enemy-quote-banner">💥 間違えた！${USA_CROSSING_MISS_STATE_PENALTY_}州後退！HPが${USA_CROSSING_MISS_HP_PENALTY_}減った…（現在地：${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}州）</div>`;
+        if (state.hp <= 0) {
+          winHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+        }
+      } else if (isHpDamageActive_() && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
         winHtml = state.steelArmorCharges > 0
           ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
@@ -21476,6 +21578,8 @@
         state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
         state.skySpearCharges = Number(progress.skySpearCharges) || state.skySpearCharges;
         state.raidenAxeCharges = Number(progress.raidenAxeCharges) || state.raidenAxeCharges;
+        state.usaLadyGiftPending = Number(progress.usaLadyGiftPending) || state.usaLadyGiftPending;
+        state.diamondRingCount = Number(progress.diamondRingCount) || state.diamondRingCount;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
         // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
         // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
@@ -21497,6 +21601,7 @@
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       if (res.forceWithdrawNotice) window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
+      checkUsaLadyGiftConversion_();
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
       // reconcilePointsを呼ぶ前にローカルへ加算しておく。先にreconcileしてしまうと、
       // 端末側の方が(付与前の値で)大きかった場合、その古い値がサーバーへ書き戻されて
@@ -21556,6 +21661,8 @@
       iceSwordCharges: state.iceSwordCharges,
       skySpearCharges: state.skySpearCharges,
       raidenAxeCharges: state.raidenAxeCharges,
+      usaLadyGiftPending: state.usaLadyGiftPending,
+      diamondRingCount: state.diamondRingCount,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -22160,6 +22267,10 @@
       var def = GEM_DEFS_[gemId];
       html += `<div class="badge-item badge-earned" title="宝箱を開けた時のごく稀なドロップでしか手に入らない激レアアイテム"><span class="badge-icon">${def.emoji}</span><span class="badge-name">${def.label} ×${gemCount}</span>${difficultyStarsHtml_(def.star)}</div>`;
     });
+    var diamondRingCountForItem_ = Number(state.diamondRingCount) || 0;
+    if (diamondRingCountForItem_ > 0) {
+      html += `<div class="badge-item badge-earned" title="購入不可の超激レアアイテム"><span class="badge-icon">💍</span><span class="badge-name">ダイヤの指輪 ×${diamondRingCountForItem_}</span>${difficultyStarsHtml_(5)}</div>`;
+    }
     // 勇者の剣(富士登山の山頂到達報酬)は、他の消費アイテムと違い使い切って
     // 壊れた後も記念として図鑑に残り続ける(手に入れたこと自体がyushaSwordObtained
     // で永続的に記録される)。
@@ -23081,6 +23192,7 @@
 
     var treasureRowsHtml = treasureShopRowsHtml_();
     var gemRowsHtml = gemShopRowsHtml_();
+    var diamondRingRowHtml = diamondRingShopRowHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
 
     // 賢さの種：購入はできない(月間いいねランキング上位3名だけへの秘密の配布品)。
@@ -23106,7 +23218,7 @@
     var effortSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を食べる（所持: ${effortSeedCount_}個）</span><span class="shop-item-note">勉強時間ランキングの上位者への配布品。1個食べるとHPが${EFFORT_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(2)}</div>${effortSeedEatActionHtml}</div>`
       + `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を売る（所持: ${effortSeedCount_}個）</span><span class="gift-cost">${EFFORT_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(2)}</div>${effortSeedSellActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -23116,6 +23228,8 @@
     els.shopList.querySelectorAll('[data-gem-sell]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleSellGemClick(btn.getAttribute('data-gem-sell'), btn); });
     });
+    var sellDiamondRingBtn = document.getElementById('sellDiamondRingBtn');
+    if (sellDiamondRingBtn) sellDiamondRingBtn.addEventListener('click', function () { handleSellDiamondRingClick(sellDiamondRingBtn); });
     els.shopList.querySelectorAll('[data-treasure-sell-ring]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleSellTreasureRingClick(btn.getAttribute('data-treasure-sell-ring'), btn); });
     });
@@ -23340,6 +23454,13 @@
     return `<div class="shop-section-title">💎 宝石（宝箱からのごく稀なドロップのみ）</div>` + rowsHtml;
   }
 
+  // ダイヤの指輪：購入不可、謎のおばさんイベント限定の超激レアアイテム。
+  function diamondRingShopRowHtml_() {
+    var count = Number(state.diamondRingCount) || 0;
+    if (count <= 0) return '';
+    return `<div class="shop-section-title">💍 ダイヤの指輪</div><div class="gift-row"><span class="shop-item-img shop-item-img-emoji">💍</span><div class="gift-info"><span class="gift-label">💍 ダイヤの指輪（所持: ${count}個）</span><span class="gift-cost">${DIAMOND_RING_SELL_MP_}MPで売却</span><span class="shop-item-note">購入不可の超激レアアイテム</span>${difficultyStarsHtml_(5)}</div><button type="button" class="gift-redeem-btn" id="sellDiamondRingBtn">売却する</button></div>`;
+  }
+
   function handleSellGemClick(gemId, btn) {
     var session = loadSession();
     if (!session || !session.id) return;
@@ -23362,6 +23483,31 @@
       renderShopList();
       renderItems();
       window.alert(`💎 ${def.label}を売却した！（+${sellMp}MP）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleSellDiamondRingClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`ダイヤの指輪を${DIAMOND_RING_SELL_MP_}MPで売却します。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('sellDiamondRing', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        window.alert(res.error === 'no_ring' ? 'ダイヤの指輪を持っていません。' : '売却に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.diamondRingCount = res.diamondRingCount;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`💍 ダイヤの指輪を売却した！（+${DIAMOND_RING_SELL_MP_}MP）`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -24990,6 +25136,116 @@
     }
   }
 
+  // 「挑戦する」ボタンの処理。参加料(USA_CROSSING_ENTRY_FEE_MP)をサーバー確定
+  // 処理で払ってから、進行度を0に戻して理科モードで開始する。
+  function startUsaCrossing_() {
+    if (!usaCrossingCardActive_() || state.usaCrossingActive) return;
+    if ((Number(state.points) || 0) < USA_CROSSING_ENTRY_FEE_MP) {
+      window.alert('アメリカ横断には参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
+      return;
+    }
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.disabled = true;
+    apiPost('usaCrossingEntryFee', { id: session.id }).then(function (res) {
+      if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '参加料の支払いに失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'forbidden') msg = '現在は00001限定のプレビュー中です。';
+        window.alert(msg);
+        return;
+      }
+      state.points = res.points;
+      state.usaCrossingActive = true;
+      state.usaCrossingProgress = 0;
+      if (state.subject !== 'science') { state.subject = 'science'; syncSubjectUi_(); }
+      saveGameState(state);
+      if (els.fujiPanel) els.fujiPanel.hidden = true;
+      updateGameHud();
+      renderUsaCrossingCard_();
+      nextScienceQuestion();
+    }).catch(function () {
+      if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
+
+  // 謎のおばさんイベント：12月限定(USA_CROSSING_START_〜END_)。クリスマス
+  // (12/25)に、渡した宝石の数だけダイヤの指輪がもらえる(なんでも屋で2000MPに
+  // 交換可能)。
+  const USA_LADY_CHRISTMAS_DATE_ = '2026-12-25';
+  const DIAMOND_RING_SELL_MP_ = 2000;
+
+  // 50州すべて制覇したときの報酬処理：HP+1000、★3の宝石(ランダム)、宝箱
+  // (ランク問わずランダム)。成功後も進行度を0に戻して何度でも再挑戦できる。
+  function finishUsaCrossing_() {
+    state.usaCrossingActive = false;
+    state.usaCrossingProgress = 0;
+    state.hp = (Number(state.hp) || 0) + USA_CROSSING_HP_REWARD_;
+    var gemId = USA_CROSSING_GEM_IDS_[randInt(0, USA_CROSSING_GEM_IDS_.length - 1)];
+    state.gemItems = state.gemItems || {};
+    state.gemItems[gemId] = (Number(state.gemItems[gemId]) || 0) + 1;
+    var chestTier = USA_CROSSING_CHEST_TIERS_[randInt(0, USA_CROSSING_CHEST_TIERS_.length - 1)];
+    var chestKey = treasureItemKey_('chest', chestTier);
+    state.treasureItems = state.treasureItems || {};
+    state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    var gemDef = GEM_DEFS_[gemId];
+    var html = '<div class="win-banner">🎉🇺🇸 アメリカ横断達成！🎉</div>'
+      + '<div class="item-gain-banner">💪 HPが' + USA_CROSSING_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
+      + '<div class="item-gain-banner">' + gemDef.emoji + ' ' + gemDef.label + 'を手に入れた！</div>'
+      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
+    // 制覇した直後、謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
+    // なくてもその場で消える(ペナルティなし)が、渡した場合はクリスマス(12/25)に
+    // ダイヤの指輪になって返ってくる。
+    var giveToLady = window.confirm('🧙‍♀️ 制覇した直後、謎のおばさんが現れた。「その' + gemDef.label + 'を、わたしにおくれでないかい？」と頼まれている。渡しますか？（渡しても渡さなくても、おばさんはすぐに消えます）');
+    if (giveToLady) {
+      state.gemItems[gemId] = Math.max(0, (Number(state.gemItems[gemId]) || 0) - 1);
+      state.usaLadyGiftPending = (Number(state.usaLadyGiftPending) || 0) + 1;
+      html += '<div class="item-gain-banner">🧙‍♀️ ' + gemDef.label + 'を渡した。おばさんはお礼を言って消えた…（12月25日のクリスマスにダイヤの指輪がもらえるかも？）</div>';
+    } else {
+      html += '<div class="item-gain-banner">🧙‍♀️ ' + gemDef.label + 'を渡さなかった。おばさんは静かに消えた。</div>';
+    }
+    return html;
+  }
+
+  // クリスマス(12/25)になったら、謎のおばさんに渡した宝石の数だけダイヤの
+  // 指輪に変える(ログイン/再開のたびに呼ばれる。変換済みなら何もしない)。
+  function checkUsaLadyGiftConversion_() {
+    var pending = Number(state.usaLadyGiftPending) || 0;
+    if (pending <= 0 || todayKey() < USA_LADY_CHRISTMAS_DATE_) return;
+    state.diamondRingCount = (Number(state.diamondRingCount) || 0) + pending;
+    state.usaLadyGiftPending = 0;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    window.alert('💍 クリスマスの贈り物！謎のおばさんに渡した宝石が、ダイヤの指輪' + pending + '個になって返ってきた！なんでも屋で' + DIAMOND_RING_SELL_MP_ + 'MPに交換できます。');
+  }
+
+  // アメリカ横断カードの表示更新(00001限定プレビュー、usaCrossingCardActive_参照)。
+  function renderUsaCrossingCard_() {
+    if (!els.usaCrossingCard) return;
+    if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
+    els.usaCrossingCard.hidden = false;
+    if (els.usaCrossingHint) {
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。正解すると1州前進、不正解だと' + USA_CROSSING_MISS_STATE_PENALTY_ + '州後退＋HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功後も何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
+    }
+    if (els.usaCrossingStatusText) {
+      els.usaCrossingStatusText.textContent = state.usaCrossingActive
+        ? '挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.usaCrossingProgress) || 0) + '/' + USA_CROSSING_GOAL_ + '州）'
+        : '挑戦条件はありません。参加料を払えばいつでも開始できます。';
+    }
+    if (els.usaCrossingStartBtn) {
+      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive;
+    }
+    if (els.usaCrossingStateList) {
+      var progress = Number(state.usaCrossingProgress) || 0;
+      els.usaCrossingStateList.innerHTML = USA_STATE_DATA.slice(0, progress).map(function (st) {
+        return '<div class="prefecture-row is-unlocked"><span class="prefecture-row-name">' + st.code + '. ' + st.name + '</span><span class="prefecture-row-trivia">' + st.trivia + '</span></div>';
+      }).join('');
+    }
+  }
+
   // 勇者の剣：世界一周のボス戦中に1回だけ使える特別攻撃。魔法の書と同じく、
   // 抜いた直後の問題に正解して初めて1000ダメージが入る(不正解だとかわされて
   // 不発になる)。抜いた時点で所持数は減り(壊れる)、手に入れたこと自体の記念
@@ -25778,6 +26034,7 @@
       }
     }
     renderOhachiCard_();
+    renderUsaCrossingCard_();
   }
 
   function renderWorldPanel() {
@@ -27185,6 +27442,7 @@
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.ohachiStartBtn) els.ohachiStartBtn.addEventListener('click', startOhachiMeguri_);
+  if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.addEventListener('click', startUsaCrossing_);
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
   if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
@@ -27320,6 +27578,7 @@
           if (res.forceWithdrawNotice) {
             window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
           }
+          checkUsaLadyGiftConversion_();
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;
             saveSession(existingSession);

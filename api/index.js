@@ -10,7 +10,8 @@ const {
   handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyOnigiri, handleBuySteak, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyRaidenAxe, handleSharpenRaidenAxe, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyOnigiri, handleBuySteak, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyRaidenAxe, handleSharpenRaidenAxe, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleSellDiamondRing, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
+const { handleUsaCrossingEntryFee } = require('../lib/handlers/usaCrossing');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
@@ -75,6 +76,8 @@ const ACTIONS = {
   buyTreasureKey: handleBuyTreasureKey,
   sellTreasureRing: handleSellTreasureRing,
   sellGem: handleSellGem,
+  sellDiamondRing: handleSellDiamondRing,
+  usaCrossingEntryFee: handleUsaCrossingEntryFee,
   openTreasureChest: handleOpenTreasureChest,
   buySpellbook: handleBuySpellbook,
   superAkirametalPenalty: handleSuperAkirametalPenalty,
