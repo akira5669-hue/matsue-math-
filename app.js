@@ -19464,6 +19464,10 @@
     'みんなよくがんばったね！', 'まちがえても大丈夫！つぎは花丸だよ！',
     '花丸をいっぱいつけよう！', 'やればできる！！', 'がんばるキミに、ハナマルを！',
   ];
+  // 生徒から「ハナマルコがずっと居続けて、間違えた問題しか出ない」との報告が
+  // あったため、2問連続では登場しないようにするクールダウンを設ける(セッション内
+  // だけのフラグでよく、永続化は不要)。
+  let hanamarukoLastShown_ = false;
 
   function updateScienceHud() {
     const streak = state.scienceStreak || 0;
@@ -19481,7 +19485,8 @@
 
   function nextScienceQuestion() {
     clearMemoCanvas();
-    const mistakeQ = (Math.random() < HANAMARUKO_APPEAR_CHANCE_) ? pickScienceMistakeQuestion() : null;
+    const mistakeQ = (!hanamarukoLastShown_ && Math.random() < HANAMARUKO_APPEAR_CHANCE_) ? pickScienceMistakeQuestion() : null;
+    hanamarukoLastShown_ = !!mistakeQ;
     const q = mistakeQ || pickScienceGenerator().gen();
     state.current = q;
     state.answered = false;
