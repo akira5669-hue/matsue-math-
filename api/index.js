@@ -17,7 +17,7 @@ const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers
 const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRankingMonth, handleStudyCalendar } = require('../lib/handlers/studyReport');
-const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleDistributeWisdomSeeds } = require('../lib/handlers/reading');
+const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleEditReading, handleDistributeWisdomSeeds } = require('../lib/handlers/reading');
 const { handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
 const { handleSaveProfession } = require('../lib/handlers/profession');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
@@ -49,6 +49,7 @@ const ACTIONS = {
   submitReading: handleSubmitReading,
   readingRanking: handleReadingRanking,
   likeReading: handleLikeReading,
+  editReading: handleEditReading,
   giftCatalog: handleGiftCatalog,
   redeemGift: handleRedeemGift,
   grantItems: handleGrantItems,

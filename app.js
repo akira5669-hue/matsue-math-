@@ -18987,6 +18987,7 @@
     readingReviewInput: document.getElementById('readingReviewInput'),
     readingReviewCount: document.getElementById('readingReviewCount'),
     readingSubmitBtn: document.getElementById('readingSubmitBtn'),
+    readingCancelEditBtn: document.getElementById('readingCancelEditBtn'),
     readingResult: document.getElementById('readingResult'),
     rankingTabStudyReport: document.getElementById('rankingTabStudyReport'),
     rankingTabStudyReportMonth: document.getElementById('rankingTabStudyReportMonth'),
@@ -22339,6 +22340,10 @@
     renderChallengeDivision(res.middle, res.middleNearby, els.rankingChallengeMiddleList, els.rankingChallengeMiddleNearby, els.rankingChallengeMiddleNearbyList, 'まだ中学部のデータがありません。', studyReportRankingRowHtml);
   }
 
+  // 自分の投稿を後から編集できるよう、クリック時にタイトル/感想を引けるように
+  // id→{title, review}のマップを描画のたびに作っておく(HTML属性に生の感想文を
+  // 埋め込むとエスケープが面倒なため、JSのマップ経由で渡す)。
+  var readingBooksById_ = {};
   function readingRankingRowHtml(r) {
     var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
     var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
@@ -22347,11 +22352,67 @@
     if (Array.isArray(r.books) && r.books.length > 0) {
       booksHtml = '<div class="reading-books-list">' + r.books.map(function (b) {
         var likeBtnCls = 'reading-like-btn' + (b.likedByMe ? ' is-liked' : '');
+        var editBtnHtml = '';
+        if (r.isYou) {
+          readingBooksById_[b.id] = { title: b.title, review: b.review };
+          editBtnHtml = '<button type="button" class="ghost-btn reading-edit-btn" data-reading-edit="' + b.id + '">✏️ 編集</button>';
+        }
         return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p>'
-          + '<button type="button" class="' + likeBtnCls + '" data-reading-like="' + b.id + '"' + (b.likedByMe ? ' disabled' : '') + '>👍 いいね <span class="reading-like-count">' + (Number(b.likeCount) || 0) + '</span></button></div>';
+          + '<button type="button" class="' + likeBtnCls + '" data-reading-like="' + b.id + '"' + (b.likedByMe ? ' disabled' : '') + '>👍 いいね <span class="reading-like-count">' + (Number(b.likeCount) || 0) + '</span></button>'
+          + editBtnHtml + '</div>';
       }).join('') + '</div>';
     }
     return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${r.count}冊</span></div>` + booksHtml;
+  }
+
+  var readingEditId_ = null;
+  // 読書カードはtestPhotoPanel内にあり、読書ランキングはrankingPanel内にある
+  // (別パネル)ため、編集ボタンを押したときは他の全パネルを閉じてtestPhotoPanelを
+  // 開く(toggleTestPhoto()の「開く」側と同じ切り替え)。renderTestPhotoPanel()が
+  // 読書欄を空にリセットするので、その後で編集内容を上書きする。
+  function startEditReading_(readingLogId) {
+    var book = readingBooksById_[readingLogId];
+    if (!book) return;
+    els.historyPanel.setAttribute('hidden', '');
+    els.rankingPanel.setAttribute('hidden', '');
+    els.giftPanel.setAttribute('hidden', '');
+    els.prefecturePanel.setAttribute('hidden', '');
+    els.avatarPanel.setAttribute('hidden', '');
+    els.worldPanel.setAttribute('hidden', '');
+    if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    els.grantPanel.setAttribute('hidden', '');
+    els.weeklyQuizPanel.setAttribute('hidden', '');
+    if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
+    els.withdrawPanel.setAttribute('hidden', '');
+    if (els.teamEventPanel) els.teamEventPanel.setAttribute('hidden', '');
+    els.shopPanel.setAttribute('hidden', '');
+    els.testPhotoPanel.removeAttribute('hidden');
+    renderTestPhotoPanel();
+
+    readingEditId_ = readingLogId;
+    els.readingTitleInput.value = book.title;
+    els.readingReviewInput.value = book.review;
+    updateReadingSubmitEnabled_();
+    els.readingSubmitBtn.textContent = '✏️ 更新する';
+    els.readingCancelEditBtn.hidden = false;
+    els.readingResult.textContent = '内容を直して「更新する」を押してください。';
+    els.readingCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function cancelEditReading_() {
+    readingEditId_ = null;
+    els.readingTitleInput.value = '';
+    els.readingReviewInput.value = '';
+    els.readingReviewCount.textContent = '0文字';
+    els.readingSubmitBtn.textContent = '投稿する';
+    els.readingSubmitBtn.disabled = true;
+    els.readingCancelEditBtn.hidden = true;
+    els.readingResult.textContent = '';
+  }
+  function bindReadingEditButtons_(container) {
+    if (!container) return;
+    container.querySelectorAll('[data-reading-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () { startEditReading_(btn.getAttribute('data-reading-edit')); });
+    });
   }
 
   function handleLikeReadingClick_(btn) {
@@ -22390,10 +22451,12 @@
     els.rankingSummary.textContent = `今月読んだ冊数の上位 ${res.ranking.length} 名（上位30名は投稿内容も紹介！）`;
     els.rankingList.innerHTML = res.ranking.map(readingRankingRowHtml).join('');
     bindReadingLikeButtons_(els.rankingList);
+    bindReadingEditButtons_(els.rankingList);
     if (Array.isArray(res.nearby) && res.nearby.length > 0) {
       els.rankingNearby.hidden = false;
       els.rankingNearbyList.innerHTML = res.nearby.map(readingRankingRowHtml).join('');
       bindReadingLikeButtons_(els.rankingNearbyList);
+      bindReadingEditButtons_(els.rankingNearbyList);
     } else {
       els.rankingNearby.hidden = true;
       els.rankingNearbyList.innerHTML = '';
@@ -25733,6 +25796,7 @@
     var title = els.readingTitleInput.value.trim();
     var review = els.readingReviewInput.value.trim();
     if (!title || review.length < READING_REVIEW_MIN_LENGTH_) return;
+    if (readingEditId_) { submitReadingEdit_(session, title, review); return; }
     els.readingSubmitBtn.disabled = true;
     els.readingResult.textContent = '送信中…';
     apiPost('submitReading', { id: session.id, title: title, review: review }).then(function (res) {
@@ -25754,6 +25818,31 @@
       els.readingReviewCount.textContent = '0文字';
       els.readingSubmitBtn.disabled = true;
       els.readingResult.textContent = '🎉 投稿完了！ +' + res.pointsAwarded + 'MP、+' + res.hpAwarded + 'HPもらいました！';
+    }).catch(function () {
+      els.readingResult.textContent = '通信に失敗しました。もう一度お試しください。';
+      updateReadingSubmitEnabled_();
+    });
+  }
+
+  // 投稿後の打ち間違いなどを直せるよう、既存投稿のタイトル/感想を編集する
+  // (MP/HPは再付与しない)。
+  function submitReadingEdit_(session, title, review) {
+    var readingLogId = readingEditId_;
+    els.readingSubmitBtn.disabled = true;
+    els.readingResult.textContent = '更新中…';
+    apiPost('editReading', { id: session.id, readingLogId: readingLogId, title: title, review: review }).then(function (res) {
+      if (!res.ok) {
+        els.readingResult.textContent = res.error === 'duplicate_title_this_month'
+          ? '同じ月に同じタイトルの本が既にあります。タイトルを変えてください。'
+          : res.error === 'forbidden' || res.error === 'not_found'
+          ? 'この投稿は編集できません。'
+          : '更新に失敗しました。もう一度お試しください。';
+        updateReadingSubmitEnabled_();
+        return;
+      }
+      cancelEditReading_();
+      els.readingResult.textContent = '✅ 更新しました！';
+      if (typeof loadRanking === 'function') loadRanking('reading');
     }).catch(function () {
       els.readingResult.textContent = '通信に失敗しました。もう一度お試しください。';
       updateReadingSubmitEnabled_();
@@ -26809,6 +26898,7 @@
   if (els.readingTitleInput) els.readingTitleInput.addEventListener('input', updateReadingSubmitEnabled_);
   if (els.readingReviewInput) els.readingReviewInput.addEventListener('input', updateReadingSubmitEnabled_);
   if (els.readingSubmitBtn) els.readingSubmitBtn.addEventListener('click', submitReading);
+  if (els.readingCancelEditBtn) els.readingCancelEditBtn.addEventListener('click', cancelEditReading_);
   if (els.studyCalendarToggle) els.studyCalendarToggle.addEventListener('click', toggleMyStudyCalendar_);
   if (els.studyCalendarPrevBtn) els.studyCalendarPrevBtn.addEventListener('click', function () {
     loadMyStudyCalendar_(shiftMonthKey_(studyCalendarViewMonth_ || todayKey().slice(0, 7), -1));
