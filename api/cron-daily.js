@@ -5,14 +5,10 @@
 // まとめて自動実行する。00001による手動ボタンは、cronが失敗した場合の
 // フォールバック/再実行用としてそのまま残してある(どちらも同じ
 // distributed_atテーブルで二重配布を防ぐため、両方叩いても安全)。
-const { dateKeyTokyo, monthKeyTokyo } = require('../lib/util');
+const { dateKeyTokyo, previousDateKeyTokyo, previousMonthKeyTokyo } = require('../lib/util');
 const { handleDistributeDailyEffortSeed, handleDistributeMonthlyEffortSeed } = require('../lib/handlers/effortSeedReward');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
 const { handleDistributeWisdomSeeds } = require('../lib/handlers/reading');
-
-function previousDayDate_(now) {
-  return new Date(now.getTime() - 24 * 60 * 60 * 1000);
-}
 
 async function runSafely_(fn) {
   try {
@@ -33,8 +29,7 @@ module.exports = async (req, res) => {
   }
 
   const now = new Date();
-  const yesterday = previousDayDate_(now);
-  const yesterdayDateKey = dateKeyTokyo(yesterday);
+  const yesterdayDateKey = previousDateKeyTokyo(now);
   const todayDateKey = dateKeyTokyo(now);
   const isFirstOfMonth = todayDateKey.slice(-2) === '01';
 
@@ -43,7 +38,7 @@ module.exports = async (req, res) => {
   };
 
   if (isFirstOfMonth) {
-    const prevMonthKey = monthKeyTokyo(yesterday);
+    const prevMonthKey = previousMonthKeyTokyo(now);
     results.monthlyEffortSeed = await runSafely_(() => handleDistributeMonthlyEffortSeed({ id: '00001', monthKey: prevMonthKey }));
     results.challengeFruits = await runSafely_(() => handleDistributeChallengeFruits({ id: '00001', monthKey: prevMonthKey }));
     results.wisdomSeeds = await runSafely_(() => handleDistributeWisdomSeeds({ id: '00001', monthKey: prevMonthKey }));
