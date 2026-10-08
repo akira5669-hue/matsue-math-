@@ -19816,7 +19816,8 @@
           if (newUsaState) {
             winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
           }
-          if (state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
+          winHtml += checkUsaCrossingTemptation_();
+          if (state.usaCrossingActive && state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
             winHtml += finishUsaCrossing_();
           }
         }
@@ -25176,6 +25177,34 @@
   const USA_LADY_CHRISTMAS_DATE_ = '2026-12-25';
   const DIAMOND_RING_SELL_MP_ = 2000;
 
+  // 15州進むごとに怪しい人物が現れて違法な取引を持ちかけてくる(15=白い粉、
+  // 30=クスリ、45=拳銃)。購入すると即座に逮捕されて日本へ強制送還＝挑戦終了
+  // (進行度は0に戻り、支払った参加料は戻らない)。断れば何も起きず続行できる。
+  const USA_CROSSING_TEMPTATIONS_ = {
+    15: {
+      confirmText: '🚨 街の人が現れた。「これ、白い粉なんだけど買わない？」と怪しい取引を持ちかけられている。購入しますか？',
+      caughtText: '🚨 白い粉を買ってしまった……直後に警察に捕まり、日本へ強制送還された！（支払った参加料は戻りません）',
+    },
+    30: {
+      confirmText: '🚨 街の人が現れた。「クスリ、買わない？」と怪しい取引を持ちかけられている。購入しますか？',
+      caughtText: '🚨 クスリを買ってしまった……直後に警察に捕まり、日本へ強制送還された！（支払った参加料は戻りません）',
+    },
+    45: {
+      confirmText: '🚨 街の人が現れた。「拳銃、買わない？」と怪しい取引を持ちかけられている。購入しますか？',
+      caughtText: '🔫 拳銃を買った直後、誤って人を撃ってしまった……警察に捕まり、日本へ強制送還された！（支払った参加料は戻りません）',
+    },
+  };
+  function checkUsaCrossingTemptation_() {
+    const t = USA_CROSSING_TEMPTATIONS_[state.usaCrossingProgress];
+    if (!t) return '';
+    if (window.confirm(t.confirmText)) {
+      state.usaCrossingActive = false;
+      state.usaCrossingProgress = 0;
+      return `<div class="enemy-quote-banner">${t.caughtText}</div>`;
+    }
+    return `<div class="item-gain-banner">😮‍💨 怪しい誘いを断った。先へ進もう。</div>`;
+  }
+
   // 50州すべて制覇したときの報酬処理：HP+1000、★3の宝石(ランダム)、宝箱
   // (ランク問わずランダム)。成功後も進行度を0に戻して何度でも再挑戦できる。
   function finishUsaCrossing_() {
@@ -25227,7 +25256,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。5問連続正解するたびに1州前進(州が後退することはない)、不正解だと連続正解数がリセットされ、HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功後も何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。5問連続正解するたびに1州前進(州が後退することはない)、不正解だと連続正解数がリセットされ、HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了(参加料は戻らない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功後も何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
     }
     if (els.usaCrossingStatusText) {
       els.usaCrossingStatusText.textContent = state.usaCrossingActive
