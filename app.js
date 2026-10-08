@@ -2399,6 +2399,7 @@
     { id: 'matterInvestigation1', label: '物の調べ方（中1）', gen: genMatterInvestigation1, addedDate: '2026-08-12' },
     { id: 'whitePowder1', label: '白い粉末の見分け方（中1）', gen: genWhitePowder1, addedDate: '2026-08-12' },
     { id: 'dissolve1', label: '物質が水にとけるようす（中1）', gen: genDissolve1, addedDate: '2026-08-12' },
+    { id: 'saltConcentration1', label: '食塩水の濃度（中1）', gen: genSaltConcentration1, addedDate: '2026-10-08' },
     { id: 'solubility1', label: '溶解度と再結晶（中1）', gen: genSolubility1, addedDate: '2026-08-12' },
     { id: 'gasProperties1', label: '気体の性質（中1）', gen: genGasProperties1, addedDate: '2026-08-13' },
     { id: 'stateChange1', label: '物質の状態変化（中1）', gen: genStateChange1, addedDate: '2026-08-13' },
@@ -3145,6 +3146,107 @@
       steps = ['ろ過は、液体にとけずに残っている固体と、液体(ろ液)を分ける操作である'];
     }
     return { category: 'dissolve1', question, answer, choices, steps };
+  }
+
+  // 食塩水の濃度（中1）：質量パーセント濃度の計算、溶質・溶媒の質量の計算、
+  // 水や溶質を加えたときの濃度変化、2つの水溶液を混ぜたときの濃度、
+  // 蒸発させたときの濃度変化(2026-10-08〜)。
+  function genSaltConcentration1() {
+    const pat = randInt(0, 9);
+    let question, answer, choices, steps;
+    if (pat === 0) {
+      question = '質量パーセント濃度を求める式として正しいものはどれですか。';
+      answer = '溶質の質量 ÷ 水溶液の質量 × 100';
+      choices = shuffle([answer, '溶質の質量 ÷ 溶媒の質量 × 100', '水溶液の質量 ÷ 溶質の質量 × 100', '溶媒の質量 ÷ 水溶液の質量 × 100']);
+      steps = ['質量パーセント濃度(%) = 溶質の質量 ÷ 水溶液の質量 × 100 で求める'];
+    } else if (pat === 1) {
+      question = '食塩水の質量は、食塩の質量と何の質量を合わせたものですか。';
+      answer = '水（溶媒）の質量';
+      choices = shuffle([answer, '食塩水の体積', '食塩水の密度', '蒸発した水の質量']);
+      steps = ['水溶液の質量 = 溶質(食塩)の質量 ＋ 溶媒(水)の質量'];
+    } else if (pat === 2) {
+      const percent = 5 * randInt(1, 19);
+      const base = 20 * randInt(3, 10);
+      const solute = base * percent / 100;
+      const solvent = base - solute;
+      question = `食塩${solute}gを水${solvent}gにとかした食塩水の質量パーセント濃度は何％ですか。`;
+      answer = `${percent}%`;
+      choices = buildChoices(answer, [`${percent + 5}%`, `${Math.max(1, percent - 5)}%`, `${percent + 10}%`]);
+      steps = [`質量パーセント濃度 = ${solute} ÷ (${solute} + ${solvent}) × 100 = ${percent}%`];
+    } else if (pat === 3) {
+      const percent = 5 * randInt(1, 19);
+      const base = 20 * randInt(3, 10);
+      const solute = base * percent / 100;
+      question = `質量パーセント濃度${percent}%の食塩水${base}gには、何gの食塩がとけていますか。`;
+      answer = solute;
+      choices = buildChoices(answer, [solute + 5, Math.max(1, solute - 5), solute + 10]);
+      steps = [`食塩の質量 = ${base} × ${percent}/100 = ${solute}g`];
+    } else if (pat === 4) {
+      const percent = 5 * randInt(1, 19);
+      const base = 20 * randInt(3, 10);
+      const solute = base * percent / 100;
+      const solvent = base - solute;
+      question = `質量パーセント濃度${percent}%の食塩水${base}gには、何gの水がとけていますか。`;
+      answer = solvent;
+      choices = buildChoices(answer, [solvent + 5, Math.max(1, solvent - 5), solvent + 10]);
+      steps = [`水の質量 = ${base} − ${solute} = ${solvent}g`];
+    } else if (pat === 5) {
+      const percent = 5 * randInt(1, 19);
+      const base = 20 * randInt(3, 10);
+      const solute = base * percent / 100;
+      const solvent = base - solute;
+      question = `水${solvent}gに食塩をとかして質量パーセント濃度${percent}%の食塩水をつくるには、何gの食塩をとかせばよいですか。`;
+      answer = solute;
+      choices = buildChoices(answer, [solute + 5, Math.max(1, solute - 5), solute + 10]);
+      steps = [`食塩の質量をxgとすると x ÷ (x + ${solvent}) × 100 = ${percent} より x = ${solute}g`];
+    } else if (pat === 6) {
+      const percent = 5 * randInt(1, 19);
+      const base = 20 * randInt(3, 10);
+      const solute = base * percent / 100;
+      const solvent = base - solute;
+      question = `食塩${solute}gに水を加えて質量パーセント濃度${percent}%の食塩水をつくるには、何gの水を加えればよいですか。`;
+      answer = solvent;
+      choices = buildChoices(answer, [solvent + 5, Math.max(1, solvent - 5), solvent + 10]);
+      steps = [`水の質量をxgとすると ${solute} ÷ (${solute} + x) × 100 = ${percent} より x = ${solvent}g`];
+    } else if (pat === 7) {
+      const base = 20 * randInt(3, 10);
+      const percent1 = 5 * randInt(1, 15);
+      const solute1 = base * percent1 / 100;
+      const addAmt = 5 * randInt(1, 8);
+      const newSolute = solute1 + addAmt;
+      const newTotal = base + addAmt;
+      const newPercent = Math.round(newSolute / newTotal * 100);
+      question = `質量パーセント濃度${percent1}%の食塩水${base}gに食塩を${addAmt}g加えたときにできる食塩水の質量パーセント濃度は何％ですか（必要があれば小数第1位を四捨五入）。`;
+      answer = `${newPercent}%`;
+      choices = buildChoices(answer, [`${newPercent + 5}%`, `${Math.max(1, newPercent - 5)}%`, `${newPercent + 10}%`]);
+      steps = [`新しい質量パーセント濃度 = (${solute1} + ${addAmt}) ÷ (${base} + ${addAmt}) × 100 ≒ ${newPercent}%`];
+    } else if (pat === 8) {
+      const base1 = 20 * randInt(3, 8);
+      const percent1 = 5 * randInt(1, 15);
+      const solute1 = base1 * percent1 / 100;
+      const base2 = 20 * randInt(3, 8);
+      const percent2 = 5 * randInt(1, 15);
+      const solute2 = base2 * percent2 / 100;
+      const newTotal = base1 + base2;
+      const newPercent = Math.round((solute1 + solute2) / newTotal * 100);
+      question = `質量パーセント濃度${percent1}%の食塩水${base1}gと、質量パーセント濃度${percent2}%の食塩水${base2}gを混ぜ合わせると、質量パーセント濃度は何％になりますか（必要があれば小数第1位を四捨五入）。`;
+      answer = `${newPercent}%`;
+      choices = buildChoices(answer, [`${newPercent + 5}%`, `${Math.max(1, newPercent - 5)}%`, `${newPercent + 10}%`]);
+      steps = [`混ぜた食塩の合計 = ${solute1} + ${solute2} = ${solute1 + solute2}g`, `質量パーセント濃度 = ${solute1 + solute2} ÷ ${newTotal} × 100 ≒ ${newPercent}%`];
+    } else {
+      const base = 20 * randInt(5, 10);
+      const percent = 5 * randInt(1, 15);
+      const solute = base * percent / 100;
+      const solvent = base - solute;
+      const evap = 10 * randInt(1, Math.max(1, Math.floor(solvent / 10) - 1));
+      const newTotal = base - evap;
+      const newPercent = Math.round(solute / newTotal * 100);
+      question = `質量パーセント濃度${percent}%の食塩水${base}gを加熱して水を${evap}g蒸発させたときにできる食塩水の質量パーセント濃度は何％ですか（必要があれば小数第1位を四捨五入）。`;
+      answer = `${newPercent}%`;
+      choices = buildChoices(answer, [`${newPercent + 5}%`, `${Math.max(1, newPercent - 5)}%`, `${newPercent + 10}%`]);
+      steps = ['水を蒸発させても食塩の量は変わらない。', `質量パーセント濃度 = ${solute} ÷ (${base} − ${evap}) × 100 ≒ ${newPercent}%`];
+    }
+    return { category: 'saltConcentration1', question, answer, choices, steps };
   }
 
   // 溶解度と再結晶（中1）：結晶・飽和水溶液・溶解度・溶解度曲線・再結晶の用語、
@@ -18854,6 +18956,8 @@
     professionNoticeBannerText: document.getElementById('professionNoticeBannerText'),
     worldBossChestBanner: document.getElementById('worldBossChestBanner'),
     worldBossChestBannerText: document.getElementById('worldBossChestBannerText'),
+    saltConcentrationBanner: document.getElementById('saltConcentrationBanner'),
+    saltConcentrationBannerText: document.getElementById('saltConcentrationBannerText'),
     readingBanner: document.getElementById('readingBanner'),
     readingBannerText: document.getElementById('readingBannerText'),
     proofTestBanner: document.getElementById('proofTestBanner'),
@@ -19471,6 +19575,14 @@
   function scienceServiceDayActive_() {
     return todayKey() <= SCIENCE_SERVICE_DAY_END_;
   }
+  // 新単元「食塩水の濃度」のお披露目キャンペーン(2026-10-08〜10-14の1週間)：
+  // この単元の問題で5問連続正解を達成したとき、通常のMP・経験値・HPが2倍になる。
+  const SALT_CONCENTRATION_BONUS_START_ = '2026-10-08';
+  const SALT_CONCENTRATION_BONUS_END_ = '2026-10-14';
+  function saltConcentrationBonusActive_() {
+    const today = todayKey();
+    return today >= SALT_CONCENTRATION_BONUS_START_ && today <= SALT_CONCENTRATION_BONUS_END_;
+  }
 
   function pickScienceGenerator() {
     const allowed = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
@@ -19583,17 +19695,26 @@
       if (state.scienceStreak >= SCIENCE_STREAK_REQUIRED) {
         const today = todayKey();
         if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+        // 新単元「食塩水の濃度」のお披露目キャンペーン中、その単元の問題で5問連続
+        // 正解を達成した場合はMP・経験値・HPが2倍になる。
+        const isSaltConcentrationBonus = catId === 'saltConcentration1' && saltConcentrationBonusActive_();
+        const scienceStreakMpThisWin_ = isSaltConcentrationBonus ? SCIENCE_STREAK_MP * 2 : SCIENCE_STREAK_MP;
+        const scienceExpThisWin_ = isSaltConcentrationBonus ? SCIENCE_EXP_PER_STREAK * 2 : SCIENCE_EXP_PER_STREAK;
         // 理科は文章題ではないので「計算問題」側の1日上限(50MP)を共有する。
-        const pointsToAdd = Math.max(0, Math.min(SCIENCE_STREAK_MP, POINTS_DAILY_CAP_CALC - state.pointsTodayCalc));
+        const pointsToAdd = Math.max(0, Math.min(scienceStreakMpThisWin_, POINTS_DAILY_CAP_CALC - state.pointsTodayCalc));
         state.points += pointsToAdd;
         state.pointsToday += pointsToAdd;
         state.pointsTodayCalc += pointsToAdd;
-        state.scienceExp += SCIENCE_EXP_PER_STREAK;
+        state.scienceExp += scienceExpThisWin_;
         state.scienceStreak = 0;
         // シルバーウィーク理科サービスデイ(〜2026-09-24)：期間中は5問連続正解でHPも
-        // +1増える(ゾンビ化中はどんな形でもHPが増えないので対象外)。
+        // +1増える(ゾンビ化中はどんな形でもHPが増えないので対象外)。食塩水の濃度の
+        // キャンペーン中は、サービスデイ終了後でもこの単元だけHP+2がもらえる。
         let scienceHpGainHtml = '';
-        if (scienceServiceDayActive_() && !state.zombified) {
+        if (isSaltConcentrationBonus && !state.zombified) {
+          state.hp = (Number(state.hp) || 0) + 2;
+          scienceHpGainHtml = '、HP+2';
+        } else if (scienceServiceDayActive_() && !state.zombified) {
           state.hp = (Number(state.hp) || 0) + 1;
           scienceHpGainHtml = '、HP+1';
         }
@@ -19604,8 +19725,8 @@
         state.level = newLevel;
         const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
         winHtml = (pointsToAdd > 0
-          ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${SCIENCE_EXP_PER_STREAK}${scienceHpGainHtml}！🎉</div>`
-          : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${SCIENCE_EXP_PER_STREAK}${scienceHpGainHtml}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
+          ? `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ +${pointsToAdd}MP、理科の経験値+${scienceExpThisWin_}${scienceHpGainHtml}！🎉</div>`
+          : `<div class="win-banner">${lvlMsg}🎉 ${SCIENCE_STREAK_REQUIRED}問連続正解！ 理科の経験値+${scienceExpThisWin_}${scienceHpGainHtml}！（本日のMP上限に達しています）🎉</div>`) + worldDiceHtml;
       }
     } else {
       state.scienceStreak = 0;
@@ -19868,6 +19989,7 @@
     renderReadingDuplicateNoticeBanner_();
     renderProfessionNoticeBanner_();
     renderWorldBossChestBanner_();
+    renderSaltConcentrationBanner_();
     renderSuperAkirametalBanner_();
   }
 
@@ -21071,6 +21193,20 @@
     els.worldBossChestBanner.hidden = false;
     if (els.worldBossChestBannerText) {
       els.worldBossChestBannerText.textContent = '📢【今月限定！】世界一周のボスを倒すと、学年に関係なく必ず🌈虹色の宝箱が1個もらえます！なんでも屋で虹色の鍵を買って開けてみよう。10月末まで。';
+    }
+  }
+
+  // 新単元「食塩水の濃度（中1）」追加の告知。公開から1週間はこの単元だけMP・
+  // 経験値・HPが2倍もらえるキャンペーン付き(全生徒に表示、期間が過ぎたら自動で隠れる)。
+  function renderSaltConcentrationBanner_() {
+    if (!els.saltConcentrationBanner) return;
+    if (todayKey() > SALT_CONCENTRATION_BONUS_END_) {
+      els.saltConcentrationBanner.hidden = true;
+      return;
+    }
+    els.saltConcentrationBanner.hidden = false;
+    if (els.saltConcentrationBannerText) {
+      els.saltConcentrationBannerText.textContent = '📢【新単元追加】理科(中1)に「食塩水の濃度」が追加されました！10/14までの1週間限定で、この単元の問題で5問連続正解すると、通常の2倍のMP・経験値・HPがもらえます。';
     }
   }
 
