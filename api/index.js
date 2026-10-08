@@ -10,7 +10,7 @@ const {
   handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyOnigiri, handleBuySteak, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyRaidenAxe, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
@@ -56,6 +56,8 @@ const ACTIONS = {
   akrPrayer: handleAkrPrayer,
   zombieVaccine: handleZombieVaccine,
   sharpenSword: handleSharpenSword,
+  buyOnigiri: handleBuyOnigiri,
+  buySteak: handleBuySteak,
   buyHerb: handleBuyHerb,
   buyBakuHerb: handleBuyBakuHerb,
   buyChouHerb: handleBuyChouHerb,
@@ -66,6 +68,7 @@ const ACTIONS = {
   buySteelArmor: handleBuySteelArmor,
   buyIceSword: handleBuyIceSword,
   buySkySpear: handleBuySkySpear,
+  buyRaidenAxe: handleBuyRaidenAxe,
   buyOxygenCan: handleBuyOxygenCan,
   shopPurchaseHistory: handleShopPurchaseHistory,
   buyTreasureKey: handleBuyTreasureKey,

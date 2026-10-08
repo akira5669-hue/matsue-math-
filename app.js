@@ -323,7 +323,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -345,7 +345,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -18209,6 +18209,23 @@
   const FUJI_ALTITUDE_SICKNESS_STATION_ = 8;
   // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。500MP。
   const SHARPEN_SWORD_COST_MP = 500;
+  // おにぎり・ステーキの半額キャンペーン共通期間(2026-10-08〜10-12、10-13以降は
+  // 通常価格に戻る)。実際の課金判定はサーバー側の日付で行うので、ここでの判定は
+  // 表示用(今いくらで買えるかの案内)にすぎない。
+  const HP_ITEM_SALE_START_ = '2026-10-08';
+  const HP_ITEM_SALE_END_ = '2026-10-12';
+  function hpItemSaleActive_() {
+    var today = todayKey();
+    return today >= HP_ITEM_SALE_START_ && today <= HP_ITEM_SALE_END_;
+  }
+  // なんでも屋の常設アイテム「おにぎり」：通常50MPでHPを10増やせる。キャンペーン中は半額。
+  const ONIGIRI_HP_GAIN = 10;
+  const ONIGIRI_NORMAL_COST_MP = 50;
+  const ONIGIRI_SALE_COST_MP = 25;
+  // おにぎりの上位版「ステーキ」：通常100MPでHPを30増やせる。キャンペーン中は半額。
+  const STEAK_HP_GAIN = 30;
+  const STEAK_NORMAL_COST_MP = 100;
+  const STEAK_SALE_COST_MP = 50;
   // なんでも屋の常設アイテム「薬草」：300MPでHPを100増やせる。
   const HERB_COST_MP = 300;
   const HERB_HP_GAIN = 100;
@@ -18481,6 +18498,9 @@
     // なんでも屋で買える消費アイテム「天空の槍」の残りチャージ数。氷の剣等と違い
     // 1個の保有上限が無く、買うたびに5回分ずつ積み上がっていく(何個も所持可能)。
     skySpearCharges: (savedProgress && Number(savedProgress.skySpearCharges)) || (savedGame && Number(savedGame.skySpearCharges)) || 0,
+    // なんでも屋で買える消費アイテム「雷電の斧」の残りチャージ数。天空の槍と同じく
+    // 1個の保有上限が無く、買うたびに3回分ずつ積み上がっていく(何個も所持可能)。
+    raidenAxeCharges: (savedProgress && Number(savedProgress.raidenAxeCharges)) || (savedGame && Number(savedGame.raidenAxeCharges)) || 0,
     points: (savedGame && savedGame.points) || 0,
     level: (savedGame && savedGame.level) || 1,
     exp: (savedGame && savedGame.exp) || 0,
@@ -18589,6 +18609,7 @@
     worldPendingIceSword: false,
     // 投げた天空の槍が結果待ちかどうか(worldPendingIceSwordと同じ、端末セッション限定)。
     worldPendingSkySpear: false,
+    worldPendingRaidenAxe: false,
     // 今のボスに与えた累計ダメージ(正解1問ごとの通常ダメージ＋魔法のダメージ)。
     // 連続正解数(streak)とは切り離して数えるので、不正解でもボスのHPは戻らない。
     // worldBossActiveStageと同様に端末セッション限定。
@@ -18642,6 +18663,7 @@
     fujiSwordBtn: document.getElementById('fujiSwordBtn'),
     iceSwordBtn: document.getElementById('iceSwordBtn'),
     skySpearBtn: document.getElementById('skySpearBtn'),
+    raidenAxeBtn: document.getElementById('raidenAxeBtn'),
     shurikenBtn: document.getElementById('shurikenBtn'),
     fujiCard: document.getElementById('fujiCard'),
     fujiHint: document.getElementById('fujiHint'),
@@ -19762,6 +19784,15 @@
         els.skySpearBtn.textContent = '🔱 天空の槍を投げる（1回で' + SKY_SPEAR_DAMAGE_ + 'ダメージ・残り' + skySpearChargesForBtn_ + '回分）';
       }
     }
+    // 雷電の斧：天空の槍と同じ方式(保有上限なし、買い足し可能)の消費アイテム。
+    // 残り回数をボタンに反映する。
+    if (els.raidenAxeBtn) {
+      var raidenAxeChargesForBtn_ = Number(state.raidenAxeCharges) || 0;
+      els.raidenAxeBtn.hidden = !(isBossFight && !state.worldPendingRaidenAxe && raidenAxeChargesForBtn_ > 0);
+      if (!els.raidenAxeBtn.hidden) {
+        els.raidenAxeBtn.textContent = '⚡ 雷電の斧を振るう（1回で' + RAIDEN_AXE_DAMAGE_ + 'ダメージ・残り' + raidenAxeChargesForBtn_ + '回分）';
+      }
+    }
     // 手裏剣：氷の剣と同じくボス戦専用の消費アイテムだが、投げた瞬間に50%の
     // 確率で命中する(00001限定プレビュー中)。
     if (els.shurikenBtn) {
@@ -20010,6 +20041,13 @@
         missLineHtml += `<div class="item-gain-banner">🔱 天空の槍が命中！ボスに${SKY_SPEAR_DAMAGE_}ダメージ！🔱</div>`;
         spellFxPending_ = { book: { emoji: '🔱', fx: '#60a5fa', dmg: SKY_SPEAR_DAMAGE_ }, phase: 'hit' };
       }
+      // 雷電の斧を振るった直後の問題に正解した場合、ここで初めてボスに300ダメージが入る。
+      if (state.worldBossActiveStage && state.worldPendingRaidenAxe) {
+        state.worldPendingRaidenAxe = false;
+        state.worldBossDamage = (Number(state.worldBossDamage) || 0) + RAIDEN_AXE_DAMAGE_;
+        missLineHtml += `<div class="item-gain-banner">⚡ 雷電の斧が命中！ボスに${RAIDEN_AXE_DAMAGE_}ダメージ！⚡</div>`;
+        spellFxPending_ = { book: { emoji: '⚡', fx: '#facc15', dmg: RAIDEN_AXE_DAMAGE_ }, phase: 'hit' };
+      }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
         const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
@@ -20163,6 +20201,13 @@
           state.worldPendingSkySpear = false;
           missLineHtml += `<div class="enemy-quote-banner">💨 天空の槍はボスにかわされた…！攻撃は当たらなかった。</div>`;
           spellFxPending_ = { book: { emoji: '🔱', fx: '#60a5fa', dmg: SKY_SPEAR_DAMAGE_ }, phase: 'miss' };
+        }
+        // 雷電の斧も同様に、振るった直後の問題を間違えるとかわされて不発になる
+        // (この時点で既にチャージは消費済みなので、消費が戻ることはない)。
+        if (state.worldPendingRaidenAxe) {
+          state.worldPendingRaidenAxe = false;
+          missLineHtml += `<div class="enemy-quote-banner">💨 雷電の斧はボスにかわされた…！攻撃は当たらなかった。</div>`;
+          spellFxPending_ = { book: { emoji: '⚡', fx: '#facc15', dmg: RAIDEN_AXE_DAMAGE_ }, phase: 'miss' };
         }
         let penalty = worldBossHpPenalty(state.worldBossActiveStage);
         let ironWallHtml = '';
@@ -20772,6 +20817,10 @@
   // 無く、買うたびに5回分ずつ積み上がっていく(何個でも購入可)。
   const SKY_SPEAR_COST_MP = 100;
   const SKY_SPEAR_CHARGES_PER_PURCHASE_ = 5;
+  // なんでも屋の消費アイテム「雷電の斧」：天空の槍と同じ方式(保有上限なし、
+  // 買うたびに3回分ずつ積み上がる)の攻撃アイテム。
+  const RAIDEN_AXE_COST_MP = 300;
+  const RAIDEN_AXE_CHARGES_PER_PURCHASE_ = 3;
 
   // HPが0のときは、mathArea/scienceArea/quizCardを隠してhpGameOverPanelを表示する。
   // 戻り値trueのとき、呼び出し元(nextQuestion)は出題処理を中断する。
@@ -21287,6 +21336,7 @@
         state.steelArmorCharges = Number(progress.steelArmorCharges) || state.steelArmorCharges;
         state.iceSwordCharges = Number(progress.iceSwordCharges) || state.iceSwordCharges;
         state.skySpearCharges = Number(progress.skySpearCharges) || state.skySpearCharges;
+        state.raidenAxeCharges = Number(progress.raidenAxeCharges) || state.raidenAxeCharges;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
         // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
         // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
@@ -21366,6 +21416,7 @@
       steelArmorCharges: state.steelArmorCharges,
       iceSwordCharges: state.iceSwordCharges,
       skySpearCharges: state.skySpearCharges,
+      raidenAxeCharges: state.raidenAxeCharges,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -21958,6 +22009,10 @@
     var skySpearChargesForItem_ = Number(state.skySpearCharges) || 0;
     if (skySpearChargesForItem_ > 0) {
       html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、投げた直後の問題に正解すればボスに100ダメージを与えられる"><span class="badge-icon"><img src="images/sky_spear.jpg" alt=""></span><span class="badge-name">天空の槍（残り${skySpearChargesForItem_}回）</span>${difficultyStarsHtml_(1)}</div>`;
+    }
+    var raidenAxeChargesForItem_ = Number(state.raidenAxeCharges) || 0;
+    if (raidenAxeChargesForItem_ > 0) {
+      html += `<div class="badge-item badge-earned" title="世界一周のボス戦で、振るった直後の問題に正解すればボスに300ダメージを与えられる"><span class="badge-icon"><img src="images/raiden_axe.jpg" alt=""></span><span class="badge-name">雷電の斧（残り${raidenAxeChargesForItem_}回）</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 宝石も所持数で表示する(宝箱を開けた時のごく稀なドロップでしか手に入らない)。
     GEM_ITEM_ALL_KEYS_.forEach(function (gemId) {
@@ -22768,6 +22823,30 @@
       sharpenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/yusha_sword.jpg" alt="勇者の剣"><div class="gift-info"><span class="gift-label">🗡️ 刀を研ぐ（壊れた勇者の剣を直す）</span><span class="gift-cost">${SHARPEN_SWORD_COST_MP}MP</span><span class="shop-item-note">勇者の剣を持っている人だけが使える。使用済み（壊れた）勇者の剣を、また1回使えるように直す</span>${difficultyStarsHtml_(1)}</div>${sharpenActionHtml}</div>`;
     }
 
+    var onigiriSaleActive = hpItemSaleActive_();
+    var onigiriCost = onigiriSaleActive ? ONIGIRI_SALE_COST_MP : ONIGIRI_NORMAL_COST_MP;
+    var onigiriCanAfford = state.points >= onigiriCost;
+    var onigiriActionHtml = onigiriCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buyOnigiriBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var onigiriSaleBadgeHtml = onigiriSaleActive ? '<span class="shop-sale-badge">セール中</span>' : '';
+    var onigiriCostHtml = onigiriSaleActive
+      ? `<span class="gift-cost-strike">${ONIGIRI_NORMAL_COST_MP}MP</span><span class="gift-cost">${ONIGIRI_SALE_COST_MP}MP</span>`
+      : `<span class="gift-cost">${ONIGIRI_NORMAL_COST_MP}MP</span>`;
+    var onigiriRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🍙 おにぎり（HPを${ONIGIRI_HP_GAIN}増やす）${onigiriSaleBadgeHtml}</span>${onigiriCostHtml}${difficultyStarsHtml_(1)}</div>${onigiriActionHtml}</div>`;
+
+    var steakSaleActive = hpItemSaleActive_();
+    var steakCost = steakSaleActive ? STEAK_SALE_COST_MP : STEAK_NORMAL_COST_MP;
+    var steakCanAfford = state.points >= steakCost;
+    var steakActionHtml = steakCanAfford
+      ? `<button type="button" class="gift-redeem-btn" id="buySteakBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var steakSaleBadgeHtml = steakSaleActive ? '<span class="shop-sale-badge">セール中</span>' : '';
+    var steakCostHtml = steakSaleActive
+      ? `<span class="gift-cost-strike">${STEAK_NORMAL_COST_MP}MP</span><span class="gift-cost">${STEAK_SALE_COST_MP}MP</span>`
+      : `<span class="gift-cost">${STEAK_NORMAL_COST_MP}MP</span>`;
+    var steakRowHtml = `<div class="gift-row"><div class="gift-info"><span class="gift-label">🥩 ステーキ（HPを${STEAK_HP_GAIN}増やす）${steakSaleBadgeHtml}</span>${steakCostHtml}${difficultyStarsHtml_(1)}</div>${steakActionHtml}</div>`;
+
     var herbCanAfford = state.points >= HERB_COST_MP;
     var herbActionHtml = herbCanAfford
       ? `<button type="button" class="gift-redeem-btn" id="buyHerbBtn">購入する</button>`
@@ -22854,6 +22933,12 @@
       : `<span class="gift-insufficient">MP不足</span>`;
     var skySpearRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/sky_spear.jpg" alt="天空の槍"><div class="gift-info"><span class="gift-label">🔱 天空の槍（所持: ${skySpearCharges}回分・何個でも購入可）</span><span class="gift-cost">${SKY_SPEAR_COST_MP}MP（1回購入で${SKY_SPEAR_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。投げた直後の問題に正解すればボスに${SKY_SPEAR_DAMAGE_}ダメージ</span>${difficultyStarsHtml_(1)}</div>${skySpearActionHtml}</div>`;
 
+    var raidenAxeCharges = Number(state.raidenAxeCharges) || 0;
+    var raidenAxeActionHtml = state.points >= RAIDEN_AXE_COST_MP
+      ? `<button type="button" class="gift-redeem-btn" id="buyRaidenAxeBtn">購入する</button>`
+      : `<span class="gift-insufficient">MP不足</span>`;
+    var raidenAxeRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/raiden_axe.jpg" alt="雷電の斧"><div class="gift-info"><span class="gift-label">⚡ 雷電の斧（所持: ${raidenAxeCharges}回分・何個でも購入可）</span><span class="gift-cost">${RAIDEN_AXE_COST_MP}MP（1回購入で${RAIDEN_AXE_CHARGES_PER_PURCHASE_}回分）</span><span class="shop-item-note">世界一周のボス戦で使える攻撃アイテム。振るった直後の問題に正解すればボスに${RAIDEN_AXE_DAMAGE_}ダメージ</span>${difficultyStarsHtml_(1)}</div>${raidenAxeActionHtml}</div>`;
+
     var treasureRowsHtml = treasureShopRowsHtml_();
     var gemRowsHtml = gemShopRowsHtml_();
     var spellbookRowsHtml = spellbookShopRowsHtml_();
@@ -22881,7 +22966,7 @@
     var effortSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を食べる（所持: ${effortSeedCount_}個）</span><span class="shop-item-note">勉強時間ランキングの上位者への配布品。1個食べるとHPが${EFFORT_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(2)}</div>${effortSeedEatActionHtml}</div>`
       + `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を売る（所持: ${effortSeedCount_}個）</span><span class="gift-cost">${EFFORT_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(2)}</div>${effortSeedSellActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -22925,6 +23010,12 @@
     if (iceSwordBuyBtn) iceSwordBuyBtn.addEventListener('click', function () { handleBuyIceSwordClick(iceSwordBuyBtn); });
     var skySpearBuyBtn = document.getElementById('buySkySpearBtn');
     if (skySpearBuyBtn) skySpearBuyBtn.addEventListener('click', function () { handleBuySkySpearClick(skySpearBuyBtn); });
+    var raidenAxeBuyBtn = document.getElementById('buyRaidenAxeBtn');
+    if (raidenAxeBuyBtn) raidenAxeBuyBtn.addEventListener('click', function () { handleBuyRaidenAxeClick(raidenAxeBuyBtn); });
+    var onigiriBuyBtn = document.getElementById('buyOnigiriBtn');
+    if (onigiriBuyBtn) onigiriBuyBtn.addEventListener('click', function () { handleBuyOnigiriClick(onigiriBuyBtn); });
+    var steakBuyBtn = document.getElementById('buySteakBtn');
+    if (steakBuyBtn) steakBuyBtn.addEventListener('click', function () { handleBuySteakClick(steakBuyBtn); });
     var eatWisdomSeedBtn = document.getElementById('eatWisdomSeedBtn');
     if (eatWisdomSeedBtn) eatWisdomSeedBtn.addEventListener('click', eatWisdomSeedClick_);
     var sellWisdomSeedBtn = document.getElementById('sellWisdomSeedBtn');
@@ -23576,6 +23667,87 @@
       renderShopList();
       renderItems();
       window.alert(`🔱 天空の槍を手に入れた！（残り${state.skySpearCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyRaidenAxeClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm(`雷電の斧を購入します（${RAIDEN_AXE_COST_MP}MP）。世界一周のボス戦で使える攻撃アイテムです（振るった直後の問題に正解すると${RAIDEN_AXE_DAMAGE_}ダメージ、1回の購入で${RAIDEN_AXE_CHARGES_PER_PURCHASE_}回分、何個でも買い足せます）。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyRaidenAxe', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.raidenAxeCharges = res.raidenAxeCharges;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(`⚡ 雷電の斧を手に入れた！（残り${state.raidenAxeCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyOnigiriClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var cost = hpItemSaleActive_() ? ONIGIRI_SALE_COST_MP : ONIGIRI_NORMAL_COST_MP;
+    if (!window.confirm(`おにぎりを購入します（${cost}MP）。HPが${ONIGIRI_HP_GAIN}増えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buyOnigiri', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`🍙 おにぎりを食べた！HPが${ONIGIRI_HP_GAIN}増えた！`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuySteakClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var cost = hpItemSaleActive_() ? STEAK_SALE_COST_MP : STEAK_NORMAL_COST_MP;
+    if (!window.confirm(`ステーキを購入します（${cost}MP）。HPが${STEAK_HP_GAIN}増えます。よろしいですか？`)) return;
+
+    btn.disabled = true;
+    apiPost('buySteak', { id: session.id }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(`🥩 ステーキを食べた！HPが${STEAK_HP_GAIN}増えた！`);
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
@@ -24655,7 +24827,7 @@
   // (yushaSwordObtained)は残り続ける。
   const YUSHA_SWORD_DAMAGE_ = 1000;
   function castYushaSword_() {
-    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
     if ((Number(state.yushaSwordCount) || 0) <= 0) return;
     if (!window.confirm('勇者の剣を使いますか？次の問題に正解すればボスに' + YUSHA_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。剣はこれで壊れてなくなります。')) return;
     state.yushaSwordCount = (Number(state.yushaSwordCount) || 0) - 1;
@@ -24685,7 +24857,7 @@
   // チャージ制で、1回使うごとにチャージが1減り、0になるまで繰り返し使える。
   const ICE_SWORD_DAMAGE_ = 500;
   function castIceSword_() {
-    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
     if ((Number(state.iceSwordCharges) || 0) <= 0) return;
     if (!window.confirm('氷の剣を使いますか？次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。（残り' + state.iceSwordCharges + '回分）')) return;
     state.iceSwordCharges = (Number(state.iceSwordCharges) || 0) - 1;
@@ -24705,7 +24877,7 @@
   // 既に持っていても何度でも買い足せる(買うたびに+5回分、何個も所持可能)。
   const SKY_SPEAR_DAMAGE_ = 100;
   function castSkySpear_() {
-    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
     if ((Number(state.skySpearCharges) || 0) <= 0) return;
     if (!window.confirm('天空の槍を使いますか？次の問題に正解すればボスに' + SKY_SPEAR_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。（残り' + state.skySpearCharges + '回分）')) return;
     state.skySpearCharges = (Number(state.skySpearCharges) || 0) - 1;
@@ -24720,6 +24892,25 @@
     els.feedback.classList.add('correct');
   }
 
+  // 雷電の斧：天空の槍と同じ「振るった直後の問題に正解すれば命中」方式だが、
+  // 1回300MP・使用回数は1回の購入で3回分(保有上限なし、何個も買い足せる)。
+  const RAIDEN_AXE_DAMAGE_ = 300;
+  function castRaidenAxe_() {
+    if (!state.worldBossActiveStage || state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
+    if ((Number(state.raidenAxeCharges) || 0) <= 0) return;
+    if (!window.confirm('雷電の斧を使いますか？次の問題に正解すればボスに' + RAIDEN_AXE_DAMAGE_ + 'ダメージを与えられますが、不正解だとかわされてしまいます。（残り' + state.raidenAxeCharges + '回分）')) return;
+    state.raidenAxeCharges = (Number(state.raidenAxeCharges) || 0) - 1;
+    state.worldPendingRaidenAxe = true;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    playSpellFx_({ emoji: '⚡', fx: '#facc15' }, 'cast');
+    els.feedback.innerHTML = '<span class="fb-result">⚡ 雷電の斧を振るった！次の問題に正解すればボスに' + RAIDEN_AXE_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.raidenAxeCharges + '回分）</span>';
+    els.feedback.classList.remove('incorrect');
+    els.feedback.classList.add('correct');
+  }
+
   // 折り紙で作った手裏剣：なんでも屋で1本30MPで買える消費アイテム(00001限定
   // プレビュー中)。氷の剣等と違い次の問題の正解を待たず、投げた瞬間に2回に1回
   // (50%)の確率でボスに100ダメージが入る(外れても1本消費される)。
@@ -24729,7 +24920,7 @@
   function castShuriken_() {
     if (!state.worldBossActiveStage) return;
     if ((Number(state.shurikenCount) || 0) <= 0) return;
-    if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear) return;
+    if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
     if (!window.confirm('手裏剣を投げますか？2回に1回（50%）の確率でボスに' + SHURIKEN_DAMAGE_ + 'ダメージを与えます。外れても1本消費します。（残り' + state.shurikenCount + '本）')) return;
     state.shurikenCount = (Number(state.shurikenCount) || 0) - 1;
     var hit = Math.random() < SHURIKEN_HIT_CHANCE_;
@@ -24834,7 +25025,7 @@
   // 書があるため)。詠唱済みで結果待ちの間は、二重詠唱を防ぐため全部隠す。
   function updateWorldSpellBtnVisibility_() {
     if (!els.worldSpellRow) return;
-    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword || state.worldPendingSkySpear) {
+    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) {
       els.worldSpellRow.hidden = true;
       els.worldSpellRow.innerHTML = '';
       return;
@@ -24973,7 +25164,7 @@
   // (handleAnswerのisCorrect側で解決)、不正解だとボスにかわされて不発になる
   // (handleAnswerの不正解側で解決)。
   function castWorldSpell_(bookId) {
-    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword || state.worldPendingSkySpear) return;
+    if (state.worldPendingSpell || state.worldPendingSword || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
     const book = spellbookById_(bookId);
     if (!book) return;
     // 今のボスに有効な書かどうかを、ここでも必ず確認する。
@@ -26838,6 +27029,7 @@
   if (els.fujiSwordBtn) els.fujiSwordBtn.addEventListener('click', castYushaSword_);
   if (els.iceSwordBtn) els.iceSwordBtn.addEventListener('click', castIceSword_);
   if (els.skySpearBtn) els.skySpearBtn.addEventListener('click', castSkySpear_);
+  if (els.raidenAxeBtn) els.raidenAxeBtn.addEventListener('click', castRaidenAxe_);
   if (els.shurikenBtn) els.shurikenBtn.addEventListener('click', castShuriken_);
   if (els.worldDiceCloseBtn) {
     els.worldDiceCloseBtn.addEventListener('click', function () {
