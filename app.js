@@ -327,7 +327,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -349,7 +349,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -18749,6 +18749,8 @@
     usaLadyGiftPending: (savedProgress && Number(savedProgress.usaLadyGiftPending)) || (savedGame && Number(savedGame.usaLadyGiftPending)) || 0,
     // ダイヤの指輪の所持数。なんでも屋で2000MPに交換できる(購入不可)。
     diamondRingCount: (savedProgress && Number(savedProgress.diamondRingCount)) || (savedGame && Number(savedGame.diamondRingCount)) || 0,
+    // アメリカ横断の成功は一度きり(成功したら再挑戦不可、失敗は何度でも再挑戦可)。
+    usaCrossingCompleted: !!((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)),
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -19359,7 +19361,8 @@
   // 正解数がリセットされ、HPが10減る(不正解で挑戦自体が終わることはない)。
   // 50州すべて制覇すると、★3の宝石
   // (ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・
-  // HP1000が手に入る。成功後も何度でも再挑戦できる(その都度100MP必要)。
+  // HP1000が手に入る。成功は一度きり(達成後は再挑戦不可)、失敗した場合は
+  // 何度でも再挑戦できる(その都度100MP必要)。
   var USA_CROSSING_START_ = '2026-12-01';
   var USA_CROSSING_END_ = '2026-12-31';
   const USA_CROSSING_ENTRY_FEE_MP = 100;
@@ -21581,6 +21584,7 @@
         state.raidenAxeCharges = Number(progress.raidenAxeCharges) || state.raidenAxeCharges;
         state.usaLadyGiftPending = Number(progress.usaLadyGiftPending) || state.usaLadyGiftPending;
         state.diamondRingCount = Number(progress.diamondRingCount) || state.diamondRingCount;
+        state.usaCrossingCompleted = !!(state.usaCrossingCompleted || progress.usaCrossingCompleted);
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
         // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
         // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
@@ -21664,6 +21668,7 @@
       raidenAxeCharges: state.raidenAxeCharges,
       usaLadyGiftPending: state.usaLadyGiftPending,
       diamondRingCount: state.diamondRingCount,
+      usaCrossingCompleted: state.usaCrossingCompleted,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -25141,6 +25146,10 @@
   // 処理で払ってから、進行度を0に戻して理科モードで開始する。
   function startUsaCrossing_() {
     if (!usaCrossingCardActive_() || state.usaCrossingActive) return;
+    if (state.usaCrossingCompleted) {
+      window.alert('アメリカ横断は既に達成済みです。再挑戦はできません。');
+      return;
+    }
     if ((Number(state.points) || 0) < USA_CROSSING_ENTRY_FEE_MP) {
       window.alert('アメリカ横断には参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
       return;
@@ -25154,6 +25163,7 @@
         var msg = '参加料の支払いに失敗しました。もう一度お試しください。';
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
         else if (res.error === 'forbidden') msg = '現在は00001限定のプレビュー中です。';
+        else if (res.error === 'already_completed') msg = 'アメリカ横断は既に達成済みです。再挑戦はできません。';
         window.alert(msg);
         return;
       }
@@ -25219,10 +25229,12 @@
   }
 
   // 50州すべて制覇したときの報酬処理：HP+1000、★3の宝石(ランダム)、宝箱
-  // (ランク問わずランダム)。成功後も進行度を0に戻して何度でも再挑戦できる。
+  // (ランク問わずランダム)。成功は一度きり(富士登山・お鉢巡りと同じく、
+  // 一度trueになったら戻らない実績フラグとして記録し、以後は再挑戦不可)。
   function finishUsaCrossing_() {
     state.usaCrossingActive = false;
     state.usaCrossingProgress = 0;
+    state.usaCrossingCompleted = true;
     state.hp = (Number(state.hp) || 0) + USA_CROSSING_HP_REWARD_;
     var gemId = USA_CROSSING_GEM_IDS_[randInt(0, USA_CROSSING_GEM_IDS_.length - 1)];
     state.gemItems = state.gemItems || {};
@@ -25269,15 +25281,17 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。5問連続正解するたびに1州前進(州が後退することはない)、不正解だと連続正解数がリセットされ、HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了(参加料は戻らない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功後も何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。5問連続正解するたびに1州前進(州が後退することはない)、不正解だと連続正解数がリセットされ、HPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了(参加料は戻らない)。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功は一度きり(達成後は再挑戦不可)、失敗した場合は何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
     }
     if (els.usaCrossingStatusText) {
-      els.usaCrossingStatusText.textContent = state.usaCrossingActive
+      els.usaCrossingStatusText.textContent = state.usaCrossingCompleted
+        ? '✅ アメリカ横断達成済みです。再挑戦はできません。'
+        : state.usaCrossingActive
         ? '挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.usaCrossingProgress) || 0) + '/' + USA_CROSSING_GOAL_ + '州）'
         : '挑戦条件はありません。参加料を払えばいつでも開始できます。';
     }
     if (els.usaCrossingStartBtn) {
-      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive;
+      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive || !!state.usaCrossingCompleted;
     }
     if (els.usaCrossingStateList) {
       var progress = Number(state.usaCrossingProgress) || 0;
