@@ -18796,6 +18796,7 @@
     usaCrossingHint: document.getElementById('usaCrossingHint'),
     usaCrossingStatusText: document.getElementById('usaCrossingStatusText'),
     usaCrossingStartBtn: document.getElementById('usaCrossingStartBtn'),
+    usaCrossingTestTemptationBtn: document.getElementById('usaCrossingTestTemptationBtn'),
     usaCrossingStateList: document.getElementById('usaCrossingStateList'),
     battleVsRow: document.getElementById('battleVsRow'),
     battleFujiTimer: document.getElementById('battleFujiTimer'),
@@ -25194,6 +25195,18 @@
       caughtText: '🔫 拳銃を買った直後、誤って人を撃ってしまった……警察に捕まり、日本へ強制送還された！（支払った参加料は戻りません）',
     },
   };
+  // 00001が実際に15州まで進まなくても確認ダイアログの文面を試せるテスト用
+  // ボタン(進行度を一時的に15にして呼び出すだけ、実際の挑戦状態には影響しない
+  // ようexistingのusaCrossingActiveは変更しない。応じた場合のみ、そのテストが
+  // 「捕まった」ことになりusaCrossingActiveがfalseになる＝本物と同じ挙動)。
+  function testUsaCrossingTemptation_() {
+    if (!isAdminSession_()) return;
+    state.usaCrossingProgress = 15;
+    const html = checkUsaCrossingTemptation_();
+    window.alert(html.replace(/<[^>]+>/g, ''));
+    saveGameState(state);
+    renderUsaCrossingCard_();
+  }
   function checkUsaCrossingTemptation_() {
     const t = USA_CROSSING_TEMPTATIONS_[state.usaCrossingProgress];
     if (!t) return '';
@@ -27471,6 +27484,7 @@
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.ohachiStartBtn) els.ohachiStartBtn.addEventListener('click', startOhachiMeguri_);
   if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.addEventListener('click', startUsaCrossing_);
+  if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.addEventListener('click', testUsaCrossingTemptation_);
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
   if (els.shopPurchaseHistoryBtn) els.shopPurchaseHistoryBtn.addEventListener('click', handleShopPurchaseHistoryClick_);
   if (els.wisdomSeedDistributeBtn) els.wisdomSeedDistributeBtn.addEventListener('click', handleWisdomSeedDistributeClick_);
