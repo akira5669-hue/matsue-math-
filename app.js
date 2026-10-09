@@ -20071,7 +20071,6 @@
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
-    renderEnrollmentNoticeBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
@@ -20083,16 +20082,18 @@
     renderCharArtBanner_();
     renderCategoryRankBanner_();
     // 魔法の書の告知・中2限定「証明」告知・読書ランキング追加の告知・チーム対抗戦の
-    // 結果発表・極寒の富士登山の告知は役目を終えたため、常時非表示にする(機能自体は
-    // 引き続き動作する。バナー呼び出しだけ止めている)。
+    // 結果発表・極寒の富士登山の告知・対象外学年への退会案内・読書ランキング重複
+    // 投稿禁止の告知は役目を終えたため、常時非表示にする(機能自体は引き続き
+    // 動作する。バナー呼び出しだけ止めている)。
     if (els.spellbookLiveBanner) els.spellbookLiveBanner.hidden = true;
     if (els.proofTestBanner) els.proofTestBanner.hidden = true;
     if (els.readingBanner) els.readingBanner.hidden = true;
     if (els.teamEventSeptResultBanner) els.teamEventSeptResultBanner.hidden = true;
     if (els.fujiBanner) els.fujiBanner.hidden = true;
+    if (els.enrollmentNoticeBanner) els.enrollmentNoticeBanner.hidden = true;
+    if (els.readingDuplicateNoticeBanner) els.readingDuplicateNoticeBanner.hidden = true;
     renderScienceServiceDayBanner_();
     renderOhachiBanner_();
-    renderReadingDuplicateNoticeBanner_();
     renderProfessionNoticeBanner_();
     renderWorldBossChestBanner_();
     renderSaltConcentrationBanner_();
