@@ -2273,7 +2273,7 @@
     { id: 'subst',      label: '代入の計算（中1）',               gen: genSubst },
     { id: 'maxof4',     label: '大小関係（中1）',                 gen: genMaxOf4 },
     { id: 'equation',   label: '一次方程式（中1）（小5、小6ランキング対策）',               gen: genEquation },
-    { id: 'eqWordProblem1', label: '方程式の文章題（中1）（小5、小6ランキング対策）',        gen: genEqWordProblem1 , addedDate: '2026-08-01' },
+    { id: 'eqWordProblem1', label: '方程式の文章題（中1）',        gen: genEqWordProblem1 , addedDate: '2026-08-01' },
     { id: 'eqWordProblemAdv1', label: '方程式の文章題の応用（中1）', gen: genEqWordProblemAdv1 , addedDate: '2026-08-08' },
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
