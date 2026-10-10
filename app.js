@@ -648,7 +648,9 @@
       steps = [
         `生徒の人数をx人とすると、あめの個数は ${a}x + ${b} でも ${c}x − ${d} でも表せる`,
         `${a}x + ${b} = ${c}x − ${d}`,
-        `${b} + ${d} = ${c}x − ${a}x = ${diff}x`,
+        `${a}x − ${c}x = −${d} − ${b}`,
+        `−${diff}x = −${totalDiff}`,
+        `${diff}x = ${totalDiff}`,
         `x = ${totalDiff} ÷ ${diff} = ${answer}`,
       ];
       wrongs = [answer + 1, answer - 1, a + c];
@@ -671,7 +673,10 @@
         `兄が出発してからx分後に追いつくとすると`,
         `弟が進んだ道のり: ${v1}(${head} + x)、兄が進んだ道のり: ${v2}x`,
         `${v1}(${head} + x) = ${v2}x`,
-        `${v1 * head} = ${diff}x`,
+        `${v1 * head} + ${v1}x = ${v2}x`,
+        `${v1}x − ${v2}x = −${v1 * head}`,
+        `−${diff}x = −${v1 * head}`,
+        `${diff}x = ${v1 * head}`,
         `x = ${v1 * head} ÷ ${diff} = ${answer}`,
       ];
       wrongs = [head, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
@@ -757,7 +762,9 @@
       steps = [
         `生徒の人数をx人とすると、あめの個数は ${a}x + ${b} でも ${c}x − ${d} でも表せる`,
         `${a}x + ${b} = ${c}x − ${d}`,
-        `${b} + ${d} = ${c}x − ${a}x = ${diff}x`,
+        `${a}x − ${c}x = −${d} − ${b}`,
+        `−${diff}x = −${totalDiff}`,
+        `${diff}x = ${totalDiff}`,
         `x = ${totalDiff} ÷ ${diff} = ${answer}`,
       ];
       wrongs = [answer + 1, answer - 1, a + c];
@@ -780,7 +787,10 @@
         `兄が出発してからx分後に追いつくとすると`,
         `弟が進んだ道のり: ${v1}(${head} + x)、兄が進んだ道のり: ${v2}x`,
         `${v1}(${head} + x) = ${v2}x`,
-        `${v1 * head} = ${diff}x`,
+        `${v1 * head} + ${v1}x = ${v2}x`,
+        `${v1}x − ${v2}x = −${v1 * head}`,
+        `−${diff}x = −${v1 * head}`,
+        `${diff}x = ${v1 * head}`,
         `x = ${v1 * head} ÷ ${diff} = ${answer}`,
       ];
       wrongs = [head, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
