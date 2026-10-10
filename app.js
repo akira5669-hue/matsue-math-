@@ -270,12 +270,26 @@
 
   // 追加してから何日以内かどうか(NEW🌟バッジの表示判定用)。dateStrは'YYYY-MM-DD'。
   var NEW_BADGE_DAYS_ = 10;
-  function isRecentlyAdded(dateStr) {
+  // daysを渡すとその単元だけ既定の10日間ではなくその日数でNEWバッジを表示する
+  // (期間限定でNEW表示を延ばしたい単元向け)。
+  function isRecentlyAdded(dateStr, days) {
     if (!dateStr) return false;
     var added = new Date(dateStr + 'T00:00:00');
     if (isNaN(added.getTime())) return false;
     var diffDays = (new Date(todayKey() + 'T00:00:00') - added) / (24 * 60 * 60 * 1000);
-    return diffDays >= 0 && diffDays < NEW_BADGE_DAYS_;
+    return diffDays >= 0 && diffDays < (days || NEW_BADGE_DAYS_);
+  }
+
+  // 新単元公開から2週間、MP報酬が2倍になるキャンペーン対象カテゴリ。
+  // 1日のMP上限(POINTS_DAILY_CAP_CALC/WORD)はそのまま維持される。
+  var DOUBLE_MP_CATEGORIES_ = {
+    graphEq1: { start: '2026-10-10', end: '2026-10-23' },
+  };
+  function isDoubleMpCategoryActive_(catId) {
+    var win = DOUBLE_MP_CATEGORIES_[catId];
+    if (!win) return false;
+    var today = todayKey();
+    return today >= win.start && today <= win.end;
   }
 
   // メニューのボタン・カード見出しにNEW🌟バッジを付ける。追加日から1週間経つと
@@ -2040,6 +2054,136 @@
     return { category: 'coordinate1', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  /* ---------- 比例・反比例のグラフ ---------- */
+
+  function gcd_(a, b) {
+    a = Math.abs(a); b = Math.abs(b);
+    while (b) { const t = b; b = a % b; a = t; }
+    return a || 1;
+  }
+  function reduceFrac_(n, d) {
+    if (d < 0) { n = -n; d = -d; }
+    const g = gcd_(n, d);
+    return [n / g, d / g];
+  }
+  function fmtSlopeEqStr_(num, den) {
+    if (den === 1) return `y = ${fmtCx(num)}`;
+    const sign = num < 0 ? '−' : '';
+    return `y = (${sign}${Math.abs(num)}/${den})x`;
+  }
+  function fmtInvPropEqStr_(a) {
+    return a < 0 ? `y = −${Math.abs(a)}/x` : `y = ${a}/x`;
+  }
+
+  // 点の座標と同じ-5〜5の座標平面グリッドを描くだけの共通部分(軸・目盛)。
+  function gridFrameParts_() {
+    const cell = 18, pad = 16, range = 5;
+    const size = pad * 2 + range * 2 * cell;
+    const toSx = (x) => pad + (x + range) * cell;
+    const toSy = (y) => pad + (range - y) * cell;
+    let g = '';
+    for (let i = -range; i <= range; i++) {
+      g += `<line x1="${toSx(i)}" y1="${pad}" x2="${toSx(i)}" y2="${size - pad}" stroke="#e5e7eb" stroke-width="1"/>`;
+      g += `<line x1="${pad}" y1="${toSy(i)}" x2="${size - pad}" y2="${toSy(i)}" stroke="#e5e7eb" stroke-width="1"/>`;
+    }
+    g += `<line x1="${pad}" y1="${toSy(0)}" x2="${size - pad}" y2="${toSy(0)}" stroke="#1c2127" stroke-width="1.5"/>`;
+    g += `<line x1="${toSx(0)}" y1="${pad}" x2="${toSx(0)}" y2="${size - pad}" stroke="#1c2127" stroke-width="1.5"/>`;
+    g += `<text x="${toSx(0) - 11}" y="${toSy(0) + 11}" font-size="9" fill="#555">O</text>`;
+    g += `<text x="${toSx(range) - 9}" y="${toSy(0) + 11}" font-size="9" fill="#555">${range}</text>`;
+    g += `<text x="${toSx(-range) - 2}" y="${toSy(0) + 11}" font-size="9" fill="#555">-${range}</text>`;
+    g += `<text x="${toSx(0) + 4}" y="${toSy(range) + 4}" font-size="9" fill="#555">${range}</text>`;
+    g += `<text x="${toSx(0) + 4}" y="${toSy(-range) + 4}" font-size="9" fill="#555">-${range}</text>`;
+    return { size, toSx, toSy, grid: g };
+  }
+
+  function renderGraphLineSvg_(num, den, markX, markY) {
+    const { size, toSx, toSy, grid } = gridFrameParts_();
+    const slope = num / den;
+    const range = 5;
+    const xlim = Math.min(range, range / Math.abs(slope));
+    const x1 = -xlim, y1 = -slope * xlim, x2 = xlim, y2 = slope * xlim;
+    let g = grid;
+    g += `<line x1="${toSx(x1).toFixed(1)}" y1="${toSy(y1).toFixed(1)}" x2="${toSx(x2).toFixed(1)}" y2="${toSy(y2).toFixed(1)}" stroke="#2563eb" stroke-width="2"/>`;
+    const sx = toSx(markX), sy = toSy(markY);
+    g += `<circle cx="${sx}" cy="${sy}" r="3.5" fill="#c23b2e"/>`;
+    g += `<text x="${sx + 5}" y="${sy - 5}" font-size="11" fill="#1c2127" font-weight="bold">(${markX}, ${markY})</text>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
+  }
+
+  function renderGraphHyperbolaSvg_(a, markX, markY) {
+    const { size, toSx, toSy, grid } = gridFrameParts_();
+    const range = 5;
+    const xlimMin = Math.abs(a) / range;
+    const n = 14;
+    const posPts = [];
+    for (let i = 0; i <= n; i++) {
+      const x = xlimMin + (range - xlimMin) * (i / n);
+      posPts.push([x, a / x]);
+    }
+    const negPts = posPts.map(([x, y]) => [-x, -y]);
+    const toPath = (pts) => 'M ' + pts.map(([x, y]) => `${toSx(x).toFixed(1)},${toSy(y).toFixed(1)}`).join(' L ');
+    let g = grid;
+    g += `<path d="${toPath(posPts)}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
+    g += `<path d="${toPath(negPts)}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
+    const sx = toSx(markX), sy = toSy(markY);
+    g += `<circle cx="${sx}" cy="${sy}" r="3.5" fill="#c23b2e"/>`;
+    g += `<text x="${sx + 5}" y="${sy - 5}" font-size="11" fill="#1c2127" font-weight="bold">(${markX}, ${markY})</text>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
+  }
+
+  // 比例・反比例のグラフ（中1）。グラフ上の通る点から式 y=ax または y=a/x を
+  // 求める。pat0=比例の直線、pat1=反比例の双曲線。
+  function genGraphEq() {
+    const pat = randInt(0, 1);
+    let question, questionHtml, answer, wrongs, steps;
+    if (pat === 0) {
+      const isFraction = Math.random() < 0.5;
+      let p, q, x0, y0;
+      if (isFraction) {
+        q = [2, 3, 4][randInt(0, 2)];
+        do { p = randNonZero(-5, 5); } while (Math.abs(p) === q || gcd_(Math.abs(p), q) !== 1);
+        x0 = q; y0 = p;
+      } else {
+        const cands = [-5, -4, -3, -2, 2, 3, 4, 5];
+        p = cands[randInt(0, cands.length - 1)]; q = 1;
+        x0 = 1; y0 = p;
+      }
+      answer = fmtSlopeEqStr_(p, q);
+      questionHtml = `${renderGraphLineSvg_(p, q, x0, y0)}<span style="display:block">右のグラフの式を求めなさい。</span>`;
+      question = `右のグラフの式を求めなさい。`;
+      const recip = reduceFrac_(q, p);
+      const wrongPairs = [reduceFrac_(-p, q), recip, reduceFrac_(-recip[0], recip[1])];
+      wrongs = wrongPairs.map(([n, d]) => fmtSlopeEqStr_(n, d));
+      steps = [
+        `グラフが通る点 (${x0}, ${y0}) を y = ax に代入する`,
+        `${y0} = a × ${x0}`,
+        `a = ${y0} ÷ ${x0} = ${q === 1 ? p : `${p}/${q}`}`,
+        `式は ${answer}`,
+      ];
+    } else {
+      const x0 = randInt(1, 3);
+      const yCands = [-4, -3, -2, -1, 1, 2, 3, 4];
+      const y0 = yCands[randInt(0, yCands.length - 1)];
+      const a = x0 * y0;
+      const s = a >= 0 ? 1 : -1;
+      answer = fmtInvPropEqStr_(a);
+      questionHtml = `${renderGraphHyperbolaSvg_(a, x0, y0)}<span style="display:block">右のグラフの式を求めなさい。</span>`;
+      question = `右のグラフの式を求めなさい。`;
+      const cand1 = -a;
+      const cand2 = a + 2 * s;
+      let cand3 = a - 3 * s;
+      if (cand3 === 0) cand3 = a - 5 * s;
+      wrongs = [cand1, cand2, cand3].map(fmtInvPropEqStr_);
+      steps = [
+        `グラフが通る点 (${x0}, ${y0}) を y = a/x に代入する`,
+        `${y0} = a ÷ ${x0}`,
+        `a = ${y0} × ${x0} = ${a}`,
+        `式は ${answer}`,
+      ];
+    }
+    return { category: 'graphEq1', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   /* ---------- 一次関数 ---------- */
 
   function linearEqStr(a, b) {
@@ -2461,6 +2605,7 @@
     { id: 'eqWordProblemAdv1', label: '方程式の文章題の応用（中1）', gen: genEqWordProblemAdv1 , addedDate: '2026-08-08' },
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
     { id: 'coordinate1', label: '点の座標（中1）（小5、小6ランキング対策）', gen: genCoordinate, addedDate: '2026-10-10' },
+    { id: 'graphEq1', label: '比例・反比例のグラフ（中1）（小5、小6ランキング対策）', gen: genGraphEq, addedDate: '2026-10-10', newBadgeDays: 14 },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）（小5、小6ランキング対策）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）（小5、小6ランキング対策）',             gen: genLinearAddSub },
@@ -19441,7 +19586,7 @@
         const acc = cs && cs.total >= 3
           ? `<span class="cat-acc">${Math.round(cs.correct / cs.total * 100)}%</span>`
           : '';
-        const newBadge = isRecentlyAdded(c.addedDate) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
+        const newBadge = isRecentlyAdded(c.addedDate, c.newBadgeDays) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
         const rankBadge = renderCategoryRankBadge_(c.id);
         return `
           <label class="settings-item">
@@ -19480,7 +19625,7 @@
       const hpBadge = isHpEarningCategory_(c.id)
         ? `<span class="cat-hp-badge" title="10問連続正解でHPが増える単元">❤️HP UP</span>`
         : '';
-      const newBadge = isRecentlyAdded(c.addedDate) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
+      const newBadge = isRecentlyAdded(c.addedDate, c.newBadgeDays) ? `<span class="cat-new-badge">NEW🌟</span>` : '';
       const rankBadge = renderCategoryRankBadge_(c.id);
       return `
         <label class="settings-item${complete ? ' is-daily-complete' : ''}">
@@ -20923,7 +21068,10 @@
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
       // ボーナスは10MPで、2倍の比率は維持)。
-      const rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : catId === 'divisorMultipleAdvanced5' ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
+      let rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : catId === 'divisorMultipleAdvanced5' ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
+      // 新単元キャンペーン中(カテゴリごとにaddedDateから2週間)はMPが2倍になる。
+      // 1日のMP上限(dailyCapForThis)自体は変えず、通常通りそこで頭打ちになる。
+      if (isDoubleMpCategoryActive_(catId)) rawBasePoints *= 2;
       // ボン・ミスコの呪いにかかっている間は、どんな組み合わせでもMP報酬が上限
       // BONMISUKO_CURSE_MP_CAPに制限される。
       const basePoints = state.cursed ? Math.min(rawBasePoints, BONMISUKO_CURSE_MP_CAP) : rawBasePoints;
