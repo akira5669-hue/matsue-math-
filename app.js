@@ -25432,6 +25432,11 @@
     var chestKey = treasureItemKey_('chest', chestTier);
     state.treasureItems = state.treasureItems || {};
     state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    // 通常版お鉢巡り(finishOhachiMeguri_)と同じく、この場で確実に保存・同期する
+    // (以前は呼び忘れがあり、達成しても宝箱がサーバーに残らない不具合があった)。
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     return '<div class="win-banner">🎉🔄 お鉢巡りイージーモードを達成した！🎉</div>'
       + '<div class="item-gain-banner">💪 HPが' + OHACHI_EASY_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
       + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
@@ -25500,6 +25505,11 @@
     var chestKey = treasureItemKey_('chest', chestTier);
     state.treasureItems = state.treasureItems || {};
     state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    // この場で確実に保存・同期する(呼び出し元の追加ブロックはローカル保存のみで
+    // サーバー同期までは保証しないため、達成時はここで明示的に行う)。
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     return '<div class="win-banner">🎉⛰️ 富士下山、5合目に到着した！🎉</div>'
       + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
   }
@@ -25509,6 +25519,11 @@
     state.fujiDescentLegStreak = 0;
     state.points = (Number(state.points) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
     state.pointsToday = (Number(state.pointsToday) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
+    // 区間クリアのたびに確実に保存・同期する(以前はローカル保存のみでサーバー
+    // 同期まで保証していなかった)。
+    saveGameState(state);
+    var legSession = loadSession();
+    if (legSession && legSession.id) apiPost('syncPoints', buildProgressSyncPayload(legSession.id)).catch(function () { });
     var mpHtml = '<div class="item-gain-banner">💰 ボーナスMP+' + FUJI_DESCENT_LEG_MP_BONUS_ + '！（現在MP: ' + state.points + '）</div>';
     if (state.fujiDescentStation <= FUJI_DESCENT_BOTTOM_STATION_) {
       return mpHtml + finishFujiDescent_();
@@ -25656,6 +25671,11 @@
     } else {
       html += '<div class="item-gain-banner">🧙‍♀️ ' + gemDef.label + 'を渡さなかった。おばさんは静かに消えた。</div>';
     }
+    // この場で確実に保存・同期する(以前は呼び忘れがあり、達成してもHP/宝石/宝箱が
+    // サーバーに残らないことがあった)。
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
     return html;
   }
 
