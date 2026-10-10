@@ -27299,6 +27299,7 @@
     els.weeklyQuizBody.hidden = true;
     els.weeklyQuizConfirm.hidden = true;
     els.weeklyQuizSpecialLabel.hidden = true;
+    if (els.weeklyQuizPanel) els.weeklyQuizPanel.classList.remove('has-special');
     els.weeklyQuizResult.textContent = '';
     weeklyQuizSelectedIndex = null;
     weeklyQuizSubmitting = false;
@@ -27326,6 +27327,7 @@
       els.weeklyQuizBody.hidden = false;
       if (res.special) {
         weeklyQuizIsSpecial = true;
+        if (els.weeklyQuizPanel) els.weeklyQuizPanel.classList.add('has-special');
         weeklyQuizSpecialQuestions = res.questions;
         weeklyQuizSpecialIndex = 0;
         weeklyQuizSpecialSelections = [];

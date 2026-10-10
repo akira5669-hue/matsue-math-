@@ -1195,6 +1195,10 @@ h1 {
   0%, 100% { box-shadow: 0 0 4px rgba(251, 191, 36, 0.5); }
   50%      { box-shadow: 0 0 14px rgba(251, 191, 36, 0.95), 0 0 4px rgba(245, 158, 11, 0.8); }
 }
+.eye-catch-frame {
+  border-color: #f59e0b !important;
+  animation: giftRowGlow 1.6s ease-in-out infinite;
+}
 .shop-new-badge {
   display: inline-block;
   background: linear-gradient(90deg, #f59e0b, #fbbf24);
@@ -2074,6 +2078,10 @@ h1 {
   gap: 10px;
 }
 .weekly-quiz-panel[hidden] { display: none; }
+.weekly-quiz-panel.has-special {
+  border: 3px solid #f59e0b;
+  animation: giftRowGlow 1.6s ease-in-out infinite;
+}
 .weekly-quiz-special-label {
   margin: 0 0 4px;
   font-size: 12px;
