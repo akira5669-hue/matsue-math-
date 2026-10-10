@@ -1947,6 +1947,89 @@
     return { category:'proportion', question, questionHtml, answer, choices:buildChoices(answer, wrongs), steps };
   }
 
+  /* ---------- 点の座標 ---------- */
+
+  // 座標平面を-5〜5の範囲でSVG描画し、指定した点(複数可)をプロットする。
+  function renderCoordGridSvg_(points) {
+    const cell = 18, pad = 16, range = 5;
+    const size = pad * 2 + range * 2 * cell;
+    const toSx = (x) => pad + (x + range) * cell;
+    const toSy = (y) => pad + (range - y) * cell;
+    let g = '';
+    for (let i = -range; i <= range; i++) {
+      g += `<line x1="${toSx(i)}" y1="${pad}" x2="${toSx(i)}" y2="${size - pad}" stroke="#e5e7eb" stroke-width="1"/>`;
+      g += `<line x1="${pad}" y1="${toSy(i)}" x2="${size - pad}" y2="${toSy(i)}" stroke="#e5e7eb" stroke-width="1"/>`;
+    }
+    g += `<line x1="${pad}" y1="${toSy(0)}" x2="${size - pad}" y2="${toSy(0)}" stroke="#1c2127" stroke-width="1.5"/>`;
+    g += `<line x1="${toSx(0)}" y1="${pad}" x2="${toSx(0)}" y2="${size - pad}" stroke="#1c2127" stroke-width="1.5"/>`;
+    g += `<text x="${toSx(0) - 11}" y="${toSy(0) + 11}" font-size="9" fill="#555">O</text>`;
+    g += `<text x="${toSx(range) - 9}" y="${toSy(0) + 11}" font-size="9" fill="#555">${range}</text>`;
+    g += `<text x="${toSx(-range) - 2}" y="${toSy(0) + 11}" font-size="9" fill="#555">-${range}</text>`;
+    g += `<text x="${toSx(0) + 4}" y="${toSy(range) + 4}" font-size="9" fill="#555">${range}</text>`;
+    g += `<text x="${toSx(0) + 4}" y="${toSy(-range) + 4}" font-size="9" fill="#555">-${range}</text>`;
+    points.forEach((p) => {
+      const sx = toSx(p.x), sy = toSy(p.y);
+      g += `<circle cx="${sx}" cy="${sy}" r="3" fill="#c23b2e"/>`;
+      g += `<text x="${sx + 5}" y="${sy - 5}" font-size="12" fill="#1c2127" font-weight="bold">${p.label}</text>`;
+    });
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
+  }
+
+  // 点の座標（中1）。座標平面上の点を読み取る/原点からの移動で座標を求める/
+  // 指定した座標に一致する点を選ぶ、の3パターン。
+  function genCoordinate() {
+    const pat = randInt(0, 2);
+    let question, questionHtml, answer, wrongs, steps;
+    if (pat === 0) {
+      // 座標平面上の点Pの座標を読み取る(軸上は除く=符号反転パターンが必ず4通り異なるようにするため)
+      const x = randNonZero(-5, 5), y = randNonZero(-5, 5);
+      answer = `(${x}, ${y})`;
+      questionHtml = `${renderCoordGridSvg_([{ x, y, label: 'P' }])}<span style="display:block">点Pの座標を答えなさい。</span>`;
+      question = `点Pの座標を答えなさい。`;
+      wrongs = [`(${-x}, ${y})`, `(${x}, ${-y})`, `(${-x}, ${-y})`];
+      steps = [`原点から${x >= 0 ? '右' : '左'}へ${Math.abs(x)}、${y >= 0 ? '上' : '下'}へ${Math.abs(y)}進んだ点がP`, `点Pの座標は (${x}, ${y})`];
+    } else if (pat === 1) {
+      // 原点からの移動の説明文から座標を求める
+      const a = randInt(1, 6);
+      const b = randInt(1, 6);
+      const rightLeft = Math.random() < 0.5;
+      const upDown = Math.random() < 0.5;
+      const x = rightLeft ? a : -a;
+      const y = upDown ? b : -b;
+      answer = `(${x}, ${y})`;
+      question = `原点から${rightLeft ? '右' : '左'}へ${a}、${upDown ? '上' : '下'}へ${b}だけ進んだ点の座標を答えなさい。`;
+      questionHtml = question;
+      wrongs = [`(${-x}, ${y})`, `(${x}, ${-y})`, `(${-x}, ${-y})`];
+      steps = [
+        `右・左の移動はx座標、上・下の移動はy座標を表す`,
+        `${rightLeft ? '右' : '左'}へ${a} → x = ${x}`,
+        `${upDown ? '上' : '下'}へ${b} → y = ${y}`,
+        `座標は (${x}, ${y})`,
+      ];
+    } else {
+      // 4つの点のうち、指定した座標に一致するものを選ぶ
+      const labels = ['①', '②', '③', '④'];
+      const used = new Set();
+      const pts = [];
+      while (pts.length < 4) {
+        const x = randInt(-5, 5), y = randInt(-5, 5);
+        const key = x + ',' + y;
+        if (x === 0 && y === 0) continue;
+        if (used.has(key)) continue;
+        used.add(key);
+        pts.push({ x, y });
+      }
+      const correctIdx = randInt(0, 3);
+      const target = pts[correctIdx];
+      questionHtml = `${renderCoordGridSvg_(pts.map((p, i) => ({ x: p.x, y: p.y, label: labels[i] })))}<span style="display:block">座標が (${target.x}, ${target.y}) である点はどれですか。</span>`;
+      question = `座標が (${target.x}, ${target.y}) である点はどれですか。`;
+      answer = labels[correctIdx];
+      wrongs = labels.filter((_, i) => i !== correctIdx);
+      steps = [`それぞれの点の座標を読み取る`, `(${target.x}, ${target.y}) にあるのは ${labels[correctIdx]}`];
+    }
+    return { category: 'coordinate1', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   /* ---------- 一次関数 ---------- */
 
   function linearEqStr(a, b) {
@@ -2367,6 +2450,7 @@
     { id: 'eqWordProblemRanking1', label: '方程式の文章題（中1）（小5、小6ランキング対策）', gen: genEqWordProblemRanking1 , addedDate: '2026-10-10' },
     { id: 'eqWordProblemAdv1', label: '方程式の文章題の応用（中1）', gen: genEqWordProblemAdv1 , addedDate: '2026-08-08' },
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
+    { id: 'coordinate1', label: '点の座標（中1）',               gen: genCoordinate, addedDate: '2026-10-10' },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）（小5、小6ランキング対策）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）（小5、小6ランキング対策）',             gen: genLinearAddSub },
