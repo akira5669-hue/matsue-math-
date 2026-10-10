@@ -2074,13 +2074,24 @@
     // は使わない)。
     return `y = ${sign}${Math.abs(num)}/${den} x`;
   }
-  // 点の座標ラベルが盤面の端で切れないよう、点の位置に応じて左右・上下を
-  // 反対側に出す。
-  function pointLabelSvg_(sx, sy, markX, markY) {
-    const anchor = markX >= 0 ? 'end' : 'start';
-    const tx = anchor === 'end' ? sx - 6 : sx + 6;
-    const ty = markY >= 0 ? sy + 14 : sy - 6;
-    return `<text x="${tx}" y="${ty}" text-anchor="${anchor}" font-size="11" fill="#1c2127" font-weight="bold">(${markX}, ${markY})</text>`;
+  // 点の座標ラベルが、盤面の端やX軸・Y軸の線・目盛の数字となるべく重ならない
+  // ように、点がどちら側にあるかとラベル幅から出す向きを決める。
+  function pointLabelSvg_(sx, sy, markX, markY, size) {
+    const pad = 16;
+    const text = `(${markX}, ${markY})`;
+    const textW = text.length * 6.5;
+    let anchor, tx;
+    if (markX >= 0) {
+      // 点はY軸より右側 → まずY軸から離れる右側に出し、盤面右端をはみ出す
+      // 場合だけ左側(Y軸側)に戻す。
+      anchor = 'start'; tx = sx + 8;
+      if (tx + textW > size - pad) { anchor = 'end'; tx = sx - 8; }
+    } else {
+      anchor = 'end'; tx = sx - 8;
+      if (tx - textW < pad) { anchor = 'start'; tx = sx + 8; }
+    }
+    const ty = markY >= 0 ? sy + 16 : sy - 8;
+    return `<text x="${tx}" y="${ty}" text-anchor="${anchor}" font-size="11" fill="#1c2127" font-weight="bold">${text}</text>`;
   }
   function fmtInvPropEqStr_(a) {
     return a < 0 ? `y = −${Math.abs(a)}/x` : `y = ${a}/x`;
@@ -2117,7 +2128,7 @@
     g += `<line x1="${toSx(x1).toFixed(1)}" y1="${toSy(y1).toFixed(1)}" x2="${toSx(x2).toFixed(1)}" y2="${toSy(y2).toFixed(1)}" stroke="#2563eb" stroke-width="2"/>`;
     const sx = toSx(markX), sy = toSy(markY);
     g += `<circle cx="${sx}" cy="${sy}" r="3.5" fill="#c23b2e"/>`;
-    g += pointLabelSvg_(sx, sy, markX, markY);
+    g += pointLabelSvg_(sx, sy, markX, markY, size);
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
   }
 
@@ -2138,7 +2149,7 @@
     g += `<path d="${toPath(negPts)}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
     const sx = toSx(markX), sy = toSy(markY);
     g += `<circle cx="${sx}" cy="${sy}" r="3.5" fill="#c23b2e"/>`;
-    g += pointLabelSvg_(sx, sy, markX, markY);
+    g += pointLabelSvg_(sx, sy, markX, markY, size);
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
   }
 
