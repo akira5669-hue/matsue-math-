@@ -738,6 +738,96 @@
     return { category: 'eqWordProblem1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  // 方程式の文章題（中1）（小5、小6ランキング対策）。
+  // genEqWordProblem1の7パターンのうち、ランキング対策で指定された4パターン
+  // (過不足・追いつく・2種の代金・比例式)のみに絞ったバージョン。
+  function genEqWordProblemRanking1() {
+    const pat = randInt(0, 3);
+    let question, answer, wrongs, steps;
+    if (pat === 0) {
+      // 過不足算: a個ずつ配るとb個余り、c個ずつ配るとd個不足する
+      answer = randInt(5, 20); // 人数
+      const a = randInt(2, 5);
+      const diff = randInt(1, 3);
+      const c = a + diff;
+      const totalDiff = diff * answer;
+      const b = randInt(1, totalDiff - 1);
+      const d = totalDiff - b;
+      question = `生徒にあめを${a}個ずつ配ると${b}個余り、${c}個ずつ配ると${d}個不足します。生徒の人数を求めなさい。`;
+      steps = [
+        `生徒の人数をx人とすると、あめの個数は ${a}x + ${b} でも ${c}x − ${d} でも表せる`,
+        `${a}x + ${b} = ${c}x − ${d}`,
+        `${b} + ${d} = ${c}x − ${a}x = ${diff}x`,
+        `x = ${totalDiff} ÷ ${diff} = ${answer}`,
+      ];
+      wrongs = [answer + 1, answer - 1, a + c];
+    } else if (pat === 1) {
+      // 追いつく問題: 弟が先に出発し、後から出発した兄が追いつく
+      const v1 = [50, 60, 80, 100, 120, 150, 200][randInt(0, 6)];
+      const diffCands = [10, 20, 25, 30, 40, 50, 60, 100];
+      const diff = diffCands[randInt(0, diffCands.length - 1)];
+      const v2 = v1 + diff;
+      const headCands = [];
+      for (let h = 2; h <= 30; h++) {
+        const x = (v1 * h) / diff;
+        if (Number.isInteger(x) && x >= 2 && x <= 60) headCands.push([h, x]);
+      }
+      if (headCands.length === 0) return genEqWordProblemRanking1();
+      const [head, x] = headCands[randInt(0, headCands.length - 1)];
+      answer = x;
+      question = `弟が家を出発してから${head}分後に、兄が自転車で弟を追いかけました。弟の速さを分速${v1}m、兄の速さを分速${v2}mとするとき、兄が出発してから何分後に弟に追いつきますか。`;
+      steps = [
+        `兄が出発してからx分後に追いつくとすると`,
+        `弟が進んだ道のり: ${v1}(${head} + x)、兄が進んだ道のり: ${v2}x`,
+        `${v1}(${head} + x) = ${v2}x`,
+        `${v1 * head} = ${diff}x`,
+        `x = ${v1 * head} ÷ ${diff} = ${answer}`,
+      ];
+      wrongs = [head, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+    } else if (pat === 2) {
+      // 二種類の商品の代金(1次方程式版): 合計本数が決まっていて、一方をxで表す
+      const priceOptions = [50, 60, 80, 100, 120, 150];
+      const priceA = priceOptions[randInt(0, priceOptions.length - 1)];
+      const priceBCands = priceOptions.filter((v) => v !== priceA);
+      const priceB = priceBCands[randInt(0, priceBCands.length - 1)];
+      const [priceHi, priceLo] = priceA > priceB ? [priceA, priceB] : [priceB, priceA];
+      const total = randInt(10, 25);
+      answer = randInt(1, total - 1);
+      const cost = priceHi * answer + priceLo * (total - answer);
+      question = `1本${priceHi}円のボールペンと1本${priceLo}円の鉛筆を合わせて${total}本買ったところ、代金の合計は${cost}円でした。ボールペンを何本買いましたか。`;
+      steps = [
+        `ボールペンの本数をx本とすると、鉛筆の本数は (${total} − x)本`,
+        `${priceHi}x + ${priceLo}(${total} − x) = ${cost}`,
+        `${priceHi - priceLo}x + ${priceLo * total} = ${cost}`,
+        `x = ${cost - priceLo * total} ÷ ${priceHi - priceLo} = ${answer}`,
+      ];
+      wrongs = [total - answer, answer + 1, answer - 1].filter((v) => v !== answer && v > 0);
+    } else {
+      // 比例式の利用: 2人がそれぞれ違う金額を持っていて、同じ金額を使ったら残金の比がp:qになった
+      const ratioPairs2 = [[2, 1], [3, 2], [4, 3], [5, 3], [5, 4], [3, 1], [7, 5]];
+      const [p, q] = ratioPairs2[randInt(0, ratioPairs2.length - 1)]; // p > q
+      answer = [50, 100, 150, 200, 250, 300, 400, 500][randInt(0, 7)]; // 買った品物の値段
+      const k = randInt(2, 12);
+      const m2 = answer + k * q; // 少ない方の残金
+      const m1 = answer + k * p; // 多い方の残金
+      const items = ['サインペン', 'ノート', 'ペン', '消しゴム', '色鉛筆'];
+      const item = items[randInt(0, items.length - 1)];
+      const namePairs = [['姉', '妹'], ['兄', '弟'], ['Aさん', 'Bさん']];
+      const [nameA, nameB] = namePairs[randInt(0, namePairs.length - 1)];
+      question = `${nameA}は${m1}円、${nameB}は${m2}円持っていました。2人とも同じ金額の${item}を買ったので、2人の残金の比は${p}：${q}になりました。2人が買った${item}の値段はいくらですか。`;
+      steps = [
+        `買った値段をx円とすると、(${m1} − x)：(${m2} − x) = ${p}：${q}`,
+        `${q}(${m1} − x) = ${p}(${m2} − x)`,
+        `${q * m1} − ${q}x = ${p * m2} − ${p}x`,
+        `${p}x − ${q}x = ${p * m2} − ${q * m1}`,
+        `${p - q}x = ${p * m2 - q * m1}`,
+        `x = ${p * m2 - q * m1} ÷ ${p - q} = ${answer}`,
+      ];
+      wrongs = [m1 - m2, answer + 50, answer - 50].filter((v) => v !== answer && v > 0);
+    }
+    return { category: 'eqWordProblemRanking1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   // 方程式の文章題の応用（中1）。genEqWordProblem1と同様、答えを先に決めてから
   // 問題文の数値を逆算する。
   function genEqWordProblemAdv1() {
@@ -2274,6 +2364,7 @@
     { id: 'maxof4',     label: '大小関係（中1）',                 gen: genMaxOf4 },
     { id: 'equation',   label: '一次方程式（中1）（小5、小6ランキング対策）',               gen: genEquation },
     { id: 'eqWordProblem1', label: '方程式の文章題（中1）',        gen: genEqWordProblem1 , addedDate: '2026-08-01' },
+    { id: 'eqWordProblemRanking1', label: '方程式の文章題（中1）（小5、小6ランキング対策）', gen: genEqWordProblemRanking1 , addedDate: '2026-10-10' },
     { id: 'eqWordProblemAdv1', label: '方程式の文章題の応用（中1）', gen: genEqWordProblemAdv1 , addedDate: '2026-08-08' },
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
