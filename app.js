@@ -19012,6 +19012,8 @@
     fujiBannerText: document.getElementById('fujiBannerText'),
     ohachiBanner: document.getElementById('ohachiBanner'),
     ohachiBannerText: document.getElementById('ohachiBannerText'),
+    ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
+    ohachiEasyBannerText: document.getElementById('ohachiEasyBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
     enrollmentNoticeBannerText: document.getElementById('enrollmentNoticeBannerText'),
     readingDuplicateNoticeBanner: document.getElementById('readingDuplicateNoticeBanner'),
@@ -20139,6 +20141,7 @@
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
+    renderOhachiEasyBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
@@ -21397,6 +21400,19 @@
 
   // 新単元「食塩水の濃度（中1）」追加の告知。公開から1週間はこの単元だけMP・
   // 経験値・HPが2倍もらえるキャンペーン付き(全生徒に表示、期間が過ぎたら自動で隠れる)。
+  // お鉢巡りイージーモード追加の告知(全生徒に表示、期間が過ぎたら自動で隠れる)。
+  function renderOhachiEasyBanner_() {
+    if (!els.ohachiEasyBanner) return;
+    if (todayKey() > OHACHI_EASY_END_) {
+      els.ohachiEasyBanner.hidden = true;
+      return;
+    }
+    els.ohachiEasyBanner.hidden = false;
+    if (els.ohachiEasyBannerText) {
+      els.ohachiEasyBannerText.textContent = '📢【追加】お鉢巡りに「イージーモード」が登場しました！タイムアタック無し、参加料50MP、25問正解(連続でなくてOK)で成功すると+100HPとランダムな種類の宝箱がもらえます。通常版お鉢巡りをクリア済みの人も挑戦できます。10月31日までの期間限定。';
+    }
+  }
+
   function renderSaltConcentrationBanner_() {
     if (!els.saltConcentrationBanner) return;
     if (todayKey() > SALT_CONCENTRATION_BONUS_END_) {
@@ -25358,16 +25374,18 @@
     }
   }
 
-  // お鉢巡りイージーモード(タイムアタック無し、00001専用プレビュー)：富士登山の
-  // 成功者なら、通常版お鉢巡りを既にクリアしていても挑戦できる(通常版とは
+  // お鉢巡りイージーモード(タイムアタック無し、2026-10-10〜10-31限定、全生徒公開)：
+  // 富士登山の成功者なら、通常版お鉢巡りを既にクリアしていても挑戦できる(通常版とは
   // 独立した一度きりの実績)。参加費50MP、制限時間なし、25問正解(不正解でも
   // 戻らない累計カウント)で成功、固定で+100HPと、ランダムな種類の宝箱がもらえる。
+  var OHACHI_EASY_START_ = '2026-10-10';
+  var OHACHI_EASY_END_ = '2026-10-31';
   var OHACHI_EASY_ENTRY_FEE_MP = 50;
   var OHACHI_EASY_REQUIRED_CORRECT_ = 25;
   var OHACHI_EASY_HP_REWARD_ = 100;
   var OHACHI_EASY_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
   function ohachiEasyCardActive_() {
-    return isAdminSession_();
+    return isAdminSession_() || (todayKey() >= OHACHI_EASY_START_ && todayKey() <= OHACHI_EASY_END_);
   }
   function ohachiEasyCanEnter_() {
     return ohachiEasyCardActive_() && !!state.fujiSummitReached && !state.ohachiEasyCompleted && !state.ohachiEasyActive;
@@ -25423,7 +25441,7 @@
     if (!ohachiEasyCardActive_()) { els.ohachiEasyCard.hidden = true; return; }
     els.ohachiEasyCard.hidden = false;
     if (els.ohachiEasyHint) {
-      els.ohachiEasyHint.textContent = '【作成中・00001専用プレビュー】お鉢巡りのイージーモード(タイムアタック無し)。参加料' + OHACHI_EASY_ENTRY_FEE_MP + 'MPを払い、自分の学年ちょうどの単元からランダム出題される問題に' + OHACHI_EASY_REQUIRED_CORRECT_ + '問正解(連続でなくてもよく、不正解でも数は戻らない)すると成功。制限時間はなし。固定で+' + OHACHI_EASY_HP_REWARD_ + 'HPと、ランダムな種類の宝箱がもらえる。通常版お鉢巡りをクリア済みでも挑戦できるが、成功は一度きり(達成後は再挑戦不可)。';
+      els.ohachiEasyHint.textContent = 'お鉢巡りのイージーモード(タイムアタック無し)。参加料' + OHACHI_EASY_ENTRY_FEE_MP + 'MPを払い、自分の学年ちょうどの単元からランダム出題される問題に' + OHACHI_EASY_REQUIRED_CORRECT_ + '問正解(連続でなくてもよく、不正解でも数は戻らない)すると成功。制限時間はなし。固定で+' + OHACHI_EASY_HP_REWARD_ + 'HPと、ランダムな種類の宝箱がもらえる。通常版お鉢巡りをクリア済みでも挑戦できるが、成功は一度きり(達成後は再挑戦不可)。失敗しても10月中は何度でも再挑戦できる(その都度' + OHACHI_EASY_ENTRY_FEE_MP + 'MP必要)。';
     }
     if (els.ohachiEasyStatusText) {
       els.ohachiEasyStatusText.textContent = state.ohachiEasyCompleted
