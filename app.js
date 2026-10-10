@@ -460,15 +460,15 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // 負の分数は、分子に「−」を付けるのではなく、（分数）の外側に「−」を
-  // 横並びで付けて表す（例: 2分の3の負の数 → −(3/2)）。正の分数には
+  // 負の分数は、分子に「−」を付けるのではなく、（−分数）のようにかっこの
+  // 内側に「−」を付けて表す（例: 2分の3の負の数 → (−3/2)）。正の分数には
   // 不要なかっこを付けない。
   function negFracHtml(num, den, neg) {
     const inner = `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
-    return neg ? `−(${inner})` : inner;
+    return neg ? `(−${inner})` : inner;
   }
   function negFracStr(num, den, neg) {
-    return neg ? `−(${num}/${den})` : `${num}/${den}`;
+    return neg ? `(−${num}/${den})` : `${num}/${den}`;
   }
 
   // 30分刻みの分数を「H時間M分」表記に変換する（峠越え往復問題などで使用）。
