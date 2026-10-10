@@ -19132,6 +19132,11 @@
     // 県庁所在地クイズ(2026-11-01〜)の生涯正解数(都道府県の制覇とは別カウント)。
     // 10問正解するごとに都道府県が1つずつ制覇されていく(capitalQuizUnlockedCount参照)。
     capitalQuizCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizCorrectTotal)) || 0,
+    // 県庁所在地クイズの連続正解カウント(通常練習中、お鉢巡り等が挑戦中でなく学年
+    // 以上の単元を10個以上選んでいる間だけ加算)。ohachiStreakと同じく端末セッション
+    // 限定(あえて永続化しない)。10に達したら次の1問がボーナス問題になる。
+    capitalQuizStreak: 0,
+    capitalQuizBonusPending: false,
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
     // お鉢巡りイージーモード(タイムアタック無し、00001専用プレビュー)。通常版と
@@ -19427,9 +19432,7 @@
     prefectureList: document.getElementById('prefectureList'),
     capitalQuizCard: document.getElementById('capitalQuizCard'),
     capitalQuizProgressText: document.getElementById('capitalQuizProgressText'),
-    capitalQuizQuestionText: document.getElementById('capitalQuizQuestionText'),
-    capitalQuizChoices: document.getElementById('capitalQuizChoices'),
-    capitalQuizResult: document.getElementById('capitalQuizResult'),
+    capitalQuizMapWrap: document.getElementById('capitalQuizMapWrap'),
     userAvatarBadge: document.getElementById('userAvatarBadge'),
     avatarToggle: document.getElementById('avatarToggle'),
     avatarPanel: document.getElementById('avatarPanel'),
@@ -19585,6 +19588,7 @@
   };
 
   const categoryLabel = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map(c => [c.id, c.label]));
+  categoryLabel.capitalQuizBonus = '県庁所在地クイズ（社会ボーナス）';
 
   /* ---------- 描画 ---------- */
 
@@ -20336,6 +20340,13 @@
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
       mistakeQ = pickWorldBossWrongQuestion();
     }
+    // 県庁所在地クイズ：10問連続正解の直後の1問は、他のどの出題よりも優先して
+    // 社会ボーナス問題に差し替える。
+    if (state.capitalQuizBonusPending) {
+      state.capitalQuizBonusPending = false;
+      const cq = pickCapitalQuizInlineQuestion_();
+      if (cq) mistakeQ = cq;
+    }
     const q = mistakeQ || (function () { const cat = pickGenerator(); return cat.gen(); })();
     state.current = q;
     state.answered = false;
@@ -20666,6 +20677,16 @@
       if (state.ohachiEasyActive) {
         state.ohachiEasyProgress = (Number(state.ohachiEasyProgress) || 0) + 1;
       }
+      // 県庁所在地クイズ：他の特別モード中でなく、学年以上の単元を10個以上
+      // 選んでいる間だけ、通常練習の連続正解数を積み上げる。10に達したら次の
+      // 1問を社会ボーナス問題に差し替える(loadNextQuestion側)。
+      if (catId !== 'capitalQuizBonus' && !state.ohachiActive && !state.fujiActive && !state.fujiDescentActive && !state.ohachiEasyActive && !state.worldBossActiveStage && !state.usaCrossingActive && capitalQuizEligible_(ownGrade)) {
+        state.capitalQuizStreak = (Number(state.capitalQuizStreak) || 0) + 1;
+        if (state.capitalQuizStreak >= CAPITAL_QUIZ_STREAK_FOR_BONUS_) {
+          state.capitalQuizStreak = 0;
+          state.capitalQuizBonusPending = true;
+        }
+      }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
       if (state.worldBossActiveStage && state.worldPendingSpell) {
@@ -20748,6 +20769,7 @@
       const goumajiFled = !speedSeedSaved && state.rareType === 'goumaji';
       const percentkunFled = !speedSeedSaved && state.rareType === 'percentkun';
       state.streak = 0;
+      state.capitalQuizStreak = 0;
       if (santaFled) {
         missLineHtml += `<div class="enemy-quote-banner">🎅💨 サンタAKRは逃げてしまった…</div>`;
         state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
@@ -21069,6 +21091,10 @@
     } else if (isCorrect && state.ohachiEasyActive && (Number(state.ohachiEasyProgress) || 0) >= OHACHI_EASY_REQUIRED_CORRECT_) {
       // お鉢巡りイージーモード達成：固定で+100HPと、ランダムな種類の宝箱。
       winHtml = finishOhachiEasy_();
+    } else if (isCorrect && catId === 'capitalQuizBonus') {
+      // 県庁所在地クイズの社会ボーナス問題：通常のMP報酬ではなく専用の+1MPと
+      // 都道府県制覇の演出。
+      winHtml = finishCapitalQuizBonus_();
     } else if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
       // 富士登山、区間クリア：MP/経験値の通常報酬ではなく、次の合目に進む(または
       // 10合目=山頂到達の)特別演出。
@@ -24627,32 +24653,42 @@
     renderCapitalQuizCard_();
   }
 
-  /* ---------- 県庁所在地クイズ(11月スタート予定、今は00001専用プレビュー) ---------- */
-
-  var CAPITAL_QUIZ_START_ = '2026-11-01';
+  /* ---------- 県庁所在地クイズ(今は00001専用プレビュー) ---------- */
+  // 算数・数学で自分の学年以上の単元を10個以上選んでいる間、通常練習で10問
+  // 連続正解するたびに次の1問(11問目)が県庁所在地/特産品の社会ボーナス問題に
+  // 差し替わる(handleAnswer側のcapitalQuizStreak/capitalQuizBonusPendingで
+  // 判定・出題はloadNextQuestion側)。不正解でもそのまま通常の練習に戻るだけ
+  // (ペナルティ無し)。制覇の順番は沖縄からスタート(CAPITAL_QUIZ_ORDER_は
+  // PREFECTURE_DATAの逆順)で、都道府県制覇の地図(renderPrefectureMap)とは別の
+  // 専用地図に進捗が塗られていく。
   var CAPITAL_QUIZ_PER_PREFECTURE_ = 10;
-  var CAPITAL_QUIZ_TRIVIA_MP_ = 1;
-  // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
-  // 一般公開するときはCAPITAL_QUIZ_START_による日付窓の判定に切り替える。
+  var CAPITAL_QUIZ_BONUS_MP_ = 1;
+  var CAPITAL_QUIZ_REQUIRED_ENABLED_ = 10;
+  var CAPITAL_QUIZ_STREAK_FOR_BONUS_ = 10;
+  var CAPITAL_QUIZ_ORDER_ = PREFECTURE_DATA.slice().reverse();
+  // 今は00001だけに見せる作成中プレビューなので管理者判定だけを見る。
   function capitalQuizActive_() {
     return isAdminSession_();
   }
   function capitalQuizUnlockedCount_() {
-    return Math.min(PREFECTURE_DATA.length, Math.floor((Number(state.capitalQuizCorrectTotal) || 0) / CAPITAL_QUIZ_PER_PREFECTURE_));
+    return Math.min(CAPITAL_QUIZ_ORDER_.length, Math.floor((Number(state.capitalQuizCorrectTotal) || 0) / CAPITAL_QUIZ_PER_PREFECTURE_));
   }
-  var capitalQuizCurrent_ = null;
+  // 算数・数学で自分の学年以上の単元を10個以上選んでいるかどうか。
+  function capitalQuizEligible_(ownGrade) {
+    if (!capitalQuizActive_()) return false;
+    return CATEGORIES.filter(function (c) { return state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade); }).length >= CAPITAL_QUIZ_REQUIRED_ENABLED_;
+  }
   // 県庁所在地を当てる問題と、特産品などのトリビアを当てるボーナス問題を
-  //半々でランダムに出す。県庁所在地側の正解だけが10問ごとの都道府県制覇に
-  // カウントされ、トリビア側の正解は制覇にはカウントされず+1MPのみもらえる。
-  function pickCapitalQuizQuestion_() {
+  // 半々でランダムに出す。どちらに正解しても制覇カウントに加算される。
+  function pickCapitalQuizInlineQuestion_() {
     if (PREFECTURE_DATA.length === 0) return null;
     var pref = PREFECTURE_DATA[randInt(0, PREFECTURE_DATA.length - 1)];
     if (Math.random() < 0.5) {
       var correct = PREFECTURE_CAPITALS_[pref.name];
-      if (!correct) return pickCapitalQuizQuestion_();
+      if (!correct) return pickCapitalQuizInlineQuestion_();
       var wrongPool = Object.keys(PREFECTURE_CAPITALS_).filter(function (n) { return n !== pref.name; }).map(function (n) { return PREFECTURE_CAPITALS_[n]; });
       var wrongs = shuffle(wrongPool).slice(0, 3);
-      return { type: 'capital', prefName: pref.name, question: pref.name + 'の県庁所在地はどこ？', answer: correct, choices: shuffle([correct].concat(wrongs)) };
+      return { category: 'capitalQuizBonus', capitalQuizType: 'capital', question: '【社会ボーナス】' + pref.name + 'の県庁所在地はどこ？', answer: correct, choices: shuffle([correct].concat(wrongs)), steps: [] };
     } else {
       var items = pref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
       var correctItem = items[randInt(0, items.length - 1)];
@@ -24666,75 +24702,74 @@
         var w = otherItems[randInt(0, otherItems.length - 1)];
         if (w && w !== correctItem && wrongItems.indexOf(w) === -1) wrongItems.push(w);
       }
-      if (wrongItems.length < 3) return pickCapitalQuizQuestion_();
-      return { type: 'trivia', prefName: pref.name, question: pref.name + 'の特産品・名物として正しいものはどれ？', answer: correctItem, choices: shuffle([correctItem].concat(wrongItems)) };
+      if (wrongItems.length < 3) return pickCapitalQuizInlineQuestion_();
+      return { category: 'capitalQuizBonus', capitalQuizType: 'trivia', question: '【社会ボーナス】' + pref.name + 'の特産品・名物として正しいものはどれ？', answer: correctItem, choices: shuffle([correctItem].concat(wrongItems)), steps: [] };
     }
   }
-  function nextCapitalQuizQuestion_() {
-    capitalQuizCurrent_ = pickCapitalQuizQuestion_();
-    if (els.capitalQuizResult) els.capitalQuizResult.textContent = '';
-    if (!capitalQuizCurrent_) return;
-    if (els.capitalQuizQuestionText) els.capitalQuizQuestionText.textContent = capitalQuizCurrent_.question;
-    if (els.capitalQuizChoices) {
-      els.capitalQuizChoices.innerHTML = '';
-      capitalQuizCurrent_.choices.forEach(function (choiceStr) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'test-photo-tier-btn';
-        btn.textContent = choiceStr;
-        btn.addEventListener('click', function () { handleCapitalQuizAnswer_(choiceStr, btn); });
-        els.capitalQuizChoices.appendChild(btn);
-      });
-    }
-  }
-  function handleCapitalQuizAnswer_(choiceStr, btn) {
-    if (!capitalQuizCurrent_) return;
-    var q = capitalQuizCurrent_;
-    capitalQuizCurrent_ = null;
-    if (els.capitalQuizChoices) {
-      Array.from(els.capitalQuizChoices.children).forEach(function (b) { b.disabled = true; });
-    }
-    var isCorrect = choiceStr === q.answer;
-    var session = loadSession();
-    if (isCorrect && q.type === 'capital') {
-      var prevUnlocked = capitalQuizUnlockedCount_();
-      state.capitalQuizCorrectTotal = (Number(state.capitalQuizCorrectTotal) || 0) + 1;
-      state.points = (Number(state.points) || 0) + 1;
-      var newUnlocked = capitalQuizUnlockedCount_();
-      var msg = '✅ 正解！「' + q.prefName + 'の県庁所在地は' + q.answer + '」+1MP';
-      if (newUnlocked > prevUnlocked) {
-        var newlyPref = PREFECTURE_DATA[newUnlocked - 1];
-        msg += '<br>🎉「' + newlyPref.name + '」を制覇！（' + newUnlocked + '/' + PREFECTURE_DATA.length + '）';
+  // 県庁所在地クイズのボーナス問題に正解した時の処理。MP報酬は既存の1日上限
+  // (POINTS_DAILY_CAP_CALC)をそのまま経由させるため、1日の合計100MP上限は変わらない。
+  function finishCapitalQuizBonus_() {
+    var q = state.current;
+    var today = todayKey();
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+    var pointsToAdd = Math.max(0, Math.min(CAPITAL_QUIZ_BONUS_MP_, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
+    state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + pointsToAdd;
+    state.points += pointsToAdd;
+    state.pointsToday += pointsToAdd;
+    var prevUnlocked = capitalQuizUnlockedCount_();
+    state.capitalQuizCorrectTotal = (Number(state.capitalQuizCorrectTotal) || 0) + 1;
+    var newUnlocked = capitalQuizUnlockedCount_();
+    var prefectureHtml = '';
+    if (newUnlocked > prevUnlocked) {
+      var newlyPref = CAPITAL_QUIZ_ORDER_[newUnlocked - 1];
+      if (newlyPref) {
+        prefectureHtml = '<div class="prefecture-gain-banner">🏯「' + newlyPref.name + '」の県庁所在地クイズを制覇！（' + newUnlocked + '/' + CAPITAL_QUIZ_ORDER_.length + '）<br><span class="prefecture-trivia">' + newlyPref.trivia + '</span></div>';
+        if (newUnlocked === CAPITAL_QUIZ_ORDER_.length) {
+          prefectureHtml += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズで47都道府県制覇達成！おめでとう！🎉</div>';
+        }
       }
-      if (els.capitalQuizResult) els.capitalQuizResult.innerHTML = msg;
-    } else if (isCorrect && q.type === 'trivia') {
-      state.points = (Number(state.points) || 0) + CAPITAL_QUIZ_TRIVIA_MP_;
-      if (els.capitalQuizResult) els.capitalQuizResult.textContent = '✅ 正解！「' + q.prefName + '」の特産品・名物は「' + q.answer + '」+' + CAPITAL_QUIZ_TRIVIA_MP_ + 'MP（ボーナス問題）';
-    } else {
-      if (els.capitalQuizResult) els.capitalQuizResult.textContent = '❌ 不正解。正解は「' + q.answer + '」でした。';
     }
     saveGameState(state);
+    var session = loadSession();
     if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
-    updateGameHud();
-    renderCapitalQuizProgress_();
-    renderPrefectureMap();
-    setTimeout(function () { nextCapitalQuizQuestion_(); }, 1200);
+    var typeLabel = q.capitalQuizType === 'capital' ? '県庁所在地' : '特産品・名物';
+    var mpLine = pointsToAdd > 0 ? (' +' + pointsToAdd + 'MP') : '（本日のMP上限のためMPなし）';
+    return '<div class="win-banner">✅ 正解！（社会ボーナス・' + typeLabel + '）' + mpLine + '</div>' + prefectureHtml;
+  }
+  var capitalQuizMapInjected_ = false;
+  function renderCapitalQuizMap_() {
+    if (!els.capitalQuizMapWrap || CAPITAL_QUIZ_ORDER_.length === 0) return;
+    if (!capitalQuizMapInjected_) {
+      els.capitalQuizMapWrap.innerHTML = PREFECTURE_MAP_SVG_SAFE;
+      capitalQuizMapInjected_ = true;
+    }
+    var unlocked = capitalQuizUnlockedCount_();
+    var unlockedCodes = {};
+    for (var i = 0; i < unlocked; i++) { unlockedCodes[CAPITAL_QUIZ_ORDER_[i].code] = true; }
+    var svgEl = els.capitalQuizMapWrap.querySelector('svg');
+    if (svgEl) {
+      PREFECTURE_DATA.forEach(function (p) {
+        var el = svgEl.querySelector('[data-code="' + p.code + '"]');
+        if (!el) return;
+        el.classList.toggle('unlocked', !!unlockedCodes[p.code]);
+      });
+    }
   }
   function renderCapitalQuizProgress_() {
     if (!els.capitalQuizProgressText) return;
     var unlocked = capitalQuizUnlockedCount_();
     var correctTotal = Number(state.capitalQuizCorrectTotal) || 0;
     var sinceLast = correctTotal % CAPITAL_QUIZ_PER_PREFECTURE_;
-    els.capitalQuizProgressText.textContent = unlocked >= PREFECTURE_DATA.length
-      ? '🎉 ' + unlocked + '/' + PREFECTURE_DATA.length + ' 都道府県すべて制覇しました！（県庁所在地クイズ正解数: ' + correctTotal + '問）'
-      : unlocked + '/' + PREFECTURE_DATA.length + ' 都道府県を制覇（あと' + (CAPITAL_QUIZ_PER_PREFECTURE_ - sinceLast) + '問正解で次の都道府県）';
+    els.capitalQuizProgressText.textContent = unlocked >= CAPITAL_QUIZ_ORDER_.length
+      ? '🎉 ' + unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県すべて制覇しました！（県庁所在地クイズ正解数: ' + correctTotal + '問、沖縄スタート）'
+      : unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県を制覇・沖縄スタート（あと' + (CAPITAL_QUIZ_PER_PREFECTURE_ - sinceLast) + '問正解で次の「' + (CAPITAL_QUIZ_ORDER_[unlocked] ? CAPITAL_QUIZ_ORDER_[unlocked].name : '') + '」）';
+    renderCapitalQuizMap_();
   }
   function renderCapitalQuizCard_() {
     if (!els.capitalQuizCard) return;
     if (!capitalQuizActive_()) { els.capitalQuizCard.hidden = true; return; }
     els.capitalQuizCard.hidden = false;
     renderCapitalQuizProgress_();
-    if (!capitalQuizCurrent_) nextCapitalQuizQuestion_();
   }
 
   /* ---------- アバター作成 ---------- */
