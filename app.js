@@ -20712,7 +20712,7 @@
       // ボーナスの特別演出。
       winHtml = finishOhachiMeguri_();
     } else if (isCorrect && state.ohachiEasyActive && (Number(state.ohachiEasyProgress) || 0) >= OHACHI_EASY_REQUIRED_CORRECT_) {
-      // お鉢巡りイージーモード達成：固定で+100HPと銅の宝箱。
+      // お鉢巡りイージーモード達成：固定で+100HPと、ランダムな種類の宝箱。
       winHtml = finishOhachiEasy_();
     } else if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
       // 富士登山、区間クリア：MP/経験値の通常報酬ではなく、次の合目に進む(または
@@ -25361,10 +25361,11 @@
   // お鉢巡りイージーモード(タイムアタック無し、00001専用プレビュー)：富士登山の
   // 成功者なら、通常版お鉢巡りを既にクリアしていても挑戦できる(通常版とは
   // 独立した一度きりの実績)。参加費50MP、制限時間なし、25問正解(不正解でも
-  // 戻らない累計カウント)で成功、固定で+100HPと銅の宝箱がもらえる。
+  // 戻らない累計カウント)で成功、固定で+100HPと、ランダムな種類の宝箱がもらえる。
   var OHACHI_EASY_ENTRY_FEE_MP = 50;
   var OHACHI_EASY_REQUIRED_CORRECT_ = 25;
   var OHACHI_EASY_HP_REWARD_ = 100;
+  var OHACHI_EASY_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
   function ohachiEasyCardActive_() {
     return isAdminSession_();
   }
@@ -25409,19 +25410,20 @@
     state.ohachiEasyCompleted = true;
     state.ohachiEasyProgress = 0;
     state.hp = (Number(state.hp) || 0) + OHACHI_EASY_HP_REWARD_;
-    var chestKey = treasureItemKey_('chest', 'bronze');
+    var chestTier = OHACHI_EASY_CHEST_TIERS_[randInt(0, OHACHI_EASY_CHEST_TIERS_.length - 1)];
+    var chestKey = treasureItemKey_('chest', chestTier);
     state.treasureItems = state.treasureItems || {};
     state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
     return '<div class="win-banner">🎉🔄 お鉢巡りイージーモードを達成した！🎉</div>'
       + '<div class="item-gain-banner">💪 HPが' + OHACHI_EASY_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
-      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_.bronze + ' ' + TREASURE_TIER_LABEL_.bronze + 'の宝箱を手に入れた！</div>';
+      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
   }
   function renderOhachiEasyCard_() {
     if (!els.ohachiEasyCard) return;
     if (!ohachiEasyCardActive_()) { els.ohachiEasyCard.hidden = true; return; }
     els.ohachiEasyCard.hidden = false;
     if (els.ohachiEasyHint) {
-      els.ohachiEasyHint.textContent = '【作成中・00001専用プレビュー】お鉢巡りのイージーモード(タイムアタック無し)。参加料' + OHACHI_EASY_ENTRY_FEE_MP + 'MPを払い、自分の学年ちょうどの単元からランダム出題される問題に' + OHACHI_EASY_REQUIRED_CORRECT_ + '問正解(連続でなくてもよく、不正解でも数は戻らない)すると成功。制限時間はなし。固定で+' + OHACHI_EASY_HP_REWARD_ + 'HPと銅の宝箱がもらえる。通常版お鉢巡りをクリア済みでも挑戦できるが、成功は一度きり(達成後は再挑戦不可)。';
+      els.ohachiEasyHint.textContent = '【作成中・00001専用プレビュー】お鉢巡りのイージーモード(タイムアタック無し)。参加料' + OHACHI_EASY_ENTRY_FEE_MP + 'MPを払い、自分の学年ちょうどの単元からランダム出題される問題に' + OHACHI_EASY_REQUIRED_CORRECT_ + '問正解(連続でなくてもよく、不正解でも数は戻らない)すると成功。制限時間はなし。固定で+' + OHACHI_EASY_HP_REWARD_ + 'HPと、ランダムな種類の宝箱がもらえる。通常版お鉢巡りをクリア済みでも挑戦できるが、成功は一度きり(達成後は再挑戦不可)。';
     }
     if (els.ohachiEasyStatusText) {
       els.ohachiEasyStatusText.textContent = state.ohachiEasyCompleted
