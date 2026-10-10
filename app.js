@@ -2069,7 +2069,15 @@
   function fmtSlopeEqStr_(num, den) {
     if (den === 1) return `y = ${fmtCx(num)}`;
     const sign = num < 0 ? '−' : '';
-    return `y = (${sign}${Math.abs(num)}/${den})x`;
+    return `y = ${sign}${Math.abs(num)}/${den}x`;
+  }
+  // 点の座標ラベルが盤面の端で切れないよう、点の位置に応じて左右・上下を
+  // 反対側に出す。
+  function pointLabelSvg_(sx, sy, markX, markY) {
+    const anchor = markX >= 0 ? 'end' : 'start';
+    const tx = anchor === 'end' ? sx - 6 : sx + 6;
+    const ty = markY >= 0 ? sy + 14 : sy - 6;
+    return `<text x="${tx}" y="${ty}" text-anchor="${anchor}" font-size="11" fill="#1c2127" font-weight="bold">(${markX}, ${markY})</text>`;
   }
   function fmtInvPropEqStr_(a) {
     return a < 0 ? `y = −${Math.abs(a)}/x` : `y = ${a}/x`;
@@ -2106,7 +2114,7 @@
     g += `<line x1="${toSx(x1).toFixed(1)}" y1="${toSy(y1).toFixed(1)}" x2="${toSx(x2).toFixed(1)}" y2="${toSy(y2).toFixed(1)}" stroke="#2563eb" stroke-width="2"/>`;
     const sx = toSx(markX), sy = toSy(markY);
     g += `<circle cx="${sx}" cy="${sy}" r="3.5" fill="#c23b2e"/>`;
-    g += `<text x="${sx + 5}" y="${sy - 5}" font-size="11" fill="#1c2127" font-weight="bold">(${markX}, ${markY})</text>`;
+    g += pointLabelSvg_(sx, sy, markX, markY);
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
   }
 
@@ -2127,7 +2135,7 @@
     g += `<path d="${toPath(negPts)}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
     const sx = toSx(markX), sy = toSy(markY);
     g += `<circle cx="${sx}" cy="${sy}" r="3.5" fill="#c23b2e"/>`;
-    g += `<text x="${sx + 5}" y="${sy - 5}" font-size="11" fill="#1c2127" font-weight="bold">(${markX}, ${markY})</text>`;
+    g += pointLabelSvg_(sx, sy, markX, markY);
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto 8px">${g}</svg>`;
   }
 
