@@ -138,6 +138,7 @@ CREATE TABLE students (
   -- 富士登山「お鉢巡り」(2026-10-10〜10-31限定、富士登山の成功者のみ挑戦可)の
   -- 成功フラグ。fuji_summit_reachedと同じく一度trueになったら戻らない。
   ohachi_completed BOOLEAN NOT NULL DEFAULT false,
+  ohachi_easy_completed BOOLEAN NOT NULL DEFAULT false, -- お鉢巡りイージーモード(タイムアタック無し)の成功は通常版とは独立の一度きりの実績
   -- 賢さの種：月間いいね数トップ3にだけ配布される秘密アイテム(所持数)。
   -- speed_seed_count/shuriken_countと同じくクライアントを信頼してそのままSETする。
   wisdom_seed_count INTEGER NOT NULL DEFAULT 0

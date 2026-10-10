@@ -346,7 +346,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
-        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
+        ohachiCompleted: s.ohachiCompleted, ohachiEasyCompleted: s.ohachiEasyCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
       }));
     } catch (e) { }
     var sess = loadSession();
@@ -368,7 +368,7 @@
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
-        ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
+        ohachiCompleted: s.ohachiCompleted, ohachiEasyCompleted: s.ohachiEasyCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
       });
     }
   }
@@ -18782,6 +18782,12 @@
     capitalQuizCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizCorrectTotal)) || 0,
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
+    // お鉢巡りイージーモード(タイムアタック無し、00001専用プレビュー)。通常版と
+    // 同じく挑戦中かどうかは端末セッション限定(あえて永続化しない)。
+    ohachiEasyActive: false,
+    ohachiEasyProgress: 0,
+    // 成功は一度trueになったら戻らない実績フラグ(成功後は再挑戦不可)。
+    ohachiEasyCompleted: !!((savedProgress && savedProgress.ohachiEasyCompleted) || (savedGame && savedGame.ohachiEasyCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
     // 1回使うと壊れて消える。ironWallCharges等と同じ「端末を信頼してSET」方式。
     yushaSwordCount: (savedProgress && Number(savedProgress.yushaSwordCount)) || (savedGame && Number(savedGame.yushaSwordCount)) || 0,
@@ -18823,6 +18829,10 @@
     ohachiHint: document.getElementById('ohachiHint'),
     ohachiStatusText: document.getElementById('ohachiStatusText'),
     ohachiStartBtn: document.getElementById('ohachiStartBtn'),
+    ohachiEasyCard: document.getElementById('ohachiEasyCard'),
+    ohachiEasyHint: document.getElementById('ohachiEasyHint'),
+    ohachiEasyStatusText: document.getElementById('ohachiEasyStatusText'),
+    ohachiEasyStartBtn: document.getElementById('ohachiEasyStartBtn'),
     fujiDescentCard: document.getElementById('fujiDescentCard'),
     fujiDescentHint: document.getElementById('fujiDescentHint'),
     fujiDescentStatusText: document.getElementById('fujiDescentStatusText'),
@@ -19341,6 +19351,14 @@
     if (state.fujiDescentActive) {
       // 富士下山は、単元設定を一切見ず、自分の学年"ちょうど"の単元から毎回
       // ランダムに出題する(固定リストにロックする必要もない簡易な仕様)。
+      const session = loadSession();
+      const ownGrade = session && session.grade;
+      const eligible = CATEGORIES.filter(c => categoryGrade[c.id] === ownGrade);
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
+    }
+    if (state.ohachiEasyActive) {
+      // お鉢巡りイージーモードも富士下山と同じく、単元設定を一切見ず自分の
+      // 学年"ちょうど"の単元から毎回ランダムに出題する(簡易な仕様)。
       const session = loadSession();
       const ownGrade = session && session.grade;
       const eligible = CATEGORIES.filter(c => categoryGrade[c.id] === ownGrade);
@@ -19958,7 +19976,7 @@
     // 出題条件を必ず守らせるため、この間違えた問題の保存庫は使わない(間違い大魔王/
     // 算数デビルちゃん/ボン・ミスコの呪い中にお鉢巡りへ入っても、固定した単元
     // リストからの出題を優先する)。
-    let mistakeQ = (state.ohachiActive || state.fujiDescentActive) ? null
+    let mistakeQ = (state.ohachiActive || state.fujiDescentActive || state.ohachiEasyActive) ? null
       : state.rareType === 'percentkun' ? pickPercentKunQuestion()
       : (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
@@ -20007,6 +20025,7 @@
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
     const isOhachi = !!state.ohachiActive;
+    const isFujiDescent = !!state.fujiDescentActive;
     const bossSubIndex = isBossFight ? (state.worldBossSubIndex[state.worldBossActiveStage] || 0) : 0;
     // requiredStreakは「敵のHP」。通常の敵・レアキャラは1問1ダメージなので
     // 「あと何問」とHPが一致するが、ボス戦は周ごとのダメージ量(と魔法)で削る。
@@ -20019,7 +20038,7 @@
       : isOhachi ? Math.max(0, OHACHI_REQUIRED_STREAK_ - (Number(state.ohachiStreak) || 0))
       : Math.max(0, requiredStreak - state.streak);
     const enemy = isFuji ? fujiEnemyDisplayForStation_() : isBossFight ? worldBossEnemyDisplay(state.worldBossActiveStage, bossSubIndex) : isOhachi ? ohachiEnemyDisplay_() : currentEnemyDisplay(state);
-    updateFujiSceneBg_(isFuji, state.fujiStation);
+    updateFujiSceneBg_(isFuji || isFujiDescent, isFujiDescent ? state.fujiDescentStation : state.fujiStation);
     updateFujiBattleTimer_(isFuji, isFuji ? fujiCurrentLeg_() : null);
     updateOhachiBattleTimer_(isOhachi);
     const isRare = !isBossFight && !isFuji && !isOhachi && !!state.rareType;
@@ -20078,10 +20097,10 @@
         els.shurikenBtn.textContent = '✴️ 手裏剣を投げる（50%で' + SHURIKEN_DAMAGE_ + 'ダメージ・残り' + shurikenCountForBtn_ + '本）';
       }
     }
-    // ボス戦・富士登山・お鉢巡りのときだけ、自分と相手のアバターを対戦画面のように並べて表示する。
+    // ボス戦・富士登山・富士下山・お鉢巡りのときだけ、自分と相手のアバターを対戦画面のように並べて表示する。
     if (els.battleVsRow) {
-      updateFujiVsPhotoBg_(isFuji, state.fujiStation);
-      if (isBossFight || isFuji || isOhachi) {
+      updateFujiVsPhotoBg_(isFuji || isFujiDescent, isFujiDescent ? state.fujiDescentStation : state.fujiStation);
+      if (isBossFight || isFuji || isFujiDescent || isOhachi) {
         els.battleVsRow.hidden = false;
         // 1箇所で例外が出てもHUD全体(この後のMP/HP/レベル表示)が巻き添えで
         // 止まらないよう、この区画だけは個別にガードする。
@@ -20286,6 +20305,11 @@
       // 挑戦自体は続くが、0に戻ってしまうのでタイム枠達成が遠のく)。
       if (state.ohachiActive) {
         state.ohachiStreak = (Number(state.ohachiStreak) || 0) + 1;
+      }
+      // お鉢巡りイージーモードは、通常版と違い不正解でも戻らない累計カウント
+      // (連続である必要はなく、正解した問題の合計数で25問を目指す)。
+      if (state.ohachiEasyActive) {
+        state.ohachiEasyProgress = (Number(state.ohachiEasyProgress) || 0) + 1;
       }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
@@ -20681,11 +20705,15 @@
     const requiredStreak = state.fujiActive ? fujiCurrentLeg_().streak
       : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
       : state.ohachiActive ? OHACHI_REQUIRED_STREAK_
+      : state.ohachiEasyActive ? OHACHI_EASY_REQUIRED_CORRECT_
       : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : 10);
     if (isCorrect && state.ohachiActive && (Number(state.ohachiStreak) || 0) >= OHACHI_REQUIRED_STREAK_) {
       // お鉢巡り達成：MP/経験値の通常報酬ではなく、かかった時間に応じたHP
       // ボーナスの特別演出。
       winHtml = finishOhachiMeguri_();
+    } else if (isCorrect && state.ohachiEasyActive && (Number(state.ohachiEasyProgress) || 0) >= OHACHI_EASY_REQUIRED_CORRECT_) {
+      // お鉢巡りイージーモード達成：固定で+100HPと銅の宝箱。
+      winHtml = finishOhachiEasy_();
     } else if (isCorrect && state.fujiActive && (Number(state.fujiLegStreak) || 0) >= fujiCurrentLeg_().streak) {
       // 富士登山、区間クリア：MP/経験値の通常報酬ではなく、次の合目に進む(または
       // 10合目=山頂到達の)特別演出。
@@ -21672,6 +21700,7 @@
         state.streak15TitleEarned = !!(state.streak15TitleEarned || progress.streak15TitleEarned);
         state.streak30TitleEarned = !!(state.streak30TitleEarned || progress.streak30TitleEarned);
         state.ohachiCompleted = !!(state.ohachiCompleted || progress.ohachiCompleted);
+        state.ohachiEasyCompleted = !!(state.ohachiEasyCompleted || progress.ohachiEasyCompleted);
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       if (res.forceWithdrawNotice) window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
@@ -21766,6 +21795,7 @@
       streak15TitleEarned: state.streak15TitleEarned,
       streak30TitleEarned: state.streak30TitleEarned,
       ohachiCompleted: state.ohachiCompleted,
+      ohachiEasyCompleted: state.ohachiEasyCompleted,
       wisdomSeedCount: state.wisdomSeedCount,
       wisdomFruitCount: state.wisdomFruitCount,
       effortSeedCount: state.effortSeedCount,
@@ -25328,6 +25358,85 @@
     }
   }
 
+  // お鉢巡りイージーモード(タイムアタック無し、00001専用プレビュー)：富士登山の
+  // 成功者なら、通常版お鉢巡りを既にクリアしていても挑戦できる(通常版とは
+  // 独立した一度きりの実績)。参加費50MP、制限時間なし、25問正解(不正解でも
+  // 戻らない累計カウント)で成功、固定で+100HPと銅の宝箱がもらえる。
+  var OHACHI_EASY_ENTRY_FEE_MP = 50;
+  var OHACHI_EASY_REQUIRED_CORRECT_ = 25;
+  var OHACHI_EASY_HP_REWARD_ = 100;
+  function ohachiEasyCardActive_() {
+    return isAdminSession_();
+  }
+  function ohachiEasyCanEnter_() {
+    return ohachiEasyCardActive_() && !!state.fujiSummitReached && !state.ohachiEasyCompleted && !state.ohachiEasyActive;
+  }
+  function startOhachiEasy_() {
+    if (!ohachiEasyCanEnter_()) return;
+    if ((Number(state.points) || 0) < OHACHI_EASY_ENTRY_FEE_MP) {
+      window.alert('お鉢巡りイージーモードには参加料' + OHACHI_EASY_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
+      return;
+    }
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (els.ohachiEasyStartBtn) els.ohachiEasyStartBtn.disabled = true;
+    apiPost('ohachiEasyEntryFee', { id: session.id }).then(function (res) {
+      if (els.ohachiEasyStartBtn) els.ohachiEasyStartBtn.disabled = false;
+      if (!res.ok) {
+        var msg = '参加料の支払いに失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res.error === 'fuji_not_cleared') msg = '富士登山の成功者だけが挑戦できます。';
+        else if (res.error === 'already_completed') msg = 'お鉢巡りイージーモードは既に達成済みです。再挑戦はできません。';
+        window.alert(msg);
+        return;
+      }
+      state.points = res.points;
+      state.ohachiEasyActive = true;
+      state.ohachiEasyProgress = 0;
+      state.streak = 0;
+      if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
+      saveGameState(state);
+      if (els.fujiPanel) els.fujiPanel.hidden = true;
+      updateGameHud();
+      nextQuestion();
+    }).catch(function () {
+      if (els.ohachiEasyStartBtn) els.ohachiEasyStartBtn.disabled = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
+  }
+  function finishOhachiEasy_() {
+    state.ohachiEasyActive = false;
+    state.ohachiEasyCompleted = true;
+    state.ohachiEasyProgress = 0;
+    state.hp = (Number(state.hp) || 0) + OHACHI_EASY_HP_REWARD_;
+    var chestKey = treasureItemKey_('chest', 'bronze');
+    state.treasureItems = state.treasureItems || {};
+    state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    return '<div class="win-banner">🎉🔄 お鉢巡りイージーモードを達成した！🎉</div>'
+      + '<div class="item-gain-banner">💪 HPが' + OHACHI_EASY_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
+      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_.bronze + ' ' + TREASURE_TIER_LABEL_.bronze + 'の宝箱を手に入れた！</div>';
+  }
+  function renderOhachiEasyCard_() {
+    if (!els.ohachiEasyCard) return;
+    if (!ohachiEasyCardActive_()) { els.ohachiEasyCard.hidden = true; return; }
+    els.ohachiEasyCard.hidden = false;
+    if (els.ohachiEasyHint) {
+      els.ohachiEasyHint.textContent = '【作成中・00001専用プレビュー】お鉢巡りのイージーモード(タイムアタック無し)。参加料' + OHACHI_EASY_ENTRY_FEE_MP + 'MPを払い、自分の学年ちょうどの単元からランダム出題される問題に' + OHACHI_EASY_REQUIRED_CORRECT_ + '問正解(連続でなくてもよく、不正解でも数は戻らない)すると成功。制限時間はなし。固定で+' + OHACHI_EASY_HP_REWARD_ + 'HPと銅の宝箱がもらえる。通常版お鉢巡りをクリア済みでも挑戦できるが、成功は一度きり(達成後は再挑戦不可)。';
+    }
+    if (els.ohachiEasyStatusText) {
+      els.ohachiEasyStatusText.textContent = state.ohachiEasyCompleted
+        ? '✅ お鉢巡りイージーモード達成済みです。'
+        : !state.fujiSummitReached
+        ? '富士登山に成功すると挑戦できるようになります。'
+        : state.ohachiEasyActive
+        ? '挑戦中です。下の問題に答えて進めましょう！（現在' + (Number(state.ohachiEasyProgress) || 0) + '/' + OHACHI_EASY_REQUIRED_CORRECT_ + '問正解）'
+        : '挑戦条件を満たしています。';
+    }
+    if (els.ohachiEasyStartBtn) {
+      els.ohachiEasyStartBtn.hidden = !ohachiEasyCanEnter_();
+    }
+  }
+
   // 富士下山：富士登山の成功者(fujiSummitReached)だけが挑戦できる2026-10-15〜
   // 10-31限定のボーナスステージ。参加料は無料。自分の学年ちょうどの単元から
   // ランダム出題される問題に20問連続正解するたびに1合下がり(10合目→5合目の
@@ -26357,6 +26466,7 @@
       }
     }
     renderOhachiCard_();
+    renderOhachiEasyCard_();
     renderFujiDescentCard_();
     renderUsaCrossingCard_();
   }
@@ -27777,6 +27887,7 @@
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.ohachiStartBtn) els.ohachiStartBtn.addEventListener('click', startOhachiMeguri_);
+  if (els.ohachiEasyStartBtn) els.ohachiEasyStartBtn.addEventListener('click', startOhachiEasy_);
   if (els.fujiDescentStartBtn) els.fujiDescentStartBtn.addEventListener('click', startFujiDescent_);
   if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.addEventListener('click', startUsaCrossing_);
   if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.addEventListener('click', testUsaCrossingTemptation_);
