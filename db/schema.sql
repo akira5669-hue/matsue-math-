@@ -113,6 +113,11 @@ CREATE TABLE students (
   fuji_station INTEGER NOT NULL DEFAULT 0,
   fuji_leg_streak INTEGER NOT NULL DEFAULT 0,
   fuji_time_attack_started_at TEXT,
+  -- 富士下山(ボーナスステージ、2026-10-15〜10-31限定)の到達合目(10〜5、0は未挑戦)・
+  -- 今の区間の連続正解数・成功(5合目到着)は一度きりの実績フラグ。
+  fuji_descent_station INTEGER NOT NULL DEFAULT 0,
+  fuji_descent_leg_streak INTEGER NOT NULL DEFAULT 0,
+  fuji_descent_completed BOOLEAN NOT NULL DEFAULT FALSE,
   -- 入山料(300MP)を払って今の挑戦を開始した時刻(ミリ秒epoch文字列)。3日以内に
   -- 山頂へ到達しないと救助される制限時間の起点。挑戦が終わるとNULLに戻る。
   fuji_climb_started_at TEXT,

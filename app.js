@@ -344,7 +344,7 @@
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
-        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
+        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
         ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
       }));
@@ -366,7 +366,7 @@
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
-        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
+        fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
         ohachiCompleted: s.ohachiCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
       });
@@ -18748,6 +18748,14 @@
     fujiClimbStartedAt: (savedProgress && savedProgress.fujiClimbStartedAt) || (savedGame && savedGame.fujiClimbStartedAt) || null,
     // 山頂到達は一度trueになったら戻らない実績フラグ。
     fujiSummitReached: !!((savedProgress && savedProgress.fujiSummitReached) || (savedGame && savedGame.fujiSummitReached)),
+    // 富士下山(2026-10-15〜10-31限定、富士登山の成功者のみ挑戦可)のボーナスステージ。
+    // 今まさに挑戦中かどうかはfujiActiveと同じく端末セッション限定(あえて永続化
+    // しない)が、到達済みの合目・今の区間の連続正解数は富士登山と同じく永続化する。
+    fujiDescentActive: false,
+    fujiDescentStation: (savedProgress && Number(savedProgress.fujiDescentStation)) || (savedGame && Number(savedGame.fujiDescentStation)) || 0,
+    fujiDescentLegStreak: (savedProgress && Number(savedProgress.fujiDescentLegStreak)) || (savedGame && Number(savedGame.fujiDescentLegStreak)) || 0,
+    // 5合目到着(成功)は一度trueになったら戻らない実績フラグ(成功後は再挑戦不可)。
+    fujiDescentCompleted: !!((savedProgress && savedProgress.fujiDescentCompleted) || (savedGame && savedGame.fujiDescentCompleted)),
     // お鉢巡り(2026-10-10〜10-31限定、富士登山の成功者のみ挑戦可)。worldBossActiveStage
     // と同じく今まさに挑戦中かどうかは端末セッション限定(あえて永続化しない。挑戦は
     // 1回300MPの使い切りで、ログアウトしたらその回の挑戦は諦めて再度払う想定)。
@@ -18815,6 +18823,10 @@
     ohachiHint: document.getElementById('ohachiHint'),
     ohachiStatusText: document.getElementById('ohachiStatusText'),
     ohachiStartBtn: document.getElementById('ohachiStartBtn'),
+    fujiDescentCard: document.getElementById('fujiDescentCard'),
+    fujiDescentHint: document.getElementById('fujiDescentHint'),
+    fujiDescentStatusText: document.getElementById('fujiDescentStatusText'),
+    fujiDescentStartBtn: document.getElementById('fujiDescentStartBtn'),
     usaCrossingCard: document.getElementById('usaCrossingCard'),
     usaCrossingHint: document.getElementById('usaCrossingHint'),
     usaCrossingStatusText: document.getElementById('usaCrossingStatusText'),
@@ -19325,6 +19337,14 @@
       const ownGrade = session && session.grade;
       const fallback = CATEGORIES.filter(c => state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade));
       if (fallback.length > 0) return fallback[randInt(0, fallback.length - 1)];
+    }
+    if (state.fujiDescentActive) {
+      // 富士下山は、単元設定を一切見ず、自分の学年"ちょうど"の単元から毎回
+      // ランダムに出題する(固定リストにロックする必要もない簡易な仕様)。
+      const session = loadSession();
+      const ownGrade = session && session.grade;
+      const eligible = CATEGORIES.filter(c => categoryGrade[c.id] === ownGrade);
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
     }
     if (state.ohachiActive) {
       // お鉢巡りは、挑戦開始時にohachiEligibleIds_へ固定した「自分の学年のみ」の
@@ -19938,7 +19958,7 @@
     // 出題条件を必ず守らせるため、この間違えた問題の保存庫は使わない(間違い大魔王/
     // 算数デビルちゃん/ボン・ミスコの呪い中にお鉢巡りへ入っても、固定した単元
     // リストからの出題を優先する)。
-    let mistakeQ = state.ohachiActive ? null
+    let mistakeQ = (state.ohachiActive || state.fujiDescentActive) ? null
       : state.rareType === 'percentkun' ? pickPercentKunQuestion()
       : (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
@@ -20323,6 +20343,11 @@
         missLineHtml = `<div class="enemy-quote-banner">${enemyBeforeMiss.lines.miss}</div>`;
       }
       recordWrongQuestion(state.current);
+      // 富士下山中の不正解は、他のペナルティはなく今の区間の連続正解数だけ0に戻る
+      // (挑戦自体は終わらない)。
+      if (state.fujiDescentActive) {
+        state.fujiDescentLegStreak = 0;
+      }
       saveGameState(state);
       // すばやさの種：逃げるタイプのレアキャラに間違えて逃げられる直前、所持していれば
       // 自動で1個消費して逃走そのものを取り消す(rareTypeは変えず、そのまま再挑戦できる)。
@@ -20893,6 +20918,16 @@
         if (session && session.id) {
           apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
         }
+      }
+      saveGameState(state);
+    }
+
+    // 富士下山中は、5問連続正解などの通常のMP獲得とは別枠で、20問連続正解
+    // するたびに1合下がる(「追加で」もらえる仕様なので、通常の報酬は止めない)。
+    if (isCorrect && state.fujiDescentActive) {
+      state.fujiDescentLegStreak = (Number(state.fujiDescentLegStreak) || 0) + 1;
+      if (state.fujiDescentLegStreak >= FUJI_DESCENT_LEG_STREAK_) {
+        winHtml += advanceFujiDescentIfReady_();
       }
       saveGameState(state);
     }
@@ -21630,6 +21665,9 @@
         state.fujiLegStreak = Number(progress.fujiLegStreak) || state.fujiLegStreak;
         state.fujiTimeAttackStartedAt = progress.fujiTimeAttackStartedAt || state.fujiTimeAttackStartedAt;
         state.fujiClimbStartedAt = progress.fujiClimbStartedAt || state.fujiClimbStartedAt;
+        state.fujiDescentStation = Number(progress.fujiDescentStation) || state.fujiDescentStation;
+        state.fujiDescentLegStreak = Number(progress.fujiDescentLegStreak) || state.fujiDescentLegStreak;
+        state.fujiDescentCompleted = !!(state.fujiDescentCompleted || progress.fujiDescentCompleted);
         state.streak7TitleEarned = !!(state.streak7TitleEarned || progress.streak7TitleEarned);
         state.streak15TitleEarned = !!(state.streak15TitleEarned || progress.streak15TitleEarned);
         state.streak30TitleEarned = !!(state.streak30TitleEarned || progress.streak30TitleEarned);
@@ -21721,6 +21759,9 @@
       fujiLegStreak: state.fujiLegStreak,
       fujiTimeAttackStartedAt: state.fujiTimeAttackStartedAt,
       fujiClimbStartedAt: state.fujiClimbStartedAt,
+      fujiDescentStation: state.fujiDescentStation,
+      fujiDescentLegStreak: state.fujiDescentLegStreak,
+      fujiDescentCompleted: state.fujiDescentCompleted,
       streak7TitleEarned: state.streak7TitleEarned,
       streak15TitleEarned: state.streak15TitleEarned,
       streak30TitleEarned: state.streak30TitleEarned,
@@ -25287,6 +25328,88 @@
     }
   }
 
+  // 富士下山：富士登山の成功者(fujiSummitReached)だけが挑戦できる2026-10-15〜
+  // 10-31限定のボーナスステージ。参加料は無料。自分の学年ちょうどの単元から
+  // ランダム出題される問題に20問連続正解するたびに1合下がり(10合目→5合目の
+  // 5区間)、20MPが追加で手に入る(通常のMP獲得とは別枠、1日上限の対象外)。
+  // 不正解は連続正解数が0に戻るだけ(挑戦自体は終わらない)。5合目到着で宝箱を
+  // 1つランダムで獲得。成功は一度きり、失敗しても期間中は何度でも再挑戦できる。
+  var FUJI_DESCENT_START_ = '2026-10-15';
+  var FUJI_DESCENT_END_ = '2026-10-31';
+  var FUJI_DESCENT_TOP_STATION_ = 10;
+  var FUJI_DESCENT_BOTTOM_STATION_ = 5;
+  var FUJI_DESCENT_LEG_STREAK_ = 20;
+  var FUJI_DESCENT_LEG_MP_BONUS_ = 20;
+  var FUJI_DESCENT_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
+  // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
+  // 一般公開するときはFUJI_DESCENT_START_〜ENDによる日付窓の判定に切り替える。
+  function fujiDescentCardActive_() {
+    return isAdminSession_();
+  }
+  function fujiDescentCanEnter_() {
+    return fujiDescentCardActive_() && !!state.fujiSummitReached && !state.fujiDescentCompleted && !state.fujiDescentActive;
+  }
+  function startFujiDescent_() {
+    if (!fujiDescentCanEnter_()) return;
+    if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
+    state.fujiDescentActive = true;
+    if (!(Number(state.fujiDescentStation) > 0) || Number(state.fujiDescentStation) > FUJI_DESCENT_TOP_STATION_) {
+      state.fujiDescentStation = FUJI_DESCENT_TOP_STATION_;
+    }
+    state.streak = 0;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (els.fujiPanel) els.fujiPanel.hidden = true;
+    updateGameHud();
+    nextQuestion();
+  }
+  function finishFujiDescent_() {
+    state.fujiDescentActive = false;
+    state.fujiDescentCompleted = true;
+    var chestTier = FUJI_DESCENT_CHEST_TIERS_[randInt(0, FUJI_DESCENT_CHEST_TIERS_.length - 1)];
+    var chestKey = treasureItemKey_('chest', chestTier);
+    state.treasureItems = state.treasureItems || {};
+    state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    return '<div class="win-banner">🎉⛰️ 富士下山、5合目に到着した！🎉</div>'
+      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
+  }
+  // 今の区間(20問連続正解)をクリアしたら1合下げる。5合目に達したら富士下山達成。
+  function advanceFujiDescentIfReady_() {
+    state.fujiDescentStation = Math.max(0, (Number(state.fujiDescentStation) || FUJI_DESCENT_TOP_STATION_) - 1);
+    state.fujiDescentLegStreak = 0;
+    state.points = (Number(state.points) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
+    state.pointsToday = (Number(state.pointsToday) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
+    var mpHtml = '<div class="item-gain-banner">💰 ボーナスMP+' + FUJI_DESCENT_LEG_MP_BONUS_ + '！（現在MP: ' + state.points + '）</div>';
+    if (state.fujiDescentStation <= FUJI_DESCENT_BOTTOM_STATION_) {
+      return mpHtml + finishFujiDescent_();
+    }
+    return '<div class="win-banner">🎉⛰️ 富士下山、' + state.fujiDescentStation + '合目まで下山！🎉</div>' + mpHtml;
+  }
+  // 富士下山カードの表示更新(全生徒に公開、日付ゲートはfujiDescentCardActive_参照)。
+  function renderFujiDescentCard_() {
+    if (!els.fujiDescentCard) return;
+    if (!fujiDescentCardActive_()) { els.fujiDescentCard.hidden = true; return; }
+    els.fujiDescentCard.hidden = false;
+    if (els.fujiDescentHint) {
+      els.fujiDescentHint.textContent = '富士登山の成功者限定の追加チャレンジ！参加料は無料。自分の学年ちょうどの単元からランダム出題される問題に' + FUJI_DESCENT_LEG_STREAK_ + '問連続正解するたびに1合下がり（10合目→5合目）、+' + FUJI_DESCENT_LEG_MP_BONUS_ + 'MPが通常の報酬とは別に追加でもらえます（1日のMP上限を超えて加算されます）。不正解でも挑戦は続けられ、連続正解数が0に戻るだけです。5合目に到着すると宝箱を1つランダムで獲得！成功は一度きり、失敗しても期間中（10/15〜10/31）は何度でも再挑戦できます。';
+    }
+    if (els.fujiDescentStatusText) {
+      if (state.fujiDescentCompleted) {
+        els.fujiDescentStatusText.textContent = '✅ 富士下山達成済みです。';
+      } else if (!state.fujiSummitReached) {
+        els.fujiDescentStatusText.textContent = '富士登山に成功すると挑戦できるようになります。';
+      } else if (state.fujiDescentActive) {
+        els.fujiDescentStatusText.textContent = '挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.fujiDescentStation) || FUJI_DESCENT_TOP_STATION_) + '合目、この区間' + (Number(state.fujiDescentLegStreak) || 0) + '/' + FUJI_DESCENT_LEG_STREAK_ + '問正解）';
+      } else {
+        els.fujiDescentStatusText.textContent = '挑戦条件を満たしています。';
+      }
+    }
+    if (els.fujiDescentStartBtn) {
+      els.fujiDescentStartBtn.hidden = !fujiDescentCanEnter_();
+    }
+  }
+
   // 「挑戦する」ボタンの処理。参加料(USA_CROSSING_ENTRY_FEE_MP)をサーバー確定
   // 処理で払ってから、進行度を0に戻して理科モードで開始する。
   function startUsaCrossing_() {
@@ -26234,6 +26357,7 @@
       }
     }
     renderOhachiCard_();
+    renderFujiDescentCard_();
     renderUsaCrossingCard_();
   }
 
@@ -27653,6 +27777,7 @@
   }
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.ohachiStartBtn) els.ohachiStartBtn.addEventListener('click', startOhachiMeguri_);
+  if (els.fujiDescentStartBtn) els.fujiDescentStartBtn.addEventListener('click', startFujiDescent_);
   if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.addEventListener('click', startUsaCrossing_);
   if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.addEventListener('click', testUsaCrossingTemptation_);
   if (els.fujiDistributePoolBtn) els.fujiDistributePoolBtn.addEventListener('click', handleFujiDistributePoolClick_);
