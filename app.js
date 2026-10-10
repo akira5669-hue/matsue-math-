@@ -2460,7 +2460,7 @@
     { id: 'eqWordProblemRanking1', label: '方程式の文章題（中1）（小5、小6ランキング対策）', gen: genEqWordProblemRanking1 , addedDate: '2026-10-10' },
     { id: 'eqWordProblemAdv1', label: '方程式の文章題の応用（中1）', gen: genEqWordProblemAdv1 , addedDate: '2026-08-08' },
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
-    { id: 'coordinate1', label: '点の座標（中1）',               gen: genCoordinate, addedDate: '2026-10-10' },
+    { id: 'coordinate1', label: '点の座標（中1）（小5、小6ランキング対策）', gen: genCoordinate, addedDate: '2026-10-10' },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）（小5、小6ランキング対策）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）（小5、小6ランキング対策）',             gen: genLinearAddSub },
