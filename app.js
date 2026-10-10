@@ -15,6 +15,21 @@
   // 壊れないようフォールバックする。
   var USA_STATE_DATA = (typeof USA_STATE_INFO !== 'undefined') ? USA_STATE_INFO : [];
 
+  // 県庁所在地クイズ(2026-11-01〜)：都道府県名→県庁所在地名。都道府県制覇の
+  // PREFECTURE_DATA(名前・トリビア)と組み合わせて4択問題を作る。
+  var PREFECTURE_CAPITALS_ = {
+    '北海道': '札幌市', '青森': '青森市', '岩手': '盛岡市', '宮城': '仙台市', '秋田': '秋田市',
+    '山形': '山形市', '福島': '福島市', '茨城': '水戸市', '栃木': '宇都宮市', '群馬': '前橋市',
+    '埼玉': 'さいたま市', '千葉': '千葉市', '東京': '東京', '神奈川': '横浜市', '新潟': '新潟市',
+    '富山': '富山市', '石川': '金沢市', '福井': '福井市', '山梨': '甲府市', '長野': '長野市',
+    '岐阜': '岐阜市', '静岡': '静岡市', '愛知': '名古屋市', '三重': '津市', '滋賀': '大津市',
+    '京都': '京都市', '大阪': '大阪市', '兵庫': '神戸市', '奈良': '奈良市', '和歌山': '和歌山市',
+    '鳥取': '鳥取市', '島根': '松江市', '岡山': '岡山市', '広島': '広島市', '山口': '山口市',
+    '徳島': '徳島市', '香川': '高松市', '愛媛': '松山市', '高知': '高知市', '福岡': '福岡市',
+    '佐賀': '佐賀市', '長崎': '長崎市', '熊本': '熊本市', '大分': '大分市', '宮崎': '宮崎市',
+    '鹿児島': '鹿児島市', '沖縄': '那覇市',
+  };
+
   // アバター作成データ（avatar-data.js）が読み込めなくてもアプリ全体が
   // 壊れないようフォールバックする。
   var AVATAR_HAIR_SAFE = (typeof AVATAR_HAIR !== 'undefined') ? AVATAR_HAIR : [];
@@ -327,7 +342,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -349,7 +364,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -18751,6 +18766,9 @@
     diamondRingCount: (savedProgress && Number(savedProgress.diamondRingCount)) || (savedGame && Number(savedGame.diamondRingCount)) || 0,
     // アメリカ横断の成功は一度きり(成功したら再挑戦不可、失敗は何度でも再挑戦可)。
     usaCrossingCompleted: !!((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)),
+    // 県庁所在地クイズ(2026-11-01〜)の生涯正解数(都道府県の制覇とは別カウント)。
+    // 10問正解するごとに都道府県が1つずつ制覇されていく(capitalQuizUnlockedCount参照)。
+    capitalQuizCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizCorrectTotal)) || 0,
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -19028,6 +19046,11 @@
     prefectureProgress: document.getElementById('prefectureProgress'),
     prefectureMapWrap: document.getElementById('prefectureMapWrap'),
     prefectureList: document.getElementById('prefectureList'),
+    capitalQuizCard: document.getElementById('capitalQuizCard'),
+    capitalQuizProgressText: document.getElementById('capitalQuizProgressText'),
+    capitalQuizQuestionText: document.getElementById('capitalQuizQuestionText'),
+    capitalQuizChoices: document.getElementById('capitalQuizChoices'),
+    capitalQuizResult: document.getElementById('capitalQuizResult'),
     userAvatarBadge: document.getElementById('userAvatarBadge'),
     avatarToggle: document.getElementById('avatarToggle'),
     avatarPanel: document.getElementById('avatarPanel'),
@@ -21586,6 +21609,7 @@
         state.usaLadyGiftPending = Number(progress.usaLadyGiftPending) || state.usaLadyGiftPending;
         state.diamondRingCount = Number(progress.diamondRingCount) || state.diamondRingCount;
         state.usaCrossingCompleted = !!(state.usaCrossingCompleted || progress.usaCrossingCompleted);
+        state.capitalQuizCorrectTotal = Number(progress.capitalQuizCorrectTotal) || state.capitalQuizCorrectTotal;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
         // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
         // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
@@ -21670,6 +21694,7 @@
       usaLadyGiftPending: state.usaLadyGiftPending,
       diamondRingCount: state.diamondRingCount,
       usaCrossingCompleted: state.usaCrossingCompleted,
+      capitalQuizCorrectTotal: state.capitalQuizCorrectTotal,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -24149,6 +24174,117 @@
 
     els.prefecturePanel.removeAttribute('hidden');
     renderPrefectureMap();
+    renderCapitalQuizCard_();
+  }
+
+  /* ---------- 県庁所在地クイズ(11月スタート予定、今は00001専用プレビュー) ---------- */
+
+  var CAPITAL_QUIZ_START_ = '2026-11-01';
+  var CAPITAL_QUIZ_PER_PREFECTURE_ = 10;
+  var CAPITAL_QUIZ_TRIVIA_MP_ = 1;
+  // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
+  // 一般公開するときはCAPITAL_QUIZ_START_による日付窓の判定に切り替える。
+  function capitalQuizActive_() {
+    return isAdminSession_();
+  }
+  function capitalQuizUnlockedCount_() {
+    return Math.min(PREFECTURE_DATA.length, Math.floor((Number(state.capitalQuizCorrectTotal) || 0) / CAPITAL_QUIZ_PER_PREFECTURE_));
+  }
+  var capitalQuizCurrent_ = null;
+  // 県庁所在地を当てる問題と、特産品などのトリビアを当てるボーナス問題を
+  //半々でランダムに出す。県庁所在地側の正解だけが10問ごとの都道府県制覇に
+  // カウントされ、トリビア側の正解は制覇にはカウントされず+1MPのみもらえる。
+  function pickCapitalQuizQuestion_() {
+    if (PREFECTURE_DATA.length === 0) return null;
+    var pref = PREFECTURE_DATA[randInt(0, PREFECTURE_DATA.length - 1)];
+    if (Math.random() < 0.5) {
+      var correct = PREFECTURE_CAPITALS_[pref.name];
+      if (!correct) return pickCapitalQuizQuestion_();
+      var wrongPool = Object.keys(PREFECTURE_CAPITALS_).filter(function (n) { return n !== pref.name; }).map(function (n) { return PREFECTURE_CAPITALS_[n]; });
+      var wrongs = shuffle(wrongPool).slice(0, 3);
+      return { type: 'capital', prefName: pref.name, question: pref.name + 'の県庁所在地はどこ？', answer: correct, choices: shuffle([correct].concat(wrongs)) };
+    } else {
+      var items = pref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
+      var correctItem = items[randInt(0, items.length - 1)];
+      var wrongItems = [];
+      var guard = 0;
+      while (wrongItems.length < 3 && guard < 60) {
+        guard++;
+        var otherPref = PREFECTURE_DATA[randInt(0, PREFECTURE_DATA.length - 1)];
+        if (otherPref.name === pref.name) continue;
+        var otherItems = otherPref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
+        var w = otherItems[randInt(0, otherItems.length - 1)];
+        if (w && w !== correctItem && wrongItems.indexOf(w) === -1) wrongItems.push(w);
+      }
+      if (wrongItems.length < 3) return pickCapitalQuizQuestion_();
+      return { type: 'trivia', prefName: pref.name, question: pref.name + 'の特産品・名物として正しいものはどれ？', answer: correctItem, choices: shuffle([correctItem].concat(wrongItems)) };
+    }
+  }
+  function nextCapitalQuizQuestion_() {
+    capitalQuizCurrent_ = pickCapitalQuizQuestion_();
+    if (els.capitalQuizResult) els.capitalQuizResult.textContent = '';
+    if (!capitalQuizCurrent_) return;
+    if (els.capitalQuizQuestionText) els.capitalQuizQuestionText.textContent = capitalQuizCurrent_.question;
+    if (els.capitalQuizChoices) {
+      els.capitalQuizChoices.innerHTML = '';
+      capitalQuizCurrent_.choices.forEach(function (choiceStr) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'test-photo-tier-btn';
+        btn.textContent = choiceStr;
+        btn.addEventListener('click', function () { handleCapitalQuizAnswer_(choiceStr, btn); });
+        els.capitalQuizChoices.appendChild(btn);
+      });
+    }
+  }
+  function handleCapitalQuizAnswer_(choiceStr, btn) {
+    if (!capitalQuizCurrent_) return;
+    var q = capitalQuizCurrent_;
+    capitalQuizCurrent_ = null;
+    if (els.capitalQuizChoices) {
+      Array.from(els.capitalQuizChoices.children).forEach(function (b) { b.disabled = true; });
+    }
+    var isCorrect = choiceStr === q.answer;
+    var session = loadSession();
+    if (isCorrect && q.type === 'capital') {
+      var prevUnlocked = capitalQuizUnlockedCount_();
+      state.capitalQuizCorrectTotal = (Number(state.capitalQuizCorrectTotal) || 0) + 1;
+      state.points = (Number(state.points) || 0) + 1;
+      var newUnlocked = capitalQuizUnlockedCount_();
+      var msg = '✅ 正解！「' + q.prefName + 'の県庁所在地は' + q.answer + '」+1MP';
+      if (newUnlocked > prevUnlocked) {
+        var newlyPref = PREFECTURE_DATA[newUnlocked - 1];
+        msg += '<br>🎉「' + newlyPref.name + '」を制覇！（' + newUnlocked + '/' + PREFECTURE_DATA.length + '）';
+      }
+      if (els.capitalQuizResult) els.capitalQuizResult.innerHTML = msg;
+    } else if (isCorrect && q.type === 'trivia') {
+      state.points = (Number(state.points) || 0) + CAPITAL_QUIZ_TRIVIA_MP_;
+      if (els.capitalQuizResult) els.capitalQuizResult.textContent = '✅ 正解！「' + q.prefName + '」の特産品・名物は「' + q.answer + '」+' + CAPITAL_QUIZ_TRIVIA_MP_ + 'MP（ボーナス問題）';
+    } else {
+      if (els.capitalQuizResult) els.capitalQuizResult.textContent = '❌ 不正解。正解は「' + q.answer + '」でした。';
+    }
+    saveGameState(state);
+    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    updateGameHud();
+    renderCapitalQuizProgress_();
+    renderPrefectureMap();
+    setTimeout(function () { nextCapitalQuizQuestion_(); }, 1200);
+  }
+  function renderCapitalQuizProgress_() {
+    if (!els.capitalQuizProgressText) return;
+    var unlocked = capitalQuizUnlockedCount_();
+    var correctTotal = Number(state.capitalQuizCorrectTotal) || 0;
+    var sinceLast = correctTotal % CAPITAL_QUIZ_PER_PREFECTURE_;
+    els.capitalQuizProgressText.textContent = unlocked >= PREFECTURE_DATA.length
+      ? '🎉 ' + unlocked + '/' + PREFECTURE_DATA.length + ' 都道府県すべて制覇しました！（県庁所在地クイズ正解数: ' + correctTotal + '問）'
+      : unlocked + '/' + PREFECTURE_DATA.length + ' 都道府県を制覇（あと' + (CAPITAL_QUIZ_PER_PREFECTURE_ - sinceLast) + '問正解で次の都道府県）';
+  }
+  function renderCapitalQuizCard_() {
+    if (!els.capitalQuizCard) return;
+    if (!capitalQuizActive_()) { els.capitalQuizCard.hidden = true; return; }
+    els.capitalQuizCard.hidden = false;
+    renderCapitalQuizProgress_();
+    if (!capitalQuizCurrent_) nextCapitalQuizQuestion_();
   }
 
   /* ---------- アバター作成 ---------- */

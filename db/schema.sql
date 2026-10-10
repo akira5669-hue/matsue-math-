@@ -56,6 +56,7 @@ CREATE TABLE students (
   usa_lady_gift_pending INTEGER NOT NULL DEFAULT 0, -- アメリカ横断の謎のおばさんに渡した宝石の数(クリスマス12/25にダイヤの指輪へ変換されるまでの保留数)
   diamond_ring_count INTEGER NOT NULL DEFAULT 0, -- ダイヤの指輪の所持数(購入不可、なんでも屋で2000MPに売却できるのみ)
   usa_crossing_completed BOOLEAN NOT NULL DEFAULT FALSE, -- アメリカ横断の成功は一度きり(成功後は再挑戦不可、失敗は何度でも再挑戦可)
+  capital_quiz_correct_total INTEGER NOT NULL DEFAULT 0, -- 県庁所在地クイズ(2026-11-01〜)の生涯正解数。10問ごとに都道府県が1つ制覇される(都道府県制覇の本体=prefecture_countとは別カウント)
   world_country INTEGER NOT NULL DEFAULT 0, -- 世界一周の制覇済みヵ国数(2026-09-01からサイコロ方式、クライアント管理・直接SET)
   world_continent_bonus JSONB NOT NULL DEFAULT '{}', -- 大陸制覇ボーナス(500MP)を今の周で既に受け取った大陸のID一覧(重複付与防止用、周が変わるとリセット)
   treasure_items JSONB NOT NULL DEFAULT '{}', -- 宝箱・鍵・指輪(2026-08-28〜)の所持数。{chestBronze,keyBronze,ringBronze,...}のようにティア(bronze/silver/gold/rainbow)ごとに数える。鍵の購入・指輪の売却・宝箱を開ける処理はサーバー側で検証してから更新する
