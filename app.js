@@ -18766,6 +18766,9 @@
     diamondRingCount: (savedProgress && Number(savedProgress.diamondRingCount)) || (savedGame && Number(savedGame.diamondRingCount)) || 0,
     // アメリカ横断の成功は一度きり(成功したら再挑戦不可、失敗は何度でも再挑戦可)。
     usaCrossingCompleted: !!((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)),
+    // 利用禁止フラグ(2026-10-10〜)。永続化はせず、ログイン/再開のたびにサーバーの
+    // 最新値をそのまま採用する(管理者が解除したら即座に反映されるように)。
+    forceBlocked: false,
     // 県庁所在地クイズ(2026-11-01〜)の生涯正解数(都道府県の制覇とは別カウント)。
     // 10問正解するごとに都道府県が1つずつ制覇されていく(capitalQuizUnlockedCount参照)。
     capitalQuizCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizCorrectTotal)) || 0,
@@ -19191,6 +19194,8 @@
     bakuretsuQuizResult: document.getElementById('bakuretsuQuizResult'),
     withdrawToggle: document.getElementById('withdrawToggle'),
     withdrawPanel: document.getElementById('withdrawPanel'),
+    forceBlockedPanel: document.getElementById('forceBlockedPanel'),
+    forceBlockedWithdrawBtn: document.getElementById('forceBlockedWithdrawBtn'),
     withdrawForm: document.getElementById('withdrawForm'),
     withdrawId: document.getElementById('withdrawId'),
     withdrawPassword: document.getElementById('withdrawPassword'),
@@ -19978,6 +19983,7 @@
   }
 
   function updateGameHud() {
+    renderForceBlockedGate_();
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
     const isOhachi = !!state.ohachiActive;
@@ -21631,6 +21637,8 @@
       }
       if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
       if (res.forceWithdrawNotice) window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
+      state.forceBlocked = !!res.forceBlocked;
+      renderForceBlockedGate_();
       checkUsaLadyGiftConversion_();
       // reconcilePointsは端末とサーバーのMPのうち大きい方を採用するため、付与分は
       // reconcilePointsを呼ぶ前にローカルへ加算しておく。先にreconcileしてしまうと、
@@ -27426,9 +27434,19 @@
 
   var withdrawSubmitting = false;
 
+  // 利用禁止(forceBlocked)の生徒には、退会手続き以外何もできないよう全画面の
+  // オーバーレイを被せる。退会フォームを開いている間だけ一時的に外し、閉じたり
+  // 他の画面に戻ろうとするとまた被さる(updateGameHud・toggleWithdrawの両方から呼ぶ)。
+  function renderForceBlockedGate_() {
+    if (!els.forceBlockedPanel) return;
+    if (!state.forceBlocked) { els.forceBlockedPanel.hidden = true; return; }
+    var withdrawOpen = els.withdrawPanel && !els.withdrawPanel.hasAttribute('hidden');
+    els.forceBlockedPanel.hidden = !!withdrawOpen;
+  }
+
   function toggleWithdraw() {
     var isHidden = els.withdrawPanel.hasAttribute('hidden');
-    if (!isHidden) { els.withdrawPanel.setAttribute('hidden', ''); return; }
+    if (!isHidden) { els.withdrawPanel.setAttribute('hidden', ''); renderForceBlockedGate_(); return; }
     els.historyPanel.setAttribute('hidden', '');
     els.rankingPanel.setAttribute('hidden', '');
     els.giftPanel.setAttribute('hidden', '');
@@ -27451,6 +27469,7 @@
     els.withdrawPassword.value = '';
     withdrawSubmitting = false;
     els.withdrawPanel.removeAttribute('hidden');
+    renderForceBlockedGate_();
   }
 
   function handleWithdrawSubmitClick() {
@@ -27731,6 +27750,7 @@
   if (els.teamEventToggle) els.teamEventToggle.addEventListener('click', toggleTeamEvent);
   if (els.teamEventBannerBtn) els.teamEventBannerBtn.addEventListener('click', toggleTeamEvent);
   els.withdrawToggle.addEventListener('click', toggleWithdraw);
+  if (els.forceBlockedWithdrawBtn) els.forceBlockedWithdrawBtn.addEventListener('click', toggleWithdraw);
   els.withdrawSubmitBtn.addEventListener('click', handleWithdrawSubmitClick);
   els.withdrawConfirmYes.addEventListener('click', submitWithdraw);
   els.withdrawConfirmNo.addEventListener('click', cancelWithdrawConfirm);
@@ -27771,6 +27791,8 @@
           if (res.forceWithdrawNotice) {
             window.alert(FORCE_WITHDRAW_NOTICE_TEXT_);
           }
+          state.forceBlocked = !!res.forceBlocked;
+          renderForceBlockedGate_();
           checkUsaLadyGiftConversion_();
           if (!existingSession.grade && res.grade) {
             existingSession.grade = res.grade;

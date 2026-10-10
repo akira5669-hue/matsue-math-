@@ -1038,6 +1038,29 @@ h1 {
 .hp-gameover-panel .primary-btn { width: 100%; margin-bottom: 8px; }
 .hp-gameover-panel .ghost-btn { width: 100%; }
 
+.force-blocked-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.92);
+}
+.force-blocked-overlay[hidden] { display: none; }
+.force-blocked-box {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+.force-blocked-title { margin: 0 0 10px; font-size: 18px; font-weight: 800; color: #b91c1c; }
+.force-blocked-text { margin: 0 0 16px; font-size: 13px; font-weight: 700; color: var(--c-ink); line-height: 1.7; }
+.force-blocked-box .primary-btn { width: 100%; }
+
 .special-quiz-banner {
   background: linear-gradient(135deg, #fff7ed, #ffedd5);
   border: 1.5px solid #fb923c;
