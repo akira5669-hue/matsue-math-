@@ -2069,7 +2069,10 @@
   function fmtSlopeEqStr_(num, den) {
     if (den === 1) return `y = ${fmtCx(num)}`;
     const sign = num < 0 ? '−' : '';
-    return `y = ${sign}${Math.abs(num)}/${den}x`;
+    // stepToHtmlの分数変換は数字と文字が連続しているとxまで分母に巻き込んで
+    // しまうため、xの前にスペースを入れて分母の切れ目をはっきりさせる(かっこ
+    // は使わない)。
+    return `y = ${sign}${Math.abs(num)}/${den} x`;
   }
   // 点の座標ラベルが盤面の端で切れないよう、点の位置に応じて左右・上下を
   // 反対側に出す。
