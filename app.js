@@ -25830,10 +25830,9 @@
   var FUJI_DESCENT_LEG_STREAK_ = 20;
   var FUJI_DESCENT_LEG_MP_BONUS_ = 20;
   var FUJI_DESCENT_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
-  // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
-  // 一般公開するときはFUJI_DESCENT_START_〜ENDによる日付窓の判定に切り替える。
+  // 一般公開済み(10/15〜10/31の期間限定)。00001は期間外でもプレビュー可能。
   function fujiDescentCardActive_() {
-    return isAdminSession_();
+    return isAdminSession_() || (todayKey() >= FUJI_DESCENT_START_ && todayKey() <= FUJI_DESCENT_END_);
   }
   function fujiDescentCanEnter_() {
     return fujiDescentCardActive_() && !!state.fujiSummitReached && !state.fujiDescentCompleted && !state.fujiDescentActive;
