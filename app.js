@@ -22397,6 +22397,37 @@
     var sYushaSwordCount = Number(server.yushaSwordCount) || 0;
     if (sYushaSwordCount > (Number(state.yushaSwordCount) || 0)) { state.yushaSwordCount = sYushaSwordCount; changed = true; }
     if (server.yushaSwordObtained && !state.yushaSwordObtained) { state.yushaSwordObtained = true; changed = true; }
+    // お鉢巡り(通常版・イージーモード)・富士下山・アメリカ横断の成功は、
+    // fujiSummitReachedと同じく一度trueになったら戻らない実績フラグなのでOR。
+    // 以前はここでマージされておらず、別端末から初めてアクセスした時に
+    // 既に達成済みでも「未挑戦」扱いに見える不具合があった。
+    if (server.ohachiCompleted && !state.ohachiCompleted) { state.ohachiCompleted = true; changed = true; }
+    if (server.ohachiEasyCompleted && !state.ohachiEasyCompleted) { state.ohachiEasyCompleted = true; changed = true; }
+    if (server.fujiDescentCompleted && !state.fujiDescentCompleted) { state.fujiDescentCompleted = true; changed = true; }
+    if (server.usaCrossingCompleted && !state.usaCrossingCompleted) { state.usaCrossingCompleted = true; changed = true; }
+    var sCapitalQuizCorrectTotal = Number(server.capitalQuizCorrectTotal) || 0;
+    if (sCapitalQuizCorrectTotal > (Number(state.capitalQuizCorrectTotal) || 0)) { state.capitalQuizCorrectTotal = sCapitalQuizCorrectTotal; changed = true; }
+    var sWisdomSeedCount = Number(server.wisdomSeedCount) || 0;
+    if (sWisdomSeedCount > (Number(state.wisdomSeedCount) || 0)) { state.wisdomSeedCount = sWisdomSeedCount; changed = true; }
+    var sWisdomFruitCount = Number(server.wisdomFruitCount) || 0;
+    if (sWisdomFruitCount > (Number(state.wisdomFruitCount) || 0)) { state.wisdomFruitCount = sWisdomFruitCount; changed = true; }
+    var sEffortSeedCount = Number(server.effortSeedCount) || 0;
+    if (sEffortSeedCount > (Number(state.effortSeedCount) || 0)) { state.effortSeedCount = sEffortSeedCount; changed = true; }
+    var sUsaLadyGiftPending = Number(server.usaLadyGiftPending) || 0;
+    if (sUsaLadyGiftPending > (Number(state.usaLadyGiftPending) || 0)) { state.usaLadyGiftPending = sUsaLadyGiftPending; changed = true; }
+    var sDiamondRingCount = Number(server.diamondRingCount) || 0;
+    if (sDiamondRingCount > (Number(state.diamondRingCount) || 0)) { state.diamondRingCount = sDiamondRingCount; changed = true; }
+    // 富士下山の到達合目も、富士登山(fujiStation)と同じ考え方でマージする。
+    var sFujiDescentStation = Number(server.fujiDescentStation) || 0;
+    var localFujiDescentStation = Number(state.fujiDescentStation) || 0;
+    if (sFujiDescentStation > localFujiDescentStation) {
+      state.fujiDescentStation = sFujiDescentStation;
+      state.fujiDescentLegStreak = Number(server.fujiDescentLegStreak) || 0;
+      changed = true;
+    } else if (sFujiDescentStation === localFujiDescentStation) {
+      var sFujiDescentLegStreak = Number(server.fujiDescentLegStreak) || 0;
+      if (sFujiDescentLegStreak > (Number(state.fujiDescentLegStreak) || 0)) { state.fujiDescentLegStreak = sFujiDescentLegStreak; changed = true; }
+    }
     // 富士登山の到達合目は、進んでいる方(大きい方)を採用する。合目が進んでいれば
     // 今の区間の連続正解数・タイムアタック開始時刻もサーバー側の値に揃える
     // (古い区間のfujiLegStreakを新しい区間に持ち越さないため)。
