@@ -19407,8 +19407,6 @@
     fujiBannerText: document.getElementById('fujiBannerText'),
     ohachiBanner: document.getElementById('ohachiBanner'),
     ohachiBannerText: document.getElementById('ohachiBannerText'),
-    mpSyncFixBanner: document.getElementById('mpSyncFixBanner'),
-    mpSyncFixBannerText: document.getElementById('mpSyncFixBannerText'),
     ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
     ohachiEasyBannerText: document.getElementById('ohachiEasyBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
@@ -20544,7 +20542,6 @@
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
-    renderMpSyncFixBanner_();
     renderOhachiEasyBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
@@ -21817,26 +21814,6 @@
     els.worldBossChestBanner.hidden = false;
     if (els.worldBossChestBannerText) {
       els.worldBossChestBannerText.textContent = '📢【今月限定！】世界一周のボスを倒すと、学年に関係なく必ず🌈虹色の宝箱が1個もらえます！なんでも屋で虹色の鍵を買って開けてみよう。10月末まで。';
-    }
-  }
-
-  // MP表示の補正についての告知(2026-10-12〜)。1日のMP獲得上限はサーバー側
-  // でしか検証しておらず、端末側は上限を無視してその場でMPを加算し続けてしまう
-  // 不具合があった。サーバーに実際には記録されていない「盛られた」MPが端末の
-  // 表示にだけ乗っていたケースがあり、今回の修正で次回ログイン時にサーバーの
-  // 正しい値へ補正される(=表示上のMPが減って見えることがある)。生徒・保護者が
-  // 突然MPが減って困惑しないよう、しばらくの間お知らせを表示する。
-  var MP_SYNC_FIX_NOTICE_START_ = '2026-10-12';
-  var MP_SYNC_FIX_NOTICE_END_ = '2026-10-26';
-  function renderMpSyncFixBanner_() {
-    if (!els.mpSyncFixBanner) return;
-    if (todayKey() > MP_SYNC_FIX_NOTICE_END_) {
-      els.mpSyncFixBanner.hidden = true;
-      return;
-    }
-    els.mpSyncFixBanner.hidden = false;
-    if (els.mpSyncFixBannerText) {
-      els.mpSyncFixBannerText.textContent = '📢【お知らせ】MP表示を修正しました。1日に獲得できるMPには上限がありますが、これまで端末の表示だけ上限を超えて増え続けてしまう不具合があり、実際にはサーバーに記録されていない数字が表示されていることがありました。今回の修正で正しい数字に直りますが、その際に表示上のMPが減って見えることがあります。ポイントが消えたわけではなく、元々そこまで記録されていなかったための表示の補正ですので、ご安心ください。';
     }
   }
 
