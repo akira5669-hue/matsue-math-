@@ -2992,7 +2992,7 @@
     if (changed) {
       saveGameState(state);
       const session = loadSession();
-      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      if (session && session.id) syncPointsNow_(session.id);
     }
   }
 
@@ -19407,6 +19407,8 @@
     fujiBannerText: document.getElementById('fujiBannerText'),
     ohachiBanner: document.getElementById('ohachiBanner'),
     ohachiBannerText: document.getElementById('ohachiBannerText'),
+    mpSyncFixBanner: document.getElementById('mpSyncFixBanner'),
+    mpSyncFixBannerText: document.getElementById('mpSyncFixBannerText'),
     ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
     ohachiEasyBannerText: document.getElementById('ohachiEasyBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
@@ -20320,7 +20322,7 @@
       state.hp = Math.max(0, (Number(state.hp) || 0) - FUJI_ALTITUDE_SICKNESS_DRAIN_);
     }
     saveGameState(state);
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
 
     els.feedback.innerHTML =
       (isCorrect
@@ -20542,6 +20544,7 @@
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
+    renderMpSyncFixBanner_();
     renderOhachiEasyBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
@@ -20794,7 +20797,7 @@
         state.speedSeedCount = (Number(state.speedSeedCount) || 0) - 1;
         missLineHtml += `<div class="enemy-quote-banner">🌱 すばやさの種のおかげで、${RARE_TYPES[state.rareType].name}に追いついた！もう1回挑戦できる！（残り${state.speedSeedCount}個）</div>`;
         saveGameState(state);
-        if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        if (session && session.id) syncPointsNow_(session.id);
       }
       const santaFled = !speedSeedSaved && state.rareType === 'santa';
       const nekodaFled = !speedSeedSaved && state.rareType === 'nekoda';
@@ -20962,7 +20965,7 @@
         // 指輪をシールドとして消費した場合、個数の減少をすぐサーバーに反映しておく
         // (次回ログイン時に古いキャッシュへ巻き戻らないようにするため)。
         if (ringShieldResult && session && session.id) {
-          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+          syncPointsNow_(session.id);
         }
       } else if (state.fujiActive) {
         // 富士登山中の不正解は、今の区間の連続正解数をリセットする(=その合目の
@@ -21255,7 +21258,7 @@
           state.treasureItems = state.treasureItems || {};
           state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
           treasureChestGainedHtml = `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[treasureTier]} ${TREASURE_TIER_LABEL_[treasureTier]}の宝箱を見つけた！（なんでも屋で${TREASURE_TIER_LABEL_[treasureTier]}の鍵を買うと開けられる）</div>`;
-          if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+          if (session && session.id) syncPointsNow_(session.id);
         }
       }
 
@@ -21269,7 +21272,7 @@
         state.treasureItems = state.treasureItems || {};
         state.treasureItems[keyKey_] = (Number(state.treasureItems[keyKey_]) || 0) + 1;
         superAkirametalKeyHtml = `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[keyTier_]} ${TREASURE_TIER_LABEL_[keyTier_]}の鍵を手に入れた！</div>`;
-        if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        if (session && session.id) syncPointsNow_(session.id);
       }
 
       const prevPrefectureCount = state.prefectureCount;
@@ -21297,9 +21300,9 @@
             saveGameState(state);
           }
           if (res && res.bonusAwarded > 0) {
-            state.points += res.bonusAwarded;
-            saveGameState(state);
-            updateGameHud();
+            // state.pointsへの反映はdebouncedSyncPoints_内のapplySyncedPoints_が
+            // 既に行っている(サーバーの最終値res.pointsにbonusAwarded分も
+            // 含まれているため、ここで二重に加算しない)。
             if (res.prefectureBonusAwarded > 0) window.alert(`🎉 都道府県制覇ボーナス！+${res.prefectureBonusAwarded}MP 🎉`);
             if (res.continentBonusAwarded > 0) window.alert(`🌏 大陸制覇ボーナス！+${res.continentBonusAwarded}MP 🌏`);
             if (Array.isArray(res.completionBonusesAwarded)) {
@@ -21366,7 +21369,7 @@
         state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + MISSION_REWARD_MP;
         missionHtml = `<div class="win-banner">🎯 今日のミッション達成！ +${MISSION_REWARD_MP}MP 🎉</div>`;
         if (session && session.id) {
-          apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+          syncPointsNow_(session.id);
         }
       }
       saveGameState(state);
@@ -21817,6 +21820,26 @@
     }
   }
 
+  // MP表示の補正についての告知(2026-10-12〜)。1日のMP獲得上限はサーバー側
+  // でしか検証しておらず、端末側は上限を無視してその場でMPを加算し続けてしまう
+  // 不具合があった。サーバーに実際には記録されていない「盛られた」MPが端末の
+  // 表示にだけ乗っていたケースがあり、今回の修正で次回ログイン時にサーバーの
+  // 正しい値へ補正される(=表示上のMPが減って見えることがある)。生徒・保護者が
+  // 突然MPが減って困惑しないよう、しばらくの間お知らせを表示する。
+  var MP_SYNC_FIX_NOTICE_START_ = '2026-10-12';
+  var MP_SYNC_FIX_NOTICE_END_ = '2026-10-26';
+  function renderMpSyncFixBanner_() {
+    if (!els.mpSyncFixBanner) return;
+    if (todayKey() > MP_SYNC_FIX_NOTICE_END_) {
+      els.mpSyncFixBanner.hidden = true;
+      return;
+    }
+    els.mpSyncFixBanner.hidden = false;
+    if (els.mpSyncFixBannerText) {
+      els.mpSyncFixBannerText.textContent = '📢【お知らせ】MP表示を修正しました。1日に獲得できるMPには上限がありますが、これまで端末の表示だけ上限を超えて増え続けてしまう不具合があり、実際にはサーバーに記録されていない数字が表示されていることがありました。今回の修正で正しい数字に直りますが、その際に表示上のMPが減って見えることがあります。ポイントが消えたわけではなく、元々そこまで記録されていなかったための表示の補正ですので、ご安心ください。';
+    }
+  }
+
   // 新単元「食塩水の濃度（中1）」追加の告知。公開から1週間はこの単元だけMP・
   // 経験値・HPが2倍もらえるキャンペーン付き(全生徒に表示、期間が過ぎたら自動で隠れる)。
   // お鉢巡りイージーモード追加の告知(全生徒に表示、期間が過ぎたら自動で隠れる)。
@@ -21994,7 +22017,7 @@
       : alreadyClaimedLoginBonusToday ? '（本日のログインボーナスは受け取り済みです）'
       : '（本日のMP上限に達しているためMPはありません）';
     window.alert('🎉 ' + clearedText + mpText + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
-    if (id) apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
+    if (id) syncPointsNow_(id);
   }
 
   function showApp(name, isGuest) {
@@ -22243,11 +22266,30 @@
   // 範囲を見て行っているため、間の呼び出しを省略しても正しく判定される。
   var SYNC_POINTS_DEBOUNCE_MS_ = 3000;
   var syncPointsDebounceTimer_ = null;
+  // syncPointsの応答に含まれるpoints(1日のMP上限などをサーバー側で適用した後の
+  // 正式な値)を端末側にも反映する。以前はこの応答を一切見ておらず、通信が安定
+  // している間に端末側だけで上限を超えて加算され続けた「盛られた」MPが、
+  // サーバーの正しい値へ補正される機会が無かった(reconcilePointsも「大きい方」を
+  // 採用していたため、一度盛られるとずっと盛られたままになっていた)。
+  function applySyncedPoints_(res) {
+    if (res && res.ok && typeof res.points === 'number' && res.points !== state.points) {
+      state.points = res.points;
+      saveGameState(state);
+      updateGameHud();
+    }
+  }
+  // 戦績などの特別な演出を伴わない、単純な進捗同期専用の送信口。これまで
+  // fire-and-forgetで応答を見ていなかった各所をこちらに統一する。
+  function syncPointsNow_(id) {
+    if (!id) return;
+    apiPost('syncPoints', buildProgressSyncPayload(id)).then(applySyncedPoints_).catch(function () { });
+  }
   function debouncedSyncPoints_(id, onResult) {
     if (syncPointsDebounceTimer_) window.clearTimeout(syncPointsDebounceTimer_);
     syncPointsDebounceTimer_ = window.setTimeout(function () {
       syncPointsDebounceTimer_ = null;
       apiPost('syncPoints', buildProgressSyncPayload(id)).then(function (res) {
+        applySyncedPoints_(res);
         if (onResult) onResult(res);
       }).catch(function () { });
     }, SYNC_POINTS_DEBOUNCE_MS_);
@@ -22282,7 +22324,11 @@
     var sCategoryRanks = (server.categoryRanks && typeof server.categoryRanks === 'object') ? server.categoryRanks : {};
     var changed = false;
 
-    if (sp > state.points) { state.points = sp; changed = true; }
+    // pointsは「大きい方」ではなく常にサーバー値を正とする。1日のMP上限は
+    // サーバー側でしか検証していないため、通信が安定している間に端末側だけで
+    // 上限を超えて加算され続けてしまった「盛られた」MP(実際にはサーバーに
+    // 記録されていない)を、ここで必ずサーバーの正しい値へ補正する。
+    if (sp !== state.points) { state.points = sp; changed = true; }
     // レベルの進み具合は算数exp+理科exp合算で比較する(理科expはサーバーに新しく
     // 追加した列で、以前は比較に入っておらずサーバー同期のたびに理科分の
     // レベルアップが巻き戻る不具合の原因だった)。
@@ -22458,7 +22504,7 @@
       || SPELLBOOK_IDS_.some(function (el) { return (Number(state.spellbooks[el]) || 0) > (Number(sSpellbooks[el]) || 0); })
       || dailyLocalAhead;
     if (localAhead) {
-      apiPost('syncPoints', buildProgressSyncPayload(id)).catch(function () { });
+      syncPointsNow_(id);
     }
   }
 
@@ -23015,7 +23061,7 @@
     if (newlyEarned) {
       saveGameState(state);
       const session = loadSession();
-      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      if (session && session.id) syncPointsNow_(session.id);
     }
   }
 
@@ -24769,7 +24815,7 @@
     }
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     var typeLabel = q.capitalQuizType === 'capital' ? '県庁所在地' : '特産品・名物';
     var mpLine = pointsToAdd > 0 ? (' +' + pointsToAdd + 'MP') : '（本日のMP上限のためMPなし）';
     return '<div class="win-banner">✅ 正解！（社会ボーナス・' + typeLabel + '）' + mpLine + '</div>' + prefectureHtml;
@@ -25188,14 +25234,14 @@
       }
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        syncPointsNow_(session.id);
       }
       winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！${bossDisplay.name}が仲間になった！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}${worldBossChestHtml}${titleGainedHtml}`;
     } else {
       state.worldBossSubIndex[stageId] = nextSubIndex;
       saveGameState(state);
       if (session && session.id) {
-        apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        syncPointsNow_(session.id);
       }
       const nextBossDisplay = worldBossEnemyDisplay(stageId, nextSubIndex);
       winHtml = `<div class="win-banner">🎉 ボス「${bossDisplay.name}」を倒した！🎉</div>${bossDefeatQuoteHtml}${collectionGainedHtml}${hpBonusGainedHtml}${worldBossChestHtml}<div class="enemy-quote-banner">次のボス「${nextBossDisplay.name}」が立ちはだかる！</div>`;
@@ -25356,7 +25402,7 @@
           updateGameHud();
         }
       }).catch(function () { });
-      apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      syncPointsNow_(session.id);
     }
     return '<div class="enemy-quote-banner">🚁 ' + reasonText + '…救助されて下山することになった！HPが' + FUJI_RESCUE_HP_LOSS + '減り（残りHP: ' + state.hp + '）、MPが' + FUJI_RESCUE_MP_LOSS + '減った。再挑戦するには入山料' + FUJI_ENTRY_FEE_MP + 'MPが再度必要。</div>';
   }
@@ -25592,7 +25638,7 @@
     }
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     if (els.fujiPanel) els.fujiPanel.hidden = true;
     updateGameHud();
     nextQuestion();
@@ -25664,7 +25710,7 @@
     saveGameState(state);
     var session = loadSession();
     if (session && session.id) {
-      apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      syncPointsNow_(session.id);
       apiPost('fujiClimbSuccess', { id: session.id }).catch(function () { });
     }
     return '<div class="win-banner">🎉⛰️ 富士山の頂上に到達した！🎉</div>' + hpHtml + swordHtml;
@@ -25765,7 +25811,7 @@
     // お鉢巡り達成のご褒美として、タイム枠とは関係なく天空の槍を10回分もらえる。
     state.skySpearCharges = (Number(state.skySpearCharges) || 0) + OHACHI_SKY_SPEAR_REWARD_;
     saveGameState(state);
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     var hpHtml = reward.hp > 0
       ? '<div class="item-gain-banner">💪 タイム' + mLabel + '！HPが' + reward.hp + '増えた！（現在HP: ' + state.hp + '）</div>'
       : '<div class="item-gain-banner">タイムは' + mLabel + 'でした。規定のタイム枠に入らなかったため、HPボーナスはありません。</div>';
@@ -25864,7 +25910,7 @@
     // (以前は呼び忘れがあり、達成しても宝箱がサーバーに残らない不具合があった)。
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     return '<div class="win-banner">🎉🔄 お鉢巡りイージーモードを達成した！🎉</div>'
       + '<div class="item-gain-banner">💪 HPが' + OHACHI_EASY_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
       + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
@@ -25920,7 +25966,7 @@
     state.streak = 0;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     if (els.fujiPanel) els.fujiPanel.hidden = true;
     updateGameHud();
     nextQuestion();
@@ -25936,7 +25982,7 @@
     // サーバー同期までは保証しないため、達成時はここで明示的に行う)。
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     return '<div class="win-banner">🎉⛰️ 富士下山、5合目に到着した！🎉</div>'
       + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
   }
@@ -25950,7 +25996,7 @@
     // 同期まで保証していなかった)。
     saveGameState(state);
     var legSession = loadSession();
-    if (legSession && legSession.id) apiPost('syncPoints', buildProgressSyncPayload(legSession.id)).catch(function () { });
+    if (legSession && legSession.id) syncPointsNow_(legSession.id);
     var mpHtml = '<div class="item-gain-banner">💰 ボーナスMP+' + FUJI_DESCENT_LEG_MP_BONUS_ + '！（現在MP: ' + state.points + '）</div>';
     if (state.fujiDescentStation <= FUJI_DESCENT_BOTTOM_STATION_) {
       return mpHtml + finishFujiDescent_();
@@ -26102,7 +26148,7 @@
     // サーバーに残らないことがあった)。
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     return html;
   }
 
@@ -26115,7 +26161,7 @@
     state.usaLadyGiftPending = 0;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     window.alert('💍 クリスマスの贈り物！謎のおばさんに渡した宝石が、ダイヤの指輪' + pending + '個になって返ってきた！なんでも屋で' + DIAMOND_RING_SELL_MP_ + 'MPに交換できます。');
   }
 
@@ -26188,7 +26234,7 @@
     state.worldPendingIceSword = true;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     playSpellFx_({ emoji: '🧊', fx: '#38bdf8' }, 'cast');
     els.feedback.innerHTML = '<span class="fb-result">🧊 氷の剣を振るった！次の問題に正解すればボスに' + ICE_SWORD_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.iceSwordCharges + '回分）</span>';
@@ -26208,7 +26254,7 @@
     state.worldPendingSkySpear = true;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     playSpellFx_({ emoji: '🔱', fx: '#60a5fa' }, 'cast');
     els.feedback.innerHTML = '<span class="fb-result">🔱 天空の槍を投げた！次の問題に正解すればボスに' + SKY_SPEAR_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.skySpearCharges + '回分）</span>';
@@ -26227,7 +26273,7 @@
     state.worldPendingRaidenAxe = true;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     playSpellFx_({ emoji: '⚡', fx: '#facc15' }, 'cast');
     els.feedback.innerHTML = '<span class="fb-result">⚡ 雷電の斧を振るった！次の問題に正解すればボスに' + RAIDEN_AXE_DAMAGE_ + 'ダメージ！不正解だとかわされてしまう…（残り' + state.raidenAxeCharges + '回分）</span>';
@@ -26253,7 +26299,7 @@
     }
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     if (els.worldPanel && !els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
     els.feedback.innerHTML = hit
@@ -26274,7 +26320,7 @@
     state.hp = (Number(state.hp) || 0) + WISDOM_SEED_HP_GAIN_;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     renderShopList();
     renderItems();
@@ -26285,7 +26331,7 @@
     state.points = (Number(state.points) || 0) + WISDOM_SEED_SELL_MP_;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     renderShopList();
     renderItems();
@@ -26301,7 +26347,7 @@
     state.hp = (Number(state.hp) || 0) + WISDOM_FRUIT_HP_GAIN_;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     renderShopList();
     renderItems();
@@ -26312,7 +26358,7 @@
     state.points = (Number(state.points) || 0) + WISDOM_FRUIT_SELL_MP_;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     renderShopList();
     renderItems();
@@ -26328,7 +26374,7 @@
     state.hp = (Number(state.hp) || 0) + EFFORT_SEED_HP_GAIN_;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     renderShopList();
     renderItems();
@@ -26339,7 +26385,7 @@
     state.points = (Number(state.points) || 0) + EFFORT_SEED_SELL_MP_;
     saveGameState(state);
     var session = loadSession();
-    if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+    if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     renderShopList();
     renderItems();
@@ -26501,7 +26547,7 @@
     saveGameState(state);
     const session = loadSession();
     if (session && session.id) {
-      apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      syncPointsNow_(session.id);
     }
     els.feedback.innerHTML = `<span class="fb-result">${book.emoji} ${book.label}を詠唱！（自分のHPが${book.selfDmg}減った。残りHP: ${state.hp}）次の問題に正解すればボスに${book.dmg}ダメージ！不正解だとかわされてしまう…</span>`;
     els.feedback.classList.remove('incorrect');
@@ -26868,7 +26914,7 @@
       saveGameState(state);
       if (typeof window !== 'undefined') {
         const session = loadSession();
-        if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+        if (session && session.id) syncPointsNow_(session.id);
       }
       renderWorldPanel();
     });
@@ -27994,7 +28040,7 @@
       updateGameHud();
       els.bakuretsuQuizResult.textContent = '🎉 正解！' + (alreadySolved ? '' : ' +1HP獲得！') + ' ' + q.revealText;
       var session = loadSession();
-      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      if (session && session.id) syncPointsNow_(session.id);
     } else {
       els.bakuretsuQuizResult.textContent = '😅 ちがうかな…もう一度考えてみて！';
       window.setTimeout(function () {
@@ -28321,7 +28367,7 @@
       rollOnceWorldCountryDice_();
       saveGameState(state);
       var session = loadSession();
-      if (session && session.id) apiPost('syncPoints', buildProgressSyncPayload(session.id)).catch(function () { });
+      if (session && session.id) syncPointsNow_(session.id);
       showNextWorldDiceRoll_();
     });
   }
