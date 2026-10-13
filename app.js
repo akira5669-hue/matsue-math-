@@ -19170,10 +19170,15 @@
     // 都道府県制覇（県庁所在地クイズ、2026-11-01〜）で制覇した都道府県数
     // (都道府県制覇=prefectureCountとは別カウント)。3問セットが終わるたびに1増える。
     capitalQuizCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizCorrectTotal)) || 0,
-    // 県庁所在地クイズの連続正解カウント(通常練習中、お鉢巡り等が挑戦中でなく
-    // 47都道府県制覇済みの間だけ加算)。ohachiStreakと同じく端末セッション限定
-    // (あえて永続化しない)。10に達したら次の3問が県庁所在地クイズになる。
+    // イージーモード(通常モードとは独立した進捗)で制覇した都道府県数。
+    capitalQuizEasyCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizEasyCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizEasyCorrectTotal)) || 0,
+    // 県庁所在地クイズ(通常モード)の連続正解カウント。お鉢巡り等が挑戦中でなく
+    // 学年以上の単元を10個以上(文章題含む)選んでいる間だけ加算し、不正解で0に
+    // 戻る。ohachiStreakと同じく端末セッション限定(あえて永続化しない)。
     capitalQuizStreak: 0,
+    // イージーモードの解答数カウント。正誤に関係なく加算され、10問ごとに
+    // リセットされる(通常モードと違って連続正解は不要)。
+    capitalQuizEasyStreak: 0,
     capitalQuizBonusQueue: [],
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
@@ -19471,6 +19476,8 @@
     capitalQuizCard: document.getElementById('capitalQuizCard'),
     capitalQuizProgressText: document.getElementById('capitalQuizProgressText'),
     capitalQuizMapWrap: document.getElementById('capitalQuizMapWrap'),
+    capitalQuizEasyProgressText: document.getElementById('capitalQuizEasyProgressText'),
+    capitalQuizEasyMapWrap: document.getElementById('capitalQuizEasyMapWrap'),
     userAvatarBadge: document.getElementById('userAvatarBadge'),
     avatarToggle: document.getElementById('avatarToggle'),
     avatarPanel: document.getElementById('avatarPanel'),
@@ -20687,6 +20694,15 @@
     const isWordProblem = WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1;
     let missLineHtml = '';
     let sutobokeHtml = '';
+    // 都道府県制覇（県庁所在地クイズ）イージーモード：正誤に関係なく10問解く
+    // たびに次の3問が県庁所在地クイズになる(他の特別モード中は対象外)。
+    if (catId !== 'capitalQuizBonus' && !state.ohachiActive && !state.fujiActive && !state.fujiDescentActive && !state.ohachiEasyActive && !state.worldBossActiveStage && !state.usaCrossingActive && capitalQuizEasyEligible_()) {
+      state.capitalQuizEasyStreak = (Number(state.capitalQuizEasyStreak) || 0) + 1;
+      if (state.capitalQuizEasyStreak >= CAPITAL_QUIZ_STREAK_FOR_BONUS_) {
+        state.capitalQuizEasyStreak = 0;
+        state.capitalQuizBonusQueue = (state.capitalQuizBonusQueue || []).concat(buildCapitalQuizSet_('easy'));
+      }
+    }
     if (isCorrect) {
       state.correct++;
       clearWrongQuestion(state.current);
@@ -20713,14 +20729,15 @@
       if (state.ohachiEasyActive) {
         state.ohachiEasyProgress = (Number(state.ohachiEasyProgress) || 0) + 1;
       }
-      // 都道府県制覇（県庁所在地クイズ）：他の特別モード中でなく、47都道府県
-      // 制覇済みの間だけ、通常練習の連続正解数を積み上げる。10に達したら次の
-      // 3問(県庁所在地+特産品2問)を県庁所在地クイズに差し替える(loadNextQuestion側)。
-      if (catId !== 'capitalQuizBonus' && !state.ohachiActive && !state.fujiActive && !state.fujiDescentActive && !state.ohachiEasyActive && !state.worldBossActiveStage && !state.usaCrossingActive && capitalQuizEligible_(ownGrade)) {
+      // 都道府県制覇（県庁所在地クイズ）通常モード：他の特別モード中でなく、
+      // 学年以上の単元を10個以上(文章題を1つ以上含む)選んでいる間だけ、通常
+      // 練習の連続正解数を積み上げる。10問連続正解したら次の3問(県庁所在地+
+      // 特産品2問)を県庁所在地クイズに差し替える(loadNextQuestion側)。
+      if (catId !== 'capitalQuizBonus' && !state.ohachiActive && !state.fujiActive && !state.fujiDescentActive && !state.ohachiEasyActive && !state.worldBossActiveStage && !state.usaCrossingActive && capitalQuizNormalEligible_(ownGrade)) {
         state.capitalQuizStreak = (Number(state.capitalQuizStreak) || 0) + 1;
         if (state.capitalQuizStreak >= CAPITAL_QUIZ_STREAK_FOR_BONUS_) {
           state.capitalQuizStreak = 0;
-          state.capitalQuizBonusQueue = buildCapitalQuizSet_();
+          state.capitalQuizBonusQueue = (state.capitalQuizBonusQueue || []).concat(buildCapitalQuizSet_('normal'));
         }
       }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
@@ -22213,6 +22230,7 @@
       diamondRingCount: state.diamondRingCount,
       usaCrossingCompleted: state.usaCrossingCompleted,
       capitalQuizCorrectTotal: state.capitalQuizCorrectTotal,
+      capitalQuizEasyCorrectTotal: state.capitalQuizEasyCorrectTotal,
       spellbooks: state.spellbooks || {},
       // 1日のMP獲得上限・今日のミッションをサーバー側でも検証するための当日状態
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
@@ -22392,6 +22410,8 @@
     if (server.usaCrossingCompleted && !state.usaCrossingCompleted) { state.usaCrossingCompleted = true; changed = true; }
     var sCapitalQuizCorrectTotal = Number(server.capitalQuizCorrectTotal) || 0;
     if (sCapitalQuizCorrectTotal > (Number(state.capitalQuizCorrectTotal) || 0)) { state.capitalQuizCorrectTotal = sCapitalQuizCorrectTotal; changed = true; }
+    var sCapitalQuizEasyCorrectTotal = Number(server.capitalQuizEasyCorrectTotal) || 0;
+    if (sCapitalQuizEasyCorrectTotal > (Number(state.capitalQuizEasyCorrectTotal) || 0)) { state.capitalQuizEasyCorrectTotal = sCapitalQuizEasyCorrectTotal; changed = true; }
     var sWisdomSeedCount = Number(server.wisdomSeedCount) || 0;
     if (sWisdomSeedCount > (Number(state.wisdomSeedCount) || 0)) { state.wisdomSeedCount = sWisdomSeedCount; changed = true; }
     var sWisdomFruitCount = Number(server.wisdomFruitCount) || 0;
@@ -24771,17 +24791,30 @@
   function capitalQuizActive_() {
     return isAdminSession_() || todayKey() >= CAPITAL_QUIZ_START_;
   }
-  function capitalQuizUnlockedCount_() {
-    return Math.min(CAPITAL_QUIZ_ORDER_.length, Number(state.capitalQuizCorrectTotal) || 0);
+  // mode: 'normal'(学年以上10個+文章題1個以上選択、10問連続正解が必要) か
+  // 'easy'(誰でも参加可、連続でなくても10問解けばOK)。進捗・地図・クリア報酬は
+  // 完全に独立している。
+  var CAPITAL_QUIZ_COUNT_FIELD_ = { normal: 'capitalQuizCorrectTotal', easy: 'capitalQuizEasyCorrectTotal' };
+  function capitalQuizUnlockedCount_(mode) {
+    var field = CAPITAL_QUIZ_COUNT_FIELD_[mode] || 'capitalQuizCorrectTotal';
+    return Math.min(CAPITAL_QUIZ_ORDER_.length, Number(state[field]) || 0);
   }
-  // 47都道府県制覇した生徒なら誰でも無料で参加可能。
-  function capitalQuizEligible_(ownGrade) {
+  // 通常モード：学年以上の単元を10個以上選んでおり、かつその中に文章題が
+  // 1つ以上含まれている生徒だけが対象。
+  function capitalQuizNormalEligible_(ownGrade) {
     if (!capitalQuizActive_()) return false;
-    return (Number(state.prefectureCount) || 0) >= PREFECTURE_DATA.length;
+    var eligibleCats = CATEGORIES.filter(function (c) { return state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade); });
+    if (eligibleCats.length < 10) return false;
+    return eligibleCats.some(function (c) { return WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1; });
   }
-  // 10問連続正解のたびに出題する3問セット(県庁所在地1問+特産品2問、同じ
-  // 都道府県について)を作る。都道府県は沖縄からの制覇順で、一周したら最初へ戻る。
-  function buildCapitalQuizTrivia_(pref, correctItem, step) {
+  // イージーモード：誰でも無条件で参加可能。
+  function capitalQuizEasyEligible_() {
+    return capitalQuizActive_();
+  }
+  // 10問(通常=連続正解、イージー=解いた数)のたびに出題する3問セット(県庁
+  // 所在地1問+特産品2問、同じ都道府県について)を作る。都道府県は沖縄からの
+  // 制覇順で、一周したら最初へ戻る。
+  function buildCapitalQuizTrivia_(pref, correctItem, step, mode) {
     var wrongItems = [];
     var guard = 0;
     while (wrongItems.length < 3 && guard < 60) {
@@ -24793,48 +24826,60 @@
       if (w && w !== correctItem && wrongItems.indexOf(w) === -1) wrongItems.push(w);
     }
     return {
-      category: 'capitalQuizBonus', capitalQuizStep: step, capitalQuizTotal: CAPITAL_QUIZ_SET_SIZE_, capitalQuizPrefName: pref.name,
+      category: 'capitalQuizBonus', capitalQuizMode: mode, capitalQuizStep: step, capitalQuizTotal: CAPITAL_QUIZ_SET_SIZE_, capitalQuizPrefName: pref.name,
       question: '【社会】' + pref.name + 'の特産品・名物として正しいものはどれ？', answer: correctItem,
       choices: shuffle([correctItem].concat(wrongItems)), steps: [],
     };
   }
-  function buildCapitalQuizSet_() {
+  function buildCapitalQuizSet_(mode) {
     if (CAPITAL_QUIZ_ORDER_.length === 0) return [];
-    var idx = capitalQuizUnlockedCount_() % CAPITAL_QUIZ_ORDER_.length;
+    var idx = capitalQuizUnlockedCount_(mode) % CAPITAL_QUIZ_ORDER_.length;
     var pref = CAPITAL_QUIZ_ORDER_[idx];
     var capital = PREFECTURE_CAPITALS_[pref.name];
     if (!capital) return [];
     var wrongCapitals = shuffle(Object.keys(PREFECTURE_CAPITALS_).filter(function (n) { return n !== pref.name; }).map(function (n) { return PREFECTURE_CAPITALS_[n]; })).slice(0, 3);
     var q1 = {
-      category: 'capitalQuizBonus', capitalQuizStep: 1, capitalQuizTotal: CAPITAL_QUIZ_SET_SIZE_, capitalQuizPrefName: pref.name,
+      category: 'capitalQuizBonus', capitalQuizMode: mode, capitalQuizStep: 1, capitalQuizTotal: CAPITAL_QUIZ_SET_SIZE_, capitalQuizPrefName: pref.name,
       question: '【社会】' + pref.name + 'の県庁所在地はどこ？', answer: capital,
       choices: shuffle([capital].concat(wrongCapitals)), steps: [],
     };
     var items = shuffle(pref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean));
     var item1 = items[0];
     var item2 = items.length > 1 ? items[1] : items[0];
-    return [q1, buildCapitalQuizTrivia_(pref, item1, 2), buildCapitalQuizTrivia_(pref, item2, 3)];
+    return [q1, buildCapitalQuizTrivia_(pref, item1, 2, mode), buildCapitalQuizTrivia_(pref, item2, 3, mode)];
   }
   // 3問セットの最後の問題を終えた時だけ、正誤に関係なく次の都道府県へ進む。
+  // 通常モードの47都道府県制覇(1周目)で3つ星の宝石、イージーモードの
+  // 47都道府県制覇(1周目)で虹色の宝箱をプレゼントする。
   function maybeAdvanceCapitalQuizPrefecture_(q) {
     if (!q || q.category !== 'capitalQuizBonus' || q.capitalQuizStep !== q.capitalQuizTotal) return '';
-    var prevUnlocked = capitalQuizUnlockedCount_();
-    state.capitalQuizCorrectTotal = (Number(state.capitalQuizCorrectTotal) || 0) + 1;
-    var newUnlocked = capitalQuizUnlockedCount_();
+    var mode = q.capitalQuizMode === 'easy' ? 'easy' : 'normal';
+    var field = CAPITAL_QUIZ_COUNT_FIELD_[mode];
+    var prevUnlocked = capitalQuizUnlockedCount_(mode);
+    state[field] = (Number(state[field]) || 0) + 1;
+    var newUnlocked = capitalQuizUnlockedCount_(mode);
     if (newUnlocked <= prevUnlocked) return '';
     var newlyPref = CAPITAL_QUIZ_ORDER_[newUnlocked - 1];
     if (!newlyPref) return '';
-    var html = '<div class="prefecture-gain-banner">🏯「' + newlyPref.name + '」の県庁所在地クイズを制覇！（' + newUnlocked + '/' + CAPITAL_QUIZ_ORDER_.length + '）<br><span class="prefecture-trivia">' + newlyPref.trivia + '</span></div>';
+    var modeLabel = mode === 'easy' ? 'イージーモード' : '通常モード';
+    var html = '<div class="prefecture-gain-banner">🏯「' + newlyPref.name + '」の県庁所在地クイズ（' + modeLabel + '）を制覇！（' + newUnlocked + '/' + CAPITAL_QUIZ_ORDER_.length + '）<br><span class="prefecture-trivia">' + newlyPref.trivia + '</span></div>';
     if (newUnlocked === CAPITAL_QUIZ_ORDER_.length) {
-      html += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズで47都道府県制覇達成！おめでとう！🎉</div>';
-      // 1周目の全国制覇達成のお祝いに、3つ星の宝石をランダムで1個(2周目以降は
-      // ここに到達しない=capitalQuizUnlockedCount_が47で頭打ちのため一度きり)。
-      var capitalQuizGemTiers_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
-      var capitalQuizGemKey_ = capitalQuizGemTiers_[randInt(0, capitalQuizGemTiers_.length - 1)];
-      var capitalQuizGemDef_ = GEM_DEFS_[capitalQuizGemKey_];
-      state.gemItems = state.gemItems || {};
-      state.gemItems[capitalQuizGemKey_] = (Number(state.gemItems[capitalQuizGemKey_]) || 0) + 1;
-      html += '<div class="item-gain-banner">' + capitalQuizGemDef_.emoji + ' ' + capitalQuizGemDef_.label + 'を手に入れた！</div>';
+      html += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズ（' + modeLabel + '）で47都道府県制覇達成！おめでとう！🎉</div>';
+      if (mode === 'easy') {
+        // イージーモードの1周目達成のお祝いに、虹色の宝箱を1個。
+        var easyChestKey_ = treasureItemKey_('chest', 'rainbow');
+        state.treasureItems = state.treasureItems || {};
+        state.treasureItems[easyChestKey_] = (Number(state.treasureItems[easyChestKey_]) || 0) + 1;
+        html += '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_.rainbow + ' ' + TREASURE_TIER_LABEL_.rainbow + 'の宝箱を手に入れた！</div>';
+      } else {
+        // 通常モードの1周目達成のお祝いに、3つ星の宝石をランダムで1個。
+        var capitalQuizGemTiers_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
+        var capitalQuizGemKey_ = capitalQuizGemTiers_[randInt(0, capitalQuizGemTiers_.length - 1)];
+        var capitalQuizGemDef_ = GEM_DEFS_[capitalQuizGemKey_];
+        state.gemItems = state.gemItems || {};
+        state.gemItems[capitalQuizGemKey_] = (Number(state.gemItems[capitalQuizGemKey_]) || 0) + 1;
+        html += '<div class="item-gain-banner">' + capitalQuizGemDef_.emoji + ' ' + capitalQuizGemDef_.label + 'を手に入れた！</div>';
+      }
     }
     return html;
   }
@@ -24858,17 +24903,17 @@
     var mpLine = pointsToAdd > 0 ? (' +' + pointsToAdd + 'MP') : '（本日のMP上限のためMPなし）';
     return '<div class="win-banner">✅ 正解！（' + q.capitalQuizPrefName + '・' + typeLabel + '）' + mpLine + ' +' + CAPITAL_QUIZ_BONUS_HP_ + 'HP</div>' + prefectureHtml;
   }
-  var capitalQuizMapInjected_ = false;
-  function renderCapitalQuizMap_() {
-    if (!els.capitalQuizMapWrap || CAPITAL_QUIZ_ORDER_.length === 0) return;
-    if (!capitalQuizMapInjected_) {
-      els.capitalQuizMapWrap.innerHTML = PREFECTURE_MAP_SVG_SAFE;
-      capitalQuizMapInjected_ = true;
+  var capitalQuizMapInjected_ = { normal: false, easy: false };
+  function renderCapitalQuizMapFor_(mode, wrapEl) {
+    if (!wrapEl || CAPITAL_QUIZ_ORDER_.length === 0) return;
+    if (!capitalQuizMapInjected_[mode]) {
+      wrapEl.innerHTML = PREFECTURE_MAP_SVG_SAFE;
+      capitalQuizMapInjected_[mode] = true;
     }
-    var unlocked = capitalQuizUnlockedCount_();
+    var unlocked = capitalQuizUnlockedCount_(mode);
     var unlockedCodes = {};
     for (var i = 0; i < unlocked; i++) { unlockedCodes[CAPITAL_QUIZ_ORDER_[i].code] = true; }
-    var svgEl = els.capitalQuizMapWrap.querySelector('svg');
+    var svgEl = wrapEl.querySelector('svg');
     if (svgEl) {
       PREFECTURE_DATA.forEach(function (p) {
         var el = svgEl.querySelector('[data-code="' + p.code + '"]');
@@ -24877,13 +24922,17 @@
       });
     }
   }
-  function renderCapitalQuizProgress_() {
-    if (!els.capitalQuizProgressText) return;
-    var unlocked = capitalQuizUnlockedCount_();
-    els.capitalQuizProgressText.textContent = unlocked >= CAPITAL_QUIZ_ORDER_.length
+  function renderCapitalQuizProgressFor_(mode, textEl, wrapEl) {
+    if (!textEl) return;
+    var unlocked = capitalQuizUnlockedCount_(mode);
+    textEl.textContent = unlocked >= CAPITAL_QUIZ_ORDER_.length
       ? '🎉 ' + unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県すべて制覇しました！（沖縄スタート）'
       : unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県を制覇・沖縄スタート（次は「' + (CAPITAL_QUIZ_ORDER_[unlocked] ? CAPITAL_QUIZ_ORDER_[unlocked].name : '') + '」）';
-    renderCapitalQuizMap_();
+    renderCapitalQuizMapFor_(mode, wrapEl);
+  }
+  function renderCapitalQuizProgress_() {
+    renderCapitalQuizProgressFor_('normal', els.capitalQuizProgressText, els.capitalQuizMapWrap);
+    renderCapitalQuizProgressFor_('easy', els.capitalQuizEasyProgressText, els.capitalQuizEasyMapWrap);
   }
   function renderCapitalQuizCard_() {
     if (!els.capitalQuizCard) return;
