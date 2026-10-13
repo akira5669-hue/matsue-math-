@@ -24827,6 +24827,14 @@
     var html = '<div class="prefecture-gain-banner">🏯「' + newlyPref.name + '」の県庁所在地クイズを制覇！（' + newUnlocked + '/' + CAPITAL_QUIZ_ORDER_.length + '）<br><span class="prefecture-trivia">' + newlyPref.trivia + '</span></div>';
     if (newUnlocked === CAPITAL_QUIZ_ORDER_.length) {
       html += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズで47都道府県制覇達成！おめでとう！🎉</div>';
+      // 1周目の全国制覇達成のお祝いに、3つ星の宝石をランダムで1個(2周目以降は
+      // ここに到達しない=capitalQuizUnlockedCount_が47で頭打ちのため一度きり)。
+      var capitalQuizGemTiers_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
+      var capitalQuizGemKey_ = capitalQuizGemTiers_[randInt(0, capitalQuizGemTiers_.length - 1)];
+      var capitalQuizGemDef_ = GEM_DEFS_[capitalQuizGemKey_];
+      state.gemItems = state.gemItems || {};
+      state.gemItems[capitalQuizGemKey_] = (Number(state.gemItems[capitalQuizGemKey_]) || 0) + 1;
+      html += '<div class="item-gain-banner">' + capitalQuizGemDef_.emoji + ' ' + capitalQuizGemDef_.label + 'を手に入れた！</div>';
     }
     return html;
   }
