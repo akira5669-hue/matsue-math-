@@ -1917,6 +1917,11 @@ h1 {
   padding: 18px 20px;
   margin-bottom: 18px;
 }
+.capital-quiz-mode-inactive {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  pointer-events: none;
+}
 .test-photo-card {
   border: 1px solid var(--c-line);
   border-radius: 10px;

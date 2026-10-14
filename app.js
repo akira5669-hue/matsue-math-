@@ -19181,6 +19181,9 @@
     // イージーモードの解答数カウント。正誤に関係なく加算され、10問ごとに
     // リセットされる(通常モードと違って連続正解は不要)。
     capitalQuizEasyStreak: 0,
+    // 通常モード／イージーモードは同時進行ではなく、画面のボタンでどちらか
+    // 一方だけを選ぶ(端末ローカルの設定として保存)。
+    capitalQuizSelectedMode: ((savedProgress && savedProgress.capitalQuizSelectedMode) || (savedGame && savedGame.capitalQuizSelectedMode)) === 'easy' ? 'easy' : 'normal',
     capitalQuizBonusQueue: [],
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
@@ -19479,6 +19482,9 @@
     capitalQuizProgressText: document.getElementById('capitalQuizProgressText'),
     capitalQuizMapWrap: document.getElementById('capitalQuizMapWrap'),
     capitalQuizEasyProgressText: document.getElementById('capitalQuizEasyProgressText'),
+    capitalQuizModeToggle: document.getElementById('capitalQuizModeToggle'),
+    capitalQuizNormalSection: document.getElementById('capitalQuizNormalSection'),
+    capitalQuizEasySection: document.getElementById('capitalQuizEasySection'),
     capitalQuizEasyMapWrap: document.getElementById('capitalQuizEasyMapWrap'),
     userAvatarBadge: document.getElementById('userAvatarBadge'),
     avatarToggle: document.getElementById('avatarToggle'),
@@ -21306,12 +21312,23 @@
       const prevPrefectureCount = state.prefectureCount;
       let newlyUnlockedPrefecture = null;
       let prefectureLapJustCompleted = false;
+      let prefectureLapChestTier_ = null;
       if (prefectureLapEnabled_ && PREFECTURE_DATA.length > 0) {
         let nextCount = (Number(state.prefectureCount) || 0) + 1;
         if (nextCount > PREFECTURE_DATA.length) {
           prefectureLapJustCompleted = true;
-          state.prefectureLap = (Number(state.prefectureLap) || 1) + 1;
+          const completedPrefectureLap_ = Number(state.prefectureLap) || 1;
+          state.prefectureLap = completedPrefectureLap_ + 1;
           nextCount = 1;
+          // 2周目以降の制覇ごとに、ランダムな種類の宝箱を1個(1周目はボーナスMP
+          // 対象のためここでは付与しない)。
+          if (completedPrefectureLap_ >= 2) {
+            const prefectureLapChestTiers_ = ['bronze', 'silver', 'gold', 'rainbow'];
+            prefectureLapChestTier_ = prefectureLapChestTiers_[randInt(0, prefectureLapChestTiers_.length - 1)];
+            const prefectureLapChestKey_ = treasureItemKey_('chest', prefectureLapChestTier_);
+            state.treasureItems = state.treasureItems || {};
+            state.treasureItems[prefectureLapChestKey_] = (Number(state.treasureItems[prefectureLapChestKey_]) || 0) + 1;
+          }
         }
         state.prefectureCount = nextCount;
         newlyUnlockedPrefecture = PREFECTURE_DATA[nextCount - 1];
@@ -21360,6 +21377,9 @@
         prefectureGainedHtml = `<div class="prefecture-gain-banner">🗾「${newlyUnlockedPrefecture.name}」を制覇！（${state.prefectureCount}/47${prefectureLapLabel_}）<br><span class="prefecture-trivia">${newlyUnlockedPrefecture.trivia}</span></div>`;
         if (prefectureLapJustCompleted) {
           prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 ${state.prefectureLap - 1}周目、47都道府県制覇達成！おめでとう！${state.prefectureLap}周目スタート！🎉</div>`;
+          if (prefectureLapChestTier_) {
+            prefectureGainedHtml += `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[prefectureLapChestTier_]} ${TREASURE_TIER_LABEL_[prefectureLapChestTier_]}の宝箱を手に入れた！</div>`;
+          }
         } else if (!prefectureLapEnabled_ && state.prefectureCount === 47) {
           prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 47都道府県制覇達成！おめでとう！🎉</div>`;
         }
@@ -24828,17 +24848,22 @@
     var field = CAPITAL_QUIZ_COUNT_FIELD_[mode] || 'capitalQuizCorrectTotal';
     return Math.min(CAPITAL_QUIZ_ORDER_.length, Number(state[field]) || 0);
   }
-  // 通常モード：学年以上の単元を10個以上選んでおり、かつその中に文章題が
-  // 1つ以上含まれている生徒だけが対象。
+  // 通常モード／イージーモードは画面上のボタンでどちらか一方だけを選択する
+  // (同時進行ではない)。選択中のモードでなければどちらも条件を満たさない扱い。
   function capitalQuizNormalEligible_(ownGrade) {
-    if (!capitalQuizActive_()) return false;
+    if (!capitalQuizActive_() || state.capitalQuizSelectedMode !== 'normal') return false;
     var eligibleCats = CATEGORIES.filter(function (c) { return state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade); });
     if (eligibleCats.length < 10) return false;
     return eligibleCats.some(function (c) { return WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1; });
   }
-  // イージーモード：誰でも無条件で参加可能。
+  // イージーモード：選択中であれば誰でも無条件で参加可能。
   function capitalQuizEasyEligible_() {
-    return capitalQuizActive_();
+    return capitalQuizActive_() && state.capitalQuizSelectedMode === 'easy';
+  }
+  function capitalQuizToggleMode_() {
+    state.capitalQuizSelectedMode = state.capitalQuizSelectedMode === 'easy' ? 'normal' : 'easy';
+    saveGameState(state);
+    renderCapitalQuizCard_();
   }
   // 10問(通常=連続正解、イージー=解いた数)のたびに出題する3問セット(県庁
   // 所在地1問+特産品2問、同じ都道府県について)を作る。都道府県は沖縄からの
@@ -24967,6 +24992,14 @@
     if (!els.capitalQuizCard) return;
     if (!capitalQuizActive_()) { els.capitalQuizCard.hidden = true; return; }
     els.capitalQuizCard.hidden = false;
+    var isEasy = state.capitalQuizSelectedMode === 'easy';
+    if (els.capitalQuizModeToggle) {
+      els.capitalQuizModeToggle.textContent = isEasy
+        ? '🔄 今はイージーモード中（タップで通常モードに切替）'
+        : '🏯 今は通常モード中（タップでイージーモードに切替）';
+    }
+    if (els.capitalQuizNormalSection) els.capitalQuizNormalSection.classList.toggle('capital-quiz-mode-inactive', isEasy);
+    if (els.capitalQuizEasySection) els.capitalQuizEasySection.classList.toggle('capital-quiz-mode-inactive', !isEasy);
     renderCapitalQuizProgress_();
   }
 
@@ -28517,6 +28550,7 @@
   if (els.fujiClimbBtn) els.fujiClimbBtn.addEventListener('click', startFujiClimb_);
   if (els.ohachiStartBtn) els.ohachiStartBtn.addEventListener('click', startOhachiMeguri_);
   if (els.ohachiEasyStartBtn) els.ohachiEasyStartBtn.addEventListener('click', startOhachiEasy_);
+  if (els.capitalQuizModeToggle) els.capitalQuizModeToggle.addEventListener('click', capitalQuizToggleMode_);
   if (els.fujiDescentStartBtn) els.fujiDescentStartBtn.addEventListener('click', startFujiDescent_);
   if (els.usaCrossingStartBtn) els.usaCrossingStartBtn.addEventListener('click', startUsaCrossing_);
   if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.addEventListener('click', testUsaCrossingTemptation_);
