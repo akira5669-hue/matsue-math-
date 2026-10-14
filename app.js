@@ -19417,6 +19417,8 @@
     fujiBannerText: document.getElementById('fujiBannerText'),
     ohachiBanner: document.getElementById('ohachiBanner'),
     ohachiBannerText: document.getElementById('ohachiBannerText'),
+    prefectureLapBanner: document.getElementById('prefectureLapBanner'),
+    prefectureLapBannerText: document.getElementById('prefectureLapBannerText'),
     ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
     ohachiEasyBannerText: document.getElementById('ohachiEasyBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
@@ -20555,6 +20557,7 @@
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
+    renderPrefectureLapBanner_();
     renderOhachiEasyBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
@@ -21305,10 +21308,9 @@
         if (session && session.id) syncPointsNow_(session.id);
       }
 
-      // 都道府県制覇は、まず00001専用プレビューとして何周もできるようにする
-      // (47到達後は北海道から塗り直し、周回数を別途カウントする)。それ以外の
-      // 生徒は従来通り47で頭打ちのまま。
-      const prefectureLapEnabled_ = isAdminSession_();
+      // 都道府県制覇は何周もできる(47到達後は北海道から塗り直し、周回数を
+      // 別途カウントする)。2026-10-14に全生徒へ一般公開済み。
+      const prefectureLapEnabled_ = true;
       const prevPrefectureCount = state.prefectureCount;
       let newlyUnlockedPrefecture = null;
       let prefectureLapJustCompleted = false;
@@ -21881,6 +21883,21 @@
     els.worldBossChestBanner.hidden = false;
     if (els.worldBossChestBannerText) {
       els.worldBossChestBannerText.textContent = '📢【今月限定！】世界一周のボスを倒すと、学年に関係なく必ず🌈虹色の宝箱が1個もらえます！なんでも屋で虹色の鍵を買って開けてみよう。10月末まで。';
+    }
+  }
+
+  // 都道府県制覇の周回機能一般公開＋県庁所在地クイズ(11月スタート)の告知。
+  var PREFECTURE_LAP_NOTICE_START_ = '2026-10-14';
+  var PREFECTURE_LAP_NOTICE_END_ = '2026-11-07';
+  function renderPrefectureLapBanner_() {
+    if (!els.prefectureLapBanner) return;
+    if (todayKey() > PREFECTURE_LAP_NOTICE_END_) {
+      els.prefectureLapBanner.hidden = true;
+      return;
+    }
+    els.prefectureLapBanner.hidden = false;
+    if (els.prefectureLapBannerText) {
+      els.prefectureLapBannerText.textContent = '📢【お知らせ】都道府県制覇が何周でもできるようになりました！2周目以降は制覇するたびにランダムな種類の宝箱がもらえます。さらに11月1日からは「都道府県制覇（県庁所在地クイズ）」もスタート！（通常モード・イージーモードの2種類、47都道府県制覇で宝石や宝箱がもらえるよ）お楽しみに！';
     }
   }
 
