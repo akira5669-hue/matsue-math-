@@ -19035,6 +19035,8 @@
     rareType: (savedGame && (savedGame.rareType === null || RARE_TYPES[savedGame.rareType])) ? savedGame.rareType : rollRareType(),
     items: (savedProgress && Array.isArray(savedProgress.items)) ? savedProgress.items.slice() : ((savedGame && Array.isArray(savedGame.items)) ? savedGame.items.slice() : []),
     prefectureCount: Math.max(0, Math.min(47, (savedGame && Number(savedGame.prefectureCount)) || 0)),
+    // 都道府県制覇の周回数(00001専用プレビュー、何周もできるように)。
+    prefectureLap: Math.max(1, (savedProgress && Number(savedProgress.prefectureLap)) || (savedGame && Number(savedGame.prefectureLap)) || 1),
     avatar: (savedGame && savedGame.avatar && typeof savedGame.avatar === 'object') ? savedGame.avatar : null,
     missionDate: (savedProgress && savedProgress.missionDate) || (savedGame && savedGame.missionDate) || null,
     missionGrade: (savedProgress && savedProgress.missionGrade) || (savedGame && savedGame.missionGrade) || null,
@@ -21297,9 +21299,26 @@
         if (session && session.id) syncPointsNow_(session.id);
       }
 
+      // 都道府県制覇は、まず00001専用プレビューとして何周もできるようにする
+      // (47到達後は北海道から塗り直し、周回数を別途カウントする)。それ以外の
+      // 生徒は従来通り47で頭打ちのまま。
+      const prefectureLapEnabled_ = isAdminSession_();
       const prevPrefectureCount = state.prefectureCount;
-      state.prefectureCount = Math.min(47, state.prefectureCount + 1);
-      const newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
+      let newlyUnlockedPrefecture = null;
+      let prefectureLapJustCompleted = false;
+      if (prefectureLapEnabled_ && PREFECTURE_DATA.length > 0) {
+        let nextCount = (Number(state.prefectureCount) || 0) + 1;
+        if (nextCount > PREFECTURE_DATA.length) {
+          prefectureLapJustCompleted = true;
+          state.prefectureLap = (Number(state.prefectureLap) || 1) + 1;
+          nextCount = 1;
+        }
+        state.prefectureCount = nextCount;
+        newlyUnlockedPrefecture = PREFECTURE_DATA[nextCount - 1];
+      } else {
+        state.prefectureCount = Math.min(47, state.prefectureCount + 1);
+        newlyUnlockedPrefecture = (state.prefectureCount > prevPrefectureCount && PREFECTURE_DATA.length > 0) ? PREFECTURE_DATA[state.prefectureCount - 1] : null;
+      }
 
       const newWorldCount = worldCountForLevel(state.level);
       const newlyUnlockedCountry = (newWorldCount > prevWorldCount && Array.isArray(WORLD_DATA) && WORLD_DATA.length > 0) ? WORLD_DATA[newWorldCount - 1] : null;
@@ -21337,8 +21356,11 @@
       }
       let prefectureGainedHtml = '';
       if (newlyUnlockedPrefecture) {
-        prefectureGainedHtml = `<div class="prefecture-gain-banner">🗾「${newlyUnlockedPrefecture.name}」を制覇！（${state.prefectureCount}/47）<br><span class="prefecture-trivia">${newlyUnlockedPrefecture.trivia}</span></div>`;
-        if (state.prefectureCount === 47) {
+        const prefectureLapLabel_ = (Number(state.prefectureLap) || 1) > 1 ? `・${state.prefectureLap}周目` : '';
+        prefectureGainedHtml = `<div class="prefecture-gain-banner">🗾「${newlyUnlockedPrefecture.name}」を制覇！（${state.prefectureCount}/47${prefectureLapLabel_}）<br><span class="prefecture-trivia">${newlyUnlockedPrefecture.trivia}</span></div>`;
+        if (prefectureLapJustCompleted) {
+          prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 ${state.prefectureLap - 1}周目、47都道府県制覇達成！おめでとう！${state.prefectureLap}周目スタート！🎉</div>`;
+        } else if (!prefectureLapEnabled_ && state.prefectureCount === 47) {
           prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 47都道府県制覇達成！おめでとう！🎉</div>`;
         }
       }
@@ -22211,7 +22233,7 @@
   // まとめてサーバーへ送るための共通ペイロード(syncPointsアクション)。
   function buildProgressSyncPayload(id) {
     return {
-      id: id, points: state.points, level: state.level, exp: state.exp, scienceExp: state.scienceExp, prefectureCount: state.prefectureCount,
+      id: id, points: state.points, level: state.level, exp: state.exp, scienceExp: state.scienceExp, prefectureCount: state.prefectureCount, prefectureLap: state.prefectureLap,
       items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
       hp: state.hp,
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
@@ -22338,7 +22360,12 @@
     if (isProgressGreater(sl, se + sse, state.level, (Number(state.exp) || 0) + (Number(state.scienceExp) || 0))) {
       state.level = sl; state.exp = se; state.scienceExp = sse; changed = true;
     }
-    if (spc > state.prefectureCount) { state.prefectureCount = spc; changed = true; }
+    // 都道府県制覇は(周回, 県数)のペアで比較する(周回が進んでいれば県数が
+    // 一時的に小さくても進んでいる扱い。00001専用プレビューの周回機能用)。
+    var sPrefectureLap = Number(server.prefectureLap) || 1;
+    if (isProgressGreater(sPrefectureLap, spc, Number(state.prefectureLap) || 1, state.prefectureCount)) {
+      state.prefectureLap = sPrefectureLap; state.prefectureCount = spc; changed = true;
+    }
     if (sHp > (Number(state.hp) || 0)) { state.hp = sHp; changed = true; }
     if (sWorldCountry > (Number(state.worldCountry) || 0)) { state.worldCountry = sWorldCountry; changed = true; }
     sItems.forEach(function (itemId) {
@@ -22525,7 +22552,7 @@
 
     var localAhead = sp < state.points
       || isProgressGreater(state.level, (Number(state.exp) || 0) + (Number(state.scienceExp) || 0), sl, se + sse)
-      || spc < state.prefectureCount
+      || isProgressGreater(Number(state.prefectureLap) || 1, state.prefectureCount, sPrefectureLap, spc)
       || state.items.some(function (x) { return sItems.indexOf(x) === -1; })
       || state.rareCollected.some(function (x) { return sRareCollected.indexOf(x) === -1; })
       || Object.keys(state.rareDefeats).some(function (k) { return (Number(state.rareDefeats[k]) || 0) > (Number(sRareDefeats[k]) || 0); })
@@ -24740,9 +24767,11 @@
         el.classList.toggle('unlocked', p.code <= count);
       });
     }
+    var prefectureLap_ = Number(state.prefectureLap) || 1;
+    var prefectureLapPrefix_ = prefectureLap_ > 1 ? prefectureLap_ + '周目：' : '';
     els.prefectureProgress.textContent = count >= 47
       ? '🎉 47/47 都道府県すべて制覇しました！おめでとう！ 🎉'
-      : count + ' / 47 都道府県を制覇！（次は「' + PREFECTURE_DATA[count].name + '」）';
+      : prefectureLapPrefix_ + count + ' / 47 都道府県を制覇！（次は「' + PREFECTURE_DATA[count].name + '」）';
     els.prefectureList.innerHTML = PREFECTURE_DATA.map(function (p) {
       if (p.code > count) {
         return '<div class="prefecture-row is-locked"><span class="prefecture-row-name">？？？</span></div>';

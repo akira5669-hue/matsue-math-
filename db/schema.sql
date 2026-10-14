@@ -19,6 +19,8 @@ CREATE TABLE students (
   science_exp INTEGER NOT NULL DEFAULT 0, -- 理科モードの経験値(以前はクライアントのみで保持しており、レベル整合性チェックが算数expだけを見ていたため同期のたびに理科分のレベルアップが巻き戻るバグがあった)
   last_login TIMESTAMPTZ,
   prefecture_count INTEGER NOT NULL DEFAULT 0,
+  prefecture_lap INTEGER NOT NULL DEFAULT 1, -- 都道府県制覇の周回数(00001専用プレビュー、何周もできる)。47到達後は1に戻り+1される
+  prefecture_bonus_claimed BOOLEAN NOT NULL DEFAULT FALSE, -- 都道府県制覇ボーナス(300MP)を一度でも受け取ったか(周回機能導入後も最初の1回だけに限定するためのガード)
   avatar JSONB,                            -- {hair,face,skin,hairColor,outfitColor}
   apology_bonus_granted_at TIMESTAMPTZ,
   items JSONB NOT NULL DEFAULT '[]',
