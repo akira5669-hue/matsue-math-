@@ -22198,6 +22198,7 @@
         state.diamondRingCount = Number(progress.diamondRingCount) || state.diamondRingCount;
         state.usaCrossingCompleted = !!(state.usaCrossingCompleted || progress.usaCrossingCompleted);
         state.capitalQuizCorrectTotal = Number(progress.capitalQuizCorrectTotal) || state.capitalQuizCorrectTotal;
+        state.capitalQuizEasyCorrectTotal = Number(progress.capitalQuizEasyCorrectTotal) || state.capitalQuizEasyCorrectTotal;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
         // 富士登山関連の永続フィールドがここで復元されておらず、ログアウト(セッション
         // クリア→リロード)直後は一時的にゲスト扱いの初期値(0/false/null)で状態が
@@ -24886,6 +24887,9 @@
   // 所在地1問+特産品2問、同じ都道府県について)を作る。都道府県は沖縄からの
   // 制覇順で、一周したら最初へ戻る。
   function buildCapitalQuizTrivia_(pref, correctItem, step, mode) {
+    // 不正解の選択肢に、出題中の都道府県自身の特産品(例：静岡の「お茶」が正解の
+    // 時に、和歌山由来の「みかん」)が混ざると正解が2つになるため除外する。
+    var ownItems = pref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
     var wrongItems = [];
     var guard = 0;
     while (wrongItems.length < 3 && guard < 60) {
@@ -24894,7 +24898,7 @@
       if (otherPref.name === pref.name) continue;
       var otherItems = otherPref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
       var w = otherItems[randInt(0, otherItems.length - 1)];
-      if (w && w !== correctItem && wrongItems.indexOf(w) === -1) wrongItems.push(w);
+      if (w && ownItems.indexOf(w) === -1 && wrongItems.indexOf(w) === -1) wrongItems.push(w);
     }
     return {
       category: 'capitalQuizBonus', capitalQuizMode: mode, capitalQuizStep: step, capitalQuizTotal: CAPITAL_QUIZ_SET_SIZE_, capitalQuizPrefName: pref.name,
@@ -24904,7 +24908,10 @@
   }
   function buildCapitalQuizSet_(mode) {
     if (CAPITAL_QUIZ_ORDER_.length === 0) return [];
-    var idx = capitalQuizUnlockedCount_(mode) % CAPITAL_QUIZ_ORDER_.length;
+    // 制覇数(capitalQuizUnlockedCount_)は47で頭打ちになるため、それを使うと
+    // 47制覇後はずっと沖縄が出続けてしまう。頭打ちのない累計値で一周させる。
+    var field = CAPITAL_QUIZ_COUNT_FIELD_[mode] || 'capitalQuizCorrectTotal';
+    var idx = (Number(state[field]) || 0) % CAPITAL_QUIZ_ORDER_.length;
     var pref = CAPITAL_QUIZ_ORDER_[idx];
     var capital = PREFECTURE_CAPITALS_[pref.name];
     if (!capital) return [];

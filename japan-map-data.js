@@ -259,7 +259,7 @@ const PREFECTURE_INFO = [
   { code: 34, name: "広島", region: "chugoku", trivia: "お好み焼き・厳島神社（宮島）" },
   { code: 35, name: "山口", region: "chugoku", trivia: "ふぐ・秋吉台" },
   { code: 36, name: "徳島", region: "shikoku", trivia: "阿波おどり・すだち" },
-  { code: 37, name: "香川", region: "shikoku", trivia: "うどん" },
+  { code: 37, name: "香川", region: "shikoku", trivia: "うどん・金刀比羅宮（こんぴらさん）" },
   { code: 38, name: "愛媛", region: "shikoku", trivia: "みかん・道後温泉" },
   { code: 39, name: "高知", region: "shikoku", trivia: "かつおのたたき・坂本龍馬" },
   { code: 40, name: "福岡", region: "kyushu-okinawa", trivia: "明太子・博多ラーメン" },
