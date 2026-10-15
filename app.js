@@ -19485,6 +19485,7 @@
     capitalQuizMapWrap: document.getElementById('capitalQuizMapWrap'),
     capitalQuizEasyProgressText: document.getElementById('capitalQuizEasyProgressText'),
     capitalQuizModeToggle: document.getElementById('capitalQuizModeToggle'),
+    capitalQuizLockText: document.getElementById('capitalQuizLockText'),
     capitalQuizNormalSection: document.getElementById('capitalQuizNormalSection'),
     capitalQuizEasySection: document.getElementById('capitalQuizEasySection'),
     capitalQuizEasyMapWrap: document.getElementById('capitalQuizEasyMapWrap'),
@@ -24841,7 +24842,7 @@
   }
 
   /* ---------- 都道府県制覇（県庁所在地クイズ）(2026-11-1〜、期限なしで継続) ---------- */
-  // 47都道府県制覇(prefectureCount>=47)を達成した生徒なら誰でも無料で参加可能。
+  // 47都道府県制覇(1周目を達成済み)の生徒なら、通常・イージーどちらも無料で参加可能。
   // 通常練習で10問連続正解するたびに、11〜13問目の3問が県庁所在地クイズに
   // 差し替わる(1問目=その都道府県の県庁所在地、2・3問目=その都道府県の特産品)。
   // 1問正解ごとに+1MP・+1HP。不正解でも罰則なし(通常の練習に戻るだけ)。
@@ -24868,15 +24869,20 @@
   }
   // 通常モード／イージーモードは画面上のボタンでどちらか一方だけを選択する
   // (同時進行ではない)。選択中のモードでなければどちらも条件を満たさない扱い。
+  // 都道府県制覇を1周以上達成しているか。周回機能(2周目以降はprefectureCountが
+  // 1に戻る)があるため、prefectureCount>=47だけでなく周回数も見る。
+  function capitalQuizPrefectureCleared_() {
+    return (Number(state.prefectureLap) || 1) >= 2 || (Number(state.prefectureCount) || 0) >= 47;
+  }
   function capitalQuizNormalEligible_(ownGrade) {
-    if (!capitalQuizActive_() || state.capitalQuizSelectedMode !== 'normal') return false;
+    if (!capitalQuizActive_() || !capitalQuizPrefectureCleared_() || state.capitalQuizSelectedMode !== 'normal') return false;
     var eligibleCats = CATEGORIES.filter(function (c) { return state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade); });
     if (eligibleCats.length < 10) return false;
     return eligibleCats.some(function (c) { return WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1; });
   }
-  // イージーモード：選択中であれば誰でも無条件で参加可能。
+  // イージーモード：47都道府県制覇済みなら、単元の選び方に関係なく参加可能。
   function capitalQuizEasyEligible_() {
-    return capitalQuizActive_() && state.capitalQuizSelectedMode === 'easy';
+    return capitalQuizActive_() && capitalQuizPrefectureCleared_() && state.capitalQuizSelectedMode === 'easy';
   }
   function capitalQuizToggleMode_() {
     state.capitalQuizSelectedMode = state.capitalQuizSelectedMode === 'easy' ? 'normal' : 'easy';
@@ -25016,6 +25022,11 @@
     if (!els.capitalQuizCard) return;
     if (!capitalQuizActive_()) { els.capitalQuizCard.hidden = true; return; }
     els.capitalQuizCard.hidden = false;
+    if (els.capitalQuizLockText) {
+      var locked = !capitalQuizPrefectureCleared_();
+      els.capitalQuizLockText.hidden = !locked;
+      if (locked) els.capitalQuizLockText.textContent = '🔒 47都道府県制覇（' + (Number(state.prefectureCount) || 0) + '/47）で挑戦できるようになります。';
+    }
     var isEasy = state.capitalQuizSelectedMode === 'easy';
     if (els.capitalQuizModeToggle) {
       els.capitalQuizModeToggle.textContent = isEasy
