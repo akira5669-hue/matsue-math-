@@ -24871,18 +24871,18 @@
   // (同時進行ではない)。選択中のモードでなければどちらも条件を満たさない扱い。
   // 都道府県制覇を1周以上達成しているか。周回機能(2周目以降はprefectureCountが
   // 1に戻る)があるため、prefectureCount>=47だけでなく周回数も見る。
-  function capitalQuizPrefectureCleared_() {
+  function prefectureClearedOnce_() {
     return (Number(state.prefectureLap) || 1) >= 2 || (Number(state.prefectureCount) || 0) >= 47;
   }
   function capitalQuizNormalEligible_(ownGrade) {
-    if (!capitalQuizActive_() || !capitalQuizPrefectureCleared_() || state.capitalQuizSelectedMode !== 'normal') return false;
+    if (!capitalQuizActive_() || !prefectureClearedOnce_() || state.capitalQuizSelectedMode !== 'normal') return false;
     var eligibleCats = CATEGORIES.filter(function (c) { return state.enabled.has(c.id) && isAtOrAboveOwnGrade(c.id, ownGrade); });
     if (eligibleCats.length < 10) return false;
     return eligibleCats.some(function (c) { return WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1; });
   }
   // イージーモード：47都道府県制覇済みなら、単元の選び方に関係なく参加可能。
   function capitalQuizEasyEligible_() {
-    return capitalQuizActive_() && capitalQuizPrefectureCleared_() && state.capitalQuizSelectedMode === 'easy';
+    return capitalQuizActive_() && prefectureClearedOnce_() && state.capitalQuizSelectedMode === 'easy';
   }
   function capitalQuizToggleMode_() {
     state.capitalQuizSelectedMode = state.capitalQuizSelectedMode === 'easy' ? 'normal' : 'easy';
@@ -25023,7 +25023,7 @@
     if (!capitalQuizActive_()) { els.capitalQuizCard.hidden = true; return; }
     els.capitalQuizCard.hidden = false;
     if (els.capitalQuizLockText) {
-      var locked = !capitalQuizPrefectureCleared_();
+      var locked = !prefectureClearedOnce_();
       els.capitalQuizLockText.hidden = !locked;
       if (locked) els.capitalQuizLockText.textContent = '🔒 47都道府県制覇（' + (Number(state.prefectureCount) || 0) + '/47）で挑戦できるようになります。';
     }
@@ -25663,8 +25663,9 @@
     var today = todayKey();
     return today >= FUJI_START_ && today <= FUJI_END_;
   }
+  // 周回機能(2周目以降はprefectureCountが1に戻る)があるため、周回数も見る。
   function fujiUnlocked_() {
-    return (Number(state.prefectureCount) || 0) >= 47;
+    return prefectureClearedOnce_();
   }
   // 富士登山共済プールの月次精算(00001限定)。自動実行(cron)の仕組みがまだ無いため、
   // 月末に管理者が手動でタップして実行する運用。今月分を対象に、入山料・救助
