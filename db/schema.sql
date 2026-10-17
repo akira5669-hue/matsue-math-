@@ -313,7 +313,7 @@ CREATE TABLE effort_seed_monthly_distributions (
 CREATE TABLE reading_hall_of_fame (
   month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
   saved_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  entries JSONB NOT NULL DEFAULT '[]'      -- [{rank, studentId, grade, count, books:[{title, review}]}]
+  entries JSONB NOT NULL DEFAULT '[]'      -- [{rank, studentId, grade, count, likes, books:[{title, review, likes}]}]
 );
 
 CREATE TABLE weekly_quiz_answers (

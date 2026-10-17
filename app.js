@@ -23622,10 +23622,10 @@
         var monthLabel = parts[0] + '年' + Number(parts[1]) + '月';
         var peopleHtml = (m.entries || []).map(function (e) {
           var booksHtml = '<div class="reading-books-list">' + (e.books || []).map(function (b) {
-            return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p></div>';
+            return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p><span class="reading-hof-likes">👍 ' + (Number(b.likes) || 0) + '</span></div>';
           }).join('') + '</div>';
           var gradeTag = e.grade ? '<span class="ranking-grade">' + escHtml(e.grade) + '</span>' : '';
-          return '<details class="reading-hof-person"><summary>' + (rankEmoji[e.rank] || e.rank + '位') + ' ' + gradeTag + e.nickname + '（' + e.count + '冊）</summary>' + booksHtml + '</details>';
+          return '<details class="reading-hof-person"><summary>' + (rankEmoji[e.rank] || e.rank + '位') + ' ' + gradeTag + e.nickname + '（' + e.count + '冊・👍' + (Number(e.likes) || 0) + '）</summary>' + booksHtml + '</details>';
         }).join('');
         return '<details class="reading-hof-month"' + (mi === 0 ? ' open' : '') + '><summary>📅 ' + monthLabel + '</summary>' + (peopleHtml || '<p class="history-summary">投稿はありませんでした。</p>') + '</details>';
       }).join('');
