@@ -284,6 +284,7 @@
   // 1日のMP上限(POINTS_DAILY_CAP_CALC/WORD)はそのまま維持される。
   var DOUBLE_MP_CATEGORIES_ = {
     graphEq1: { start: '2026-10-10', end: '2026-10-23' },
+    propApplyRanking1: { start: '2026-10-18', end: '2026-10-31' },
   };
   function isDoubleMpCategoryActive_(catId) {
     var win = DOUBLE_MP_CATEGORIES_[catId];
@@ -2808,7 +2809,7 @@
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
     { id: 'coordinate1', label: '点の座標（中1）（小5、小6ランキング対策）', gen: genCoordinate, addedDate: '2026-10-10' },
     { id: 'graphEq1', label: '比例・反比例のグラフ（中1）（小5、小6ランキング対策）', gen: genGraphEq, addedDate: '2026-10-10', newBadgeDays: 14 },
-    { id: 'propApplyRanking1', label: '比例・反比例の応用（文章題）（中1）（小5、小6ランキング対策）', gen: genPropApplyRanking1, addedDate: '2026-10-18' },
+    { id: 'propApplyRanking1', label: '比例・反比例の応用（文章題）（中1）（小5、小6ランキング対策）', gen: genPropApplyRanking1, addedDate: '2026-10-18', newBadgeDays: 14 },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）（小5、小6ランキング対策）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）（小5、小6ランキング対策）',             gen: genLinearAddSub },
@@ -18920,7 +18921,7 @@
   // 同じく10問連続正解で敵を倒す通常ルールのままだが、勝利時の報酬だけ特別扱いにする
   // 単元グループ。MPは学年に関わらず固定50、経験値は通常どおり+10、さらにおまけで
   // 新ステータス「HP」も+10稼げる。
-  const WORD_PROBLEM_CATEGORY_IDS = ['decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'eqWordProblemAdv1', 'simulEqWordProblem2', 'simulEqWordProblemAdv2', 'quadEqWordProblem3'];
+  const WORD_PROBLEM_CATEGORY_IDS = ['propApplyRanking1', 'decWordProblem5', 'fracWordProblem6', 'timesWordProblem4', 'eqWordProblem1', 'eqWordProblemAdv1', 'simulEqWordProblem2', 'simulEqWordProblemAdv2', 'quadEqWordProblem3'];
   const WORD_PROBLEM_FIXED_MP = 50;
   // 約数と倍数：中学入試レベル(小5)は、文章題グループには入れず(HPは付与しない)、
   // 勝利報酬のMPだけ学年に関わらず固定20とする。
