@@ -2244,6 +2244,148 @@
     return { category: 'graphEq1', question, questionHtml, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
+  // 比例・反比例の応用（文章題）（中1）（小5、小6ランキング対策）。
+  // 教科書「比例と反比例の利用」の類題。比例(針金・クリップの長さ/本数と重さ)と
+  // 反比例(道のりが一定の速さと時間、水そうの1分あたりの水量と時間)について、
+  // (1)式を求める (2)xからyを求める (3)yからxを求める の3種類を出題する。
+  function genPropApplyRanking1() {
+    const kind = randInt(0, 3);
+    const sub = randInt(0, 2);
+    let question, answer, wrongs, steps;
+    if (kind <= 1) {
+      // 比例：kind0=針金(1mあたりの重さは整数)、kind1=クリップ(1本あたりの重さは小数もあり)
+      const isWire = kind === 0;
+      const unit = isWire ? 'm' : '本';
+      const thing = isWire ? '針金' : 'クリップ';
+      // 1単位あたりの重さを10倍した整数(uT)で扱い、小数の誤差を避ける。
+      const uT = isWire ? randInt(12, 40) * 10 : [4, 5, 6, 8, 11, 12, 15, 25][randInt(0, 7)];
+      const fmtU = (t) => (t % 10 === 0 ? String(t / 10) : (t / 10).toFixed(1));
+      const n = isWire ? randInt(2, 9) : [10, 20, 30, 40, 50][randInt(0, 4)];
+      const w = (uT * n) / 10;
+      const u = fmtU(uT);
+      const stem = isWire
+        ? `太さが一定の針金があります。この針金${n}mの重さをはかったところ、${w}gでした。`
+        : `同じ大きさのクリップがたくさんあります。このうち、${n}本を取り出して重さをはかったところ、${w}gでした。`;
+      if (sub === 0) {
+        question = `${stem}${thing}x${unit}の重さをygとして、yをxの式で表しなさい。`;
+        answer = `y = ${u}x`;
+        const inv = uT % 10 === 0 ? fmtInvPropEqStr_(uT / 10) : `y = ${uT}x`;
+        wrongs = [`y = ${w}x`, `y = ${n}x`, inv];
+        steps = [
+          `yはxに比例するので、y = ax とおける`,
+          `x = ${n} のとき y = ${w} だから、${w} = a × ${n}`,
+          `a = ${w} ÷ ${n} = ${u}`,
+          `式は ${answer}`,
+        ];
+      } else if (sub === 1) {
+        let X;
+        do { X = isWire ? randInt(10, 30) : randInt(10, 90) * 10; } while (X === n);
+        answer = (uT * X) / 10;
+        question = isWire
+          ? `${stem}この針金${X}mの重さは何gですか。`
+          : `${stem}クリップが${X}本あるときの重さは何gですか。`;
+        const d = isWire ? uT / 10 : uT;
+        wrongs = [answer + d, answer - d, answer + w];
+        steps = [
+          `1${unit}あたりの重さは ${w} ÷ ${n} = ${u}g なので、y = ${u}x`,
+          `x = ${X} を代入して、y = ${u} × ${X} = ${answer}`,
+        ];
+      } else if (isWire) {
+        // 1mずつ切り取る：あまりが出るように重さを決める
+        const k = randInt(12, 40);
+        const r = randInt(1, uT / 10 - 1);
+        const W = (uT / 10) * k + r;
+        answer = k;
+        question = `${stem}この針金を1mずつに切ります。1mの針金は、${W}gの針金から何本切り取れますか。`;
+        wrongs = [k + 1, k - 1, k + 2];
+        steps = [
+          `1mあたりの重さは ${w} ÷ ${n} = ${u}g`,
+          `${W}gの針金の長さは ${W} ÷ ${u} = ${k}あまり${r} より、${k}mと少し`,
+          `1mの針金が取れるのは ${k}本（あまりの分では1mにならない）`,
+        ];
+      } else {
+        const K = randInt(10, 90) * 10;
+        const W = (uT * K) / 10;
+        answer = K;
+        question = `${stem}クリップを何本か取り出して重さをはかったところ、${W}gでした。クリップは何本ありますか。`;
+        wrongs = [K + 10, K - 10, Math.round((W * uT) / 10)];
+        steps = [
+          `1本あたりの重さは ${w} ÷ ${n} = ${u}g なので、y = ${u}x`,
+          `y = ${W} を代入して、${W} = ${u}x`,
+          `x = ${W} ÷ ${u} = ${K}`,
+        ];
+      }
+    } else {
+      // 反比例：kind2=家から学校まで歩く(分速)、kind3=水そうに水を入れる(毎分)
+      const isWalk = kind === 2;
+      const v0 = isWalk ? [40, 50, 60, 70, 80][randInt(0, 4)] : [10, 12, 15, 18, 20, 24, 25, 30][randInt(0, 7)];
+      const t0 = randInt(8, 24);
+      const D = v0 * t0;
+      const stem = isWalk
+        ? `家から学校まで分速${v0}mで歩くと、${t0}分かかります。`
+        : `ある水そうに毎分${v0}Lずつ水を入れると、${t0}分でいっぱいになります。`;
+      if (sub === 0) {
+        question = isWalk
+          ? `${stem}この道のりを分速xmで行くときにかかる時間をy分とするとき、yをxの式で表しなさい。`
+          : `${stem}この水そうに毎分xLずつ水を入れるときにいっぱいになるまでの時間をy分とするとき、yをxの式で表しなさい。`;
+        answer = fmtInvPropEqStr_(D);
+        wrongs = [`y = ${D}x`, `y = ${v0}x`, fmtInvPropEqStr_(t0)];
+        steps = [
+          isWalk ? `道のりは ${v0} × ${t0} = ${D}m で一定` : `水そうの容積は ${v0} × ${t0} = ${D}L で一定`,
+          `(1分あたりの量) × (時間) = ${D} だから、xy = ${D}`,
+          `式は ${answer}`,
+        ];
+      } else if (sub === 1) {
+        const Ts = [];
+        for (let T = 4; T <= 40; T++) { if (T !== t0 && D % T === 0 && D / T >= (isWalk ? 30 : 6) && D / T <= (isWalk ? 150 : 60)) Ts.push(T); }
+        if (Ts.length === 0) return genPropApplyRanking1();
+        const T = Ts[randInt(0, Ts.length - 1)];
+        answer = D / T;
+        question = isWalk
+          ? `${stem}この道のりを${T}分で行くには、分速何mで歩けばよいですか。`
+          : `${stem}この水そうを${T}分でいっぱいにするには、毎分何Lずつ水を入れればよいですか。`;
+        const d = isWalk ? 5 : 2;
+        wrongs = [Math.round((v0 * T) / t0), answer + d, answer - d];
+        steps = [
+          isWalk ? `道のりは ${v0} × ${t0} = ${D}m なので、y = ${D}/x` : `水そうの容積は ${v0} × ${t0} = ${D}L なので、y = ${D}/x`,
+          `y = ${T} を代入して、${T} = ${D} ÷ x`,
+          `x = ${D} ÷ ${T} = ${answer}`,
+        ];
+      } else {
+        // 何分何秒かかるか(秒が0にならない組み合わせだけ使う)
+        const vs = [];
+        const lo = isWalk ? 40 : 8, hi = isWalk ? 120 : 40, stepV = isWalk ? 5 : 1;
+        for (let v = lo; v <= hi; v += stepV) {
+          if (v === v0 || D / v > 60) continue;
+          const secs = (D * 60) / v;
+          if (Number.isInteger(secs) && secs % 60 !== 0) vs.push(v);
+        }
+        if (vs.length === 0) return genPropApplyRanking1();
+        const v = vs[randInt(0, vs.length - 1)];
+        const secs = (D * 60) / v;
+        const m = Math.floor(secs / 60), s = secs % 60;
+        answer = `${m}分${s}秒`;
+        question = isWalk
+          ? `${stem}この道のりを分速${v}mで歩くと、何分何秒かかりますか。`
+          : `${stem}この水そうに毎分${v}Lずつ水を入れると、いっぱいになるまでに何分何秒かかりますか。`;
+        // よくある間違い：小数の分(12.5分など)の小数部分をそのまま秒と読んでしまう
+        const decStr = String(D / v);
+        const decPart = decStr.includes('.') ? decStr.split('.')[1] : '';
+        const cands = [];
+        if (decPart.length >= 1 && decPart.length <= 2) cands.push(`${m}分${Number(decPart.length === 1 ? decPart + '0' : decPart)}秒`);
+        cands.push(`${m}分${60 - s}秒`, `${m + 1}分${s}秒`, `${m}分${s === 30 ? 20 : 30}秒`, `${m + 1}分${60 - s}秒`);
+        wrongs = [...new Set(cands.filter((c) => c !== answer))].slice(0, 3);
+        steps = [
+          isWalk ? `道のりは ${v0} × ${t0} = ${D}m なので、y = ${D}/x` : `水そうの容積は ${v0} × ${t0} = ${D}L なので、y = ${D}/x`,
+          `x = ${v} を代入して、y = ${D} ÷ ${v} = ${m}あまり${(D % v)} → ${m}分と${D % v}/${v}分`,
+          `${D % v}/${v}分 = 60 × ${D % v} ÷ ${v} = ${s}秒`,
+          `答えは ${answer}`,
+        ];
+      }
+    }
+    return { category: 'propApplyRanking1', question, questionHtml: stepToHtml(question), answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   /* ---------- 一次関数 ---------- */
 
   function linearEqStr(a, b) {
@@ -2666,6 +2808,7 @@
     { id: 'proportion', label: '比例・反比例（中1）（小5、小6ランキング対策）',             gen: genProportion },
     { id: 'coordinate1', label: '点の座標（中1）（小5、小6ランキング対策）', gen: genCoordinate, addedDate: '2026-10-10' },
     { id: 'graphEq1', label: '比例・反比例のグラフ（中1）（小5、小6ランキング対策）', gen: genGraphEq, addedDate: '2026-10-10', newBadgeDays: 14 },
+    { id: 'propApplyRanking1', label: '比例・反比例の応用（文章題）（中1）（小5、小6ランキング対策）', gen: genPropApplyRanking1, addedDate: '2026-10-18' },
     { id: 'linearMul',   label: '1次式×÷数（中1）（小5、小6ランキング対策）',              gen: genLinearMul },
     { id: 'polyMul',     label: '多項式×÷数（中1）（小5、小6ランキング対策）',              gen: genPolyMul },
     { id: 'linearAddSub',label: '1次式の加減（中1）（小5、小6ランキング対策）',             gen: genLinearAddSub },
