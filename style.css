@@ -1266,7 +1266,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 400px;
+  max-height: max(400px, 72vh); /* 画面の高さに合わせて広げる(読書の感想が読みやすいように) */
   overflow-y: auto;
 }
 .ranking-list[hidden] { display: none; }
