@@ -308,6 +308,14 @@ CREATE TABLE effort_seed_monthly_distributions (
   recipients JSONB NOT NULL DEFAULT '{}'
 );
 
+-- 読書ランキング(冊数)の歴代上位3人：月ごとに上位3人(同数は全員)と、その人が
+-- 読んだ本のタイトル・感想を保存しておき、後から遡って表示する。
+CREATE TABLE reading_hall_of_fame (
+  month_key TEXT PRIMARY KEY,              -- 'yyyy-MM'
+  saved_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  entries JSONB NOT NULL DEFAULT '[]'      -- [{rank, studentId, grade, count, books:[{title, review}]}]
+);
+
 CREATE TABLE weekly_quiz_answers (
   id BIGSERIAL PRIMARY KEY,
   ts TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -19750,6 +19750,8 @@
     studyCalendarNextBtn: document.getElementById('studyCalendarNextBtn'),
     studyCalendarMonthLabel: document.getElementById('studyCalendarMonthLabel'),
     rankingTabReading: document.getElementById('rankingTabReading'),
+    readingHallOfFame: document.getElementById('readingHallOfFame'),
+    readingHallOfFameBody: document.getElementById('readingHallOfFameBody'),
     weeklyQuizToggle: document.getElementById('weeklyQuizToggle'),
     weeklyQuizPanel: document.getElementById('weeklyQuizPanel'),
     weeklyQuizUnavailable: document.getElementById('weeklyQuizUnavailable'),
@@ -23606,6 +23608,31 @@
     }
   }
 
+  // 歴代の読書王(毎月の冊数上位3人)。全体→月→人の順に、どれもタップで開閉
+  // できる(<details>)。月は最新の月だけ最初から開いておく。
+  var currentRankingMode_ = null;
+  function loadReadingHallOfFame_() {
+    if (!els.readingHallOfFame) return;
+    apiPost('readingHallOfFame', {}).then(function (res) {
+      if (!res.ok || !Array.isArray(res.months) || res.months.length === 0) return;
+      if (currentRankingMode_ !== 'reading') return; // 読み込み中に別のタブへ切り替えた
+      var rankEmoji = { 1: '🥇', 2: '🥈', 3: '🥉' };
+      els.readingHallOfFameBody.innerHTML = res.months.map(function (m, mi) {
+        var parts = String(m.monthKey).split('-');
+        var monthLabel = parts[0] + '年' + Number(parts[1]) + '月';
+        var peopleHtml = (m.entries || []).map(function (e) {
+          var booksHtml = '<div class="reading-books-list">' + (e.books || []).map(function (b) {
+            return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p></div>';
+          }).join('') + '</div>';
+          var gradeTag = e.grade ? '<span class="ranking-grade">' + escHtml(e.grade) + '</span>' : '';
+          return '<details class="reading-hof-person"><summary>' + (rankEmoji[e.rank] || e.rank + '位') + ' ' + gradeTag + e.nickname + '（' + e.count + '冊）</summary>' + booksHtml + '</details>';
+        }).join('');
+        return '<details class="reading-hof-month"' + (mi === 0 ? ' open' : '') + '><summary>📅 ' + monthLabel + '</summary>' + (peopleHtml || '<p class="history-summary">投稿はありませんでした。</p>') + '</details>';
+      }).join('');
+      els.readingHallOfFame.hidden = false;
+    }).catch(function () {});
+  }
+
   function hyakuMasuRankingTimeLabel_(totalSeconds) {
     var m = Math.floor(totalSeconds / 60);
     var s = totalSeconds % 60;
@@ -23668,6 +23695,8 @@
   function loadRanking(mode) {
     els.rankingSummary.textContent = '読み込み中…';
     els.rankingList.innerHTML = '';
+    if (els.readingHallOfFame) els.readingHallOfFame.hidden = true;
+    currentRankingMode_ = mode;
 
     var session = loadSession();
     if (!session || !session.id) return;
@@ -23706,6 +23735,7 @@
       }).catch(function () {
         els.rankingSummary.textContent = '読み込みに失敗しました。';
       });
+      loadReadingHallOfFame_();
       return;
     }
     var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : mode === 'hp' ? 'rankingHp' : 'ranking';

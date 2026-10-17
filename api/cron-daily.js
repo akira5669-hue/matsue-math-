@@ -8,7 +8,7 @@
 const { dateKeyTokyo, previousDateKeyTokyo, previousMonthKeyTokyo } = require('../lib/util');
 const { handleDistributeDailyEffortSeed, handleDistributeMonthlyEffortSeed } = require('../lib/handlers/effortSeedReward');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
-const { handleDistributeWisdomSeeds } = require('../lib/handlers/reading');
+const { handleDistributeWisdomSeeds, handleSnapshotReadingHallOfFame } = require('../lib/handlers/reading');
 
 async function runSafely_(fn) {
   try {
@@ -42,6 +42,8 @@ module.exports = async (req, res) => {
     results.monthlyEffortSeed = await runSafely_(() => handleDistributeMonthlyEffortSeed({ id: '00001', monthKey: prevMonthKey }));
     results.challengeFruits = await runSafely_(() => handleDistributeChallengeFruits({ id: '00001', monthKey: prevMonthKey }));
     results.wisdomSeeds = await runSafely_(() => handleDistributeWisdomSeeds({ id: '00001', monthKey: prevMonthKey }));
+    // 読書ランキング(冊数)の歴代上位3人を保存する。
+    results.readingHallOfFame = await runSafely_(() => handleSnapshotReadingHallOfFame({ monthKey: prevMonthKey }));
   }
 
   res.status(200).json({ ok: true, now: now.toISOString(), yesterdayDateKey, isFirstOfMonth, results });
