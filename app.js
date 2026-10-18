@@ -2852,6 +2852,7 @@
     { id: 'decDivRemainder4', label: '小数のわり算：あまりを出してけん算（小4）', gen: genDecDivRemainder4, defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
     { id: 'decDivUntil4',   label: '小数のわり算：わり切れるまで（小4）', gen: genDecDivUntil4,   defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
     { id: 'decDivRound4',   label: '小数のわり算：がい数で求める（小4）', gen: genDecDivRound4,   defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'decTimes4',      label: '小数の倍（小4）',                     gen: genDecTimes4,      defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
     { id: 'frac4',          label: '分数のたし算・ひき算（小4）',         gen: genFrac4,          defaultOff: true },
     { id: 'unit4',          label: '単位の変換（小4）',                   gen: genUnit4,          defaultOff: true },
     { id: 'mul3x2_4',       label: '3桁×2桁のかけ算（小4）',              gen: genMul3x2_4,       defaultOff: true },
@@ -13727,6 +13728,38 @@
       (q100 / 100).toFixed(2), ((ansT - 1) / 10).toFixed(1), ((ansT + 2) / 10).toFixed(1), String(ansT),
     ].filter((c) => Number(c) !== Number(answer) && Number(c) > 0);
     return { category: 'decDivRound4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
+  }
+
+  // 小数の倍（小4）：「□にあてはまる数」と文章題。何倍 = くらべる量 ÷ もとにする量。
+  // 教科書の例 3mは2mの1.5倍、56mは80mの0.7倍、45kgは18kgの2.5倍、63Lは35Lの1.8倍、900mは200mの4.5倍、14Lは4Lの3.5倍。
+  const DEC_TIMES_STORIES_ = [
+    { unit: 'm', scale: 100, text: (a, b) => `ひろみさんの家から学校までの道のりは${a}m、市役所までの道のりは${b}mあります。ひろみさんの家から学校までの道のりは、市役所までの道のりの何倍ありますか。` },
+    { unit: 'L', scale: 1, text: (a, b) => `かんの中には${a}Lの油が、びんの中には${b}Lの油が入っています。かんの中の油のかさは、びんの中の油のかさの何倍ですか。` },
+    { unit: 'cm', scale: 1, text: (a, b) => `赤いテープの長さは${a}cm、白いテープの長さは${b}cmです。赤いテープの長さは、白いテープの長さの何倍ですか。` },
+    { unit: 'kg', scale: 1, text: (a, b) => `お父さんの体重は${a}kg、ゆうとさんの体重は${b}kgです。お父さんの体重は、ゆうとさんの体重の何倍ですか。` },
+    { unit: 'g', scale: 10, text: (a, b) => `メロンの重さは${a}g、りんごの重さは${b}gです。メロンの重さは、りんごの重さの何倍ですか。` },
+  ];
+  function genDecTimes4() {
+    let b, rt;
+    do { b = randInt(2, 90); rt = randInt(2, 49); } while (rt % 10 === 0 || b * rt % 10 !== 0 || b * rt / 10 > 200);
+    const isStory = Math.random() < 0.4;
+    const st = isStory ? DEC_TIMES_STORIES_[randInt(0, DEC_TIMES_STORIES_.length - 1)] : null;
+    const units = ['m', 'kg', 'L', 'cm', 'g', 'dL'];
+    const unit = st ? st.unit : units[randInt(0, units.length - 1)];
+    const k = st ? st.scale : 1;
+    const a = b * rt / 10 * k, bb = b * k;
+    const answer = String(rt / 10);
+    const question = st ? st.text(a, bb) : `${a}${unit} は ${bb}${unit} の □ 倍です。□にあてはまる数は？`;
+    const steps = [
+      `もとにする量は ${bb}${unit}（「の」の前の量）、くらべる量は ${a}${unit}`,
+      `何倍 = くらべる量 ÷ もとにする量`,
+      `${a} ÷ ${bb} = ${answer}`,
+      rt < 10 ? `くらべる量のほうが小さいので、1より小さい倍（${answer}倍）になる` : `答え ${answer}倍`,
+    ];
+    const rev = (bb * 1000) % a === 0 ? String(Number((bb / a).toFixed(3))) : null;
+    const cand = [rev, String((rt + 1) / 10), String((rt - 1) / 10), String(rt), String(a - bb > 0 ? a - bb : (rt + 2) / 10), String(rt / 100)]
+      .filter((c) => c && Number(c) > 0 && Number(c) !== Number(answer));
+    return { category: 'decTimes4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
   }
 
   // わり算の筆算・あまりのあるわり算（小4）
