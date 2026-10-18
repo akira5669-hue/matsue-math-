@@ -1210,6 +1210,12 @@ h1 {
   margin-left: 6px;
   vertical-align: middle;
 }
+.shop-festival-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #c0392b;
+}
+.shop-festival-row { border: 1.5px solid #e67e22; background: #fff6ec; }
 .shop-sale-badge {
   display: inline-block;
   background: linear-gradient(90deg, #ef4444, #f87171);

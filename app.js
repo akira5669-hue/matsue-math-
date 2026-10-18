@@ -18867,6 +18867,15 @@
   const ONIGIRI_HP_GAIN = 10;
   const ONIGIRI_NORMAL_COST_MP = 50;
   const ONIGIRI_SALE_COST_MP = 25;
+  // 期間限定「川越まつり」の屋台(2026-10-18の1日だけ)。値段と同じだけHPが増える。
+  // 実際の販売判定はサーバー側の日付で行う。
+  const FESTIVAL_FOOD_DATE_ = '2026-10-18';
+  const FESTIVAL_FOODS_ = [
+    { key: 'okonomiyaki', emoji: '🥞', label: 'お好み焼き', costMp: 30, hpGain: 30 },
+    { key: 'yakisoba', emoji: '🍜', label: '焼きそば', costMp: 20, hpGain: 20 },
+    { key: 'takoyaki', emoji: '🐙', label: 'たこ焼き', costMp: 10, hpGain: 10 },
+    { key: 'wataame', emoji: '🍭', label: '綿あめ', costMp: 5, hpGain: 5 },
+  ];
   // おにぎりの上位版「ステーキ」：通常100MPでHPを30増やせる。キャンペーン中は半額。
   const STEAK_HP_GAIN = 30;
   const STEAK_NORMAL_COST_MP = 100;
@@ -24076,7 +24085,16 @@
     var effortSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を食べる（所持: ${effortSeedCount_}個）</span><span class="shop-item-note">勉強時間ランキングの上位者への配布品。1個食べるとHPが${EFFORT_SEED_HP_GAIN_}増える</span>${difficultyStarsHtml_(2)}</div>${effortSeedEatActionHtml}</div>`
       + `<div class="gift-row"><img class="shop-item-img" src="images/effort_seed.jpg" alt="努力の種"><div class="gift-info"><span class="gift-label">🌱 努力の種を売る（所持: ${effortSeedCount_}個）</span><span class="gift-cost">${EFFORT_SEED_SELL_MP_}MP</span>${difficultyStarsHtml_(2)}</div>${effortSeedSellActionHtml}</div>`;
 
-    els.shopList.innerHTML = prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
+    var festivalRowsHtml = '';
+    if (todayKey() === FESTIVAL_FOOD_DATE_) {
+      festivalRowsHtml = '<p class="shop-festival-title">🏮 期間限定・川越まつり（今日限り！）</p>' + FESTIVAL_FOODS_.map(function (f) {
+        var actionHtml = state.points >= f.costMp
+          ? '<button type="button" class="gift-redeem-btn" data-festival-food="' + f.key + '">購入する</button>'
+          : '<span class="gift-insufficient">MP不足</span>';
+        return '<div class="gift-row shop-festival-row"><div class="gift-info"><span class="gift-label">' + f.emoji + ' ' + f.label + '（HPを' + f.hpGain + '増やす）<span class="shop-sale-badge">今日限り</span></span><span class="gift-cost">' + f.costMp + 'MP</span></div>' + actionHtml + '</div>';
+      }).join('');
+    }
+    els.shopList.innerHTML = festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -24126,6 +24144,9 @@
     if (raidenAxeBuyBtn) raidenAxeBuyBtn.addEventListener('click', function () { handleBuyRaidenAxeClick(raidenAxeBuyBtn); });
     var raidenAxeSharpenBtn = document.getElementById('sharpenRaidenAxeBtn');
     if (raidenAxeSharpenBtn) raidenAxeSharpenBtn.addEventListener('click', function () { handleSharpenRaidenAxeClick(raidenAxeSharpenBtn); });
+    Array.prototype.forEach.call(els.shopList.querySelectorAll('[data-festival-food]'), function (b) {
+      b.addEventListener('click', function () { handleBuyFestivalFoodClick(b); });
+    });
     var onigiriBuyBtn = document.getElementById('buyOnigiriBtn');
     if (onigiriBuyBtn) onigiriBuyBtn.addEventListener('click', function () { handleBuyOnigiriClick(onigiriBuyBtn); });
     var steakBuyBtn = document.getElementById('buySteakBtn');
@@ -24867,6 +24888,36 @@
       renderShopList();
       renderItems();
       window.alert(`⚡ 雷電の斧を研いだ！（残り${state.raidenAxeCharges}回分）`);
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
+
+  function handleBuyFestivalFoodClick(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var food = FESTIVAL_FOODS_.find(function (f) { return f.key === btn.getAttribute('data-festival-food'); });
+    if (!food) return;
+    if (!window.confirm(food.label + 'を購入します（' + food.costMp + 'MP）。HPが' + food.hpGain + '増えます。よろしいですか？')) return;
+
+    btn.disabled = true;
+    apiPost('buyFestivalFood', { id: session.id, item: food.key }).then(function (res) {
+      if (!res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        if (res.error === 'not_on_sale') msg = '川越まつりの屋台は終わってしまいました。';
+        window.alert(msg);
+        btn.disabled = false;
+        renderShopList();
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert(food.emoji + ' ' + food.label + 'を食べた！HPが' + food.hpGain + '増えた！');
     }).catch(function () {
       window.alert('通信に失敗しました。もう一度お試しください。');
       btn.disabled = false;
