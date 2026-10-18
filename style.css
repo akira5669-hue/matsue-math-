@@ -2372,3 +2372,13 @@ h1 {
   border-color: #fff;
   color: #fff;
 }
+
+/* 富士の成功者たち */
+.fuji-hall-section { margin-top: 10px; }
+.fuji-hall-title { font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+.fuji-hall-count { font-weight: 400; opacity: .7; white-space: nowrap; }
+.fuji-hall-note { font-size: 12px; opacity: .7; }
+.fuji-hall-list { margin: 4px 0 0; padding-left: 1.8em; max-height: 240px; overflow-y: auto; }
+.fuji-hall-item { padding: 2px 0; }
+.fuji-hall-item.is-you { font-weight: 700; color: #c2410c; }
+.fuji-hall-grade { font-size: 12px; opacity: .7; }

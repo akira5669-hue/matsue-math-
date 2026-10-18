@@ -19,7 +19,7 @@ const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRankingMonth, handleStudyCalendar } = require('../lib/handlers/studyReport');
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleEditReading, handleDistributeWisdomSeeds, handleReadingHallOfFame } = require('../lib/handlers/reading');
-const { handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleOhachiEasyEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
+const { handleFujiHallOfFame, handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleOhachiEasyEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
 const { handleSaveProfession } = require('../lib/handlers/profession');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
 const { handleDistributeDailyEffortSeed, handleDistributeMonthlyEffortSeed } = require('../lib/handlers/effortSeedReward');
@@ -87,6 +87,7 @@ const ACTIONS = {
   fujiRescuePenalty: handleFujiRescuePenalty,
   fujiClimbSuccess: handleFujiClimbSuccess,
   fujiDistributePool: handleFujiDistributePool,
+  fujiHallOfFame: handleFujiHallOfFame,
   ohachiEntryFee: handleOhachiEntryFee,
   ohachiEasyEntryFee: handleOhachiEasyEntryFee,
   useYushaSword: handleUseYushaSword,

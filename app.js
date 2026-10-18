@@ -20654,6 +20654,7 @@
     ohachiEasyStatusText: document.getElementById('ohachiEasyStatusText'),
     ohachiEasyStartBtn: document.getElementById('ohachiEasyStartBtn'),
     fujiDescentCard: document.getElementById('fujiDescentCard'),
+    fujiHallBody: document.getElementById('fujiHallBody'),
     fujiDescentHint: document.getElementById('fujiDescentHint'),
     fujiDescentStatusText: document.getElementById('fujiDescentStatusText'),
     fujiDescentStartBtn: document.getElementById('fujiDescentStartBtn'),
@@ -28766,6 +28767,30 @@
 
     els.fujiPanel.removeAttribute('hidden');
     renderFujiCard_();
+    fetchFujiHallOfFame_();
+  }
+
+  // 富士登山・お鉢巡り・富士下山の成功者一覧。本名ではなくランキングと同じ
+  // ニックネーム(例:爆炎の刃)で、誰が成功したかを他の生徒にも見えるようにする。
+  function fetchFujiHallOfFame_() {
+    if (!els.fujiHallBody) return;
+    var session = loadSession();
+    apiPost('fujiHallOfFame', { id: session && session.id ? session.id : '' }).then(function (res) {
+      if (!res || !res.ok) { els.fujiHallBody.innerHTML = '<p class="test-photo-hint">成功者を読み込めませんでした。</p>'; return; }
+      var section = function (title, list, note) {
+        var items = (list || []).map(function (e) {
+          return '<li class="fuji-hall-item' + (e.isYou ? ' is-you' : '') + '">' + escHtml(e.nickname) + '<span class="fuji-hall-grade">（' + escHtml(e.grade) + '）</span>' + (e.isYou ? ' ← あなた' : '') + '</li>';
+        }).join('');
+        return '<div class="fuji-hall-section"><div class="fuji-hall-title">' + title + '<span class="fuji-hall-count">' + (list || []).length + '人</span></div>' +
+          (note ? '<div class="fuji-hall-note">' + note + '</div>' : '') +
+          (items ? '<ol class="fuji-hall-list">' + items + '</ol>' : '<p class="test-photo-hint">まだいません。最初の成功者をめざそう！</p>') + '</div>';
+      };
+      els.fujiHallBody.innerHTML =
+        section('🗻 富士登山（山頂到達）', res.summit, '登頂が早かった順') +
+        section('🔄 お鉢巡り', res.ohachi) +
+        section('🔄 お鉢巡り（イージーモード）', res.ohachiEasy) +
+        section('⛰️ 富士下山', res.descent);
+    }).catch(function () { els.fujiHallBody.innerHTML = '<p class="test-photo-hint">成功者を読み込めませんでした。</p>'; });
   }
 
   /* ---------- アイテム付与（管理用、00001のみ表示） ---------- */
