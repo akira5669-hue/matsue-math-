@@ -2816,6 +2816,7 @@
     { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'angleApplication2', label: '角度の応用（中2）',         gen: genAngleApplication2, defaultOff: true , addedDate: '2026-08-12' },
+    { id: 'parallelAngles2', label: '平行線と角度（中2）', gen: genParallelAngles2, addedDate: '2026-10-18', newBadgeDays: 14 },
     { id: 'angleApplicationFig2', label: '角度の応用その2（図形）（中2）', gen: genAngleApplicationFig2, addedDate: '2026-10-18', newBadgeDays: 14 },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
     { id: 'parallelogramCondition2', label: '平行四辺形の性質や条件（中2）', gen: genParallelogramCondition2, defaultOff: true , addedDate: '2026-08-12' },
@@ -16849,6 +16850,12 @@
       // 角の内側(outsideなら外側)に文字を置く
       angleText(V, a, b, s, dist, outside) {
         const d = dirAt(V, a, b, 0.5), k = outside ? -1 : 1;
+        // 角が小さいと文字が辺に重なるので、角の内側に置くときは辺から離れるまで遠ざける
+        if (!outside) {
+          const u1 = unit(V, a), u2 = unit(V, b);
+          const half = Math.acos(Math.max(-1, Math.min(1, u1[0] * u2[0] + u1[1] * u2[1]))) / 2;
+          dist = Math.min(48, Math.max(dist, 13 / Math.max(Math.sin(half), 0.01)));
+        }
         api.text([V[0] + d[0] * dist * k, V[1] + d[1] * dist * k], s, s === 'x' ? '#c23b2e' : '#1c2127');
       },
       // 角をn等分した印(●や×)を各部分の中ほどに置く
@@ -16859,6 +16866,8 @@
         }
       },
       // 頂点名を図の外側に置く
+      // 直角の印(小さな正方形)
+      rightMark(V, a, b) { const u1 = unit(V, a), u2 = unit(V, b), r = 9; out.push(`<path d="M${f(V[0] + u1[0] * r)},${f(V[1] + u1[1] * r)} L${f(V[0] + (u1[0] + u2[0]) * r)},${f(V[1] + (u1[1] + u2[1]) * r)} L${f(V[0] + u2[0] * r)},${f(V[1] + u2[1] * r)}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`); },
       name(V, s) { const u = unit(center, V); api.text([V[0] + u[0] * 12, V[1] + u[1] * 12], s); },
       // 図の内側の点(P・Qなど)の名前は、印をつけた角aVbの反対側に置く
       nameOpp(V, a, b, s) { const d = dirAt(V, a, b, 0.5); api.text([V[0] - d[0] * 12, V[1] - d[1] * 12], s); },
@@ -17130,7 +17139,156 @@
         ];
       }
     }
+    // 角の和(180°以上)を聞く問題以外は、180°以上の選択肢は出さない
+    wrongs = wrongs.filter((v) => v > 0 && v !== answer && (answer >= 180 || v < 180));
     return { category: 'angleApplicationFig2', question, questionHtml: fig + `<span style="display:block">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
+  // 平行線と角度（中2）：教科書の「ℓ∥mのとき∠xを求める」図の問題。
+  // (A)1本の直線が平行線と交わる(同位角・錯角・対頂角・一直線180°)
+  // (B)平行線ℓ上の点で交わる2本の直線と、mでできる三角形
+  // (C)平行線の間で折れ曲がった線(折れ曲がった所の角 = 両側の錯角の和)
+  // 図は実際の角度で描く(ℓ: y=1、m: y=0)。
+  const PARALLEL_POS_NAME_ = { UR: '右上', UL: '左上', DL: '左下', DR: '右下' };
+  function genParallelAngles2() {
+    const pat = randInt(0, 5);
+    const qText = 'ℓ∥mのとき、∠xの大きさを求めなさい。';
+    const qHtmlText = `ℓ${PARALLEL_SYM_HTML}mのとき、∠xの大きさを求めなさい。`;
+    let answer, wrongs, steps, fig;
+    const lineLabels = (g, p) => { g.text([p.L0[0] - 9, p.L0[1]], 'ℓ'); g.text([p.M0[0] - 9, p.M0[1]], 'm'); };
+    if (pat <= 1) {
+      // (A) 1本の直線と平行線
+      const th = 5 * randInt(7, 29);
+      if (th === 90) return genParallelAngles2();
+      const dir = angleDir_(th);
+      const I1 = [0, 1], I2 = [-dir[0] / dir[1], 0];
+      const k = 0.55;
+      const pts = {
+        L0: [Math.min(I1[0], I2[0]) - 1.1, 1], L1: [Math.max(I1[0], I2[0]) + 1.1, 1],
+        M0: [Math.min(I1[0], I2[0]) - 1.1, 0], M1: [Math.max(I1[0], I2[0]) + 1.1, 0],
+        T0: [I1[0] + dir[0] * k, 1 + dir[1] * k], T1: [I2[0] - dir[0] * k, -dir[1] * k], I1, I2,
+      };
+      const val = (pos) => (pos === 'UR' || pos === 'DL' ? th : 180 - th);
+      const posList = ['UR', 'UL', 'DL', 'DR'];
+      const gPos = posList[randInt(0, 3)];
+      let hPos;
+      if (pat === 0) {
+        // 同位角・錯角・同側内角(教科書の基本)
+        const rel = randInt(0, 2);
+        hPos = rel === 0 ? gPos : rel === 1 ? { UR: 'DL', UL: 'DR', DL: 'UR', DR: 'UL' }[gPos] : { UR: 'DR', UL: 'DL', DL: 'UL', DR: 'UR' }[gPos];
+      } else {
+        hPos = posList[randInt(0, 3)];
+      }
+      const givenOnL = Math.random() < 0.5;
+      const gVal = val(gPos);
+      answer = val(hPos);
+      // 交点から見た各位置の角をつくる2本の半直線の先の点(名前)
+      const rayKeys = (isL, pos) => {
+        const up = isL ? 'T0' : 'I1', down = isL ? 'I2' : 'T1';
+        const right = isL ? 'L1' : 'M1', left = isL ? 'L0' : 'M0';
+        return { UR: [up, right], UL: [up, left], DL: [down, left], DR: [down, right] }[pos];
+      };
+      fig = angleFigSvg_(pts, (g) => {
+        const p = g.P;
+        g.seg(p.L0, p.L1); g.seg(p.M0, p.M1); g.seg(p.T0, p.T1); lineLabels(g, p);
+        const gV = givenOnL ? p.I1 : p.I2, hV = givenOnL ? p.I2 : p.I1;
+        const gr = rayKeys(givenOnL, gPos).map((k) => p[k]), hr = rayKeys(!givenOnL, hPos).map((k) => p[k]);
+        g.arc(gV, gr[0], gr[1], 11); g.angleText(gV, gr[0], gr[1], `${gVal}°`, 26);
+        g.arc(hV, hr[0], hr[1], 11); g.angleText(hV, hr[0], hr[1], 'x', 22);
+      });
+      const gLine = givenOnL ? 'ℓ' : 'm', hLine = givenOnL ? 'm' : 'ℓ';
+      const gName = PARALLEL_POS_NAME_[gPos], hName = PARALLEL_POS_NAME_[hPos];
+      steps = [`ℓ∥mなので同位角は等しく、${hLine}との交点の${gName}の角も ${gVal}°`];
+      if (hPos === gPos) steps.push(`xはその角と同じ位置（同位角）なので、x = ${answer}°`);
+      else if ({ UR: 'DL', UL: 'DR', DL: 'UR', DR: 'UL' }[gPos] === hPos) steps.push(`xはその角の対頂角なので、x = ${answer}°（${gLine}の${gName}とxは錯角の関係でもある）`);
+      else steps.push(`xとその角を合わせると一直線(180°)なので、x = 180 − ${gVal} = ${answer}°`);
+      wrongs = [180 - answer, answer + 10, Math.abs(answer - 10), 90 - Math.abs(90 - answer) + 5];
+    } else if (pat <= 3) {
+      // (B) ℓ上の点Tで交わる2本の直線とmでできる三角形
+      let a, b;
+      do { a = randInt(35, 80); b = randInt(35, 80); } while (a + b > 150 || a === b);
+      const top = 180 - a - b;
+      const T = [0, 1], Lb = [-1 / Math.tan(angleRad_(a)), 0], Rb = [1 / Math.tan(angleRad_(b)), 0];
+      const ext = (from, to, k) => [to[0] + (to[0] - from[0]) * k, to[1] + (to[1] - from[1]) * k];
+      const pts = {
+        L0: [Lb[0] - 0.9, 1], L1: [Rb[0] + 0.9, 1], M0: [Lb[0] - 0.9, 0], M1: [Rb[0] + 0.9, 0],
+        T, Lb, Rb, Ua: ext(Lb, T, 0.35), Ub: ext(Rb, T, 0.35), Da: ext(T, Lb, 0.3), Db: ext(T, Rb, 0.3),
+      };
+      const ask = pat === 2 ? 'y' : 'xT';
+      fig = angleFigSvg_(pts, (g) => {
+        const p = g.P;
+        g.seg(p.L0, p.L1); g.seg(p.M0, p.M1); g.seg(p.Ua, p.Da); g.seg(p.Ub, p.Db); lineLabels(g, p);
+        g.arc(p.T, p.Ua, p.Ub, 10); g.angleText(p.T, p.Ua, p.Ub, `${top}°`, 24);
+        g.arc(p.Lb, p.Rb, p.T, 11); g.angleText(p.Lb, p.Rb, p.T, `${a}°`, 26);
+        if (ask === 'y') { g.arc(p.Rb, p.M1, p.T, 11); g.angleText(p.Rb, p.M1, p.T, 'x', 22); }
+        else { g.arc(p.T, p.L1, p.Rb, 11); g.angleText(p.T, p.L1, p.Rb, 'x', 24); }
+      });
+      if (ask === 'y') {
+        answer = 180 - b;
+        steps = [
+          `対頂角は等しいので、三角形の上の角も ${top}°`,
+          `三角形の残りの角 = 180 − (${top} + ${a}) = ${b}°`,
+          `xは一直線(180°)の残りなので、x = 180 − ${b} = ${answer}°`,
+        ];
+        wrongs = [b, a + top - 10, 180 - a, answer + 10];
+      } else {
+        answer = b;
+        steps = [
+          `対頂角は等しいので、三角形の上の角も ${top}°`,
+          `三角形の残りの角(mとの交点の右側) = 180 − (${top} + ${a}) = ${b}°`,
+          `ℓ∥mより錯角は等しいので、x = ${b}°`,
+        ];
+        wrongs = [a, top, 180 - b, b + 10];
+      }
+    } else {
+      // (C) 平行線の間で折れ曲がった線：折れ曲がった所の角 = α + β(両側の錯角の和)
+      const variant = randInt(0, 3); // 0:和 1:片方を求める 2:鈍角で与える 3:直角
+      const al = randInt(20, 60), be = variant === 3 ? 90 : randInt(20, 60);
+      const h = 0.4 + Math.random() * 0.2;
+      const Pl = [0, 1];
+      const Bx = -Math.cos(angleRad_(al)) * (1 - h) / Math.sin(angleRad_(al));
+      const B = [Bx, h];
+      const Pm = [Bx + (be === 90 ? 0 : Math.cos(angleRad_(be)) * h / Math.sin(angleRad_(be))), 0];
+      const mirror = Math.random() < 0.5 ? -1 : 1;
+      const mx = (q) => [q[0] * mirror, q[1]];
+      const xs = [Pl[0], Pm[0], Bx];
+      const lo = Math.min(...xs) - 0.7, hi = Math.max(...xs) + 0.7;
+      const pts = { L0: [mirror > 0 ? lo : -hi, 1], L1: [mirror > 0 ? hi : -lo, 1], M0: [mirror > 0 ? lo : -hi, 0], M1: [mirror > 0 ? hi : -lo, 0], Pl: mx(Pl), Pm: mx(Pm), B: mx(B) };
+      // ℓ・mの「折れ曲がった側」の端
+      const bendSideL = mirror > 0 ? 'L0' : 'L1', otherSideL = mirror > 0 ? 'L1' : 'L0';
+      const bendSideM = mirror > 0 ? 'M0' : 'M1';
+      const bend = al + be;
+      let lblL, lblB, lblM;
+      const obtuseL = variant === 2;
+      if (variant === 0 || variant === 2) { answer = bend; lblL = `${obtuseL ? 180 - al : al}°`; lblB = 'x'; lblM = `${be}°`; }
+      else if (variant === 1) { if (Math.random() < 0.5) { answer = al; lblL = 'x'; lblB = `${bend}°`; lblM = `${be}°`; } else { answer = be; lblL = `${al}°`; lblB = `${bend}°`; lblM = 'x'; } }
+      else { answer = al; lblL = 'x'; lblB = `${bend}°`; lblM = ''; }
+      fig = angleFigSvg_(pts, (g) => {
+        const p = g.P;
+        g.seg(p.L0, p.L1); g.seg(p.M0, p.M1); g.seg(p.Pl, p.B); g.seg(p.B, p.Pm); lineLabels(g, p);
+        const lRay = obtuseL ? p[otherSideL] : p[bendSideL];
+        g.arc(p.Pl, lRay, p.B, 11); g.angleText(p.Pl, lRay, p.B, lblL, obtuseL ? 22 : 28);
+        g.arc(p.B, p.Pl, p.Pm, 10); g.angleText(p.B, p.Pl, p.Pm, lblB, 24);
+        if (variant === 3) g.rightMark(p.Pm, p[bendSideM], p.B);
+        else { g.arc(p.Pm, p[bendSideM], p.B, 11); g.angleText(p.Pm, p[bendSideM], p.B, lblM, 28); }
+      });
+      const aux = '折れ曲がった点を通り、ℓ・mに平行な直線をひくと、錯角が等しいので、折れ曲がった所の角 = ℓ側の角 + m側の角';
+      if (variant === 0) {
+        steps = [aux, `x = ${al} + ${be} = ${bend}°`];
+        wrongs = [180 - bend, bend + 10, bend - 10, 360 - bend - 90];
+      } else if (variant === 2) {
+        steps = [`ℓ側の、折れ曲がった方の角は 180 − ${180 - al} = ${al}°`, aux, `x = ${al} + ${be} = ${bend}°`];
+        wrongs = [180 - al + be, bend + 10, bend - 10, 180 - bend];
+      } else if (variant === 1) {
+        steps = [aux, `${bend} = ${lblL === 'x' ? 'x' : al} + ${lblM === 'x' ? 'x' : be}`, `x = ${bend} − ${lblL === 'x' ? be : al} = ${answer}°`];
+        wrongs = [180 - bend, answer + 10, Math.abs(answer - 10), 180 - answer];
+      } else {
+        steps = [`mと垂直なので、m側の角は 90°`, aux, `x = ${bend} − 90 = ${answer}°`];
+        wrongs = [180 - bend, 90 - answer + 10, answer + 10, bend - 45];
+      }
+    }
+    wrongs = wrongs.filter((v) => v > 0 && v < 180 && v !== answer);
+    return { category: 'parallelAngles2', question: `下の図で、${qText}`, questionHtml: fig + `<span style="display:block">下の図で、${qHtmlText}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
   function mkTriSvg(tri1, tri2, sym) {
