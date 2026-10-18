@@ -13592,33 +13592,48 @@
     return { category: 'decDiv4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
   }
 
-  // 小数のわり算（その2）（小4）：小数÷2けたの整数、1/100の位までの小数÷整数（どれもわり切れる）。
+  // 小数のわり算（その2）（小4）：教科書「小数÷2けたの整数の筆算」「小数(小数第二位)÷整数の筆算」
+  // 「0の計算を省く小数÷整数の筆算」。どれもわり切れる。数は0.001の個数で持つ。
+  // 例 26.6÷14、33.6÷42、7.74÷6、1.92÷12、8.51÷37、0.12÷2、0.336÷7、2.66÷38、0.248÷62。
   function genDecDiv4b() {
-    const pat = randInt(0, 1);
-    const f = (h) => String(Number((h / 100).toFixed(2)));
-    let n, qh, dh; // 商・わられる数は1/100の個数で持つ
-    const steps = [];
-    if (pat === 0) {
-      // 小数第一位 ÷ 2けた(例 89.6÷28、7.2÷12)
-      do { n = randInt(11, 49); } while (n % 10 === 0);
-      let qt;
-      do { qt = Math.random() < 0.3 ? randInt(1, 9) : randInt(11, 99); } while (qt % 10 === 0 || qt * n % 10 === 0 || qt * n >= 1000);
-      qh = qt * 10; dh = qt * n * 10;
-      steps.push(`${f(dh)} は 0.1 が ${qt * n} 個`, `${qt * n} ÷ ${n} = ${qt} なので、商は 0.1 が ${qt} 個`, `筆算では、2けたの数でわるときも、商の小数点は、わられる数の小数点にそろえてうつ`);
-      if (qt < 10) steps.push(`一の位に商がたたないので 0 を書く`);
-    } else {
-      // 1/100の位までの小数 ÷ 1けた(例 7.56÷4、0.24÷6)
-      n = randInt(2, 9);
-      do { qh = Math.random() < 0.3 ? randInt(1, 99) : randInt(101, 999); } while (qh % 10 === 0 || qh * n % 10 === 0 || qh * n >= 10000);
-      dh = qh * n;
-      steps.push(`${f(dh)} は 0.01 が ${dh} 個`, `${dh} ÷ ${n} = ${qh} なので、商は 0.01 が ${qh} 個`);
-      if (qh < 100) steps.push(`筆算では、商がたたない位には 0 を書く`);
+    const pat = randInt(0, 2);
+    const f = (m) => String(Number((m / 1000).toFixed(3)));
+    const twoDigit = () => { let x; do { x = randInt(11, 69); } while (x % 10 === 0); return x; };
+    let n, qm, dm, unitName, unit;
+    for (;;) {
+      if (pat === 0) {
+        // 小数第一位 ÷ 2けた
+        n = twoDigit();
+        const qt = Math.random() < 0.35 ? randInt(1, 9) : randInt(11, 99);
+        qm = qt * 100; unit = 100;
+        if (qt % 10 === 0) continue;
+      } else if (pat === 1) {
+        // 小数第二位 ÷ 1けた・2けた
+        n = Math.random() < 0.5 ? randInt(2, 9) : twoDigit();
+        const qh = Math.random() < 0.4 ? randInt(11, 99) : randInt(101, 999);
+        qm = qh * 10; unit = 10;
+        if (qh % 10 === 0) continue;
+      } else {
+        // 商が0.1より小さい(0の計算を省く)
+        n = Math.random() < 0.5 ? randInt(2, 9) : twoDigit();
+        if (Math.random() < 0.5) { qm = randInt(1, 9) * 10; unit = 10; } else { qm = randInt(1, 99); unit = 1; if (qm % 10 === 0) continue; }
+      }
+      dm = qm * n;
+      if (dm % (unit * 10) === 0) continue; // わられる数の最後の位が0にならないように
+      if (dm >= (pat === 0 ? 100000 : 10000)) continue;
+      if (unit === 1 && dm >= 1000) continue; // 1/1000の位まである数は1より小さく(例 0.336÷7)
+      break;
     }
-    const d = f(dh), answer = f(qh);
+    unitName = unit === 100 ? '0.1' : unit === 10 ? '0.01' : '0.001';
+    const d = f(dm), answer = f(qm);
+    const steps = [`${d} は ${unitName} が ${dm / unit} 個`, `${dm / unit} ÷ ${n} = ${qm / unit} なので、商は ${unitName} が ${qm / unit} 個`];
+    if (pat === 0) steps.push('2けたの数でわるときも、商の小数点は、わられる数の小数点にそろえてうつ');
+    else if (pat === 1) steps.push('商の小数点は、わられる数の小数点にそろえてうつ');
+    else steps.push('一の位、1/10の位…と商がたたない位には 0 を書く（0をかけたりひいたりする計算は省いてよい）');
+    if (pat !== 2 && qm < 1000) steps.push('一の位に商がたたないので 0 を書く');
     steps.push(`答え ${answer}`);
-    const unit = pat === 0 ? 10 : 1;
-    const cand = [f(qh * 10), f(qh / 10), f(qh + unit), f(qh - unit), f(qh + 100), String(qh / unit)]
-      .filter((c) => c !== answer && Number(c) > 0 && !/e/.test(c));
+    const cand = [f(qm * 10), f(qm / 10), f(qm + unit), f(qm - unit), f(qm * 100), f(qm + unit * 10)]
+      .filter((c) => Number(c) > 0 && Number(c) !== Number(answer) && !/e/.test(c));
     return { category: 'decDiv4b', question: `${d} ÷ ${n} = ?`, answer, choices: buildChoicesFromList(answer, cand), steps };
   }
 
