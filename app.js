@@ -13742,7 +13742,7 @@
       (Math.floor(q100 / 10) === ansT ? (ansT + 1) / 10 : Math.floor(q100 / 10) / 10).toFixed(1),
       (q100 / 100).toFixed(2), ((ansT - 1) / 10).toFixed(1), ((ansT + 2) / 10).toFixed(1), String(ansT),
     ].filter((c) => Number(c) !== Number(answer) && Number(c) > 0);
-    return { category: 'decDivRound4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
+    return { category: 'decDivRound4', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromList(answer, cand), steps };
   }
 
   // 小数の倍（小4）：「□にあてはまる数」と文章題。何倍 = くらべる量 ÷ もとにする量。
