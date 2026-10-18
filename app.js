@@ -21966,7 +21966,8 @@
   // 富士登山「お鉢巡り」(2026-10-10〜10-31限定、富士登山の成功者のみ)の告知。
   // renderFujiBanner_と同じく、告知バナーは全生徒に公開するが、機能自体
   // (お鉢巡りカード)は引き続き00001限定プレビュー。
-  var OHACHI_BANNER_END_ = '2026-10-31';
+  // 2026-10-18に告知バナーだけ非表示にした(お鉢巡り自体は10/31まで続く)。来年再利用するときは日付を戻す。
+  var OHACHI_BANNER_END_ = '2026-10-17';
   function renderOhachiBanner_() {
     if (!els.ohachiBanner) return;
     var today = todayKey();
