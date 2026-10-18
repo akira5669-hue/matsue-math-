@@ -16811,6 +16811,9 @@
   // へこんだ四角形(ブーメラン型)の角、星形の図形の先端の角の和(五芒星180°、
   // 2つの三角形360°、七芒星540°)を、
   // 実際の角度に合わせて描いた図つきで出題する。
+  // 直前に描いた図で、文字の重なりを避けきれなかった量(0なら重なりなし)。
+  // 図を使う問題はこれが0でなければ数値を変えて作り直す。
+  let angleFigLastBad_ = 0, angleFigRetry_ = 0;
   function angleFigSvg_(worldPts, draw) {
     // worldPts: {名前: [x, y]}(y上向き)。画面に収まるよう拡大・上下反転してからdrawで描く。
     const W = 260, H = 190, pad = 26;
@@ -16824,7 +16827,31 @@
     const cx = vals.reduce((s, p) => s + p[0], 0) / vals.length, cy = vals.reduce((s, p) => s + p[1], 0) / vals.length;
     const center = [offX + (cx - minX) * sc, offY + (maxY - cy) * sc];
     const out = [];
+    // 文字と印・線が重ならないよう、置いた印(●×)・文字と線分を覚えておく
+    const occ = [], segs = [];
+    let bad = 0;
     const f = (v) => v.toFixed(1);
+    const textHalfW = (s) => Math.max(5, String(s).length * 4.4 + 2);
+    const segDist = (q, a, b) => {
+      const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1;
+      const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l2));
+      return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy);
+    };
+    // 文字を置いたときの重なり具合(0なら重なりなし)
+    const crossSeg = (p1, p2, a, b) => {
+      const o = (u, v, w) => (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
+      return o(p1, p2, a) * o(p1, p2, b) < -1e-6 && o(a, b, p1) * o(a, b, p2) < -1e-6;
+    };
+    // fromを渡すと、頂点fromから文字までの間に線をまたぐ位置(角の外に出た位置)も不可にする
+    const overlap = (pos, s, from) => {
+      const hw = textHalfW(s), r = Math.max(hw, 7);
+      let o = 0;
+      if (from) segs.forEach(([a, b]) => { if (crossSeg(from, pos, a, b)) o += 100; });
+      occ.forEach((c) => { const d = Math.hypot(pos[0] - c[0], pos[1] - c[1]); if (d < r + c[2] + 3) o += r + c[2] + 3 - d; });
+      segs.forEach(([a, b]) => { const d = segDist(pos, a, b); if (d < r + 2) o += r + 2 - d; });
+      if (pos[0] < hw || pos[0] > W - hw || pos[1] < 7 || pos[1] > H - 7) o += 20;
+      return o;
+    };
     const unit = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
     // 頂点Vで、Vから見たa方向→b方向の角(180°未満)をt(0〜1)で内分した方向
     const dirAt = (V, a, b, t) => {
@@ -16837,7 +16864,7 @@
     };
     const api = {
       P,
-      seg(a, b, dash) { out.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#1c2127" stroke-width="1.5"${dash ? ' stroke-dasharray="4,3"' : ''}/>`); },
+      seg(a, b, dash) { segs.push([a, b]); out.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#1c2127" stroke-width="1.5"${dash ? ' stroke-dasharray="4,3"' : ''}/>`); },
       poly(list) { list.forEach((p, i) => api.seg(p, list[(i + 1) % list.length])); },
       arc(V, a, b, r, fill) {
         const u1 = unit(V, a), u2 = unit(V, b);
@@ -16846,7 +16873,7 @@
         if (fill) out.push(`<path d="M${f(V[0])},${f(V[1])} L${f(s[0])},${f(s[1])} A${r},${r} 0 0 ${sweep} ${f(e[0])},${f(e[1])} Z" fill="#1c2127"/>`);
         else out.push(`<path d="M${f(s[0])},${f(s[1])} A${r},${r} 0 0 ${sweep} ${f(e[0])},${f(e[1])}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`);
       },
-      text(pos, s, color) { out.push(`<text x="${f(pos[0])}" y="${f(pos[1])}" font-size="13" text-anchor="middle" dominant-baseline="central" fill="${color || '#1c2127'}" font-weight="700">${s}</text>`); },
+      text(pos, s, color) { occ.push([pos[0], pos[1], textHalfW(s)]); out.push(`<text x="${f(pos[0])}" y="${f(pos[1])}" font-size="13" text-anchor="middle" dominant-baseline="central" fill="${color || '#1c2127'}" font-weight="700">${s}</text>`); },
       // 角の内側(outsideなら外側)に文字を置く
       angleText(V, a, b, s, dist, outside) {
         const d = dirAt(V, a, b, 0.5), k = outside ? -1 : 1;
@@ -16856,23 +16883,53 @@
           const half = Math.acos(Math.max(-1, Math.min(1, u1[0] * u2[0] + u1[1] * u2[1]))) / 2;
           dist = Math.min(48, Math.max(dist, 13 / Math.max(Math.sin(half), 0.01)));
         }
-        api.text([V[0] + d[0] * dist * k, V[1] + d[1] * dist * k], s, s === 'x' ? '#c23b2e' : '#1c2127');
+        // 印や他の文字・線に重なるなら、角の二等分線に沿って位置をずらす(近い所から順に探す)
+        let best = null;
+        for (let t = 0; t <= 44; t += 2) {
+          for (const dd of t === 0 ? [dist] : [dist + t, dist - t]) {
+            if (dd < 12) continue;
+            const pos = [V[0] + d[0] * dd * k, V[1] + d[1] * dd * k];
+            const o = overlap(pos, s, outside ? null : V);
+            if (!best || o < best.o - 0.01) best = { pos, o };
+          }
+          if (best.o === 0) break;
+        }
+        if (best.o > 1) bad += best.o;
+        api.text(best.pos, s, s === 'x' ? '#c23b2e' : '#1c2127');
       },
       // 角をn等分した印(●や×)を各部分の中ほどに置く
       parts(V, a, b, n, sym, dist) {
         for (let i = 0; i < n; i++) {
           const d = dirAt(V, a, b, (2 * i + 1) / (2 * n));
+          occ.push([V[0] + d[0] * dist, V[1] + d[1] * dist, 5]);
           out.push(`<text x="${f(V[0] + d[0] * dist)}" y="${f(V[1] + d[1] * dist)}" font-size="${sym === '●' ? 7 : 10}" text-anchor="middle" dominant-baseline="central" fill="#1c2127">${sym}</text>`);
         }
       },
       // 頂点名を図の外側に置く
       // 直角の印(小さな正方形)
       rightMark(V, a, b) { const u1 = unit(V, a), u2 = unit(V, b), r = 9; out.push(`<path d="M${f(V[0] + u1[0] * r)},${f(V[1] + u1[1] * r)} L${f(V[0] + (u1[0] + u2[0]) * r)},${f(V[1] + (u1[1] + u2[1]) * r)} L${f(V[0] + u2[0] * r)},${f(V[1] + u2[1] * r)}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`); },
-      name(V, s) { const u = unit(center, V); api.text([V[0] + u[0] * 12, V[1] + u[1] * 12], s); },
+      name(V, s) { const u = unit(center, V); api.nameAt_(V, Math.atan2(u[1], u[0]), s); },
+      // 頂点名：基本の向きから少しずつ回して、数字や線に重ならない位置に置く
+      nameAt_(V, th, s) {
+        let best = null;
+        for (const dd of [12, 15]) {
+          for (let i = 0; i <= 12; i++) {
+            const t = th + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * (Math.PI / 12);
+            const pos = [V[0] + Math.cos(t) * dd, V[1] + Math.sin(t) * dd];
+            const o = overlap(pos, s);
+            if (!best || o < best.o - 0.01) best = { pos, o };
+            if (o === 0) break;
+          }
+          if (best.o === 0) break;
+        }
+        if (best.o > 1) bad += best.o;
+        api.text(best.pos, s);
+      },
       // 図の内側の点(P・Qなど)の名前は、印をつけた角aVbの反対側に置く
-      nameOpp(V, a, b, s) { const d = dirAt(V, a, b, 0.5); api.text([V[0] - d[0] * 12, V[1] - d[1] * 12], s); },
+      nameOpp(V, a, b, s) { const d = dirAt(V, a, b, 0.5); api.nameAt_(V, Math.atan2(-d[1], -d[0]), s); },
     };
     draw(api);
+    angleFigLastBad_ = bad;
     return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;max-width:100%;margin:0 auto 8px">${out.join('')}</svg>`;
   }
   // 直線 a + s*da と b + t*db の交点
@@ -16987,7 +17044,7 @@
       fig = angleFigSvg_({ A: q.A, B: [0, 0], C: [1, 0], D: q.D, P: Pp }, (g) => {
         const p = g.P;
         g.poly([p.A, p.B, p.C, p.D]); g.seg(p.A, p.P); g.seg(p.D, p.P);
-        g.parts(p.A, p.B, p.D, 2, '●', 24); g.parts(p.D, p.A, p.C, 2, '×', 24);
+        g.parts(p.A, p.B, p.D, 2, '●', 17); g.parts(p.D, p.A, p.C, 2, '×', 17);
         g.arc(p.B, p.A, p.C, 12); g.angleText(p.B, p.A, p.C, `${B}°`, 28);
         g.arc(p.C, p.B, p.D, 12); g.angleText(p.C, p.B, p.D, 'x', 26);
         g.arc(p.P, p.A, p.D, 10); g.angleText(p.P, p.A, p.D, `${Pv}°`, 24);
@@ -17141,6 +17198,8 @@
     }
     // 角の和(180°以上)を聞く問題以外は、180°以上の選択肢は出さない
     wrongs = wrongs.filter((v) => v > 0 && v !== answer && (answer >= 180 || v < 180));
+    if (angleFigLastBad_ > 0 && ++angleFigRetry_ < 40) return genAngleApplicationFig2();
+    angleFigRetry_ = 0;
     return { category: 'angleApplicationFig2', question, questionHtml: fig + `<span style="display:block">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
@@ -17288,6 +17347,8 @@
       }
     }
     wrongs = wrongs.filter((v) => v > 0 && v < 180 && v !== answer);
+    if (angleFigLastBad_ > 0 && ++angleFigRetry_ < 40) return genParallelAngles2();
+    angleFigRetry_ = 0;
     return { category: 'parallelAngles2', question: `下の図で、${qText}`, questionHtml: fig + `<span style="display:block">下の図で、${qHtmlText}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
   }
 
