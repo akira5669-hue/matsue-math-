@@ -2847,6 +2847,11 @@
     { id: 'fourOps4',       label: '四則計算（小4）',                     gen: genFourOps4,       defaultOff: true },
     { id: 'decAddSub4',     label: '小数のたし算・ひき算（小4）',         gen: genDecAddSub4,     defaultOff: true },
     { id: 'decMul4',        label: '小数のかけ算（小4）',                 gen: genDecMul4,        defaultOff: true },
+    { id: 'decDiv4',        label: '小数のわり算（その1）（小4）',       gen: genDecDiv4,        defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'decDiv4b',       label: '小数のわり算（その2）（小4）',       gen: genDecDiv4b,       defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'decDivRemainder4', label: '小数のわり算：あまりを出してけん算（小4）', gen: genDecDivRemainder4, defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'decDivUntil4',   label: '小数のわり算：わり切れるまで（小4）', gen: genDecDivUntil4,   defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'decDivRound4',   label: '小数のわり算：がい数で求める（小4）', gen: genDecDivRound4,   defaultOff: true , addedDate: '2026-10-19', newBadgeDays: 14 },
     { id: 'frac4',          label: '分数のたし算・ひき算（小4）',         gen: genFrac4,          defaultOff: true },
     { id: 'unit4',          label: '単位の変換（小4）',                   gen: genUnit4,          defaultOff: true },
     { id: 'mul3x2_4',       label: '3桁×2桁のかけ算（小4）',              gen: genMul3x2_4,       defaultOff: true },
@@ -13564,6 +13569,166 @@
     return { category: 'decMul4', question, answer, choices: buildChoicesFromList(answer, candidates), steps };
   }
 
+  // 小数のわり算（その1）（小4）：教科書「小数(小数第一位)÷整数の筆算」「商の一の位が0となる小数÷整数の筆算」。
+  // わり切れる小数第一位 ÷ 1桁の整数。商は小数第一位まで。
+  function genDecDiv4() {
+    const pat = randInt(0, 2); // 0:わられる数が1桁 1:わられる数が2桁 2:商の一の位が0
+    const n = randInt(2, 9);
+    let qt; // 商(0.1の個数)
+    if (pat === 0) { do { qt = randInt(11, 49); } while (qt % 10 === 0 || qt * n % 10 === 0 || qt * n >= 100); }
+    else if (pat === 1) { do { qt = randInt(12, 499); } while (qt % 10 === 0 || qt * n % 10 === 0 || qt * n < 100 || qt * n >= 1000); }
+    else { do { qt = randInt(1, 9); } while (qt * n % 10 === 0); }
+    const dt = qt * n;
+    const f = (t) => String(Number((t / 10).toFixed(1)));
+    const d = (dt / 10).toFixed(1), answer = (qt / 10).toFixed(1);
+    const question = `${d} ÷ ${n} = ?`;
+    const cand = [String(qt), f(qt + 10), f(Math.abs(qt - 10)), (qt / 100).toFixed(2), f(qt + 1), f(qt - 1)]
+      .filter((c) => c !== answer && Number(c) > 0);
+    const steps = [`${d} は 0.1 が ${dt} 個`, `${dt} ÷ ${n} = ${qt} なので、商は 0.1 が ${qt} 個`];
+    if (pat === 2) steps.push(`筆算では、一の位に商がたたないので 0 を書き、小数点をうつ`);
+    else steps.push(`筆算では、商の小数点は、わられる数の小数点にそろえてうつ`);
+    steps.push(`答え ${answer}`);
+    return { category: 'decDiv4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
+  }
+
+  // 小数のわり算（その2）（小4）：小数÷2けたの整数、1/100の位までの小数÷整数（どれもわり切れる）。
+  function genDecDiv4b() {
+    const pat = randInt(0, 1);
+    const f = (h) => String(Number((h / 100).toFixed(2)));
+    let n, qh, dh; // 商・わられる数は1/100の個数で持つ
+    const steps = [];
+    if (pat === 0) {
+      // 小数第一位 ÷ 2けた(例 89.6÷28、7.2÷12)
+      do { n = randInt(11, 49); } while (n % 10 === 0);
+      let qt;
+      do { qt = Math.random() < 0.3 ? randInt(1, 9) : randInt(11, 99); } while (qt % 10 === 0 || qt * n % 10 === 0 || qt * n >= 1000);
+      qh = qt * 10; dh = qt * n * 10;
+      steps.push(`${f(dh)} は 0.1 が ${qt * n} 個`, `${qt * n} ÷ ${n} = ${qt} なので、商は 0.1 が ${qt} 個`, `筆算では、2けたの数でわるときも、商の小数点は、わられる数の小数点にそろえてうつ`);
+      if (qt < 10) steps.push(`一の位に商がたたないので 0 を書く`);
+    } else {
+      // 1/100の位までの小数 ÷ 1けた(例 7.56÷4、0.24÷6)
+      n = randInt(2, 9);
+      do { qh = Math.random() < 0.3 ? randInt(1, 99) : randInt(101, 999); } while (qh % 10 === 0 || qh * n % 10 === 0 || qh * n >= 10000);
+      dh = qh * n;
+      steps.push(`${f(dh)} は 0.01 が ${dh} 個`, `${dh} ÷ ${n} = ${qh} なので、商は 0.01 が ${qh} 個`);
+      if (qh < 100) steps.push(`筆算では、商がたたない位には 0 を書く`);
+    }
+    const d = f(dh), answer = f(qh);
+    steps.push(`答え ${answer}`);
+    const unit = pat === 0 ? 10 : 1;
+    const cand = [f(qh * 10), f(qh / 10), f(qh + unit), f(qh - unit), f(qh + 100), String(qh / unit)]
+      .filter((c) => c !== answer && Number(c) > 0 && !/e/.test(c));
+    return { category: 'decDiv4b', question: `${d} ÷ ${n} = ?`, answer, choices: buildChoicesFromList(answer, cand), steps };
+  }
+
+  // 小数のわり算：あまりを出してけん算（小4）：商は一の位まで求めて、あまりも出す。けん算もする。
+  // 教科書の例 67.4÷4、56.2÷7、70.3÷13、26.9÷8、47.6÷23、82.9÷19。
+  function genDecDivRemainder4() {
+    const n = Math.random() < 0.6 ? randInt(2, 9) : randInt(11, 29);
+    let q, rt; // 商(整数)、あまり(0.1の個数)
+    do { q = randInt(1, Math.floor(999 / (n * 10))); rt = randInt(1, n * 10 - 1); } while (rt % 10 === 0 || q * n * 10 + rt >= 1000);
+    const dt = q * n * 10 + rt;
+    const t = (x) => String(Number((x / 10).toFixed(2)));
+    const d = t(dt), r = t(rt);
+    const check = `${n} × ${q} + ${r} = ${d}`;
+    const steps = [
+      `商は一の位まで：${n} × ${q} = ${n * q}、${n} × ${q + 1} = ${n * (q + 1)} は ${d} より大きいので、商は ${q}`,
+      `あまり = ${d} − ${n * q} = ${r}（あまりの小数点は、わられる数の小数点にそろえてうつ）`,
+      `あまり ${r} は、わる数 ${n} より小さいのでOK`,
+      `けん算：わる数 × 商 + あまり = わられる数 → ${check}`,
+    ];
+    const form = Math.random();
+    let question, answer, cand;
+    if (form < 0.6) {
+      question = `${d} ÷ ${n} の商を一の位まで求めて、あまりも出しなさい。`;
+      answer = `${q} あまり ${r}`;
+      cand = [`${q} あまり ${rt}`, `${q} あまり ${t(rt / 10)}`, `${q + 1} あまり ${r}`, q > 1 ? `${q - 1} あまり ${t(rt + n * 10)}` : `${q} あまり ${t(rt + 1)}`];
+    } else if (form < 0.8) {
+      question = `${d} ÷ ${n} の商を一の位まで求めたときの、あまりはいくつ？`;
+      answer = r;
+      cand = [String(rt), t(rt / 10), q > 1 ? t(rt + n * 10) : t(rt + 2), t(rt + 1)];
+    } else {
+      question = `${d} ÷ ${n} = ${q} あまり ${r} のけん算の式はどれ？`;
+      answer = check;
+      cand = [`${n} × ${q} + ${rt} = ${d}`, `${n} × ${q} − ${r} = ${d}`, `${n} × ${r} + ${q} = ${d}`, `${q} × ${r} + ${n} = ${d}`];
+    }
+    cand = cand.filter((c) => c !== answer);
+    return { category: 'decDivRemainder4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
+  }
+
+  // 小数のわり算：わり切れるまで（小4）：整数÷整数、小数÷整数を、0をつけたしてわり進む。
+  // 教科書の例 13÷5、9÷4、33÷25、46÷4、6÷8、9÷24、9.6÷5、0.4÷8、93.5÷22、8.6÷4、30.9÷15、7.7÷25。
+  function genDecDivUntil4() {
+    const isInt = Math.random() < 0.5;
+    const n = Math.random() < 0.6 ? randInt(2, 9) : [12, 14, 15, 16, 18, 22, 24, 25, 28, 32, 35, 36, 45, 48][randInt(0, 13)];
+    let dm = 0, ok = false; // わられる数(0.001の個数)
+    for (let k = 0; k < 400 && !ok; k++) {
+      dm = isInt ? randInt(1, 99) * 1000 : randInt(1, 999) * 100;
+      if (!isInt && dm % 1000 === 0) continue;
+      ok = dm % n === 0 && (dm / n) % (isInt ? 1000 : 100) !== 0;
+    }
+    if (!ok) return genDecDivUntil4();
+    const qm = dm / n;
+    const m = (x) => String(Number((x / 1000).toFixed(3)));
+    const d = m(dm), answer = m(qm);
+    const places = (answer.split('.')[1] || '').length;
+    const step = Math.pow(10, 3 - places);
+    const steps = [
+      `${d} を ${Number(d).toFixed(places)} と考えて、わられる数に 0 をつけたしながら、わり切れるまでわり進む`,
+      `商の小数点は、わられる数の小数点にそろえてうつ`,
+      `けん算：${n} × ${answer} = ${d}`,
+      `答え ${answer}`,
+    ];
+    const cand = [m(Math.floor(qm / (step * 10)) * step * 10), m(qm * 10), m(qm / 10), m(qm + step), m(Math.abs(qm - step))]
+      .filter((c) => c !== answer && Number(c) > 0 && !/e/.test(c));
+    return { category: 'decDivUntil4', question: `${d} ÷ ${n} を、わり切れるまで計算しなさい。`, answer, choices: buildChoicesFromList(answer, cand), steps };
+  }
+
+  // 小数のわり算：がい数で求める（小4）：商を四捨五入して上から2けた、または1/10の位までのがい数で求める。
+  // 教科書の例 19÷6、25.3÷7、102÷83、48.1÷25、97.4÷46、82.2÷18、12.4kg÷15L。
+  const DEC_DIV_ROUND_STORIES_ = [
+    (d, n) => `${n}Lのペンキの重さをはかったら、${d}kgありました。このペンキ1Lの重さは何kgですか。`,
+    (d, n) => `${n}mのはり金の重さをはかったら、${d}kgありました。このはり金1mの重さは何kgですか。`,
+    (d, n) => `${d}Lのジュースを${n}人で等分します。1人分は何Lになりますか。`,
+    (d, n) => `${d}kgのさとうを${n}ふくろに等分します。1ふくろ分は何kgになりますか。`,
+  ];
+  function genDecDivRound4() {
+    const form = randInt(0, 2); // 0:上から2けた(計算) 1:1/10の位まで(計算) 2:文章題(1/10の位まで)
+    let n, dt, q100;
+    for (;;) {
+      n = Math.random() < 0.5 ? randInt(3, 9) : randInt(11, 89);
+      if (n % 10 === 0) continue;
+      const isInt = Math.random() < 0.3;
+      dt = isInt ? randInt(10, 199) * 10 : randInt(11, 999);
+      if (!isInt && dt % 10 === 0) continue;
+      q100 = Math.floor(dt * 10 / n); // 商の1/100の位までの切り捨て
+      if (dt * 10 % n === 0) continue; // わり切れてしまうものは除く
+      if (form === 0 ? (q100 < 100 || q100 >= 1000) : (q100 < 1 || q100 >= 1000)) continue;
+      if (Math.floor((q100 + 5) / 10) % 10 === 0) continue; // 「3.0」のような答えは避ける
+      if (form === 2 && q100 >= 300) continue;
+      break;
+    }
+    const t = (x) => String(Number((x / 10).toFixed(1)));
+    const ansT = Math.floor((q100 + 5) / 10);
+    const d = t(dt), answer = (ansT / 10).toFixed(1);
+    const h = q100 % 10;
+    const ask = form === 0 ? '商は四捨五入して、上から2けたのがい数で求めなさい。' : '商は四捨五入して、1/10の位までのがい数で求めなさい。';
+    const question = form === 2
+      ? `${DEC_DIV_ROUND_STORIES_[randInt(0, DEC_DIV_ROUND_STORIES_.length - 1)](d, n)}答えは四捨五入して、1/10の位までのがい数で求めなさい。`
+      : `${d} ÷ ${n} の${ask}`;
+    const steps = [
+      form === 2 ? `式は ${d} ÷ ${n}` : `${d} ÷ ${n} を計算する`,
+      `1/100の位まで計算すると ${(q100 / 100).toFixed(2)}…`,
+      `1/100の位の数字 ${h} を四捨五入（${h >= 5 ? '5以上なので切り上げ' : '4以下なので切り捨て'}）`,
+      `答え 約 ${answer}`,
+    ];
+    const cand = [
+      (Math.floor(q100 / 10) === ansT ? (ansT + 1) / 10 : Math.floor(q100 / 10) / 10).toFixed(1),
+      (q100 / 100).toFixed(2), ((ansT - 1) / 10).toFixed(1), ((ansT + 2) / 10).toFixed(1), String(ansT),
+    ].filter((c) => Number(c) !== Number(answer) && Number(c) > 0);
+    return { category: 'decDivRound4', question, answer, choices: buildChoicesFromList(answer, cand), steps };
+  }
+
   // わり算の筆算・あまりのあるわり算（小4）
   function genDivRemainder4() {
     const divisor = randInt(2, 9);
@@ -20131,7 +20296,7 @@
   const KAKE_CATEGORY_IDS = ['mul2', 'decMul4', 'mul3x2_4', 'decMul5', 'mulWritten3'];
   const KAKE_CHAN = { name: 'かけちゃん', img: 'images/kakechan.jpg' };
   // 通常キャラ「わるくん」：わり算だけを扱う単元を解いている時だけ表示される。
-  const WARU_CATEGORY_IDS = ['div2', 'divRemainder4', 'div2by1_4', 'div2by2_4', 'div3by1_4', 'div3by2_4', 'div3by3_4', 'decDiv5', 'decDivRemainder5'];
+  const WARU_CATEGORY_IDS = ['div2', 'divRemainder4', 'div2by1_4', 'div2by2_4', 'div3by1_4', 'div3by2_4', 'div3by3_4', 'decDiv4', 'decDiv4b', 'decDivRemainder4', 'decDivUntil4', 'decDivRound4', 'decDiv5', 'decDivRemainder5'];
   const WARU_KUN = { name: 'わるくん', img: 'images/warukun.png' };
   // 通常キャラ「しすうくん」：累乗（指数）を扱う単元を解いている時だけ表示される。
   const POWER_CATEGORY_IDS = ['power'];
