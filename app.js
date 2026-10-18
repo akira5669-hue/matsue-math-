@@ -2819,6 +2819,9 @@
     { id: 'parallelAngles2', label: '平行線と角度（中2）', gen: genParallelAngles2, addedDate: '2026-10-18', newBadgeDays: 14 },
     { id: 'angleApplicationFig2', label: '角度の応用その2（図形）（中2）', gen: genAngleApplicationFig2, addedDate: '2026-10-18', newBadgeDays: 14 },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
+    { id: 'congruenceProofFill2', label: '合同の証明（穴埋め）（中2）', gen: genCongruenceProofFill2, addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'rightTriProofFill2', label: '直角三角形の合同の証明（穴埋め）（中2）', gen: genRightTriProofFill2, addedDate: '2026-10-19', newBadgeDays: 14 },
+    { id: 'parallelogramProofFill2', label: '平行四辺形を使った合同の証明（穴埋め）（中2）', gen: genParallelogramProofFill2, addedDate: '2026-10-19', newBadgeDays: 14 },
     { id: 'parallelogramCondition2', label: '平行四辺形の性質や条件（中2）', gen: genParallelogramCondition2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
     { id: 'quartileBoxplot2', label: '四分位範囲と箱ひげ図（中2）', gen: genQuartileBoxplot2, defaultOff: true , addedDate: '2026-08-12' },
@@ -16905,6 +16908,19 @@
           out.push(`<text x="${f(V[0] + d[0] * dist)}" y="${f(V[1] + d[1] * dist)}" font-size="${sym === '●' ? 7 : 10}" text-anchor="middle" dominant-baseline="central" fill="#1c2127">${sym}</text>`);
         }
       },
+      // 辺が等しいことを表す印(辺の真ん中に短い線をn本)
+      tick(a, b, n) {
+        const u = unit(a, b), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        for (let i = 0; i < n; i++) {
+          const o = (i - (n - 1) / 2) * 4, c = [m[0] + u[0] * o, m[1] + u[1] * o];
+          out.push(`<line x1="${f(c[0] - u[1] * 5)}" y1="${f(c[1] + u[0] * 5)}" x2="${f(c[0] + u[1] * 5)}" y2="${f(c[1] - u[0] * 5)}" stroke="#1c2127" stroke-width="1.2"/>`);
+        }
+      },
+      // 辺の長さなどの文字を辺の横に置く(side: 1/-1で辺のどちら側か)
+      segText(a, b, s, side) {
+        const u = unit(a, b), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], k = (side || 1) * 14;
+        api.text([m[0] + u[1] * k, m[1] - u[0] * k], s);
+      },
       // 頂点名を図の外側に置く
       // 直角の印(小さな正方形)
       rightMark(V, a, b) { const u1 = unit(V, a), u2 = unit(V, b), r = 9; out.push(`<path d="M${f(V[0] + u1[0] * r)},${f(V[1] + u1[1] * r)} L${f(V[0] + (u1[0] + u2[0]) * r)},${f(V[1] + (u1[1] + u2[1]) * r)} L${f(V[0] + u2[0] * r)},${f(V[1] + u2[1] * r)}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`); },
@@ -17351,6 +17367,501 @@
     angleFigRetry_ = 0;
     return { category: 'parallelAngles2', question: `下の図で、${qText}`, questionHtml: fig + `<span style="display:block">下の図で、${qHtmlText}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
   }
+
+  // 証明の穴埋め(中2)：教科書の証明を、穴(㋐〜)を3〜10個あけて1つずつ4択で答える。
+  // 穴1つを1問として出題する(1つ目をgenが返し、全部の穴をq.proofFillSetに入れて
+  // nextQuestionが続けて出す)ので、正解した穴の数だけダメージ・MP・HPが入る。
+  // 1つでも間違えたら、同じ証明を㋐からやり直す(1回で全部正解するまで先に進まない)。
+  // 証明の中の [[key:答え|誤1|誤2|誤3]] が穴の候補。2回目以降は [[key]] だけ書く。
+  const PROOF_FILL_LABELS_ = ['㋐', '㋑', '㋒', '㋓', '㋔', '㋕', '㋖', '㋗', '㋘', '㋙'];
+  const PF_H_ = '[[h:仮定|結論|定義|対頂角]]';
+  const PF_K_ = '[[k:共通|仮定|対頂角|中点]]';
+  const PF_CONDS_ = ['3組の辺', '2組の辺とその間の角', '1組の辺とその両端の角', '2組の角'];
+  const PF_RCONDS_ = ['斜辺と1つの鋭角', '斜辺と他の1辺', '2組の辺とその間の角', '3組の辺'];
+  const pfCond_ = (key, ans, list) => `[[${key}:${[ans].concat((list || PF_CONDS_).filter((c) => c !== ans)).join('|')}]]`;
+  const pfRCond_ = (key, ans) => pfCond_(key, ans, PF_RCONDS_);
+  // 証明の図。点は(x, y)(y上向き)。ticks: [[点1, 点2, 本数]]、rights: [[頂点, 点a, 点b]]
+  function proofFigSvg_(pts, opt) {
+    return angleFigSvg_(pts, (g) => {
+      const p = g.P;
+      (opt.segs || []).forEach(([a, b]) => g.seg(p[a], p[b]));
+      (opt.ticks || []).forEach(([a, b, n]) => g.tick(p[a], p[b], n));
+      (opt.rights || []).forEach(([v, a, b]) => g.rightMark(p[v], p[a], p[b]));
+      (opt.arcs || []).forEach(([v, a, b, r]) => g.arc(p[v], p[a], p[b], r || 11));
+      (opt.dots || []).forEach(([v, a, b, n, d]) => g.parts(p[v], p[a], p[b], n, '●', d || 18));
+      (opt.angles || []).forEach(([v, a, b, s]) => { g.arc(p[v], p[a], p[b], 11); g.angleText(p[v], p[a], p[b], s, 26); });
+      (opt.lens || []).forEach(([a, b, s, side]) => g.segText(p[a], p[b], s, side));
+      Object.keys(opt.names || {}).forEach((k) => g.name(p[k], opt.names[k]));
+      (opt.extraNames || []).forEach(([v, a, b, s]) => g.nameOpp(p[v], p[a], p[b], s));
+      (opt.lineNames || []).forEach(([k, s]) => g.text([p[k][0] - 9, p[k][1]], s));
+    });
+  }
+  const PF_PGCONDS_ = ['2組の対辺がそれぞれ平行', '2組の対辺がそれぞれ等しい', '2組の対角がそれぞれ等しい', '対角線がそれぞれの中点で交わる', '1組の対辺が平行でその長さが等しい'];
+  const pfPgCond_ = (key, ans) => `[[${key}:${[ans].concat(shuffle(PF_PGCONDS_.filter((c) => c !== ans)).slice(0, 3)).join('|')}]]`;
+  const PF_DIAG_ = 'それぞれの中点で交わる|長さが等しい|垂直に交わる|平行である';
+  function proofFillTemplates_(kind) {
+    // 平行四辺形ABCD(Aが左上、Bが左下、Cが右下、Dが右上)
+    const A = [0.5, 1.4], B = [0, 0], C = [2.2, 0], D = [2.7, 1.4];
+    const PG = [['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'A']];
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    const ABCD = { A: 'A', B: 'B', C: 'C', D: 'D' };
+    if (kind === 'para') {
+      return [
+        () => ({
+          // 基本1：平行四辺形の性質①(2組の対辺はそれぞれ等しい)
+          fig: proofFigSvg_({ A, B, C, D }, { segs: PG.concat([['B', 'D']]), names: ABCD }),
+          stmt: '□ABCDで、平行四辺形の定義から、2組の対辺がそれぞれ等しいことを証明しなさい。',
+          lines: [
+            '【仮定】AB∥DC、[[a:AD∥BC|AB=DC|AD=BC|AC∥BD]]',
+            '【結論】AB=DC、[[b:AD=BC|AD∥BC|AC=BD|AB=BC]]',
+            '対角線BDをひく。△ABDと△CDBにおいて、',
+            '平行線の[[k:錯角|同位角|対頂角|底角]]は等しいから',
+            'AB∥DCより ∠ABD=∠[[c:CDB|ADB|CBD|BCD]] …(1)',
+            '[[a]]より ∠ADB=∠[[d:CBD|CDB|ABD|BCD]] …(2)',
+            'また BDは[[k2:共通|仮定|対頂角|中点]] …(3)',
+            `(1)、(2)、(3)より、${pfCond_('e', '1組の辺とその両端の角')}がそれぞれ等しいから`,
+            '△ABD≡△CDB',
+            '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから',
+            'AB=DC、[[b]]',
+          ],
+        }),
+        () => {
+          // 例題：対角線の交点Oを通る直線とAB・CDの交点E・F
+          const O = mid(A, C);
+          const E = lerp(A, B, 0.6), F = [2 * O[0] - E[0], 2 * O[1] - E[1]];
+          const L0 = lerp(F, E, 1.35), L1 = lerp(E, F, 1.35);
+          return {
+            fig: proofFigSvg_({ A, B, C, D, O, E, F, L0, L1 }, { segs: PG.concat([['A', 'C'], ['B', 'D'], ['L0', 'L1']]), names: { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F' }, extraNames: [['O', 'A', 'E', 'O']] }),
+            stmt: '□ABCDで、対角線の交点Oを通る直線をひき、2辺AB、CDとの交点をそれぞれE、Fとします。このとき、AE=CFであることを証明しなさい。',
+            lines: [
+              '△AEOと△[[t:CFO|COF|FCO|DFO]]において',
+              '[[v:対頂角|錯角|同位角|底角]]は等しいから ∠AOE=∠[[a:COF|CFO|DOF|AOB]] …①',
+              'AB∥DCより、平行線の[[w:錯角|同位角|対頂角|底角]]は等しいから ∠OAE=∠[[b:OCF|OFC|ODF|OCB]] …②',
+              `平行四辺形では、対角線は[[c:${PF_DIAG_}]]から`,
+              'AO=[[d:CO|BO|DO|FO]] …③',
+              `①、②、③より、${pfCond_('e', '1組の辺とその両端の角')}がそれぞれ等しいから`,
+              '△AEO≡△[[t]]',
+              '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから AE=CF',
+            ],
+          };
+        },
+        () => {
+          // 3：対角線BD上にBE=DFとなる点E・F
+          const E = lerp(B, D, 0.32), F = lerp(D, B, 0.32);
+          return {
+            fig: proofFigSvg_({ A, B, C, D, E, F }, { segs: PG.concat([['B', 'D'], ['A', 'E'], ['C', 'F']]), ticks: [['B', 'E', 2], ['D', 'F', 2]], names: { A: 'A', B: 'B', C: 'C', D: 'D' }, extraNames: [['E', 'B', 'C', 'E'], ['F', 'D', 'A', 'F']] }),
+            stmt: '□ABCDで、対角線BD上に2点E、FをBE=DFとなるようにとります。このとき、AE=CFであることを証明しなさい。',
+            lines: [
+              '△ABEと△[[t:CDF|CFD|DCF|ADE]]において',
+              `${PF_H_}から BE=DF …①`,
+              '平行四辺形では、[[a:対辺|対角|対角線|隣り合う辺]]は等しいから',
+              'AB=[[b:CD|AD|BC|CF]] …②',
+              'AB∥DCより、平行線の[[c:錯角|同位角|対頂角|底角]]は等しいから',
+              '∠ABE=∠[[d:CDF|CFD|DCF|ADB]] …③',
+              `①、②、③より、${pfCond_('e', '2組の辺とその間の角')}がそれぞれ等しいから`,
+              '△ABE≡△[[t]]',
+              '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから AE=CF',
+            ],
+          };
+        },
+        () => {
+          // 4：CDの中点E、ADの延長とBEの延長の交点F
+          const E = mid(C, D), F = [2 * E[0] - B[0], 2 * E[1] - B[1]];
+          return {
+            fig: proofFigSvg_({ A, B, C, D, E, F }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'D'], ['A', 'F'], ['B', 'F']], ticks: [['C', 'E', 1], ['E', 'D', 1]], names: { A: 'A', B: 'B', C: 'C', D: 'D', F: 'F' }, extraNames: [['E', 'D', 'F', 'E']] }),
+            stmt: '□ABCDの辺CDの中点をEとし、辺ADの延長と線分BEの延長との交点をFとします。このとき、△EBC≡△EFDであることを証明しなさい。',
+            lines: [
+              '△EBCと△EFDにおいて',
+              `${PF_H_}から EC=[[a:ED|EB|EF|DF]] …①`,
+              '[[b:対頂角|錯角|同位角|底角]]は等しいから ∠BEC=∠FED …②',
+              'AF∥BCより、平行線の[[c:錯角|同位角|対頂角|底角]]は等しいから',
+              '∠ECB=∠[[d:EDF|EFD|DEF|ADE]] …③',
+              `①、②、③より、${pfCond_('e', '1組の辺とその両端の角')}がそれぞれ等しいから`,
+              '△EBC≡△EFD',
+              '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから BC=[[f:FD|ED|EF|AF]]',
+            ],
+          };
+        },
+        () => ({
+          // 5：1組の対辺が平行でその長さが等しい四角形は平行四辺形
+          fig: proofFigSvg_({ A, B, C, D }, { segs: PG.concat([['B', 'D']]), ticks: [['A', 'B', 1], ['D', 'C', 1]], names: ABCD }),
+          stmt: '四角形ABCDで、AB=DC、AB∥DCならば、四角形ABCDは平行四辺形であることを証明しなさい。',
+          lines: [
+            '【仮定】[[a:AB=DC|AD=BC|AD∥BC|AC=BD]]、AB∥DC',
+            '【結論】AB∥DC、[[b:AD∥BC|AB=DC|AD=BC|AC∥BD]]',
+            '対角線BDをひく。△ABDと△CDBにおいて、',
+            `${PF_H_}から AB=CD …①`,
+            'AB∥DCより、平行線の錯角は等しいから',
+            '∠ABD=∠[[c:CDB|ADB|CBD|BCD]] …②',
+            'また BDは[[k2:共通|仮定|対頂角|中点]] …③',
+            `①、②、③より、${pfCond_('d', '2組の辺とその間の角')}がそれぞれ等しいから`,
+            '△ABD≡△CDB',
+            '合同な図形の対応する[[s:角|辺|頂点|面積]]は等しいから',
+            '∠ADB=∠CBD',
+            'よって、[[e:錯角|同位角|対頂角|底角]]が等しいから',
+            '[[b]]',
+            `これと仮定のAB∥DCを合わせて、${pfPgCond_('f', '2組の対辺がそれぞれ平行')}だから、四角形ABCDは平行四辺形である。`,
+          ],
+        }),
+        () => {
+          // 例題：AB・DCの中点M・Nで四角形AMCNは平行四辺形
+          const M = mid(A, B), N = mid(D, C);
+          return {
+            fig: proofFigSvg_({ A, B, C, D, M, N }, { segs: PG.concat([['A', 'N'], ['M', 'C']]), ticks: [['A', 'M', 1], ['M', 'B', 1], ['D', 'N', 2], ['N', 'C', 2]], names: { A: 'A', B: 'B', C: 'C', D: 'D', M: 'M', N: 'N' } }),
+            stmt: '□ABCDの辺AB、DCの中点をそれぞれM、Nとすれば、四角形AMCNは平行四辺形になります。このことを証明しなさい。',
+            lines: [
+              '平行四辺形の[[a:対辺|対角|対角線|隣り合う辺]]だから',
+              'AB=DC …①',
+              'AB∥DC',
+              'よって AM∥[[b:NC|MC|AN|BC]] …②',
+              '①とM、NがAB、DCの[[c:中点|端点|交点|垂線の足]]であることから',
+              'AM=[[d:NC|MC|AN|BC]] …③',
+              `②、③より、${pfPgCond_('e', '1組の対辺が平行でその長さが等しい')}から、四角形AMCNは平行四辺形である。`,
+            ],
+          };
+        },
+        () => {
+          // 7：OA・OB・OC・ODの中点P・Q・R・S
+          const O = mid(A, C);
+          const P = mid(O, A), Q = mid(O, B), R = mid(O, C), S = mid(O, D);
+          return {
+            fig: proofFigSvg_({ A, B, C, D, O, P, Q, R, S }, { segs: PG.concat([['A', 'C'], ['B', 'D'], ['P', 'Q'], ['Q', 'R'], ['R', 'S'], ['S', 'P']]), names: ABCD, extraNames: [['O', 'B', 'C', 'O'], ['P', 'A', 'D', 'P'], ['Q', 'B', 'C', 'Q'], ['R', 'B', 'C', 'R'], ['S', 'A', 'D', 'S']] }),
+            stmt: '□ABCDの対角線の交点をOとして、線分OA、OB、OC、ODの中点を、それぞれP、Q、R、Sとすれば、四角形PQRSは平行四辺形になります。このことを証明しなさい。',
+            lines: [
+              `平行四辺形では、対角線は[[a:${PF_DIAG_}]]から`,
+              'OA=OC …①、OB=[[b:OD|OA|OC|BD]] …②',
+              '①とP、RがOA、OCの中点であることから',
+              'OP=[[c:OR|OQ|OS|PR]] …③',
+              '②とQ、SがOB、ODの中点であることから',
+              'OQ=[[d:OS|OP|OR|QS]] …④',
+              `③と④より、${pfPgCond_('e', '対角線がそれぞれの中点で交わる')}から、`,
+              '四角形PQRSは平行四辺形である。',
+            ],
+          };
+        },
+        () => {
+          // 8：∠APB=∠CQDとなるAD上の点P、BC上の点Q
+          const P = [1.3, 1.4], Q = [D[0] - P[0], 0];
+          return {
+            fig: proofFigSvg_({ A, B, C, D, P, Q }, { segs: PG.concat([['B', 'P'], ['Q', 'D']]), names: { A: 'A', B: 'B', C: 'C', D: 'D', P: 'P', Q: 'Q' } }),
+            stmt: '□ABCDの辺AD上に点P、辺BC上に点Qを、∠APB=∠CQDとなるようにとれば、四角形PBQDは平行四辺形になります。このことを証明しなさい。',
+            lines: [
+              '平行四辺形の[[a:対辺|対角|対角線|隣り合う辺]]だから AD∥BC',
+              'よって PD∥[[b:BQ|PB|QC|AB]] …①',
+              'AD∥BCより、平行線の錯角は等しいから',
+              '∠[[c:APB|ABP|BPD|CQD]]=∠PBQ …②',
+              `${PF_H_}から ∠APB=∠CQD …③`,
+              '②、③から ∠PBQ=∠CQD',
+              'よって、[[d:同位角|錯角|対頂角|底角]]が等しいから',
+              'PB∥[[e:DQ|DC|PD|BQ]] …④',
+              `①、④より、${pfPgCond_('f', '2組の対辺がそれぞれ平行')}から、`,
+              '四角形PBQDは平行四辺形である。',
+            ],
+          };
+        },
+      ];
+    }
+    if (kind === 'right') {
+      return [
+        () => {
+          // 例題：AB=ACの二等辺三角形、B・Cから向かいの辺への垂線
+          const A = [1, 2.6], B = [0, 0], C = [2, 0];
+          const foot = (P, U, V) => { const dx = V[0] - U[0], dy = V[1] - U[1]; const t = ((P[0] - U[0]) * dx + (P[1] - U[1]) * dy) / (dx * dx + dy * dy); return [U[0] + dx * t, U[1] + dy * t]; };
+          const D = foot(B, A, C), E = foot(C, A, B);
+          return {
+            fig: proofFigSvg_({ A, B, C, D, E }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['B', 'D'], ['C', 'E']], ticks: [['A', 'B', 1], ['A', 'C', 1]], rights: [['D', 'A', 'B'], ['E', 'A', 'C']], names: { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E' } }),
+            stmt: 'AB=ACの二等辺三角形ABCで、頂点Bから辺ACに垂線をひき、その交点をD、また、頂点Cから辺ABに垂線をひき、その交点をEとします。このとき、AD=AEとなることを証明しなさい。',
+            lines: [
+              '△ABDと△[[t:ACE|AEC|ACD|BCE]]において',
+              `${PF_H_}から AB=[[a:AC|AD|BC|AE]] …①`,
+              '∠ADB=∠AEC=[[n:90|60|45|180]]° …②',
+              'また ∠[[c:A|B|C|BDC]]は[[k:共通|仮定|対頂角|中点]] …③',
+              `①、②、③より、直角三角形で、${pfRCond_('d', '斜辺と1つの鋭角')}がそれぞれ等しいから`,
+              '△ABD≡△[[t]]',
+              '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから',
+              'AD=[[e:AE|AC|DC|BD]]',
+            ],
+          };
+        },
+        () => {
+          // 14：ℓ∥m、AB=CD、B・Cから線分ADへの垂線
+          const A = [0, 1], B = [1.5, 1], D = [2.3, 0], C = [0.8, 0];
+          const foot = (P) => { const dx = D[0] - A[0], dy = D[1] - A[1]; const t = ((P[0] - A[0]) * dx + (P[1] - A[1]) * dy) / (dx * dx + dy * dy); return [A[0] + dx * t, A[1] + dy * t]; };
+          const E = foot(B), F = foot(C);
+          const pts = { A, B, C, D, E, F, L0: [-0.5, 1], L1: [2.8, 1], M0: [-0.5, 0], M1: [2.8, 0] };
+          return {
+            fig: proofFigSvg_(pts, { segs: [['L0', 'L1'], ['M0', 'M1'], ['A', 'D'], ['B', 'E'], ['C', 'F']], rights: [['E', 'B', 'D'], ['F', 'C', 'A']], names: { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F' }, lineNames: [['L0', 'ℓ'], ['M0', 'm']] }),
+            stmt: 'ℓ∥mである直線ℓ上に2点A、B、直線m上に2点C、DをAB=CDとなるようにとります。また、点B、Cから線分ADに垂線をひき、その交点をそれぞれE、Fとします。このとき、AE=DFとなることを証明しなさい。',
+            lines: [
+              '△ABEと△[[t:DCF|DFC|CDF|CFD]]において',
+              `${PF_H_}から AB=[[a:DC|DF|CF|AE]] …①`,
+              '∠BEA=∠CFD=[[n:90|180|60|45]]° …②',
+              'ℓ∥mより、平行線の[[k:錯角|同位角|対頂角|底角]]は等しいから ∠[[c:BAE|ABE|AEB|FCD]]=∠CDF …③',
+              `①、②、③より、直角三角形で、${pfRCond_('d', '斜辺と1つの鋭角')}がそれぞれ等しいから`,
+              '△ABE≡△[[t]]',
+              '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから',
+              'AE=DF',
+            ],
+          };
+        },
+        () => {
+          // 15：AB=AC、B・Cでそれぞれ辺に垂直な直線の交点D
+          const A = [0, 1.6], B = [-1, 0.6], C = [1, 0.6], D = [0, -0.4];
+          return {
+            fig: proofFigSvg_({ A, B, C, D }, { segs: [['A', 'B'], ['A', 'C'], ['B', 'D'], ['C', 'D'], ['A', 'D'], ['B', 'C']], ticks: [['A', 'B', 1], ['A', 'C', 1]], rights: [['B', 'A', 'D'], ['C', 'A', 'D']], names: { A: 'A', B: 'B', C: 'C', D: 'D' } }),
+            stmt: 'AB=ACの二等辺三角形ABCで、頂点Bを通り辺ABに垂直な直線と、頂点Cを通り辺ACに垂直な直線との交点をDとし、AとDを結びます。このとき、∠ADB=∠ADCとなることを証明しなさい。',
+            lines: [
+              '△ABDと△[[t:ACD|ADC|CAD|DCA]]において',
+              `${PF_H_}から AB=[[a:AC|BD|BC|AD]] …①`,
+              '∠[[b:ABD|ADB|BAD|CBD]]=∠ACD=90° …②',
+              `また [[c:AD|AB|BD|BC]]は${PF_K_} …③`,
+              `①、②、③より、直角三角形で、${pfRCond_('d', '斜辺と他の1辺')}がそれぞれ等しいから`,
+              '△ABD≡△[[t]]',
+              '合同な図形の対応する[[s:角|辺|頂点|面積]]は等しいから',
+              '∠ADB=∠ADC',
+            ],
+          };
+        },
+        () => {
+          // 10：斜辺8cmと60°の2つの直角三角形(直角三角形の合同条件を使わずに)
+          const r3 = Math.sqrt(3);
+          const pts = { B: [0, 0], C: [1, 0], A: [1, r3], E: [1.7, 0], F: [2.7, 0], D: [2.7, r3] };
+          return {
+            fig: proofFigSvg_(pts, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['D', 'E'], ['E', 'F'], ['F', 'D']], rights: [['C', 'B', 'A'], ['F', 'E', 'D']], angles: [['B', 'C', 'A', '60°'], ['E', 'F', 'D', '60°']], lens: [['B', 'A', '8cm', 1], ['E', 'D', '8cm', 1]], names: { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F' } }),
+            stmt: '図の2つの直角三角形(∠C=∠F=90°)が合同になることを、直角三角形の合同条件を使わずに証明しなさい。',
+            lines: [
+              '△ABCと△DEFにおいて',
+              `${PF_H_}から AB=DE …①、∠B=∠E=60° …②`,
+              '三角形の内角の和は[[n:180|360|90|270]]°だから',
+              '∠A=∠D=180°−(60°+[[a:90°|60°|30°|180°]])',
+              '=[[b:30°|60°|90°|120°]] …③',
+              `①、②、③より、${pfCond_('c', '1組の辺とその両端の角')}がそれぞれ等しいから`,
+              '△ABC≡△DEF',
+            ],
+          };
+        },
+        () => {
+          // 11：斜辺8cmと4cmの辺。△DEFを裏返して辺ACとDFを重ねる
+          const r3 = Math.sqrt(3);
+          const pts = { B: [0, 0], C: [r3, 0], E: [2 * r3, 0], A: [r3, 1] };
+          return {
+            fig: proofFigSvg_(pts, { segs: [['A', 'B'], ['B', 'E'], ['A', 'E'], ['A', 'C']], rights: [['C', 'E', 'A']], lens: [['B', 'A', '8cm', 1], ['A', 'C', '4cm', -1]], names: { A: 'A(D)', B: 'B', C: 'C(F)', E: 'E' } }),
+            stmt: '2つの直角三角形ABC、DEF(∠C=∠F=90°、AB=DE=8cm、AC=DF=4cm)が合同になることを、直角三角形の合同条件を使わずに証明しなさい。',
+            lines: [
+              '△DEFを裏返して、等しい辺ACとDFを重ね、図のような△ABEをつくる。',
+              '△ABCと△DEFにおいて',
+              `${PF_H_}から [[a:AB|AC|BC|AE]]=DE …①`,
+              '[[b:AC|AB|BC|EF]]=DF …②',
+              '∠ACB=∠DFE=[[n:90|180|60|45]]° …③',
+              '③から、3点B、C、Eは[[l:一直線上|円周上|同じ点|平行線上]]に並び、△ABEができる。',
+              '①から ∠[[c:ABC|BAC|ACB|CAE]]=∠DEF …④',
+              '三角形の内角の和は180°であることと、③、④から ∠[[d:BAC|ABC|ACB|AEB]]=∠EDF …⑤',
+              `①、②、⑤より、${pfCond_('e', '2組の辺とその間の角')}がそれぞれ等しいから`,
+              '△ABC≡△DEF',
+            ],
+          };
+        },
+      ];
+    }
+    return [
+      () => {
+        // 6：∠A=60°の二等辺三角形は正三角形
+        const A = [1, Math.sqrt(3)], B = [0, 0], C = [2, 0];
+        return {
+          fig: proofFigSvg_({ A, B, C }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A']], ticks: [['A', 'B', 1], ['A', 'C', 1]], angles: [['A', 'B', 'C', '60°']], names: { A: 'A', B: 'B', C: 'C' } }),
+          stmt: '△ABCは∠A=60°、AB=ACの二等辺三角形です。このとき、∠A=∠B=∠Cであることを証明しなさい。',
+          lines: [
+            '二等辺三角形の2つの[[a:底角|頂角|外角|辺]]は等しいから、',
+            '△ABCにおいて、∠B=∠[[b:C|AB|BC|CA]]',
+            'そこで、∠B=x°とすると、∠C=[[c:x|60|2x|180−x]]°',
+            '∠A+∠B+∠C=[[n:180|360|90|120]]°より、',
+            '60+x+[[c]]=180',
+            'x=[[d:60|30|90|120]]',
+            'したがって、∠A=∠B=∠C=[[e:60|30|90|120]]°',
+          ],
+        };
+      },
+      () => {
+        // 7：正三角形でBD=CEのとき△ABD≡△BCE
+        const A = [1, Math.sqrt(3)], B = [0, 0], C = [2, 0];
+        const D = [0.8, 0], E = [2 - 0.4, 0.8 * Math.sqrt(3) / 2 * 1];
+        return {
+          fig: proofFigSvg_({ A, B, C, D, E }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D'], ['B', 'E']], names: { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E' } }),
+          stmt: '正三角形ABCの辺BC、CA上に点D、EをBD=CEとなるようにとります。このとき、△ABD≡△BCEとなることを証明しなさい。',
+          lines: [
+            '△ABDと△[[t:BCE|BEC|CBE|ACD]]において',
+            `${PF_H_}から AB=[[a:BC|AD|BE|BD]] …①`,
+            'BD=[[b:CE|AE|DC|BE]] …②',
+            '正三角形の内角だから ∠ABD=∠[[c:BCE|BEC|CBE|ADB]] …③',
+            `①、②、③より、${pfCond_('d', '2組の辺とその間の角')}がそれぞれ等しいから`,
+            '△ABD≡△BCE',
+          ],
+        };
+      },
+      () => {
+        // 4：二等辺三角形の頂角の二等分線は底辺を垂直に2等分する
+        const A = [1, 2.4], B = [0, 0], C = [2, 0], D = [1, 0];
+        return {
+          fig: proofFigSvg_({ A, B, C, D }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D']], ticks: [['A', 'B', 1], ['A', 'C', 1]], dots: [['A', 'B', 'C', 2, 24]], names: { A: 'A', B: 'B', C: 'C', D: 'D' } }),
+          stmt: 'AB=ACの二等辺三角形ABCで、∠Aの二等分線と底辺BCとの交点をDとすると、∠ADB=90°でBD=CDとなることを証明しなさい。',
+          lines: [
+            '△ABDと△[[t:ACD|ADC|CAD|ABC]]で、',
+            `${PF_H_}から AB=[[a:AC|BC|AD|CD]] …①`,
+            'ADは頂角Aの二等分線だから ∠BAD=∠[[b:CAD|ADC|ACD|ABD]] …②',
+            `また ADは${PF_K_} …③`,
+            `①、②、③より、${pfCond_('c', '2組の辺とその間の角')}がそれぞれ等しいから`,
+            '△ABD≡△ACD',
+            '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから',
+            'BD=[[u:CD|AD|BC|AB]]',
+            '合同な図形の対応する[[s2:角|辺|頂点|面積]]は等しいから',
+            '∠[[e:ADB|BAD|ABD|CAD]]=∠ADC …④',
+            '④と ∠[[e]]+∠ADC=[[n:180|90|360|120]]° から',
+            '2∠[[e]]=180°',
+            'したがって ∠[[e]]=[[r:90|45|60|180]]°',
+          ],
+        };
+      },
+      () => {
+        // 12：AB=CB、BDが∠ABCの二等分線ならAD=CD
+        const B = [0, 0], A = [1.2, 1.1], C = [1.2, -1.1], D = [2.7, 0];
+        return {
+          fig: proofFigSvg_({ A, B, C, D }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'A'], ['B', 'D']], ticks: [['A', 'B', 1], ['C', 'B', 1]], dots: [['B', 'A', 'C', 2, 16]], names: { A: 'A', B: 'B', C: 'C', D: 'D' } }),
+          stmt: '図で、AB=CB、BDは∠ABCの二等分線です。このとき、AD=CDとなることを証明しなさい。',
+          lines: [
+            '【仮定】AB=CB、∠ABD=[[a:∠CBD|∠BDC|∠ADB|∠BCD]]',
+            '【結論】AD=CD',
+            '△ABDと△CBDにおいて',
+            `${PF_H_}から AB=CB …①`,
+            '∠ABD=∠CBD …②',
+            `また BDは${PF_K_} …③`,
+            `①、②、③より、${pfCond_('b', '2組の辺とその間の角')}がそれぞれ等しいから`,
+            '△ABD≡△[[t:CBD|CDB|BCD|ABC]]',
+            '合同な図形の対応する[[c:辺|角|頂点|面積]]は等しいから',
+            'AD=CD',
+          ],
+        };
+      },
+      () => {
+        // 13：AB=DC、AC=DBなら∠BAC=∠CDB
+        const B = [0, 0], C = [2.4, 0], A = [0.3, 1.9], D = [2.1, 1.9];
+        return {
+          fig: proofFigSvg_({ A, B, C, D }, { segs: [['A', 'B'], ['D', 'C'], ['A', 'C'], ['D', 'B'], ['B', 'C']], ticks: [['A', 'B', 2], ['D', 'C', 2], ['A', 'C', 1], ['D', 'B', 1]], names: { A: 'A', B: 'B', C: 'C', D: 'D' } }),
+          stmt: '図で、AB=DC、AC=DBのとき、∠BAC=∠CDBであることを証明しなさい。',
+          lines: [
+            '△ABCと△DCBにおいて',
+            `${PF_H_}から AB=[[a:DC|DB|BC|AC]] …①`,
+            'AC=[[b:DB|DC|BC|AB]] …②',
+            `また BCは${PF_K_} …③`,
+            `①、②、③より、${pfCond_('c', '3組の辺')}がそれぞれ等しいから`,
+            '△ABC≡△[[t:DCB|DBC|BCD|CDB]]',
+            '合同な図形の対応する[[d:角|辺|頂点|面積]]は等しいから',
+            '∠BAC=∠CDB',
+          ],
+        };
+      },
+      () => {
+        // 14：線分ABの中点M、∠CAM=∠DBMならAC=BD
+        const M = [0, 0], A = [-1.3, 0.8], B = [1.3, -0.8], C = [-0.75, -1.1], D = [0.75, 1.1];
+        return {
+          fig: proofFigSvg_({ A, B, C, D, M }, { segs: [['A', 'B'], ['C', 'D'], ['A', 'C'], ['B', 'D']], ticks: [['A', 'M', 1], ['M', 'B', 1]], arcs: [['A', 'C', 'M', 12], ['B', 'D', 'M', 12]], names: { A: 'A', B: 'B', C: 'C', D: 'D', M: 'M' } }),
+          stmt: '線分ABの中点をMとし、Mを通る線分CDを∠CAM=∠DBMとなるようにとると、AC=BDであることを証明しなさい。',
+          lines: [
+            '△ACMと△BDMにおいて',
+            `${PF_H_}から [[a:AM=BM|CM=DM|AC=BD|AM=CM]] …①`,
+            '∠CAM=∠DBM …②',
+            '[[b:対頂角|錯角|同位角|底角]]は等しいから ∠AMC=∠BMD …③',
+            `①、②、③より、${pfCond_('c', '1組の辺とその両端の角')}がそれぞれ等しいから`,
+            '[[d:△ACM≡△BDM|△ACM≡△DBM|△ACM≡△BMD|△AMC≡△BDM]]',
+            '合同な図形の対応する[[e:辺|角|頂点|面積]]は等しいから',
+            'AC=BD',
+          ],
+        };
+      },
+      () => {
+        // 例題(基本5)：2つの角が等しい三角形は二等辺三角形
+        const A = [1, 2.4], B = [0, 0], C = [2, 0], D = [1, 0];
+        return {
+          fig: proofFigSvg_({ A, B, C, D }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D']], arcs: [['B', 'C', 'A', 12], ['C', 'A', 'B', 12]], dots: [['A', 'B', 'C', 2, 24]], names: { A: 'A', B: 'B', C: 'C', D: 'D' } }),
+          stmt: '△ABCで、∠B=∠CならばAB=ACであることを証明しなさい。∠Aの二等分線をひき、辺BCとの交点をDとします。',
+          lines: [
+            '△ADBと△ADCにおいて',
+            `${PF_H_}から ∠ABD=∠ACD …①`,
+            '∠BAD=∠[[a:CAD|ADC|ACD|BAC]] …②',
+            '三角形の内角の和が[[n:180|360|90|270]]°であることと、①、②から、残りの角も等しい。',
+            'したがって ∠ADB=∠[[b:ADC|CAD|ACD|BAD]] …③',
+            `また ADは${PF_K_} …④`,
+            `②、③、④より、${pfCond_('c', '1組の辺とその両端の角')}がそれぞれ等しいから`,
+            '△ADB≡△ADC',
+            '合同な図形の対応する[[s:辺|角|頂点|面積]]は等しいから AB=AC',
+          ],
+        };
+      },
+      () => {
+        // 8：二等辺三角形で底辺に平行な直線をひくと△ADEも二等辺三角形
+        const A = [1, 2.4], B = [0, 0], C = [2, 0];
+        const D = [A[0] + (B[0] - A[0]) * 0.45, A[1] + (B[1] - A[1]) * 0.45], E = [A[0] + (C[0] - A[0]) * 0.45, A[1] + (C[1] - A[1]) * 0.45];
+        return {
+          fig: proofFigSvg_({ A, B, C, D, E }, { segs: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['D', 'E']], ticks: [['A', 'B', 1], ['A', 'C', 1]], names: { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E' } }),
+          stmt: 'AB=ACの二等辺三角形ABCで、底辺BCに平行な直線をひき、辺AB、ACとの交点をそれぞれD、Eとします。このとき、△ADEが二等辺三角形になることを証明しなさい。',
+          lines: [
+            'BC∥DEより、平行線の[[a:同位角|錯角|対頂角|底角]]は等しいから',
+            '∠ABC=∠[[b:ADE|DAE|BDE|BAC]] …①',
+            '∠ACB=∠[[c:AED|DAE|CED|BAC]] …②',
+            `${PF_H_}から、AB=ACだから ∠ABC=∠[[d:ACB|BAC|DAE|BDE]] …③`,
+            '①、②、③より、∠[[e:ADE|DAE|BDE|CED]]=∠[[f:AED|DAE|BDE|CED]]',
+            '[[g:2つの角|2つの辺|3つの角|2組の辺]]が等しいから、△ADEは二等辺三角形である。',
+          ],
+        };
+      },
+    ];
+  }
+  function genProofFill_(kind, category) {
+    const list = proofFillTemplates_(kind);
+    const tpl = list[randInt(0, list.length - 1)]();
+    const toks = {}, order = [];
+    const re = /\[\[(\w+)(?::([^\]]*))?\]\]/g;
+    tpl.lines.forEach((ln) => {
+      let m;
+      re.lastIndex = 0;
+      while ((m = re.exec(ln))) {
+        if (m[2] !== undefined && !toks[m[1]]) { const parts = m[2].split('|'); toks[m[1]] = { ans: parts[0], wrongs: parts.slice(1) }; order.push(m[1]); }
+      }
+    });
+    const n = randInt(3, Math.min(10, order.length));
+    const pick = shuffle(order.slice()).slice(0, n);
+    const keys = order.filter((k) => pick.indexOf(k) !== -1);
+    const render = (cur) => tpl.lines.map((ln) => {
+      let html = '', last = 0, m;
+      re.lastIndex = 0;
+      while ((m = re.exec(ln))) {
+        html += escHtml(ln.slice(last, m.index));
+        last = re.lastIndex;
+        const i = keys.indexOf(m[1]), ans = escHtml(toks[m[1]].ans);
+        if (i === -1) html += ans;
+        else if (i < cur) html += `<span class="pf-done">${ans}</span>`;
+        else html += `<span class="${i === cur ? 'pf-cur' : 'pf-blank'}">${PROOF_FILL_LABELS_[i]}</span>`;
+      }
+      return html + escHtml(ln.slice(last));
+    }).join('<br>');
+    const fullLines = tpl.lines.map((ln) => ln.replace(re, (all, k) => toks[k].ans));
+    const qs = keys.map((k, i) => {
+      const label = PROOF_FILL_LABELS_[i];
+      return {
+        category,
+        question: `${tpl.stmt}（${label}にあてはまるもの：${fullLines.join(' ')}）`,
+        questionHtml: tpl.fig + `<span style="display:block">${escHtml(tpl.stmt)}</span><div class="proof-fill">${render(i)}</div><span style="display:block;font-weight:700">${label}にあてはまるものを選びなさい。（${i + 1}/${keys.length}）</span>`,
+        answer: toks[k].ans,
+        choices: shuffle([toks[k].ans].concat(toks[k].wrongs)),
+        steps: [`${label}：${toks[k].ans}`, '【完成した証明】'].concat(fullLines),
+      };
+    });
+    qs[0].proofFillSet = qs.slice();
+    return qs[0];
+  }
+  function genCongruenceProofFill2() { return genProofFill_('normal', 'congruenceProofFill2'); }
+  function genRightTriProofFill2() { return genProofFill_('right', 'rightTriProofFill2'); }
+  function genParallelogramProofFill2() { return genProofFill_('para', 'parallelogramProofFill2'); }
 
   function mkTriSvg(tri1, tri2, sym) {
     const [a,b,c] = tri1, [d,e,f] = tri2;
@@ -21069,6 +21580,8 @@
     nextQuestion();
   }
 
+  // 証明の穴埋めで、今の証明の全部の穴と、まだ出していない穴(1つの穴＝1問)
+  let proofFillAll_ = [], proofFillQueue_ = [];
   function nextQuestion() {
     if (ensureNotHpGameOver_()) return;
     if (state.subject === 'science') { nextScienceQuestion(); return; }
@@ -21093,10 +21606,14 @@
     }
     // 都道府県制覇（県庁所在地クイズ）：10問連続正解の直後の3問(県庁所在地+
     // 特産品2問)は、他のどの出題よりも優先してこのキューから1問ずつ出す。
-    if (state.capitalQuizBonusQueue && state.capitalQuizBonusQueue.length > 0) {
+    // 証明の穴埋め：1つの証明の残りの穴は、他のどの出題よりも優先して続けて出す。
+    if (proofFillQueue_.length > 0) {
+      mistakeQ = proofFillQueue_.shift();
+    } else if (state.capitalQuizBonusQueue && state.capitalQuizBonusQueue.length > 0) {
       mistakeQ = state.capitalQuizBonusQueue.shift();
     }
     const q = mistakeQ || (function () { const cat = pickGenerator(); return cat.gen(); })();
+    if (q.proofFillSet) { proofFillAll_ = q.proofFillSet; proofFillQueue_ = q.proofFillSet.slice(1); delete q.proofFillSet; }
     state.current = q;
     state.answered = false;
 
@@ -21504,6 +22021,11 @@
         missLineHtml = `<div class="enemy-quote-banner">${enemyBeforeMiss.lines.miss}</div>`;
       }
       recordWrongQuestion(state.current);
+      // 証明の穴埋めは、1つでも間違えたら同じ証明を㋐からやり直す。
+      if (proofFillAll_.indexOf(state.current) !== -1) {
+        proofFillQueue_ = proofFillAll_.slice();
+        missLineHtml += '<div class="enemy-quote-banner">📝 証明は1回で全部の穴を正解するまで、同じ証明を㋐からやり直し！</div>';
+      }
       // 富士下山中の不正解は、他のペナルティはなく今の区間の連続正解数だけ0に戻る
       // (挑戦自体は終わらない)。
       if (state.fujiDescentActive) {
