@@ -2816,6 +2816,7 @@
     { id: 'linear',     label: '一次関数（中2）',                 gen: genLinear },
     { id: 'angle',      label: '角度の計算（中2）',               gen: genAngle },
     { id: 'angleApplication2', label: '角度の応用（中2）',         gen: genAngleApplication2, defaultOff: true , addedDate: '2026-08-12' },
+    { id: 'angleApplicationFig2', label: '角度の応用その2（図形）（中2）', gen: genAngleApplicationFig2, addedDate: '2026-10-18', newBadgeDays: 14 },
     { id: 'congruence', label: '三角形の合同（中2）',             gen: genCongruence },
     { id: 'parallelogramCondition2', label: '平行四辺形の性質や条件（中2）', gen: genParallelogramCondition2, defaultOff: true , addedDate: '2026-08-12' },
     { id: 'probability', label: '確率（中2）',                     gen: genProbability },
@@ -16804,6 +16805,334 @@
     }
   }
 
+  // 角度の応用その2（中2）：教科書「多角形の内角・外角」の図の問題の類題。
+  // 角の二等分線・三等分線の交点にできる角(三角形・四角形・外角の二等分線)と、
+  // へこんだ四角形(ブーメラン型)の角、星形の図形の先端の角の和(五芒星180°、
+  // 2つの三角形360°、七芒星540°)を、
+  // 実際の角度に合わせて描いた図つきで出題する。
+  function angleFigSvg_(worldPts, draw) {
+    // worldPts: {名前: [x, y]}(y上向き)。画面に収まるよう拡大・上下反転してからdrawで描く。
+    const W = 260, H = 190, pad = 26;
+    const vals = Object.values(worldPts);
+    const xs = vals.map((p) => p[0]), ys = vals.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const sc = Math.min((W - 2 * pad) / (maxX - minX || 1), (H - 2 * pad) / (maxY - minY || 1));
+    const offX = (W - (maxX - minX) * sc) / 2, offY = (H - (maxY - minY) * sc) / 2;
+    const P = {};
+    Object.keys(worldPts).forEach((k) => { P[k] = [offX + (worldPts[k][0] - minX) * sc, offY + (maxY - worldPts[k][1]) * sc]; });
+    const cx = vals.reduce((s, p) => s + p[0], 0) / vals.length, cy = vals.reduce((s, p) => s + p[1], 0) / vals.length;
+    const center = [offX + (cx - minX) * sc, offY + (maxY - cy) * sc];
+    const out = [];
+    const f = (v) => v.toFixed(1);
+    const unit = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
+    // 頂点Vで、Vから見たa方向→b方向の角(180°未満)をt(0〜1)で内分した方向
+    const dirAt = (V, a, b, t) => {
+      const u1 = unit(V, a), u2 = unit(V, b);
+      const t1 = Math.atan2(u1[1], u1[0]);
+      let d = Math.atan2(u2[1], u2[0]) - t1;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      return [Math.cos(t1 + d * t), Math.sin(t1 + d * t)];
+    };
+    const api = {
+      P,
+      seg(a, b, dash) { out.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#1c2127" stroke-width="1.5"${dash ? ' stroke-dasharray="4,3"' : ''}/>`); },
+      poly(list) { list.forEach((p, i) => api.seg(p, list[(i + 1) % list.length])); },
+      arc(V, a, b, r, fill) {
+        const u1 = unit(V, a), u2 = unit(V, b);
+        const s = [V[0] + u1[0] * r, V[1] + u1[1] * r], e = [V[0] + u2[0] * r, V[1] + u2[1] * r];
+        const sweep = u1[0] * u2[1] - u1[1] * u2[0] > 0 ? 1 : 0;
+        if (fill) out.push(`<path d="M${f(V[0])},${f(V[1])} L${f(s[0])},${f(s[1])} A${r},${r} 0 0 ${sweep} ${f(e[0])},${f(e[1])} Z" fill="#1c2127"/>`);
+        else out.push(`<path d="M${f(s[0])},${f(s[1])} A${r},${r} 0 0 ${sweep} ${f(e[0])},${f(e[1])}" fill="none" stroke="#1c2127" stroke-width="1.2"/>`);
+      },
+      text(pos, s, color) { out.push(`<text x="${f(pos[0])}" y="${f(pos[1])}" font-size="13" text-anchor="middle" dominant-baseline="central" fill="${color || '#1c2127'}" font-weight="700">${s}</text>`); },
+      // 角の内側(outsideなら外側)に文字を置く
+      angleText(V, a, b, s, dist, outside) {
+        const d = dirAt(V, a, b, 0.5), k = outside ? -1 : 1;
+        api.text([V[0] + d[0] * dist * k, V[1] + d[1] * dist * k], s, s === 'x' ? '#c23b2e' : '#1c2127');
+      },
+      // 角をn等分した印(●や×)を各部分の中ほどに置く
+      parts(V, a, b, n, sym, dist) {
+        for (let i = 0; i < n; i++) {
+          const d = dirAt(V, a, b, (2 * i + 1) / (2 * n));
+          out.push(`<text x="${f(V[0] + d[0] * dist)}" y="${f(V[1] + d[1] * dist)}" font-size="${sym === '●' ? 7 : 10}" text-anchor="middle" dominant-baseline="central" fill="#1c2127">${sym}</text>`);
+        }
+      },
+      // 頂点名を図の外側に置く
+      name(V, s) { const u = unit(center, V); api.text([V[0] + u[0] * 12, V[1] + u[1] * 12], s); },
+      // 図の内側の点(P・Qなど)の名前は、印をつけた角aVbの反対側に置く
+      nameOpp(V, a, b, s) { const d = dirAt(V, a, b, 0.5); api.text([V[0] - d[0] * 12, V[1] - d[1] * 12], s); },
+    };
+    draw(api);
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;max-width:100%;margin:0 auto 8px">${out.join('')}</svg>`;
+  }
+  // 直線 a + s*da と b + t*db の交点
+  function angleFigIntersect_(a, da, b, db) {
+    const det = da[0] * -db[1] - da[1] * -db[0];
+    const s = ((b[0] - a[0]) * -db[1] - (b[1] - a[1]) * -db[0]) / det;
+    return [a[0] + da[0] * s, a[1] + da[1] * s];
+  }
+  const angleRad_ = (d) => (d * Math.PI) / 180;
+  const angleDir_ = (d) => [Math.cos(angleRad_(d)), Math.sin(angleRad_(d))];
+  // B=(0,0)、C=(1,0)で∠B=b、∠C=cの三角形の頂点A
+  function angleFigTriA_(b, c) {
+    const ab = Math.sin(angleRad_(c)) / Math.sin(angleRad_(180 - b - c));
+    return [ab * Math.cos(angleRad_(b)), ab * Math.sin(angleRad_(b))];
+  }
+  // B=(0,0)、C=(1,0)で内角がA,B,C,Dの四角形ABCDの頂点A・D(作れなければnull)
+  function angleFigQuad_(a, b, c, d) {
+    for (let tries = 0; tries < 40; tries++) {
+      const s = 0.45 + Math.random() * 0.5;
+      const A = [s * Math.cos(angleRad_(b)), s * Math.sin(angleRad_(b))];
+      // D = C + t*(CD方向)、A = D + u*(DA方向)
+      const e1 = angleDir_(180 - c), e2 = angleDir_(360 - c - d);
+      const det = e1[0] * e2[1] - e1[1] * e2[0];
+      const rx = A[0] - 1, ry = A[1];
+      const t = (rx * e2[1] - ry * e2[0]) / det, u = (e1[0] * ry - e1[1] * rx) / det;
+      if (t > 0.35 && u > 0.35 && t < 1.6 && u < 1.6) return { A, D: [1 + e1[0] * t, e1[1] * t] };
+    }
+    return null;
+  }
+  function genAngleApplicationFig2() {
+    const pat = randInt(0, 9);
+    let question, answer, wrongs, steps, fig;
+    const note = '（同じ印をつけた角の大きさは等しい）';
+    if (pat <= 1) {
+      // 三角形の∠Bと∠Cの二等分線の交点P：∠BPC = 90° + ∠A÷2
+      const A = 2 * randInt(15, 50);
+      const B = randInt(25, 180 - A - 25), C = 180 - A - B;
+      const Ap = angleFigTriA_(B, C);
+      const Pp = angleFigIntersect_([0, 0], angleDir_(B / 2), [1, 0], angleDir_(180 - C / 2));
+      const X = 90 + A / 2;
+      const askP = pat === 0;
+      fig = angleFigSvg_({ A: Ap, B: [0, 0], C: [1, 0], P: Pp }, (g) => {
+        const p = g.P;
+        g.poly([p.A, p.B, p.C]); g.seg(p.B, p.P); g.seg(p.C, p.P);
+        g.parts(p.B, p.A, p.C, 2, '●', 26); g.parts(p.C, p.A, p.B, 2, '×', 26);
+        g.arc(p.A, p.B, p.C, 12); g.angleText(p.A, p.B, p.C, askP ? `${A}°` : 'x', 28);
+        g.arc(p.P, p.B, p.C, 10); g.angleText(p.P, p.B, p.C, askP ? 'x' : `${X}°`, 24);
+        ['A', 'B', 'C'].forEach((k) => g.name(p[k], k)); g.nameOpp(p.P, p.B, p.C, 'P');
+      });
+      if (askP) {
+        question = `下の図で、∠xの大きさを求めなさい。${note}`;
+        answer = X;
+        wrongs = [180 - A, 90 + A, 180 - A / 2, X + 10];
+        steps = [
+          `∠B + ∠C = 180 − ${A} = ${180 - A}°`,
+          `●+× = (∠B + ∠C) ÷ 2 = ${(180 - A) / 2}°`,
+          `△PBCで、x = 180 − ${(180 - A) / 2} = ${X}°`,
+        ];
+      } else {
+        question = `下の図で、∠xの大きさを求めなさい。${note}`;
+        answer = A;
+        wrongs = [X - 90, 180 - X, 2 * (180 - X) + 10, A + 10];
+        steps = [
+          `△PBCで、●+× = 180 − ${X} = ${180 - X}°`,
+          `∠B + ∠C = 2 × ${180 - X} = ${2 * (180 - X)}°`,
+          `x = 180 − ${2 * (180 - X)} = ${A}°`,
+        ];
+      }
+    } else if (pat === 2) {
+      // 四角形ABCDの∠Bと∠Cの二等分線の交点P：∠BPC = (∠A + ∠D) ÷ 2
+      let A, D, B, C, q;
+      do {
+        A = randInt(70, 125); D = randInt(95, 150);
+        if ((A + D) % 2) D++;
+        const rest = 360 - A - D;
+        B = randInt(Math.max(40, rest - 110), Math.min(110, rest - 40)); C = rest - B;
+        q = B >= 40 && C >= 40 ? angleFigQuad_(A, B, C, D) : null;
+      } while (!q);
+      const Pp = angleFigIntersect_([0, 0], angleDir_(B / 2), [1, 0], angleDir_(180 - C / 2));
+      answer = (A + D) / 2;
+      fig = angleFigSvg_({ A: q.A, B: [0, 0], C: [1, 0], D: q.D, P: Pp }, (g) => {
+        const p = g.P;
+        g.poly([p.A, p.B, p.C, p.D]); g.seg(p.B, p.P); g.seg(p.C, p.P);
+        g.parts(p.B, p.A, p.C, 2, '●', 26); g.parts(p.C, p.D, p.B, 2, '×', 26);
+        g.arc(p.A, p.B, p.D, 12); g.angleText(p.A, p.B, p.D, `${A}°`, 28);
+        g.arc(p.D, p.A, p.C, 12); g.angleText(p.D, p.A, p.C, `${D}°`, 28);
+        g.arc(p.P, p.B, p.C, 10); g.angleText(p.P, p.B, p.C, 'x', 22);
+        ['A', 'B', 'C', 'D'].forEach((k) => g.name(p[k], k)); g.nameOpp(p.P, p.B, p.C, 'P');
+      });
+      question = `下の図の四角形ABCDで、∠xの大きさを求めなさい。${note}`;
+      wrongs = [180 - answer, 360 - A - D, (360 - A - D) / 2, answer + 10];
+      steps = [
+        `四角形の内角の和は360°なので、∠B + ∠C = 360 − (${A} + ${D}) = ${360 - A - D}°`,
+        `●+× = ${360 - A - D} ÷ 2 = ${(360 - A - D) / 2}°`,
+        `△PBCで、x = 180 − ${(360 - A - D) / 2} = ${answer}°`,
+      ];
+    } else if (pat === 3) {
+      // 四角形ABCDの∠Aと∠Dの二等分線の交点P(∠APD)と∠Bから∠Cを求める
+      let A, D, B, C, q;
+      do {
+        B = randInt(65, 110); C = randInt(65, 110);
+        const rest = 360 - B - C;
+        A = randInt(Math.max(60, rest - 130), Math.min(130, rest - 60)); D = rest - A;
+        q = (A + D) % 2 === 0 && D >= 60 && D <= 130 ? angleFigQuad_(A, B, C, D) : null;
+      } while (!q);
+      const Pv = 180 - (A + D) / 2;
+      // ∠Aの二等分線：A→Bの方向とA→Dの方向の和
+      const ua = (p, r) => { const dx = r[0] - p[0], dy = r[1] - p[1], l = Math.hypot(dx, dy); return [dx / l, dy / l]; };
+      const dA = ua(q.A, [0, 0]), dA2 = ua(q.A, q.D), dD = ua(q.D, q.A), dD2 = ua(q.D, [1, 0]);
+      const Pp = angleFigIntersect_(q.A, [dA[0] + dA2[0], dA[1] + dA2[1]], q.D, [dD[0] + dD2[0], dD[1] + dD2[1]]);
+      answer = C;
+      fig = angleFigSvg_({ A: q.A, B: [0, 0], C: [1, 0], D: q.D, P: Pp }, (g) => {
+        const p = g.P;
+        g.poly([p.A, p.B, p.C, p.D]); g.seg(p.A, p.P); g.seg(p.D, p.P);
+        g.parts(p.A, p.B, p.D, 2, '●', 24); g.parts(p.D, p.A, p.C, 2, '×', 24);
+        g.arc(p.B, p.A, p.C, 12); g.angleText(p.B, p.A, p.C, `${B}°`, 28);
+        g.arc(p.C, p.B, p.D, 12); g.angleText(p.C, p.B, p.D, 'x', 26);
+        g.arc(p.P, p.A, p.D, 10); g.angleText(p.P, p.A, p.D, `${Pv}°`, 24);
+        ['A', 'B', 'C', 'D'].forEach((k) => g.name(p[k], k)); g.nameOpp(p.P, p.A, p.D, 'P');
+      });
+      question = `下の図の四角形ABCDで、∠xの大きさを求めなさい。${note}`;
+      wrongs = [180 - B, 360 - B - Pv, C + 10, C - 10].filter((v) => v > 0 && v < 180);
+      steps = [
+        `△APDで、●+× = 180 − ${Pv} = ${180 - Pv}°`,
+        `∠A + ∠D = 2 × ${180 - Pv} = ${A + D}°`,
+        `四角形の内角の和は360°なので、x = 360 − (${B} + ${A + D}) = ${C}°`,
+      ];
+    } else if (pat === 4) {
+      // ∠Cの二等分線と、∠Bの外角の二等分線の交点D：∠BDC = ∠A ÷ 2
+      const A = 2 * randInt(18, 40);
+      const B = randInt(45, 180 - A - 30), C = 180 - A - B;
+      const Ap = angleFigTriA_(B, C);
+      const ext = [-0.45, 0];
+      const uBA = (() => { const l = Math.hypot(Ap[0], Ap[1]); return [Ap[0] / l, Ap[1] / l]; })();
+      const Dp = angleFigIntersect_([0, 0], [uBA[0] - 1, uBA[1]], [1, 0], angleDir_(180 - C / 2));
+      answer = A / 2;
+      fig = angleFigSvg_({ A: Ap, B: [0, 0], C: [1, 0], D: Dp, E: ext }, (g) => {
+        const p = g.P;
+        g.poly([p.A, p.B, p.C]); g.seg(p.B, p.E); g.seg(p.C, p.D); g.seg(p.B, p.D);
+        g.parts(p.B, p.A, p.E, 2, '●', 22); g.parts(p.C, p.A, p.B, 2, '×', 30);
+        g.arc(p.A, p.B, p.C, 12); g.angleText(p.A, p.B, p.C, `${A}°`, 28);
+        g.arc(p.D, p.B, p.C, 12); g.angleText(p.D, p.B, p.C, 'x', 26);
+        ['A', 'B', 'C', 'D'].forEach((k) => g.name(p[k], k));
+      });
+      question = `下の図で、∠xの大きさを求めなさい。（BDは∠Bの外角の二等分線、CDは∠Cの二等分線）`;
+      wrongs = [A, 90 - A / 2, 90 + A / 2, A / 2 + 10];
+      steps = [
+        `△ABCで、∠Bの外角 = ∠A + ∠C より、2● = ${A} + 2×`,
+        `両辺を2で割って、● = ${A / 2} + ×`,
+        `△DBCで、∠Bの外角の半分 ● = x + × なので、x = ● − × = ${answer}°`,
+      ];
+    } else if (pat === 5) {
+      // ∠Aと∠Bの三等分線の交点P(辺ABから遠い方)・Q(近い方)
+      let A, B, C;
+      do { C = 6 * randInt(5, 12); A = randInt(35, 180 - C - 35); B = 180 - C - A; } while (B < 35);
+      const askQ = Math.random() < 0.35;
+      // B=(0,0)、A=(1,0)に置き、Cは上側
+      const Cp = angleFigTriA_(B, A);
+      const dB1 = angleDir_(B / 3), dB2 = angleDir_((2 * B) / 3);
+      const dA1 = angleDir_(180 - A / 3), dA2 = angleDir_(180 - (2 * A) / 3);
+      const Qp = angleFigIntersect_([0, 0], dB1, [1, 0], dA1);
+      const Pp = angleFigIntersect_([0, 0], dB2, [1, 0], dA2);
+      const sumAB = 180 - C;
+      const xP = 180 - (2 * sumAB) / 3, xQ = 180 - sumAB / 3;
+      answer = askQ ? xQ : xP;
+      fig = angleFigSvg_({ A: [1, 0], B: [0, 0], C: Cp, P: Pp, Q: Qp }, (g) => {
+        const p = g.P;
+        g.poly([p.A, p.B, p.C]); g.seg(p.B, p.Q); g.seg(p.A, p.Q); g.seg(p.B, p.P); g.seg(p.A, p.P);
+        g.parts(p.B, p.A, p.C, 3, '●', 34); g.parts(p.A, p.B, p.C, 3, '×', 34);
+        g.arc(p.C, p.A, p.B, 12); g.angleText(p.C, p.A, p.B, `${C}°`, 28);
+        if (askQ) { g.arc(p.Q, p.A, p.B, 9); g.angleText(p.Q, p.A, p.B, 'x', 18); } else { g.arc(p.P, p.A, p.B, 9); g.angleText(p.P, p.A, p.B, 'x', 18); }
+        ['A', 'B', 'C'].forEach((k) => g.name(p[k], k)); g.nameOpp(p.P, p.A, p.B, 'P'); g.nameOpp(p.Q, p.A, p.B, 'Q');
+      });
+      question = `下の図で、∠Aと∠Bをそれぞれ3等分しています。∠xの大きさを求めなさい。`;
+      wrongs = askQ ? [xP, sumAB / 3, 180 - sumAB / 2, xQ - 10] : [xQ, (2 * sumAB) / 3, 180 - sumAB / 2, xP + 10];
+      steps = [
+        `∠A + ∠B = 180 − ${C} = ${sumAB}° なので、●+× = ${sumAB} ÷ 3 = ${sumAB / 3}°`,
+        askQ ? `△QABで、∠QBA + ∠QAB = ●+× = ${sumAB / 3}°` : `△PABで、∠PBA + ∠PAB = 2(●+×) = ${(2 * sumAB) / 3}°`,
+        `x = 180 − ${askQ ? sumAB / 3 : (2 * sumAB) / 3} = ${answer}°`,
+      ];
+    } else if (pat >= 8) {
+      // へこんだ四角形(ブーメラン型)：へこんだ所の角x = 3つの角の和
+      let A, b, c;
+      do { A = randInt(40, 85); b = randInt(20, 45); c = randInt(20, 45); } while (A + b + c > 150 || A + b + c < 100);
+      const X = A + b + c;
+      const L = 0.8 + Math.random() * 0.4;
+      const Cp = [L * Math.cos(angleRad_(A)), L * Math.sin(angleRad_(A))];
+      const Pp = angleFigIntersect_([1, 0], angleDir_(180 - b), Cp, angleDir_(A + 180 + c));
+      const askSum = pat === 8;
+      const hide = askSum ? 3 : randInt(0, 2);
+      const lbl = [`${A}°`, `${b}°`, `${c}°`, `${X}°`];
+      lbl[hide] = 'x';
+      answer = [A, b, c, X][hide];
+      const rot = randInt(0, 359);
+      const rp = (p) => { const r = angleRad_(rot); return [p[0] * Math.cos(r) - p[1] * Math.sin(r), p[0] * Math.sin(r) + p[1] * Math.cos(r)]; };
+      fig = angleFigSvg_({ A: rp([0, 0]), B: rp([1, 0]), C: rp(Cp), P: rp(Pp) }, (g) => {
+        const p = g.P;
+        g.poly([p.A, p.B, p.P, p.C]);
+        g.arc(p.A, p.B, p.C, 12); g.angleText(p.A, p.B, p.C, lbl[0], 28);
+        g.arc(p.B, p.A, p.P, 12); g.angleText(p.B, p.A, p.P, lbl[1], 16, true);
+        g.arc(p.C, p.A, p.P, 12); g.angleText(p.C, p.A, p.P, lbl[2], 16, true);
+        g.arc(p.P, p.B, p.C, 10); g.angleText(p.P, p.B, p.C, lbl[3], 24);
+      });
+      question = '下の図で、∠xの大きさを求めなさい。';
+      const others = [A, b, c].filter((_, i) => i !== hide);
+      wrongs = askSum ? [180 - A + b, X - 10, X + 10, X - 20] : [answer + 10, Math.abs(answer - 10), 180 - X + others[0], 360 - X - others[0] - others[1]];
+      wrongs = wrongs.filter((v) => v > 0 && v < 180);
+      steps = [
+        `へこんだ角の頂点と、向かい合う頂点を結ぶ直線をひいて、三角形2つに分けて外角を考える`,
+        `へこんだ所の角 = 3つの角の和（${lbl[3]} = ${lbl[0]} + ${lbl[1]} + ${lbl[2]}）`,
+        askSum ? `x = ${A} + ${b} + ${c} = ${X}°` : `x = ${X} − (${others.join(' + ')}) = ${answer}°`,
+      ];
+    } else {
+      // 星形の図形の先端の角の和：五芒星180°、2つの三角形(六芒星)360°、七芒星540°
+      const kinds = [
+        { n: 5, k: 2, total: 180, name: '星形五角形' },
+        { n: 6, k: 2, total: 360, name: '2つの三角形を重ねた図形' },
+        { n: 7, k: 2, total: 540, name: '星形七角形' },
+      ];
+      const sk = kinds[randInt(0, kinds.length - 1)];
+      const rot = randInt(-8, 8);
+      const pts = {};
+      for (let i = 0; i < sk.n; i++) pts['V' + i] = angleDir_(90 + rot + (360 * i) / sk.n);
+      const askSum = pat === 6;
+      const base = sk.total / sk.n;
+      let vals;
+      if (!askSum) {
+        do {
+          vals = Array.from({ length: sk.n - 1 }, () => Math.round(base + randInt(-8, 8)));
+          answer = sk.total - vals.reduce((s, v) => s + v, 0);
+        } while (answer < base - 10 || answer > base + 10 || vals.includes(answer));
+      } else {
+        answer = sk.total;
+      }
+      const hole = randInt(0, sk.n - 1);
+      fig = angleFigSvg_(pts, (g) => {
+        const p = g.P, V = (i) => p['V' + (((i % sk.n) + sk.n) % sk.n)];
+        if (sk.n === 6) { g.poly([V(0), V(2), V(4)]); g.poly([V(1), V(3), V(5)]); }
+        else for (let i = 0; i < sk.n; i++) g.seg(V(i), V(i + sk.k));
+        let vi = 0;
+        for (let i = 0; i < sk.n; i++) {
+          if (askSum) { g.arc(V(i), V(i + sk.k), V(i - sk.k), 9, true); continue; }
+          g.arc(V(i), V(i + sk.k), V(i - sk.k), 10);
+          g.angleText(V(i), V(i + sk.k), V(i - sk.k), i === hole ? 'x' : `${vals[vi++]}°`, 15, true);
+        }
+      });
+      if (askSum) {
+        question = `下の図（${sk.name}）で、印をつけた角の和を求めなさい。`;
+        wrongs = [180, 360, 540, 720, 900].filter((v) => v !== answer);
+        steps = sk.n === 6
+          ? [`2つの三角形の内角の和を合わせたものなので、180 × 2 = 360°`]
+          : [
+            `先端の角1つと、内側の${kanjiDigit(sk.n)}角形の外角2つで三角形ができる`,
+            `三角形${sk.n}個分の角の和 180 × ${sk.n} = ${180 * sk.n}° から、内側の${kanjiDigit(sk.n)}角形の外角の和2つ分 360 × 2 = 720° を引く`,
+            `${180 * sk.n} − 720 = ${sk.total}°`,
+          ];
+      } else {
+        question = `下の図（${sk.name}）で、∠xの大きさを求めなさい。`;
+        wrongs = [answer + 10, answer - 10, Math.abs((sk.total === 180 ? 360 : 180) - vals.reduce((s, v) => s + v, 0)), answer + 20].filter((v) => v > 0);
+        steps = [
+          sk.n === 6 ? `印をつけた角の和は、三角形2つ分で 180 × 2 = 360°`
+            : `${sk.name}の先端の角の和は ${sk.total}°（180 × ${sk.n} − 360 × 2）`,
+          `x = ${sk.total} − (${vals.join(' + ')}) = ${answer}°`,
+        ];
+      }
+    }
+    return { category: 'angleApplicationFig2', question, questionHtml: fig + `<span style="display:block">${escHtml(question)}</span>`, answer, choices: buildChoices(answer, wrongs), steps };
+  }
+
   function mkTriSvg(tri1, tri2, sym) {
     const [a,b,c] = tri1, [d,e,f] = tri2;
     if (sym === '∽') {
@@ -18931,7 +19260,7 @@
     return (String(grade || '').charAt(0) === '中') ? WORD_PROBLEM_HP_GAIN_MIDDLE : WORD_PROBLEM_HP_GAIN;
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
-  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4', 'volumeRect5', 'figureAreaInverse5', 'baseAmountPercent5', 'patternRelation6'];
+  const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'angleApplicationFig2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4', 'volumeRect5', 'figureAreaInverse5', 'baseAmountPercent5', 'patternRelation6'];
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
