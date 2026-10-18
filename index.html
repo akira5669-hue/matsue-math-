@@ -202,6 +202,7 @@
     <section class="user-bar">
       <p class="user-greeting"><span class="user-avatar-badge" id="userAvatarBadge" hidden></span>こんにちは、<span id="userName"></span> さん</p>
       <div class="user-bar-actions">
+        <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
         <button id="shopToggle" class="ghost-btn" type="button">🏪なんでも屋</button>
@@ -503,6 +504,31 @@
       <div class="world-map-wrap world-map-zoom-wrap" id="worldMapZoomWrap"></div>
 
       <div class="world-stage-list" id="worldStageList"></div>
+    </section>
+
+    <section class="world-panel" id="mangaPanel" hidden>
+      <div class="test-photo-card">
+        <h4 class="test-photo-card-title">📖 4コマ漫画</h4>
+        <p class="test-photo-hint">1日1作品、<b>10MP</b>か<b>20HP</b>のどちらかを払って読めます。一度読んだ作品は、次の日からも無料で読み直せます。</p>
+        <p class="test-photo-hint" id="mangaStatusText"></p>
+        <div id="mangaList" class="manga-list"></div>
+        <div id="mangaViewer" class="manga-viewer" hidden>
+          <div class="manga-viewer-title" id="mangaViewerTitle"></div>
+          <img id="mangaViewerImg" alt="4コマ漫画" class="manga-viewer-img">
+          <button type="button" class="ghost-btn" id="mangaViewerClose">閉じる</button>
+        </div>
+      </div>
+      <div class="test-photo-card" id="mangaSubmitCard">
+        <h4 class="test-photo-card-title">✏️ 4コマ漫画の買い取り（10月31日まで）</h4>
+        <p class="test-photo-hint">自分で描いた4コマ漫画を写真に撮って送ると、<b>200MP</b>で買い取ります（1日1作品まで）。勉強に関する漫画や、松江塾に関する漫画ならOK！送った漫画は先生だけが見られます。AKR先生が加工して、アプリに掲載するかもしれません。</p>
+        <input type="file" id="mangaFileInput" accept="image/*">
+        <button type="button" class="primary-btn" id="mangaSubmitBtn">📤 漫画を送る（+200MP）</button>
+        <p class="test-photo-hint" id="mangaSubmitResult"></p>
+      </div>
+      <div class="test-photo-card" id="mangaAdminCard" hidden>
+        <h4 class="test-photo-card-title">🔒 送られた4コマ漫画（00001のみ）</h4>
+        <div id="mangaAdminList"></div>
+      </div>
     </section>
 
     <section class="world-panel" id="fujiPanel" hidden>

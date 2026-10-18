@@ -20938,6 +20938,20 @@
     worldPanel: document.getElementById('worldPanel'),
     fujiToggle: document.getElementById('fujiToggle'),
     fujiPanel: document.getElementById('fujiPanel'),
+    mangaToggle: document.getElementById('mangaToggle'),
+    mangaPanel: document.getElementById('mangaPanel'),
+    mangaStatusText: document.getElementById('mangaStatusText'),
+    mangaList: document.getElementById('mangaList'),
+    mangaViewer: document.getElementById('mangaViewer'),
+    mangaViewerTitle: document.getElementById('mangaViewerTitle'),
+    mangaViewerImg: document.getElementById('mangaViewerImg'),
+    mangaViewerClose: document.getElementById('mangaViewerClose'),
+    mangaSubmitCard: document.getElementById('mangaSubmitCard'),
+    mangaFileInput: document.getElementById('mangaFileInput'),
+    mangaSubmitBtn: document.getElementById('mangaSubmitBtn'),
+    mangaSubmitResult: document.getElementById('mangaSubmitResult'),
+    mangaAdminCard: document.getElementById('mangaAdminCard'),
+    mangaAdminList: document.getElementById('mangaAdminList'),
     worldProgress: document.getElementById('worldProgress'),
     worldMapWrap: document.getElementById('worldMapWrap'),
     worldZoomTabs: document.getElementById('worldZoomTabs'),
@@ -24655,6 +24669,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -24819,6 +24834,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
@@ -25056,6 +25072,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -25132,6 +25149,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -26283,6 +26301,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -26338,6 +26357,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -26706,6 +26726,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -28734,6 +28755,7 @@
     els.prefecturePanel.setAttribute('hidden', '');
     els.avatarPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -28766,8 +28788,164 @@
     els.shopPanel.setAttribute('hidden', '');
 
     els.fujiPanel.removeAttribute('hidden');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     renderFujiCard_();
     fetchFujiHallOfFame_();
+  }
+
+  /* ---------- 4コマ漫画 ---------- */
+  // 作品を増やすときは images/manga/ に画像を置いて、ここに1行足す(新しいものを上に)。
+  var MANGA_LIST_ = [
+    { id: 'm001', title: 'テスト前あるある〜やる気はある！でも…〜', img: 'images/manga/m001.jpg' },
+  ];
+  var MANGA_VIEW_COST_MP_ = 10, MANGA_VIEW_COST_HP_ = 20;
+  var mangaStatusCache_ = null;
+
+  function toggleManga() {
+    if (!els.mangaPanel) return;
+    if (!els.mangaPanel.hasAttribute('hidden')) { els.mangaPanel.setAttribute('hidden', ''); return; }
+    ['historyPanel', 'rankingPanel', 'giftPanel', 'prefecturePanel', 'avatarPanel', 'worldPanel', 'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'teamEventPanel', 'shopPanel', 'fujiPanel'].forEach(function (k) {
+      if (els[k]) els[k].setAttribute('hidden', '');
+    });
+    els.mangaPanel.removeAttribute('hidden');
+    els.mangaViewer.hidden = true;
+    els.mangaAdminCard.hidden = !isAdminSession_();
+    fetchMangaStatus_();
+    if (isAdminSession_()) fetchMangaSubmissions_();
+  }
+
+  function fetchMangaStatus_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.mangaStatusText.textContent = '読み込み中…';
+    apiPost('mangaStatus', { id: session.id }).then(function (res) {
+      if (!res || !res.ok) { els.mangaStatusText.textContent = '読み込めませんでした。もう一度開いてください。'; return; }
+      mangaStatusCache_ = res;
+      renderMangaPanel_();
+    }).catch(function () { els.mangaStatusText.textContent = '読み込めませんでした。もう一度開いてください。'; });
+  }
+
+  function renderMangaPanel_() {
+    var st = mangaStatusCache_;
+    if (!st) return;
+    els.mangaStatusText.textContent = st.todayMangaId
+      ? '✅ 今日の1作品はもう選びました。新しい作品はまた明日読めます。'
+      : '📌 今日はまだ新しい作品を読んでいません（1日1作品まで）。';
+    els.mangaList.innerHTML = MANGA_LIST_.map(function (m) {
+      var unlocked = st.unlocked.indexOf(m.id) !== -1;
+      var actions = unlocked
+        ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="free">📖 読む</button>'
+        : st.todayMangaId
+          ? '<span class="manga-locked">🔒 また明日</span>'
+          : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + MANGA_VIEW_COST_MP_ + 'MPで読む</button>' +
+            '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + MANGA_VIEW_COST_HP_ + 'HPで読む</button>';
+      return '<div class="manga-item"><div class="manga-item-title">' + (unlocked ? '✅ ' : '') + escHtml(m.title) + '</div><div class="manga-item-actions">' + actions + '</div></div>';
+    }).join('');
+    var open = st.buybackOpen;
+    els.mangaSubmitCard.hidden = !open;
+    els.mangaSubmitBtn.disabled = !!st.submittedToday;
+    if (st.submittedToday) els.mangaSubmitResult.textContent = '✅ 今日はもう送りました。また明日送れます。';
+  }
+
+  function openMangaViewer_(m) {
+    els.mangaViewerTitle.textContent = m.title;
+    els.mangaViewerImg.src = m.img;
+    els.mangaViewer.hidden = false;
+    els.mangaViewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function onMangaReadClick_(e) {
+    var btn = e.target.closest('.manga-read-btn');
+    if (!btn) return;
+    var m = MANGA_LIST_.filter(function (x) { return x.id === btn.getAttribute('data-manga'); })[0];
+    if (!m) return;
+    var pay = btn.getAttribute('data-pay');
+    if (pay === 'free') { openMangaViewer_(m); return; }
+    var label = pay === 'hp' ? MANGA_VIEW_COST_HP_ + 'HP' : MANGA_VIEW_COST_MP_ + 'MP';
+    if (!window.confirm('「' + m.title + '」を' + label + 'で読みます。新しく読めるのは1日1作品です。よろしいですか？')) return;
+    var session = loadSession();
+    if (!session || !session.id) return;
+    btn.disabled = true;
+    apiPost('mangaView', { id: session.id, mangaId: m.id, payWith: pay }).then(function (res) {
+      btn.disabled = false;
+      if (!res || !res.ok) {
+        var msg = '読めませんでした。もう一度お試しください。';
+        if (res && res.error === 'insufficient_points') msg = 'MPが足りません。';
+        else if (res && res.error === 'insufficient_hp') msg = 'HPが足りません（払ったあともHPが残るようにしてください）。';
+        else if (res && res.error === 'already_viewed_today') msg = '今日はもう1作品読みました。また明日読めます。';
+        window.alert(msg);
+        fetchMangaStatus_();
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.hp = res.hp;
+      saveGameState(state);
+      updateStats();
+      updateGameHud();
+      if (mangaStatusCache_) {
+        if (mangaStatusCache_.unlocked.indexOf(m.id) === -1) mangaStatusCache_.unlocked.push(m.id);
+        if (!res.free) mangaStatusCache_.todayMangaId = m.id;
+      }
+      renderMangaPanel_();
+      openMangaViewer_(m);
+    }).catch(function () { btn.disabled = false; window.alert('通信に失敗しました。もう一度お試しください。'); });
+  }
+
+  function submitManga_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var file = els.mangaFileInput.files && els.mangaFileInput.files[0];
+    if (!file) { els.mangaSubmitResult.textContent = '漫画の写真を選んでください。'; return; }
+    if (!window.confirm('この漫画を送ります（1日1作品まで）。よろしいですか？')) return;
+    els.mangaSubmitBtn.disabled = true;
+    els.mangaSubmitResult.textContent = '送信中…';
+    compressImageFileToBase64(file, 2000, 0.8).then(function (base64) {
+      return apiPost('mangaSubmit', { id: session.id, imageBase64: base64, mimeType: 'image/jpeg' });
+    }).then(function (res) {
+      if (!res || !res.ok) {
+        els.mangaSubmitBtn.disabled = false;
+        var msg = '送信に失敗しました。もう一度お試しください。';
+        if (res && res.error === 'already_submitted_today') { msg = '今日はもう送りました。また明日送れます。'; els.mangaSubmitBtn.disabled = true; }
+        else if (res && res.error === 'submission_closed') msg = '買い取り期間は終わりました。';
+        else if (res && res.error === 'too_large') msg = '画像が大きすぎます。';
+        els.mangaSubmitResult.textContent = msg;
+        return;
+      }
+      applyTestPhotoPointsResult(res);
+      els.mangaFileInput.value = '';
+      if (mangaStatusCache_) mangaStatusCache_.submittedToday = true;
+      els.mangaSubmitResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！ありがとう！';
+    }).catch(function () { els.mangaSubmitBtn.disabled = false; els.mangaSubmitResult.textContent = '送信に失敗しました。もう一度お試しください。'; });
+  }
+
+  function fetchMangaSubmissions_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.mangaAdminList.innerHTML = '<p class="test-photo-hint">読み込み中…</p>';
+    apiPost('mangaSubmissions', { id: session.id }).then(function (res) {
+      if (!res || !res.ok) { els.mangaAdminList.innerHTML = '<p class="test-photo-hint">読み込めませんでした。</p>'; return; }
+      if (!res.submissions.length) { els.mangaAdminList.innerHTML = '<p class="test-photo-hint">まだ送られた漫画はありません。</p>'; return; }
+      els.mangaAdminList.innerHTML = res.submissions.map(function (s) {
+        var d = new Date(s.ts);
+        var when = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
+        return '<div class="manga-admin-item"><div>' + escHtml(when) + '　' + escHtml(s.name || '') + '（' + escHtml(s.grade || '') + '・ID ' + escHtml(s.studentId) + '）</div>' +
+          '<button type="button" class="ghost-btn manga-admin-show" data-sub="' + s.id + '">画像を見る</button><div class="manga-admin-img" id="mangaAdminImg' + s.id + '"></div></div>';
+      }).join('');
+    }).catch(function () { els.mangaAdminList.innerHTML = '<p class="test-photo-hint">読み込めませんでした。</p>'; });
+  }
+
+  function onMangaAdminClick_(e) {
+    var btn = e.target.closest('.manga-admin-show');
+    if (!btn) return;
+    var subId = btn.getAttribute('data-sub');
+    var box = document.getElementById('mangaAdminImg' + subId);
+    var session = loadSession();
+    if (!box || !session) return;
+    box.textContent = '読み込み中…';
+    apiPost('mangaSubmissionImage', { id: session.id, submissionId: subId }).then(function (res) {
+      if (!res || !res.ok) { box.textContent = '読み込めませんでした。'; return; }
+      box.innerHTML = '<img class="manga-viewer-img" alt="送られた漫画" src="data:' + escHtml(res.mimeType) + ';base64,' + res.imageBase64 + '"><div class="test-photo-hint">画像を長押し（PCは右クリック）で保存できます。</div>';
+    }).catch(function () { box.textContent = '読み込めませんでした。'; });
   }
 
   // 富士登山・お鉢巡り・富士下山の成功者一覧。本名ではなくランキングと同じ
@@ -28805,6 +28983,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -28873,6 +29052,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
@@ -29481,6 +29661,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
@@ -29706,6 +29887,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
@@ -29884,6 +30066,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -29920,6 +30103,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
+    if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -30083,6 +30267,11 @@
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
   if (els.fujiToggle) els.fujiToggle.addEventListener('click', toggleFuji);
+  if (els.mangaToggle) els.mangaToggle.addEventListener('click', toggleManga);
+  if (els.mangaList) els.mangaList.addEventListener('click', onMangaReadClick_);
+  if (els.mangaViewerClose) els.mangaViewerClose.addEventListener('click', function () { els.mangaViewer.hidden = true; });
+  if (els.mangaSubmitBtn) els.mangaSubmitBtn.addEventListener('click', submitManga_);
+  if (els.mangaAdminList) els.mangaAdminList.addEventListener('click', onMangaAdminClick_);
   if (els.worldDiceTestBtn) {
     els.worldDiceTestBtn.addEventListener('click', function () {
       rollOnceWorldCountryDice_();

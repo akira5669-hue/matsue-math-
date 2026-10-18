@@ -2382,3 +2382,15 @@ h1 {
 .fuji-hall-item { padding: 2px 0; }
 .fuji-hall-item.is-you { font-weight: 700; color: #c2410c; }
 .fuji-hall-grade { font-size: 12px; opacity: .7; }
+
+/* 4コマ漫画 */
+.manga-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.manga-item { border: 1px solid rgba(0,0,0,.12); border-radius: 10px; padding: 8px 10px; }
+.manga-item-title { font-weight: 700; margin-bottom: 6px; }
+.manga-item-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.manga-item-actions .primary-btn, .manga-item-actions .ghost-btn { width: auto; flex: 1 1 120px; }
+.manga-locked { opacity: .7; }
+.manga-viewer { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.manga-viewer-title { font-weight: 700; }
+.manga-viewer-img { width: 100%; max-width: 640px; height: auto; border-radius: 8px; align-self: center; }
+.manga-admin-item { border-top: 1px solid rgba(0,0,0,.1); padding: 8px 0; display: flex; flex-direction: column; gap: 6px; }
