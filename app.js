@@ -19562,6 +19562,8 @@
     ohachiBannerText: document.getElementById('ohachiBannerText'),
     prefectureLapBanner: document.getElementById('prefectureLapBanner'),
     prefectureLapBannerText: document.getElementById('prefectureLapBannerText'),
+    festivalBanner: document.getElementById('festivalBanner'),
+    festivalBannerBtn: document.getElementById('festivalBannerBtn'),
     ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
     ohachiEasyBannerText: document.getElementById('ohachiEasyBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
@@ -20705,6 +20707,7 @@
     updateWorldSpellBtnVisibility_();
     renderPrefectureLapBanner_();
     renderOhachiEasyBanner_();
+    renderFestivalBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
@@ -22050,6 +22053,13 @@
   // 新単元「食塩水の濃度（中1）」追加の告知。公開から1週間はこの単元だけMP・
   // 経験値・HPが2倍もらえるキャンペーン付き(全生徒に表示、期間が過ぎたら自動で隠れる)。
   // お鉢巡りイージーモード追加の告知(全生徒に表示、期間が過ぎたら自動で隠れる)。
+  // 川越まつり(なんでも屋の屋台、10/18限り)の告知と、なんでも屋ボタンを光らせる。
+  function renderFestivalBanner_() {
+    var on = todayKey() === FESTIVAL_FOOD_DATE_;
+    if (els.festivalBanner) els.festivalBanner.hidden = !on;
+    if (els.shopToggle) els.shopToggle.classList.toggle('eye-catch-frame', on);
+  }
+
   function renderOhachiEasyBanner_() {
     if (!els.ohachiEasyBanner) return;
     if (todayKey() > OHACHI_EASY_END_) {
@@ -28751,6 +28761,10 @@
   if (els.subjectToggle) els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
+  if (els.festivalBannerBtn) els.festivalBannerBtn.addEventListener('click', function () {
+    if (els.shopPanel.hasAttribute('hidden')) toggleShop();
+    els.shopPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   els.curseBannerBtn.addEventListener('click', toggleShop);
   if (els.zombieBannerBtn) els.zombieBannerBtn.addEventListener('click', toggleShop);
   if (els.oxygenBannerBtn) els.oxygenBannerBtn.addEventListener('click', toggleShop);
