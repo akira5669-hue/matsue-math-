@@ -1,6 +1,25 @@
 (function () {
   'use strict';
 
+  // iPadのスクリーンタイム(保護者のスマホと連動した制限)やプライベートブラウズ等で
+  // ブラウザの保存領域(localStorage)が使えないと、ログイン情報を保存できず、
+  // ログイン後も「ログインしていない」扱いになって正解数・MPが一切記録されなかった。
+  // 使えないときはメモリ上の代わりを使い、少なくともページを開いている間は記録されるようにする。
+  var localStorage = (function () {
+    try {
+      var ls = window.localStorage;
+      ls.setItem('__matsue_storage_test__', '1');
+      ls.removeItem('__matsue_storage_test__');
+      return ls;
+    } catch (e) { }
+    var mem = {};
+    return {
+      getItem: function (k) { return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+      setItem: function (k, v) { mem[k] = String(v); },
+      removeItem: function (k) { delete mem[k]; },
+    };
+  })();
+
   /* ---------- ログインAPI ---------- */
 
   var API_URL = '/api';
