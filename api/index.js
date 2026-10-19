@@ -21,7 +21,7 @@ const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRanki
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleEditReading, handleDistributeWisdomSeeds, handleReadingHallOfFame } = require('../lib/handlers/reading');
 const { handleFujiHallOfFame, handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleOhachiEasyEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
 const { handleSaveProfession } = require('../lib/handlers/profession');
-const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmissions, handleMangaSubmissionImage } = require('../lib/handlers/manga');
+const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmissions, handleMangaSubmissionImage, handleMangaReview } = require('../lib/handlers/manga');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
 const { handleDistributeDailyEffortSeed, handleDistributeMonthlyEffortSeed } = require('../lib/handlers/effortSeedReward');
 
@@ -98,6 +98,7 @@ const ACTIONS = {
   mangaSubmit: handleMangaSubmit,
   mangaSubmissions: handleMangaSubmissions,
   mangaSubmissionImage: handleMangaSubmissionImage,
+  mangaReview: handleMangaReview,
   distributeChallengeFruits: handleDistributeChallengeFruits,
   distributeDailyEffortSeed: handleDistributeDailyEffortSeed,
   distributeMonthlyEffortSeed: handleDistributeMonthlyEffortSeed,

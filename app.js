@@ -28866,6 +28866,12 @@
     els.mangaSubmitBtn.disabled = !!st.submittedToday;
     if (st.submittedToday) els.mangaSubmitResult.textContent = '✅ 今日はもう' + (st.submitPerDay || 2) + '作品送りました。また明日送れます。';
     else if (st.submittedCountToday) els.mangaSubmitResult.textContent = '✅ 今日は' + st.submittedCountToday + '作品送りました。あと' + ((st.submitPerDay || 2) - st.submittedCountToday) + '作品送れます。';
+    else els.mangaSubmitResult.textContent = '';
+    var hist = [];
+    if (st.myApproved) hist.push('認められた：' + st.myApproved + '作品');
+    if (st.myPending) hist.push('先生の確認待ち：' + st.myPending + '作品');
+    if (st.myRejected) hist.push('認められなかった：' + st.myRejected + '作品');
+    if (hist.length) els.mangaSubmitResult.textContent += (els.mangaSubmitResult.textContent ? '　' : '') + '📋 これまでに送った漫画　' + hist.join('、');
   }
 
   function openMangaViewer_(m) {
@@ -28932,13 +28938,13 @@
         els.mangaSubmitResult.textContent = msg;
         return;
       }
-      applyTestPhotoPointsResult(res);
       els.mangaFileInput.value = '';
       var perDay = res.submitPerDay || 2, done = res.submittedCountToday || perDay;
       if (mangaStatusCache_) { mangaStatusCache_.submittedCountToday = done; mangaStatusCache_.submittedToday = done >= perDay; }
       if (done >= perDay) els.mangaSubmitBtn.disabled = true;
       else els.mangaSubmitBtn.disabled = false;
-      els.mangaSubmitResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！ありがとう！' + (done < perDay ? '（今日はあと' + (perDay - done) + '作品送れます）' : '');
+      if (mangaStatusCache_) mangaStatusCache_.myPending = (mangaStatusCache_.myPending || 0) + 1;
+      els.mangaSubmitResult.textContent = '✅ 送信完了！ありがとう！先生が確認して、言葉が書いてある4コマ漫画なら' + (res.pointsOnApproval || 300) + 'MPが入ります。' + (done < perDay ? '（今日はあと' + (perDay - done) + '作品送れます）' : '');
     }).catch(function () { els.mangaSubmitBtn.disabled = false; els.mangaSubmitResult.textContent = '送信に失敗しました。もう一度お試しください。'; });
   }
 
@@ -28952,13 +28958,31 @@
       els.mangaAdminList.innerHTML = res.submissions.map(function (s) {
         var d = new Date(s.ts);
         var when = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
-        return '<div class="manga-admin-item"><div>' + escHtml(when) + '　' + escHtml(s.name || '') + '（' + escHtml(s.grade || '') + '・ID ' + escHtml(s.studentId) + '）</div>' +
+        var review = s.status === 'pending'
+          ? '<div class="manga-admin-review" id="mangaAdminReview' + s.id + '">⏳ 確認待ち　<button type="button" class="primary-btn manga-admin-approve" data-sub="' + s.id + '">認める（+300MP）</button><button type="button" class="ghost-btn manga-admin-reject" data-sub="' + s.id + '">認めない（MPなし）</button></div>'
+          : '<div class="manga-admin-review">' + (s.status === 'rejected' ? '❌ 認めなかった（MPなし）' : '✅ 認めた（+' + s.mpAwarded + 'MP）') + '</div>';
+        return '<div class="manga-admin-item"><div>' + escHtml(when) + '　' + escHtml(s.name || '') + '（' + escHtml(s.grade || '') + '・ID ' + escHtml(s.studentId) + '）</div>' + review +
           '<button type="button" class="ghost-btn manga-admin-show" data-sub="' + s.id + '">画像を見る</button><div class="manga-admin-img" id="mangaAdminImg' + s.id + '"></div></div>';
       }).join('');
     }).catch(function () { els.mangaAdminList.innerHTML = '<p class="test-photo-hint">読み込めませんでした。</p>'; });
   }
 
   function onMangaAdminClick_(e) {
+    var rv = e.target.closest('.manga-admin-approve, .manga-admin-reject');
+    if (rv) {
+      var approve = rv.classList.contains('manga-admin-approve');
+      var rvId = rv.getAttribute('data-sub');
+      var rvBox = document.getElementById('mangaAdminReview' + rvId);
+      var rvSession = loadSession();
+      if (!rvBox || !rvSession) return;
+      if (!window.confirm(approve ? 'この漫画を認めて、300MPを入れます。よろしいですか？' : 'この漫画を認めません（MPは入りません）。よろしいですか？')) return;
+      rvBox.textContent = '送信中…';
+      apiPost('mangaReview', { id: rvSession.id, submissionId: rvId, approve: approve }).then(function (res) {
+        if (!res || !res.ok) { rvBox.textContent = res && res.error === 'not_pending' ? 'もう確認済みです。開き直してください。' : '失敗しました。開き直してもう一度お試しください。'; return; }
+        rvBox.textContent = res.status === 'approved' ? '✅ 認めた（+' + res.mpAwarded + 'MP）' : '❌ 認めなかった（MPなし）';
+      }).catch(function () { rvBox.textContent = '失敗しました。開き直してもう一度お試しください。'; });
+      return;
+    }
     var btn = e.target.closest('.manga-admin-show');
     if (!btn) return;
     var subId = btn.getAttribute('data-sub');
