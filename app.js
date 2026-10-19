@@ -28864,7 +28864,8 @@
     var open = st.buybackOpen;
     els.mangaSubmitCard.hidden = !open;
     els.mangaSubmitBtn.disabled = !!st.submittedToday;
-    if (st.submittedToday) els.mangaSubmitResult.textContent = '✅ 今日はもう送りました。また明日送れます。';
+    if (st.submittedToday) els.mangaSubmitResult.textContent = '✅ 今日はもう' + (st.submitPerDay || 2) + '作品送りました。また明日送れます。';
+    else if (st.submittedCountToday) els.mangaSubmitResult.textContent = '✅ 今日は' + st.submittedCountToday + '作品送りました。あと' + ((st.submitPerDay || 2) - st.submittedCountToday) + '作品送れます。';
   }
 
   function openMangaViewer_(m) {
@@ -28916,7 +28917,7 @@
     if (!session || !session.id) return;
     var file = els.mangaFileInput.files && els.mangaFileInput.files[0];
     if (!file) { els.mangaSubmitResult.textContent = '漫画の写真を選んでください。'; return; }
-    if (!window.confirm('この漫画を送ります（1日1作品まで）。よろしいですか？')) return;
+    if (!window.confirm('この漫画を送ります（1日2作品まで）。言葉（セリフや文字）が書いていない漫画は、4コマ漫画として認めません。よろしいですか？')) return;
     els.mangaSubmitBtn.disabled = true;
     els.mangaSubmitResult.textContent = '送信中…';
     compressImageFileToBase64(file, 2000, 0.8).then(function (base64) {
@@ -28925,7 +28926,7 @@
       if (!res || !res.ok) {
         els.mangaSubmitBtn.disabled = false;
         var msg = '送信に失敗しました。もう一度お試しください。';
-        if (res && res.error === 'already_submitted_today') { msg = '今日はもう送りました。また明日送れます。'; els.mangaSubmitBtn.disabled = true; }
+        if (res && res.error === 'already_submitted_today') { msg = '今日はもう2作品送りました。また明日送れます。'; els.mangaSubmitBtn.disabled = true; }
         else if (res && res.error === 'submission_closed') msg = '買い取り期間は終わりました。';
         else if (res && res.error === 'too_large') msg = '画像が大きすぎます。';
         els.mangaSubmitResult.textContent = msg;
@@ -28933,8 +28934,11 @@
       }
       applyTestPhotoPointsResult(res);
       els.mangaFileInput.value = '';
-      if (mangaStatusCache_) mangaStatusCache_.submittedToday = true;
-      els.mangaSubmitResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！ありがとう！';
+      var perDay = res.submitPerDay || 2, done = res.submittedCountToday || perDay;
+      if (mangaStatusCache_) { mangaStatusCache_.submittedCountToday = done; mangaStatusCache_.submittedToday = done >= perDay; }
+      if (done >= perDay) els.mangaSubmitBtn.disabled = true;
+      else els.mangaSubmitBtn.disabled = false;
+      els.mangaSubmitResult.textContent = '✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！ありがとう！' + (done < perDay ? '（今日はあと' + (perDay - done) + '作品送れます）' : '');
     }).catch(function () { els.mangaSubmitBtn.disabled = false; els.mangaSubmitResult.textContent = '送信に失敗しました。もう一度お試しください。'; });
   }
 
