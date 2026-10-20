@@ -28815,6 +28815,7 @@
   /* ---------- 4コマ漫画 ---------- */
   // 作品を増やすときは images/manga/ に画像を置いて、ここに1行足す(新しいものを上に)。
   var MANGA_LIST_ = [
+    { id: 'm003', title: '3日ぼうず', img: 'images/manga/m003.jpg' },
     { id: 'm002', title: 'ゾーン中', img: 'images/manga/m002.jpg' },
     { id: 'm001', title: 'テスト前あるある〜やる気はある！でも…〜', img: 'images/manga/m001.jpg' },
   ];
