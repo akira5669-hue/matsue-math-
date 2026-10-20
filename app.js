@@ -20959,6 +20959,11 @@
     fujiPanel: document.getElementById('fujiPanel'),
     mangaToggle: document.getElementById('mangaToggle'),
     mangaPanel: document.getElementById('mangaPanel'),
+    halloweenToggle: document.getElementById('halloweenToggle'),
+    halloweenPanel: document.getElementById('halloweenPanel'),
+    halloweenCandyText: document.getElementById('halloweenCandyText'),
+    halloweenBook: document.getElementById('halloweenBook'),
+    halloweenKingList: document.getElementById('halloweenKingList'),
     mangaStatusText: document.getElementById('mangaStatusText'),
     mangaPriceHint: document.getElementById('mangaPriceHint'),
     mangaList: document.getElementById('mangaList'),
@@ -21800,6 +21805,7 @@
         : `<span class="fb-result">不正解。正解は <strong>${stepToHtml(correctStr)}</strong> です。</span>`)
       + winHtml + stepsHtml;
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+    halloweenAfterAnswer_();
     els.nextBtn.disabled = false;
     showNextWorldDiceRoll_();
     updateStats();
@@ -21901,6 +21907,7 @@
 
   function updateGameHud() {
     renderForceBlockedGate_();
+    if (els.halloweenToggle) els.halloweenToggle.hidden = !halloweenActive_();
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
     const isOhachi = !!state.ohachiActive;
@@ -22928,6 +22935,7 @@
         : `<span class="fb-result">不正解。正解は <strong>${stepToHtml(correctStr)}</strong> です。</span>`)
       + missLineHtml + sutobokeHtml + winHtml + missionHtml + stepsHtml;
     els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+    halloweenAfterAnswer_();
 
     els.nextBtn.disabled = false;
     showNextWorldDiceRoll_();
@@ -22990,7 +22998,7 @@
     saveGameState(state);
   });
 
-  els.nextBtn.addEventListener('click', nextQuestion);
+  els.nextBtn.addEventListener('click', function () { nextQuestion(); applyHalloweenPrank_(); });
   els.resetBtn.addEventListener('click', resetStats);
   els.settingsToggle.addEventListener('click', () => {
     const isHidden = els.settingsPanel.hasAttribute('hidden');
@@ -24690,6 +24698,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -24855,6 +24864,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
@@ -25093,6 +25103,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -25170,6 +25181,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -25427,7 +25439,7 @@
         return '<div class="gift-row shop-festival-row"><div class="gift-info"><span class="gift-label">' + f.emoji + ' ' + f.label + '（HPを' + f.hpGain + '増やす）<span class="shop-sale-badge">今日限り</span></span><span class="gift-cost">' + f.costMp + 'MP</span></div>' + actionHtml + '</div>';
       }).join('');
     }
-    els.shopList.innerHTML = festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = halloweenShopRowHtml_() + festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -25482,6 +25494,10 @@
     });
     var onigiriBuyBtn = document.getElementById('buyOnigiriBtn');
     if (onigiriBuyBtn) onigiriBuyBtn.addEventListener('click', function () { handleBuyOnigiriClick(onigiriBuyBtn); });
+    var halloweenCandyBtn = document.getElementById('buyHalloweenCandyBtn');
+    if (halloweenCandyBtn) halloweenCandyBtn.addEventListener('click', function () { handleBuyHalloweenCandyClick(halloweenCandyBtn, 1); });
+    var halloweenCandy5Btn = document.getElementById('buyHalloweenCandy5Btn');
+    if (halloweenCandy5Btn) halloweenCandy5Btn.addEventListener('click', function () { handleBuyHalloweenCandyClick(halloweenCandy5Btn, 5); });
     var steakBuyBtn = document.getElementById('buySteakBtn');
     if (steakBuyBtn) steakBuyBtn.addEventListener('click', function () { handleBuySteakClick(steakBuyBtn); });
     var eatWisdomSeedBtn = document.getElementById('eatWisdomSeedBtn');
@@ -26322,6 +26338,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -26378,6 +26395,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -26747,6 +26765,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -28776,6 +28795,7 @@
     els.avatarPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -28809,8 +28829,185 @@
 
     els.fujiPanel.removeAttribute('hidden');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     renderFujiCard_();
     fetchFujiHallOfFame_();
+  }
+
+  /* ---------- ハロウィンイベント(2026-10-26〜10-31) ---------- */
+  // 10問答えるごとにお化けが出る。お菓子(なんでも屋で購入)を持っていれば1個渡して
+  // ごほうび、持っていなければイタズラで次の1問だけ問題文が逆さまになる。
+  // お化けの抽選・ごほうびはサーバー(halloweenGhost)で行う。00001は期間外もプレビュー可。
+  var HALLOWEEN_START_ = '2026-10-26';
+  var HALLOWEEN_END_ = '2026-10-31';
+  var HALLOWEEN_CANDY_COST_MP_ = 5;
+  var HALLOWEEN_ANSWERS_PER_GHOST_ = 10;
+  var HALLOWEEN_GHOSTS_ = [
+    { id: 'obake', emoji: '👻', name: 'おばけ', line: 'トリック・オア・トリート！' },
+    { id: 'pumpkin', emoji: '🎃', name: 'ジャック・オ・ランタン', line: 'お菓子をくれなきゃ、いたずらするぞ〜！' },
+    { id: 'zombie', emoji: '🧟', name: 'ゾンビ', line: 'オ…カ…シ…ちょうだい…' },
+    { id: 'dracula', emoji: '🧛', name: 'ドラキュラ', line: '血…ではなく、お菓子をいただこうか。' },
+    { id: 'witch', emoji: '🧙', name: '魔女', line: 'ヒッヒッヒ…甘いものはあるかい？' },
+    { id: 'blackcat', emoji: '🐈‍⬛', name: '黒ねこ', line: 'ニャ〜。お菓子くれるニャ？' },
+    { id: 'skeleton', emoji: '💀', name: 'ガイコツ', line: 'カタカタ…お菓子をくれ〜' },
+    { id: 'bat', emoji: '🦇', name: 'こうもり', line: 'パタパタ…あま〜いにおいがするぞ！' },
+  ];
+  var HALLOWEEN_KING_ = { id: 'king', emoji: '👑🎃', name: 'キング・パンプキン', line: 'われこそはハロウィンの王！お菓子をささげよ！' };
+  var halloweenStatusCache_ = null;
+  var halloweenPrankPending_ = false;
+
+  function halloweenActive_() {
+    var today = todayKey();
+    return isAdminSession_() || (today >= HALLOWEEN_START_ && today <= HALLOWEEN_END_);
+  }
+  function halloweenGhostDef_(id) {
+    if (id === HALLOWEEN_KING_.id) return HALLOWEEN_KING_;
+    return HALLOWEEN_GHOSTS_.filter(function (g) { return g.id === id; })[0] || HALLOWEEN_GHOSTS_[0];
+  }
+  function halloweenCountKey_(id) { return 'matsue-halloween-count-' + id; }
+
+  // 1問答えるたびに呼ぶ(算数・数学と理科の両方)。10問ごとにお化けを呼ぶ。
+  function halloweenAfterAnswer_() {
+    if (!halloweenActive_()) return;
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var key = halloweenCountKey_(session.id);
+    var count = 0;
+    try { count = Number(localStorage.getItem(key)) || 0; } catch (e) { }
+    count++;
+    try { localStorage.setItem(key, String(count)); } catch (e) { }
+    if (count % HALLOWEEN_ANSWERS_PER_GHOST_ !== 0) return;
+    var banner = document.createElement('div');
+    banner.className = 'halloween-banner';
+    banner.textContent = '🌙 …なにかが近づいてくる…';
+    els.feedback.appendChild(banner);
+    apiPost('halloweenGhost', { id: session.id }).then(function (res) {
+      if (!res || !res.ok) { banner.remove(); return; }
+      var g = halloweenGhostDef_(res.ghost);
+      var html = '<div class="halloween-ghost-head">' + g.emoji + ' <b>' + g.name + '</b>が現れた！' + (res.isKing ? '<span class="halloween-rare">激レア！</span>' : '') + '</div>' +
+        '<div class="halloween-ghost-line">「' + g.line + '」</div>';
+      if (res.hadCandy) {
+        var gifts = [];
+        if (res.treat.mp) gifts.push('+' + res.treat.mp + 'MP');
+        if (res.treat.hp) gifts.push('+' + res.treat.hp + 'HP');
+        if (res.treat.chest) gifts.push(TREASURE_TIER_EMOJI_[res.treat.chest] + ' ' + TREASURE_TIER_LABEL_[res.treat.chest] + 'の宝箱');
+        html += '<div>🍬 お菓子をあげた！（残り' + res.candy + '個）お礼に <b>' + gifts.join('・') + '</b> をもらった！</div>';
+      } else {
+        halloweenPrankPending_ = true;
+        html += '<div>😈 お菓子を持っていなかった…<b>イタズラされた！</b>次の1問は問題文が逆さまに！<br><small>（なんでも屋でお菓子を買っておくと、ごほうびがもらえるよ）</small></div>';
+      }
+      if (res.isNew) html += '<div>📖 お化け図鑑に「' + g.name + '」が登録された！</div>';
+      if (res.completeBonusMp) html += '<div class="halloween-rare">🎉 お化け図鑑コンプリート！ +' + res.completeBonusMp + 'MP！</div>';
+      banner.className = 'halloween-banner' + (res.isKing ? ' is-king' : '');
+      banner.innerHTML = html;
+      state.points = res.newTotalPoints;
+      state.hp = res.hp;
+      if (res.treasureItems) state.treasureItems = Object.assign({}, state.treasureItems || {}, res.treasureItems);
+      if (halloweenStatusCache_) {
+        halloweenStatusCache_.candy = res.candy;
+        halloweenStatusCache_.ghosts = res.ghosts;
+        halloweenStatusCache_.completeRewarded = res.completeRewarded;
+      }
+      saveGameState(state);
+      updateStats();
+      updateGameHud();
+    }).catch(function () { banner.remove(); });
+  }
+
+  // 「次の問題」を押した直後に呼ぶ。イタズラ中なら、この1問だけ問題文を逆さまにする。
+  function applyHalloweenPrank_() {
+    if (!els.questionText) return;
+    if (halloweenPrankPending_) {
+      halloweenPrankPending_ = false;
+      els.questionText.classList.add('halloween-upside');
+    } else {
+      els.questionText.classList.remove('halloween-upside');
+    }
+  }
+
+  function toggleHalloween() {
+    if (!els.halloweenPanel) return;
+    if (!els.halloweenPanel.hasAttribute('hidden')) { els.halloweenPanel.setAttribute('hidden', ''); return; }
+    ['historyPanel', 'rankingPanel', 'giftPanel', 'prefecturePanel', 'avatarPanel', 'worldPanel', 'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'teamEventPanel', 'shopPanel', 'fujiPanel', 'mangaPanel'].forEach(function (k) {
+      if (els[k]) els[k].setAttribute('hidden', '');
+    });
+    els.halloweenPanel.removeAttribute('hidden');
+    fetchHalloweenStatus_();
+  }
+
+  function fetchHalloweenStatus_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.halloweenCandyText.textContent = '読み込み中…';
+    apiPost('halloweenStatus', { id: session.id }).then(function (res) {
+      if (!res || !res.ok) { els.halloweenCandyText.textContent = '読み込めませんでした。もう一度開いてください。'; return; }
+      halloweenStatusCache_ = res;
+      renderHalloweenPanel_();
+    }).catch(function () { els.halloweenCandyText.textContent = '読み込めませんでした。もう一度開いてください。'; });
+  }
+
+  function renderHalloweenPanel_() {
+    var st = halloweenStatusCache_;
+    if (!st) return;
+    els.halloweenCandyText.innerHTML = '🍬 持っているお菓子：<b>' + st.candy + '個</b>（なんでも屋で1個' + HALLOWEEN_CANDY_COST_MP_ + 'MP）';
+    var ghosts = st.ghosts || {};
+    var seen = HALLOWEEN_GHOSTS_.filter(function (g) { return ghosts[g.id] > 0; }).length;
+    var cell = function (g) {
+      var n = Number(ghosts[g.id]) || 0;
+      return '<div class="halloween-book-cell' + (n ? '' : ' is-unknown') + (g.id === 'king' ? ' is-king' : '') + '">' +
+        '<div class="halloween-book-emoji">' + (n ? g.emoji : '❓') + '</div>' +
+        '<div class="halloween-book-name">' + (n ? g.name : '？？？') + '</div>' +
+        (n ? '<div class="halloween-book-count">' + n + '回</div>' : '') + '</div>';
+    };
+    els.halloweenBook.innerHTML =
+      '<p class="test-photo-hint">ふつうのお化け ' + seen + ' / ' + HALLOWEEN_GHOSTS_.length + ' 種類' + (st.completeRewarded ? '　🎉コンプリート！' : '　（全部そろうと+100MP）') + '</p>' +
+      '<div class="halloween-book-grid">' + HALLOWEEN_GHOSTS_.map(cell).join('') + '</div>' +
+      '<p class="test-photo-hint">レアお化け</p><div class="halloween-book-grid">' + cell(HALLOWEEN_KING_) + '</div>';
+    var kings = st.kingFinders || [];
+    els.halloweenKingList.innerHTML = kings.length
+      ? '<ol class="fuji-hall-list">' + kings.map(function (k) { return '<li class="fuji-hall-item">' + escHtml(k.nickname) + '<span class="fuji-hall-grade">（' + escHtml(k.grade) + '）</span></li>'; }).join('') + '</ol>'
+      : '<p class="test-photo-hint">まだだれも出会っていません。最初に出会うのはだれ…？</p>';
+  }
+
+  function halloweenShopRowHtml_() {
+    if (!halloweenActive_()) return '';
+    var have = halloweenStatusCache_ ? '（今' + halloweenStatusCache_.candy + '個持っている）' : '';
+    var canBuy1 = state.points >= HALLOWEEN_CANDY_COST_MP_;
+    var canBuy5 = state.points >= HALLOWEEN_CANDY_COST_MP_ * 5;
+    var actions = canBuy1
+      ? '<button type="button" class="gift-redeem-btn" id="buyHalloweenCandyBtn">1個買う</button>' + (canBuy5 ? '<button type="button" class="gift-redeem-btn" id="buyHalloweenCandy5Btn">5個買う</button>' : '')
+      : '<span class="gift-insufficient">MP不足</span>';
+    return '<p class="shop-festival-title">🎃 期間限定・ハロウィン（10/31まで）</p>' +
+      '<div class="gift-row"><div class="gift-info"><span class="gift-label">🍬 ハロウィンのお菓子' + have + '</span><span class="gift-cost">1個' + HALLOWEEN_CANDY_COST_MP_ + 'MP</span>' +
+      '<span class="shop-item-note">10問ごとに出るお化けに1個あげると、お礼がもらえる（MP・HP・たまに宝箱）。持っていないとイタズラされて、次の1問の問題文が逆さまになる</span></div>' + actions + '</div>';
+  }
+
+  function handleBuyHalloweenCandyClick(btn, qty) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var cost = HALLOWEEN_CANDY_COST_MP_ * qty;
+    if (!window.confirm('ハロウィンのお菓子を' + qty + '個買います（' + cost + 'MP）。よろしいですか？')) return;
+    btn.disabled = true;
+    apiPost('halloweenBuyCandy', { id: session.id, qty: qty }).then(function (res) {
+      if (!res || !res.ok) {
+        var msg = '購入に失敗しました。もう一度お試しください。';
+        if (res && res.error === 'insufficient_points') msg = 'MPが不足しています。';
+        else if (res && res.error === 'not_on_sale') msg = 'ハロウィンのお菓子の販売は終わりました。';
+        window.alert(msg);
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      if (halloweenStatusCache_) halloweenStatusCache_.candy = res.candy;
+      else halloweenStatusCache_ = { candy: res.candy, ghosts: {}, kingFinders: [] };
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      window.alert('🍬 お菓子を' + qty + '個買った！（今' + res.candy + '個持っている）');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
   }
 
   /* ---------- 4コマ漫画 ---------- */
@@ -28833,7 +29030,7 @@
   function toggleManga() {
     if (!els.mangaPanel) return;
     if (!els.mangaPanel.hasAttribute('hidden')) { els.mangaPanel.setAttribute('hidden', ''); return; }
-    ['historyPanel', 'rankingPanel', 'giftPanel', 'prefecturePanel', 'avatarPanel', 'worldPanel', 'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'teamEventPanel', 'shopPanel', 'fujiPanel'].forEach(function (k) {
+    ['historyPanel', 'rankingPanel', 'giftPanel', 'prefecturePanel', 'avatarPanel', 'worldPanel', 'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'teamEventPanel', 'shopPanel', 'fujiPanel', 'halloweenPanel'].forEach(function (k) {
       if (els[k]) els[k].setAttribute('hidden', '');
     });
     els.mangaPanel.removeAttribute('hidden');
@@ -29047,6 +29244,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -29116,6 +29314,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
     if (els.bakuretsuQuizPanel) els.bakuretsuQuizPanel.setAttribute('hidden', '');
@@ -29725,6 +29924,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
@@ -29951,6 +30151,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.withdrawPanel.setAttribute('hidden', '');
@@ -30130,6 +30331,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -30167,6 +30369,7 @@
     els.worldPanel.setAttribute('hidden', '');
     if (els.fujiPanel) els.fujiPanel.setAttribute('hidden', '');
     if (els.mangaPanel) els.mangaPanel.setAttribute('hidden', '');
+    if (els.halloweenPanel) els.halloweenPanel.setAttribute('hidden', '');
     els.grantPanel.setAttribute('hidden', '');
     els.testPhotoPanel.setAttribute('hidden', '');
     els.weeklyQuizPanel.setAttribute('hidden', '');
@@ -30331,6 +30534,7 @@
   els.worldToggle.addEventListener('click', toggleWorld);
   if (els.fujiToggle) els.fujiToggle.addEventListener('click', toggleFuji);
   if (els.mangaToggle) els.mangaToggle.addEventListener('click', toggleManga);
+  if (els.halloweenToggle) els.halloweenToggle.addEventListener('click', toggleHalloween);
   if (els.mangaList) els.mangaList.addEventListener('click', onMangaReadClick_);
   if (els.mangaViewerClose) els.mangaViewerClose.addEventListener('click', function () { els.mangaViewer.hidden = true; });
   if (els.mangaSubmitBtn) els.mangaSubmitBtn.addEventListener('click', submitManga_);

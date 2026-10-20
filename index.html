@@ -202,6 +202,7 @@
     <section class="user-bar">
       <p class="user-greeting"><span class="user-avatar-badge" id="userAvatarBadge" hidden></span>こんにちは、<span id="userName"></span> さん</p>
       <div class="user-bar-actions">
+        <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
@@ -504,6 +505,24 @@
       <div class="world-map-wrap world-map-zoom-wrap" id="worldMapZoomWrap"></div>
 
       <div class="world-stage-list" id="worldStageList"></div>
+    </section>
+
+    <section class="world-panel" id="halloweenPanel" hidden>
+      <div class="test-photo-card halloween-card">
+        <h4 class="test-photo-card-title">🎃 ハロウィンイベント 👻（10/26〜10/31）</h4>
+        <p class="test-photo-hint">問題を<b>10問</b>解くごとに、お化けが現れるよ！「トリック・オア・トリート！」</p>
+        <p class="test-photo-hint">🍬 <b>お菓子を持っていたら</b>：1個あげると、お礼にMP・HP・たまに宝箱がもらえる！<br>😈 <b>お菓子を持っていなかったら</b>：イタズラされて、次の1問だけ問題文が逆さまになる！<br>お菓子は<b>なんでも屋</b>で前もって買っておこう（1個5MP）。</p>
+        <p class="test-photo-hint">👑 ごくまれに、レアお化け「キング・パンプキン」が出るかも…？お菓子をあげると🌈虹色の宝箱がもらえる！</p>
+        <p class="test-photo-hint" id="halloweenCandyText"></p>
+      </div>
+      <div class="test-photo-card">
+        <h4 class="test-photo-card-title">📖 お化け図鑑</h4>
+        <div id="halloweenBook"></div>
+      </div>
+      <div class="test-photo-card">
+        <h4 class="test-photo-card-title">👑 キング・パンプキンに出会った人</h4>
+        <div id="halloweenKingList"></div>
+      </div>
     </section>
 
     <section class="world-panel" id="mangaPanel" hidden>
