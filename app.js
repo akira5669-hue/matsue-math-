@@ -20960,6 +20960,7 @@
     mangaToggle: document.getElementById('mangaToggle'),
     mangaPanel: document.getElementById('mangaPanel'),
     mangaStatusText: document.getElementById('mangaStatusText'),
+    mangaPriceHint: document.getElementById('mangaPriceHint'),
     mangaList: document.getElementById('mangaList'),
     mangaViewer: document.getElementById('mangaViewer'),
     mangaViewerTitle: document.getElementById('mangaViewerTitle'),
@@ -28824,6 +28825,9 @@
     { id: 'm001', title: 'テスト前あるある〜やる気はある！でも…〜', img: 'images/manga/m001.jpg' },
   ];
   var MANGA_VIEW_COST_MP_ = 10, MANGA_VIEW_COST_HP_ = 20;
+  // 期間限定の半額セール中はサーバーのmangaStatusが半額の値を返すので、それを使う。
+  function mangaCostMp_() { return (mangaStatusCache_ && mangaStatusCache_.costMp) || MANGA_VIEW_COST_MP_; }
+  function mangaCostHp_() { return (mangaStatusCache_ && mangaStatusCache_.costHp) || MANGA_VIEW_COST_HP_; }
   var mangaStatusCache_ = null;
 
   function toggleManga() {
@@ -28856,14 +28860,20 @@
     els.mangaStatusText.textContent = st.todayMangaId
       ? '✅ 今日の1作品はもう選びました。新しい作品はまた明日読めます。'
       : '📌 今日はまだ新しい作品を読んでいません（1日1作品まで）。';
+    if (els.mangaPriceHint) {
+      var endParts = String(st.saleEnd || '').split('-');
+      els.mangaPriceHint.innerHTML = st.sale
+        ? '<span class="manga-sale">🎉 期間限定（' + Number(endParts[1]) + '/' + Number(endParts[2]) + 'まで）半額セール中！</span><br>1日1作品、<s>' + MANGA_VIEW_COST_MP_ + 'MP</s> <b>' + st.costMp + 'MP</b>か<s>' + MANGA_VIEW_COST_HP_ + 'HP</s> <b>' + st.costHp + 'HP</b>のどちらかを払って読めます。一度読んだ作品は、次の日からも無料で読み直せます。'
+        : '1日1作品、<b>' + st.costMp + 'MP</b>か<b>' + st.costHp + 'HP</b>のどちらかを払って読めます。一度読んだ作品は、次の日からも無料で読み直せます。';
+    }
     els.mangaList.innerHTML = MANGA_LIST_.map(function (m) {
       var unlocked = !!m.free || st.unlocked.indexOf(m.id) !== -1;
       var actions = unlocked
         ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="free">📖 読む</button>'
         : st.todayMangaId
           ? '<span class="manga-locked">🔒 また明日</span>'
-          : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + MANGA_VIEW_COST_MP_ + 'MPで読む</button>' +
-            '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + MANGA_VIEW_COST_HP_ + 'HPで読む</button>';
+          : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + mangaCostMp_() + 'MPで読む</button>' +
+            '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + mangaCostHp_() + 'HPで読む</button>';
       return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開　' : unlocked ? '✅ ' : '') + escHtml(m.title) + '</div><div class="manga-item-actions">' + actions + '</div></div>';
     }).join('');
     var open = st.buybackOpen;
@@ -28893,7 +28903,7 @@
     if (!m) return;
     var pay = btn.getAttribute('data-pay');
     if (pay === 'free') { openMangaViewer_(m); return; }
-    var label = pay === 'hp' ? MANGA_VIEW_COST_HP_ + 'HP' : MANGA_VIEW_COST_MP_ + 'MP';
+    var label = pay === 'hp' ? mangaCostHp_() + 'HP' : mangaCostMp_() + 'MP';
     if (!window.confirm('「' + m.title + '」を' + label + 'で読みます。新しく読めるのは1日1作品です。よろしいですか？')) return;
     var session = loadSession();
     if (!session || !session.id) return;
