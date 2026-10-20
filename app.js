@@ -28814,7 +28814,9 @@
 
   /* ---------- 4コマ漫画 ---------- */
   // 作品を増やすときは images/manga/ に画像を置いて、ここに1行足す(新しいものを上に)。
+  // free: true の作品は無料公開。MP・HPを払わずに誰でも読めて、1日1作品の数にも入らない。
   var MANGA_LIST_ = [
+    { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
     { id: 'm004', title: '人の話 ちゃんと聞いておけばよかったのに', img: 'images/manga/m004.jpg' },
     { id: 'm003', title: '3日ぼうず', img: 'images/manga/m003.jpg' },
     { id: 'm002', title: 'ゾーン中', img: 'images/manga/m002.jpg' },
@@ -28854,14 +28856,14 @@
       ? '✅ 今日の1作品はもう選びました。新しい作品はまた明日読めます。'
       : '📌 今日はまだ新しい作品を読んでいません（1日1作品まで）。';
     els.mangaList.innerHTML = MANGA_LIST_.map(function (m) {
-      var unlocked = st.unlocked.indexOf(m.id) !== -1;
+      var unlocked = !!m.free || st.unlocked.indexOf(m.id) !== -1;
       var actions = unlocked
         ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="free">📖 読む</button>'
         : st.todayMangaId
           ? '<span class="manga-locked">🔒 また明日</span>'
           : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + MANGA_VIEW_COST_MP_ + 'MPで読む</button>' +
             '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + MANGA_VIEW_COST_HP_ + 'HPで読む</button>';
-      return '<div class="manga-item"><div class="manga-item-title">' + (unlocked ? '✅ ' : '') + escHtml(m.title) + '</div><div class="manga-item-actions">' + actions + '</div></div>';
+      return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開　' : unlocked ? '✅ ' : '') + escHtml(m.title) + '</div><div class="manga-item-actions">' + actions + '</div></div>';
     }).join('');
     var open = st.buybackOpen;
     els.mangaSubmitCard.hidden = !open;
