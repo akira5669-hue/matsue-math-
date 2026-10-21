@@ -158,6 +158,7 @@
   var LOG_FLUSH_DEBOUNCE_MS_ = 4000;
   var logQueueFlushing = false;
   var logFlushTimer_ = null;
+  var LOG_QUEUE_DROP_ERRORS_ = { not_found: true, force_blocked: true, missing_fields: true };
 
   function loadLogQueue_() {
     try {
@@ -193,7 +194,11 @@
     var entries = batch.map(function (e) { return { category: e.category, correct: e.correct }; });
     apiPost('logBatch', { id: targetId, entries: entries }).then(function (res) {
       logQueueFlushing = false;
-      if (res && res.ok) {
+      // 成功した分に加え、再送しても絶対に成功しないエラー(該当IDなし・利用禁止・
+      // 送信内容の不備)の分もキューから取り除く。以前はこれらがキューに残り続け、
+      // 2分ごとに永久に再送(=DBアクセス)し続けてしまっていた。
+      var dropBatch = res && (res.ok || LOG_QUEUE_DROP_ERRORS_[res.error]);
+      if (dropBatch) {
         var remaining = loadLogQueue_();
         remaining.splice(0, batch.length);
         saveLogQueue_(remaining);
@@ -30711,20 +30716,24 @@
   applyMenuNewBadges();
   els.loginGateNotice.hidden = isLoginGateActive_();
 
-  // 未送信のlogキューを、起動時・オンライン復帰時・定期的(2分ごと)に再送を試みる。
+  // 未送信のlogキューを、起動時・オンライン復帰時・画面に戻ってきた時、および
+  // 画面が表示されている間だけ定期的(2分ごと)に再送を試みる。タブが裏に回っている
+  // (放置されている)間は再送しない(Neonがスリープできるようにするため)。
+  // キューが空なら通信は発生しない。
   flushLogQueue_();
   window.addEventListener('online', flushLogQueue_);
-  setInterval(flushLogQueue_, 2 * 60 * 1000);
-
-  // タブ/PWAを閉じずに何日も使い続けると、ページの再読み込み(getPoints呼び出し)が
-  // 発生しないままlast_loginだけが古くなり、次に何らかの理由で再ログインした際に
-  // 「5日以上ログイン無し」と誤判定されてMPが0にリセットされてしまうことがあった。
-  // これを防ぐため、ログイン中は1時間おきに軽くgetPointsを呼んでlast_loginを
-  // 更新し続ける(レスポンスは特に画面に反映しない、生存確認のみが目的)。
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') flushLogQueue_();
+  });
   setInterval(function () {
-    var s = loadSession();
-    if (s && s.id) apiPost('getPoints', { id: s.id }).catch(function () { });
-  }, 60 * 60 * 1000);
+    if (document.visibilityState === 'visible') flushLogQueue_();
+  }, 2 * 60 * 1000);
+
+  // 以前はここで1時間おきにgetPointsを呼んでlast_loginを更新していた(タブを開いた
+  // ままだとlast_loginが古くなり「5日以上ログイン無し」と誤判定される対策)。しかし
+  // 放置中のタブからもDBアクセスが続きNeonがスリープできなかったため廃止した。
+  // 代わりにサーバー側で、syncPoints・log・logBatch(=実際に勉強している時の通信)の
+  // たびにlast_loginを更新している。
 
   var existingSession = loadSession();
   if (existingSession) {
