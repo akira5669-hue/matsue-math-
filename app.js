@@ -20856,6 +20856,9 @@
     prefectureLapBannerText: document.getElementById('prefectureLapBannerText'),
     festivalBanner: document.getElementById('festivalBanner'),
     festivalBannerBtn: document.getElementById('festivalBannerBtn'),
+    halloweenBanner: document.getElementById('halloweenBanner'),
+    halloweenBannerText: document.getElementById('halloweenBannerText'),
+    halloweenBannerBtn: document.getElementById('halloweenBannerBtn'),
     ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
     ohachiEasyBannerText: document.getElementById('ohachiEasyBannerText'),
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
@@ -22028,6 +22031,7 @@
     renderPrefectureLapBanner_();
     renderOhachiEasyBanner_();
     renderFestivalBanner_();
+    renderHalloweenBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
@@ -22048,6 +22052,7 @@
     if (els.teamEventSeptResultBanner) els.teamEventSeptResultBanner.hidden = true;
     if (els.fujiBanner) els.fujiBanner.hidden = true;
     if (els.enrollmentNoticeBanner) els.enrollmentNoticeBanner.hidden = true;
+    if (els.halloweenBanner) els.halloweenBanner.hidden = true;
     if (els.readingDuplicateNoticeBanner) els.readingDuplicateNoticeBanner.hidden = true;
     renderScienceServiceDayBanner_();
     renderOhachiBanner_();
@@ -23381,6 +23386,21 @@
   // 経験値・HPが2倍もらえるキャンペーン付き(全生徒に表示、期間が過ぎたら自動で隠れる)。
   // お鉢巡りイージーモード追加の告知(全生徒に表示、期間が過ぎたら自動で隠れる)。
   // 川越まつり(なんでも屋の屋台、10/18限り)の告知と、なんでも屋ボタンを光らせる。
+  // ハロウィンイベントの告知(10/31まで全生徒に表示)。開始前は予告、期間中はハロウィン画面へのボタン付き。
+  function renderHalloweenBanner_() {
+    if (!els.halloweenBanner) return;
+    var today = todayKey();
+    if (today > HALLOWEEN_END_) { els.halloweenBanner.hidden = true; return; }
+    var during = today >= HALLOWEEN_START_;
+    els.halloweenBanner.hidden = false;
+    if (els.halloweenBannerText) {
+      els.halloweenBannerText.textContent = (during ? '🎃【10/31まで】ハロウィンイベント開催中！' : '🎃【予告】10月26日(月)〜31日(土)はハロウィンイベント！')
+        + '問題を10問解くごとにお化けが出るよ👻 なんでも屋で買った🍬お菓子（1個' + HALLOWEEN_CANDY_COST_MP_ + 'MP）を持っていればごほうびがもらえる！持っていないとイタズラされて、次の1問の問題文が逆さまに…！お化け図鑑をそろえると+100MP、レアな👑キング・パンプキンに出会えると🌈虹色の宝箱！'
+        + (during ? '' : '（お菓子は26日からなんでも屋で買えます）');
+    }
+    if (els.halloweenBannerBtn) els.halloweenBannerBtn.hidden = !halloweenActive_();
+  }
+
   function renderFestivalBanner_() {
     var on = todayKey() === FESTIVAL_FOOD_DATE_;
     if (els.festivalBanner) els.festivalBanner.hidden = !on;
@@ -30520,6 +30540,10 @@
   if (els.subjectToggle) els.subjectToggle.addEventListener('click', toggleSubject);
   els.giftToggle.addEventListener('click', toggleGift);
   els.shopToggle.addEventListener('click', toggleShop);
+  if (els.halloweenBannerBtn) els.halloweenBannerBtn.addEventListener('click', function () {
+    if (els.halloweenPanel && els.halloweenPanel.hasAttribute('hidden')) toggleHalloween();
+    if (els.halloweenPanel) els.halloweenPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   if (els.festivalBannerBtn) els.festivalBannerBtn.addEventListener('click', function () {
     if (els.shopPanel.hasAttribute('hidden')) toggleShop();
     els.shopPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
