@@ -23400,7 +23400,7 @@
     els.halloweenBanner.hidden = false;
     if (els.halloweenBannerText) {
       els.halloweenBannerText.textContent = (during ? '🎃【10/31まで】ハロウィンイベント開催中！' : '🎃【予告】10月26日(月)〜31日(土)はハロウィンイベント！')
-        + '問題を10問解くごとにお化けが出るよ👻 なんでも屋で買った🍬お菓子（1個' + HALLOWEEN_CANDY_COST_MP_ + 'MP）を持っていればごほうびがもらえる！持っていないとイタズラされて、次の1問の問題文が逆さまに…！お化け図鑑をそろえると+100MP、レアな👑キング・パンプキンに出会えると🌈虹色の宝箱！'
+        + '問題を10問解くごとにお化けが出るよ👻 なんでも屋で買った🍬お菓子（1個' + HALLOWEEN_CANDY_COST_MP_ + 'MP）を持っていればごほうびがもらえる！持っていないとイタズラされて、次の1問の問題文が逆さまに…！お化け図鑑をそろえると+100MP、レアな👑キング・パンプキンに出会えると🌈虹色の宝箱！ハロウィンのごほうびのMPは、ふだんの1日100MPとは別に、1日100MPまでもらえるよ！'
         + (during ? '' : '（お菓子は26日からなんでも屋で買えます）');
     }
     if (els.halloweenBannerBtn) els.halloweenBannerBtn.hidden = !halloweenActive_();
@@ -28911,12 +28911,16 @@
       var g = halloweenGhostDef_(res.ghost);
       var html = '<div class="halloween-ghost-head">' + g.emoji + ' <b>' + g.name + '</b>が現れた！' + (res.isKing ? '<span class="halloween-rare">激レア！</span>' : '') + '</div>' +
         '<div class="halloween-ghost-line">「' + g.line + '」</div>';
-      if (res.hadCandy) {
+      if (res.capped) {
+        html += '<div>🌙 今日のハロウィンのごほうび（' + res.dailyMpCap + 'MP）はもう上限！お化けはお菓子を受け取らずに帰っていった…（お菓子はそのまま。イタズラもなし）<br><small>また明日ね！</small></div>';
+      } else if (res.hadCandy) {
         var gifts = [];
         if (res.treat.mp) gifts.push('+' + res.treat.mp + 'MP');
         if (res.treat.hp) gifts.push('+' + res.treat.hp + 'HP');
         if (res.treat.chest) gifts.push(TREASURE_TIER_EMOJI_[res.treat.chest] + ' ' + TREASURE_TIER_LABEL_[res.treat.chest] + 'の宝箱');
+        if (!gifts.length) gifts.push('笑顔');
         html += '<div>🍬 お菓子をあげた！（残り' + res.candy + '個）お礼に <b>' + gifts.join('・') + '</b> をもらった！</div>';
+        if (res.todayMp >= res.dailyMpCap) html += '<div><small>（今日のハロウィンのMPは上限の' + res.dailyMpCap + 'MPに届いたよ）</small></div>';
       } else {
         halloweenPrankPending_ = true;
         html += '<div>😈 お菓子を持っていなかった…<b>イタズラされた！</b>次の1問は問題文が逆さまに！<br><small>（なんでも屋でお菓子を買っておくと、ごほうびがもらえるよ）</small></div>';
