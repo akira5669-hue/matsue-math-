@@ -29045,6 +29045,7 @@
   // free: true の作品は無料公開。MP・HPを払わずに誰でも読めて、1日1作品の数にも入らない。
   var MANGA_LIST_ = [
     { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
+    { id: 'm007', title: '納豆英文法', img: 'images/manga/m007.jpg' },
     { id: 'm006', title: '勉強後の行動', img: 'images/manga/m006.jpg' },
     { id: 'm004', title: '人の話 ちゃんと聞いておけばよかったのに', img: 'images/manga/m004.jpg' },
     { id: 'm003', title: '3日ぼうず', img: 'images/manga/m003.jpg' },
