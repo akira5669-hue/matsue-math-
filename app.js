@@ -20978,6 +20978,7 @@
     mangaViewer: document.getElementById('mangaViewer'),
     mangaViewerTitle: document.getElementById('mangaViewerTitle'),
     mangaViewerImg: document.getElementById('mangaViewerImg'),
+    mangaViewerLike: document.getElementById('mangaViewerLike'),
     mangaViewerClose: document.getElementById('mangaViewerClose'),
     mangaSubmitCard: document.getElementById('mangaSubmitCard'),
     mangaFileInput: document.getElementById('mangaFileInput'),
@@ -29055,6 +29056,43 @@
   function mangaCostMp_() { return (mangaStatusCache_ && mangaStatusCache_.costMp) || MANGA_VIEW_COST_MP_; }
   function mangaCostHp_() { return (mangaStatusCache_ && mangaStatusCache_.costHp) || MANGA_VIEW_COST_HP_; }
   var mangaStatusCache_ = null;
+  var mangaViewerId_ = null;
+
+  // いいねボタン(読んだ作品だけ押せる)。❤️はいいね済み、🤍はまだ。数字はみんなのいいねの数。
+  function mangaLikeBtnHtml_(m, unlocked) {
+    var st = mangaStatusCache_ || {};
+    var n = (st.likeCounts && st.likeCounts[m.id]) || 0;
+    var liked = (st.myLikes || []).indexOf(m.id) !== -1;
+    return '<button type="button" class="ghost-btn manga-like-btn' + (liked ? ' is-liked' : '') + '" data-like="' + m.id + '"' +
+      (unlocked ? '' : ' disabled title="読んだ作品にいいねできます"') + '>' + (liked ? '❤️' : '🤍') + ' ' + n + '</button>';
+  }
+  function renderMangaViewerLike_() {
+    if (!els.mangaViewerLike || !mangaViewerId_) return;
+    var st = mangaStatusCache_ || {};
+    var n = (st.likeCounts && st.likeCounts[mangaViewerId_]) || 0;
+    var liked = (st.myLikes || []).indexOf(mangaViewerId_) !== -1;
+    els.mangaViewerLike.setAttribute('data-like', mangaViewerId_);
+    els.mangaViewerLike.classList.toggle('is-liked', liked);
+    els.mangaViewerLike.textContent = (liked ? '❤️ いいね済み ' : '🤍 いいね！ ') + n;
+  }
+  function onMangaLikeClick_(e) {
+    var btn = e.target.closest('.manga-like-btn');
+    if (!btn || btn.disabled) return;
+    var mangaId = btn.getAttribute('data-like');
+    var session = loadSession();
+    if (!mangaId || !session || !session.id) return;
+    btn.disabled = true;
+    apiPost('mangaLike', { id: session.id, mangaId: mangaId }).then(function (res) {
+      btn.disabled = false;
+      if (!res || !res.ok) {
+        window.alert(res && res.error === 'not_read' ? '読んだ作品にいいねできます。' : 'いいねできませんでした。もう一度お試しください。');
+        return;
+      }
+      if (mangaStatusCache_) { mangaStatusCache_.likeCounts = res.likeCounts; mangaStatusCache_.myLikes = res.myLikes; }
+      renderMangaPanel_();
+      renderMangaViewerLike_();
+    }).catch(function () { btn.disabled = false; window.alert('通信に失敗しました。もう一度お試しください。'); });
+  }
 
   function toggleManga() {
     if (!els.mangaPanel) return;
@@ -29100,6 +29138,7 @@
           ? '<span class="manga-locked">🔒 また明日</span>'
           : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + mangaCostMp_() + 'MPで読む</button>' +
             '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + mangaCostHp_() + 'HPで読む</button>';
+      actions += mangaLikeBtnHtml_(m, unlocked);
       return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開　' : unlocked ? '✅ ' : '') + escHtml(m.title) + '</div><div class="manga-item-actions">' + actions + '</div></div>';
     }).join('');
     var open = st.buybackOpen;
@@ -29118,6 +29157,8 @@
   function openMangaViewer_(m) {
     els.mangaViewerTitle.textContent = m.title;
     els.mangaViewerImg.src = m.img;
+    mangaViewerId_ = m.id;
+    renderMangaViewerLike_();
     els.mangaViewer.hidden = false;
     els.mangaViewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -30569,6 +30610,8 @@
   if (els.mangaToggle) els.mangaToggle.addEventListener('click', toggleManga);
   if (els.halloweenToggle) els.halloweenToggle.addEventListener('click', toggleHalloween);
   if (els.mangaList) els.mangaList.addEventListener('click', onMangaReadClick_);
+  if (els.mangaList) els.mangaList.addEventListener('click', onMangaLikeClick_);
+  if (els.mangaViewerLike) els.mangaViewerLike.addEventListener('click', onMangaLikeClick_);
   if (els.mangaViewerClose) els.mangaViewerClose.addEventListener('click', function () { els.mangaViewer.hidden = true; });
   if (els.mangaSubmitBtn) els.mangaSubmitBtn.addEventListener('click', submitManga_);
   if (els.mangaAdminList) els.mangaAdminList.addEventListener('click', onMangaAdminClick_);
