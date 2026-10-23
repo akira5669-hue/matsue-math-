@@ -202,6 +202,7 @@
     <section class="user-bar">
       <p class="user-greeting"><span class="user-avatar-badge" id="userAvatarBadge" hidden></span>こんにちは、<span id="userName"></span> さん</p>
       <div class="user-bar-actions">
+        <button id="trainingToggle" class="ghost-btn is-new" type="button" hidden>🏋️特訓部屋<span class="new-badge">NEW</span></button>
         <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
@@ -993,9 +994,14 @@
       </ul>
       <button type="button" class="primary-btn" id="hpGameOverLogoutBtn">ログアウトする</button>
       <button type="button" class="ghost-btn" id="hpGameOverShopBtn">🏪なんでも屋を開く</button>
+      <button type="button" class="ghost-btn" id="hpGameOverTrainingBtn" hidden>🏋️特訓部屋に入る（HPが0でも問題が解ける）</button>
     </section>
 
     <section class="quiz-card" id="quizCard" aria-live="polite">
+      <div class="training-bar" id="trainingBar" hidden>
+        <span class="training-bar-text" id="trainingBarText"></span>
+        <button type="button" class="ghost-btn training-exit-btn" id="trainingExitBtn">部屋を出る</button>
+      </div>
       <p class="category-tag" id="categoryTag">加法</p>
       <h2 class="question" id="questionText">読み込み中…</h2>
 

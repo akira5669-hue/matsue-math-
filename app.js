@@ -376,7 +376,7 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
@@ -398,7 +398,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
@@ -20630,6 +20630,8 @@
     // 同じく挑戦中かどうかは端末セッション限定(あえて永続化しない)。
     ohachiEasyActive: false,
     ohachiEasyProgress: 0,
+    // 特訓部屋(HPを増やすための部屋)の中にいるか。HPが10以上にならないと出られないので、ページを開き直しても部屋の中のまま。
+    trainingActive: !!(savedGame && savedGame.trainingActive),
     // 成功は一度trueになったら戻らない実績フラグ(成功後は再挑戦不可)。
     ohachiEasyCompleted: !!((savedProgress && savedProgress.ohachiEasyCompleted) || (savedGame && savedGame.ohachiEasyCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -20883,6 +20885,11 @@
     proofTestBanner: document.getElementById('proofTestBanner'),
     proofTestBannerText: document.getElementById('proofTestBannerText'),
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
+    hpGameOverTrainingBtn: document.getElementById('hpGameOverTrainingBtn'),
+    trainingToggle: document.getElementById('trainingToggle'),
+    trainingBar: document.getElementById('trainingBar'),
+    trainingBarText: document.getElementById('trainingBarText'),
+    trainingExitBtn: document.getElementById('trainingExitBtn'),
     hpGameOverLogoutBtn: document.getElementById('hpGameOverLogoutBtn'),
     hpGameOverShopBtn: document.getElementById('hpGameOverShopBtn'),
     quizCard: document.getElementById('quizCard'),
@@ -21696,6 +21703,7 @@
   }
 
   function handleScienceAnswer(btn, choiceStr) {
+    if (state.trainingActive) { handleTrainingAnswer_(btn, choiceStr); return; }
     if (state.answered) return;
     state.answered = true;
     state.total++;
@@ -21919,6 +21927,7 @@
   function updateGameHud() {
     renderForceBlockedGate_();
     if (els.halloweenToggle) els.halloweenToggle.hidden = !halloweenActive_();
+    renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
     const isOhachi = !!state.ohachiActive;
@@ -22167,6 +22176,7 @@
   }
 
   function handleAnswer(btn, choiceStr) {
+    if (state.trainingActive) { handleTrainingAnswer_(btn, choiceStr); return; }
     if (state.subject === 'science') { handleScienceAnswer(btn, choiceStr); return; }
     if (state.answered) return;
     state.answered = true;
@@ -23100,7 +23110,7 @@
     return todayKey() >= HP_DAMAGE_START_;
   }
   function isHpGameOver_() {
-    return isHpDamageActive_() && (Number(state.hp) || 0) <= 0;
+    return isHpDamageActive_() && (Number(state.hp) || 0) <= 0 && !state.trainingActive;
   }
   // なんでも屋の消費アイテム「鋼の鎧」：購入日に関わらず、ボス戦以外の不正解による
   // HP減少を最大10回分防ぐ(10回使い切ると壊れてなくなる)消費アイテム。
@@ -29054,6 +29064,149 @@
     });
   }
 
+  /* ---------- 特訓部屋 ---------- */
+  // 問題を解いてHPを増やすための部屋(2026-10-24〜、今は00001だけに表示)。
+  // ・入るのは無料。どの学年・どの単元の問題を解いてもよい(算数・数学も理科も)。
+  // ・正解：HP+1・経験値+1。不正解：HP-1(0より下にはならない)・経験値は増えない。
+  // ・部屋の中ではHPが0になっても死なない(ゲームオーバーにならない)。HPが10以上ないと部屋から出られない。
+  // ・部屋の中ではMPは増えない。レアキャラ・ミッション・都道府県などのふだんの報酬もない。
+  // ・HPは2000まで(2000以上の人は入れない)。TRAINING_OPEN_ALL_の期間だけは2000以上の人も入れて、HPも2000を超えて増やせる。
+  var TRAINING_HP_MAX_ = 2000;
+  var TRAINING_EXIT_MIN_HP_ = 10;
+  var TRAINING_OPEN_ALL_START_ = '2026-10-26';
+  var TRAINING_OPEN_ALL_END_ = '2026-11-08';
+  function trainingVisible_() { return isAdminSession_(); }
+  function trainingOpenAll_() { var t = todayKey(); return t >= TRAINING_OPEN_ALL_START_ && t <= TRAINING_OPEN_ALL_END_; }
+  function trainingOtherModeActive_() {
+    return !!(state.fujiActive || state.fujiDescentActive || state.ohachiActive || state.ohachiEasyActive || state.worldBossActiveStage || state.usaCrossingActive);
+  }
+
+  function enterTrainingRoom_() {
+    if (state.trainingActive || !trainingVisible_()) return;
+    var hp = Number(state.hp) || 0;
+    if (hp >= TRAINING_HP_MAX_ && !trainingOpenAll_()) {
+      window.alert('特訓部屋は、HPが' + TRAINING_HP_MAX_ + 'より少ない人が入れる部屋です。');
+      return;
+    }
+    if (trainingOtherModeActive_()) {
+      window.alert('富士登山・お鉢巡り・ボス戦などの挑戦中は、特訓部屋に入れません。');
+      return;
+    }
+    if (!window.confirm('🏋️ 特訓部屋に入ります（入るのは無料）。\n\n'
+      + '・どの問題を解いてもOK\n'
+      + '・正解するとHP+1・経験値+1\n'
+      + '・まちがえるとHP-1（経験値は増えない）\n'
+      + '・部屋の中ではHPが0になっても大丈夫\n'
+      + '・MPは増えません\n'
+      + '・HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと部屋から出られません\n\n入りますか？')) return;
+    state.trainingActive = true;
+    state.streak = 0;
+    state.rareType = null;
+    saveGameState(state);
+    renderTrainingUi_();
+    if (els.hpGameOverPanel) els.hpGameOverPanel.hidden = true;
+    nextQuestion();
+  }
+
+  function exitTrainingRoom_() {
+    if (!state.trainingActive) return;
+    var hp = Number(state.hp) || 0;
+    if (hp < TRAINING_EXIT_MIN_HP_) {
+      window.alert('HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと、特訓部屋からは出られません。（今のHP: ' + hp + '）');
+      return;
+    }
+    if (!window.confirm('特訓部屋から出ますか？（今のHP: ' + hp + '）')) return;
+    state.trainingActive = false;
+    state.streak = 0;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) syncPointsNow_(session.id);
+    renderTrainingUi_();
+    nextQuestion();
+  }
+
+  function renderTrainingUi_() {
+    var visible = trainingVisible_();
+    if (els.trainingToggle) {
+      els.trainingToggle.hidden = !visible;
+      els.trainingToggle.firstChild.textContent = state.trainingActive ? '🏋️特訓部屋を出る' : '🏋️特訓部屋';
+    }
+    if (els.hpGameOverTrainingBtn) els.hpGameOverTrainingBtn.hidden = !visible;
+    if (els.trainingBar) els.trainingBar.hidden = !state.trainingActive;
+    if (state.trainingActive && els.trainingBarText) {
+      var hp = Number(state.hp) || 0;
+      var capText = trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）';
+      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません'
+        + (hp < TRAINING_EXIT_MIN_HP_ ? '　※HPが' + TRAINING_EXIT_MIN_HP_ + '以上で出られます' : '');
+      if (els.trainingExitBtn) els.trainingExitBtn.disabled = hp < TRAINING_EXIT_MIN_HP_;
+    }
+  }
+
+  // 特訓部屋の中での回答(算数・数学も理科も共通)。ふだんの報酬・ペナルティの処理は通さない。
+  function handleTrainingAnswer_(btn, choiceStr) {
+    if (state.answered) return;
+    state.answered = true;
+    state.total++;
+    var q = state.current;
+    var correctStr = String(q.answer);
+    var isCorrect = choiceStr === correctStr;
+    var catId = q.category;
+    var isScience = state.subject === 'science';
+
+    Array.from(els.choices.children).forEach(function (b) {
+      b.disabled = true;
+      if (b.dataset.value === correctStr) b.classList.add('is-correct');
+      else if (b === btn) b.classList.add('is-incorrect');
+    });
+    var session = loadSession();
+    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect });
+    if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
+    state.catStats[catId].total++;
+
+    var hp = Number(state.hp) || 0;
+    var resultHtml = '';
+    var worldDiceHtml = '';
+    if (isCorrect) {
+      state.correct++;
+      state.catStats[catId].correct++;
+      clearWrongQuestion(q);
+      var canGainHp = trainingOpenAll_() || hp < TRAINING_HP_MAX_;
+      if (canGainHp) state.hp = hp + 1;
+      if (isScience) state.scienceExp = (Number(state.scienceExp) || 0) + 1;
+      else state.exp = (Number(state.exp) || 0) + 1;
+      var newLevel = Math.min(MAX_LEVEL, Math.floor(((Number(state.exp) || 0) + (Number(state.scienceExp) || 0)) / EXP_PER_LEVEL) + 1);
+      var lvlMsg = '';
+      if (newLevel > state.level) {
+        worldDiceHtml = rollWorldCountryDice_(state.level, newLevel);
+        state.level = newLevel;
+        lvlMsg = '🎉 レベルアップ！Lv.' + newLevel + '　';
+      }
+      resultHtml = '<div class="training-result">🏋️ ' + lvlMsg + (canGainHp ? '+1HP' : '（HPは' + TRAINING_HP_MAX_ + 'が最大）') + '　+1経験値（HP ' + state.hp + '）</div>';
+    } else {
+      recordWrongQuestion(q);
+      state.hp = Math.max(0, hp - 1);
+      resultHtml = '<div class="training-result">💔 HP-1（HP ' + state.hp + '）'
+        + (state.hp <= 0 ? '　特訓部屋の中なので、HPが0でも大丈夫！' : '') + '</div>';
+    }
+    saveGameState(state);
+    // サーバーへの保存は10問ごと(と部屋を出るとき)にまとめて行う。
+    if (session && session.id && state.total % 10 === 0) syncPointsNow_(session.id);
+
+    var stepsHtml = q.steps && q.steps.length > 0
+      ? '<div class="steps-box"><div class="steps-label">' + (isScience ? '解説' : '途中式') + '</div>' + q.steps.map(function (s) { return '<span class="step-line">' + stepToHtml(s) + '</span>'; }).join('') + '</div>'
+      : '';
+    els.feedback.innerHTML = (isCorrect
+      ? '<span class="fb-result">正解！</span>'
+      : '<span class="fb-result">不正解。正解は <strong>' + stepToHtml(correctStr) + '</strong> です。</span>')
+      + resultHtml + (worldDiceHtml || '') + stepsHtml;
+    els.feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+    els.nextBtn.disabled = false;
+    showNextWorldDiceRoll_();
+    updateStats();
+    updateGameHud();
+    if (isScience) updateScienceHud();
+  }
+
   /* ---------- 4コマ漫画 ---------- */
   // 作品を増やすときは images/manga/ に画像を置いて、ここに1行足す(新しいものを上に)。
   // free: true の作品は無料公開。MP・HPを払わずに誰でも読めて、1日1作品の数にも入らない。
@@ -30639,6 +30792,9 @@
   if (els.oxygenBannerBtn) els.oxygenBannerBtn.addEventListener('click', toggleShop);
   if (els.hpGameOverLogoutBtn) els.hpGameOverLogoutBtn.addEventListener('click', handleLogout);
   if (els.hpGameOverShopBtn) els.hpGameOverShopBtn.addEventListener('click', toggleShop);
+  if (els.hpGameOverTrainingBtn) els.hpGameOverTrainingBtn.addEventListener('click', enterTrainingRoom_);
+  if (els.trainingToggle) els.trainingToggle.addEventListener('click', function () { if (state.trainingActive) exitTrainingRoom_(); else enterTrainingRoom_(); });
+  if (els.trainingExitBtn) els.trainingExitBtn.addEventListener('click', exitTrainingRoom_);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
