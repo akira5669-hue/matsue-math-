@@ -23444,7 +23444,7 @@
     els.trainingBanner.hidden = false;
     if (els.trainingBannerText) {
       els.trainingBannerText.textContent = (during ? '🏋️【11/15まで】「特訓部屋」オープン中！' : '🏋️【予告】11月1日(日)〜15日(日)は「特訓部屋」がオープン！')
-        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+1・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
+        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+1・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。特訓中は、キャラ（敵・レアキャラ）を倒すこともできません。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
     }
     if (els.trainingBannerBtn) els.trainingBannerBtn.hidden = !during || !!state.trainingActive;
   }
@@ -29117,6 +29117,7 @@
       + '・まちがえるとHP-1（経験値は増えない）\n'
       + '・部屋の中ではHPが0になっても大丈夫\n'
       + '・MPは増えません\n'
+      + '・特訓中は、キャラ（敵・レアキャラ）を倒すことはできません\n'
       + '・HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと部屋から出られません\n\n入りますか？')) return;
     state.trainingActive = true;
     state.streak = 0;
@@ -29161,7 +29162,7 @@
     if (state.trainingActive && els.trainingBarText) {
       var hp = Number(state.hp) || 0;
       var capText = trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）';
-      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません'
+      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません／キャラは倒せません'
         + (hp < TRAINING_EXIT_MIN_HP_ ? '　※HPが' + TRAINING_EXIT_MIN_HP_ + '以上で出られます' : '');
       if (els.trainingExitBtn) els.trainingExitBtn.disabled = hp < TRAINING_EXIT_MIN_HP_;
     }
