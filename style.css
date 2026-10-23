@@ -2399,6 +2399,7 @@ h1 {
 .manga-like-btn { width: auto; min-width: 64px; }
 .manga-like-btn.is-liked { color: #d6336c; border-color: #d6336c; font-weight: 700; }
 .manga-like-btn:disabled { opacity: .55; }
+.manga-free-like-hint { display: block; font-weight: 400; font-size: .85em; color: #d6336c; }
 .manga-viewer-like { align-self: center; font-size: 1.1em; padding-inline: 20px; }
 
 /* ハロウィンイベント */

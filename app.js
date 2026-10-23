@@ -29058,6 +29058,7 @@
   // 作品を増やすときは images/manga/ に画像を置いて、ここに1行足す(新しいものを上に)。
   // free: true の作品は無料公開。MP・HPを払わずに誰でも読めて、1日1作品の数にも入らない。
   var MANGA_LIST_ = [
+    { id: 'm009', title: '中学理科 食塩水の濃度', img: 'images/manga/m009.jpg', free: true },
     { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
     { id: 'm008', title: '話を聞いている子と聞いていない子のちがい', img: 'images/manga/m008.jpg' },
     { id: 'm007', title: '納豆英文法', img: 'images/manga/m007.jpg' },
@@ -29073,6 +29074,14 @@
   function mangaCostHp_() { return (mangaStatusCache_ && mangaStatusCache_.costHp) || MANGA_VIEW_COST_HP_; }
   var mangaStatusCache_ = null;
   var mangaViewerId_ = null;
+  // 無料公開の作品は、一度開いて読んでから、いいね(+3MP)を押せるようにする(この端末で開いたかを覚えておく)。
+  function mangaFreeReadKey_(mangaId) {
+    var s = loadSession();
+    return 'matsue-manga-freeread-' + (s && s.id ? s.id : '') + '-' + mangaId;
+  }
+  function mangaFreeRead_(mangaId) {
+    try { return localStorage.getItem(mangaFreeReadKey_(mangaId)) === '1'; } catch (e) { return false; }
+  }
 
   // いいねボタン(読んだ作品だけ押せる)。❤️はいいね済み、🤍はまだ。数字はみんなのいいねの数。
   function mangaLikeBtnHtml_(m, unlocked) {
@@ -29105,6 +29114,13 @@
         return;
       }
       if (mangaStatusCache_) { mangaStatusCache_.likeCounts = res.likeCounts; mangaStatusCache_.myLikes = res.myLikes; }
+      if (res.rewardMp && res.newTotalPoints != null) {
+        state.points = res.newTotalPoints;
+        saveGameState(state);
+        updateStats();
+        updateGameHud();
+        window.alert('いいねありがとう！無料公開の作品にいいねしたので +' + res.rewardMp + 'MP！');
+      }
       renderMangaPanel_();
       renderMangaViewerLike_();
     }).catch(function () { btn.disabled = false; window.alert('通信に失敗しました。もう一度お試しください。'); });
@@ -29154,8 +29170,8 @@
           ? '<span class="manga-locked">🔒 また明日</span>'
           : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + mangaCostMp_() + 'MPで読む</button>' +
             '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + mangaCostHp_() + 'HPで読む</button>';
-      actions += mangaLikeBtnHtml_(m, unlocked);
-      return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開　' : unlocked ? '✅ ' : '') + escHtml(m.title) + '</div><div class="manga-item-actions">' + actions + '</div></div>';
+      actions += mangaLikeBtnHtml_(m, m.free ? (mangaFreeRead_(m.id) || (mangaStatusCache_.myLikes || []).indexOf(m.id) !== -1) : unlocked);
+      return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開　' : unlocked ? '✅ ' : '') + escHtml(m.title) + (m.free ? '<span class="manga-free-like-hint">（読んでいいねを押すと+3MP・1回だけ）</span>' : '') + '</div><div class="manga-item-actions">' + actions + '</div></div>';
     }).join('');
     var open = st.buybackOpen;
     els.mangaSubmitCard.hidden = !open;
@@ -29174,6 +29190,10 @@
     els.mangaViewerTitle.textContent = m.title;
     els.mangaViewerImg.src = m.img;
     mangaViewerId_ = m.id;
+    if (m.free) {
+      try { localStorage.setItem(mangaFreeReadKey_(m.id), '1'); } catch (e) { }
+      renderMangaPanel_();
+    }
     renderMangaViewerLike_();
     els.mangaViewer.hidden = false;
     els.mangaViewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
