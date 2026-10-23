@@ -20887,6 +20887,9 @@
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverTrainingBtn: document.getElementById('hpGameOverTrainingBtn'),
     trainingToggle: document.getElementById('trainingToggle'),
+    trainingBanner: document.getElementById('trainingBanner'),
+    trainingBannerText: document.getElementById('trainingBannerText'),
+    trainingBannerBtn: document.getElementById('trainingBannerBtn'),
     trainingBar: document.getElementById('trainingBar'),
     trainingBarText: document.getElementById('trainingBarText'),
     trainingExitBtn: document.getElementById('trainingExitBtn'),
@@ -22049,6 +22052,7 @@
     renderOhachiEasyBanner_();
     renderFestivalBanner_();
     renderHalloweenBanner_();
+    renderTrainingBanner_();
     renderWorldLaunchBanner();
     renderCurseBanner();
     renderZombieBanner_();
@@ -23429,6 +23433,20 @@
         + (during ? '' : '（お菓子は26日からなんでも屋で買えます）');
     }
     if (els.halloweenBannerBtn) els.halloweenBannerBtn.hidden = !halloweenActive_();
+  }
+
+  // 特訓部屋の告知(11/15まで全生徒に表示)。開始前は予告、期間中は入るボタン付き。
+  function renderTrainingBanner_() {
+    if (!els.trainingBanner) return;
+    var today = todayKey();
+    if (today > TRAINING_OPEN_ALL_END_) { els.trainingBanner.hidden = true; return; }
+    var during = today >= TRAINING_OPEN_ALL_START_;
+    els.trainingBanner.hidden = false;
+    if (els.trainingBannerText) {
+      els.trainingBannerText.textContent = (during ? '🏋️【11/15まで】「特訓部屋」オープン中！' : '🏋️【予告】11月1日(日)〜15日(日)は「特訓部屋」がオープン！')
+        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+1・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
+    }
+    if (els.trainingBannerBtn) els.trainingBannerBtn.hidden = !during || !!state.trainingActive;
   }
 
   function renderFestivalBanner_() {
@@ -29065,17 +29083,18 @@
   }
 
   /* ---------- 特訓部屋 ---------- */
-  // 問題を解いてHPを増やすための部屋(2026-10-24〜、今は00001だけに表示)。
+  // 問題を解いてHPを増やすための部屋。2026-11-01〜11-15の期間限定で全生徒に公開(00001はいつでも入れる)。
   // ・入るのは無料。どの学年・どの単元の問題を解いてもよい(算数・数学も理科も)。
   // ・正解：HP+1・経験値+1。不正解：HP-1(0より下にはならない)・経験値は増えない。
   // ・部屋の中ではHPが0になっても死なない(ゲームオーバーにならない)。HPが10以上ないと部屋から出られない。
   // ・部屋の中ではMPは増えない。レアキャラ・ミッション・都道府県などのふだんの報酬もない。
   // ・HPは2000まで(2000以上の人は入れない)。TRAINING_OPEN_ALL_の期間だけは2000以上の人も入れて、HPも2000を超えて増やせる。
+  // ・期間が終わったら、部屋の中にいた生徒も自動で外に出す(HPが10未満でも閉じ込めない)。
   var TRAINING_HP_MAX_ = 2000;
   var TRAINING_EXIT_MIN_HP_ = 10;
-  var TRAINING_OPEN_ALL_START_ = '2026-10-26';
-  var TRAINING_OPEN_ALL_END_ = '2026-11-08';
-  function trainingVisible_() { return isAdminSession_(); }
+  var TRAINING_OPEN_ALL_START_ = '2026-11-01';
+  var TRAINING_OPEN_ALL_END_ = '2026-11-15';
+  function trainingVisible_() { return isAdminSession_() || trainingOpenAll_(); }
   function trainingOpenAll_() { var t = todayKey(); return t >= TRAINING_OPEN_ALL_START_ && t <= TRAINING_OPEN_ALL_END_; }
   function trainingOtherModeActive_() {
     return !!(state.fujiActive || state.fujiDescentActive || state.ohachiActive || state.ohachiEasyActive || state.worldBossActiveStage || state.usaCrossingActive);
@@ -29105,6 +29124,7 @@
     saveGameState(state);
     renderTrainingUi_();
     if (els.hpGameOverPanel) els.hpGameOverPanel.hidden = true;
+    renderTrainingBanner_();
     nextQuestion();
   }
 
@@ -29122,11 +29142,16 @@
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     renderTrainingUi_();
+    renderTrainingBanner_();
     nextQuestion();
   }
 
   function renderTrainingUi_() {
     var visible = trainingVisible_();
+    if (state.trainingActive && !visible) {
+      state.trainingActive = false;
+      saveGameState(state);
+    }
     if (els.trainingToggle) {
       els.trainingToggle.hidden = !visible;
       els.trainingToggle.firstChild.textContent = state.trainingActive ? '🏋️特訓部屋を出る' : '🏋️特訓部屋';
@@ -30795,6 +30820,7 @@
   if (els.hpGameOverTrainingBtn) els.hpGameOverTrainingBtn.addEventListener('click', enterTrainingRoom_);
   if (els.trainingToggle) els.trainingToggle.addEventListener('click', function () { if (state.trainingActive) exitTrainingRoom_(); else enterTrainingRoom_(); });
   if (els.trainingExitBtn) els.trainingExitBtn.addEventListener('click', exitTrainingRoom_);
+  if (els.trainingBannerBtn) els.trainingBannerBtn.addEventListener('click', enterTrainingRoom_);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
