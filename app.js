@@ -20869,6 +20869,8 @@
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
     enrollmentNoticeBannerText: document.getElementById('enrollmentNoticeBannerText'),
     readingDuplicateNoticeBanner: document.getElementById('readingDuplicateNoticeBanner'),
+    accountMergeNoticeBanner: document.getElementById('accountMergeNoticeBanner'),
+    accountMergeNoticeBannerText: document.getElementById('accountMergeNoticeBannerText'),
     readingDuplicateNoticeBannerText: document.getElementById('readingDuplicateNoticeBannerText'),
     professionNoticeBanner: document.getElementById('professionNoticeBanner'),
     professionNoticeBannerText: document.getElementById('professionNoticeBannerText'),
@@ -22058,11 +22060,11 @@
     if (els.teamEventSeptResultBanner) els.teamEventSeptResultBanner.hidden = true;
     if (els.fujiBanner) els.fujiBanner.hidden = true;
     if (els.enrollmentNoticeBanner) els.enrollmentNoticeBanner.hidden = true;
-    if (els.halloweenBanner) els.halloweenBanner.hidden = true;
     if (els.readingDuplicateNoticeBanner) els.readingDuplicateNoticeBanner.hidden = true;
     renderScienceServiceDayBanner_();
     renderOhachiBanner_();
     renderProfessionNoticeBanner_();
+    renderAccountMergeNoticeBanner_();
     renderWorldBossChestBanner_();
     renderSaltConcentrationBanner_();
     renderSuperAkirametalBanner_();
@@ -23348,6 +23350,18 @@
     els.readingDuplicateNoticeBanner.hidden = false;
     if (els.readingDuplicateNoticeBannerText) {
       els.readingDuplicateNoticeBannerText.textContent = '📢【読書ランキングについて】同じ月に同じタイトルの本を複数回投稿することはできなくなりました（1冊まで）。これに伴い、同じ月に同じタイトルで重複していた投稿は削除しました。';
+    }
+  }
+
+  // 1人で複数のアカウントを作っている生徒が多いため、アカウントを1つにまとめること、
+  // 使っていないアカウントは削除することの告知(全生徒に表示、期間が過ぎたら自動で隠れる)。
+  var ACCOUNT_MERGE_NOTICE_END_ = '2026-11-08';
+  function renderAccountMergeNoticeBanner_() {
+    if (!els.accountMergeNoticeBanner) return;
+    if (todayKey() > ACCOUNT_MERGE_NOTICE_END_) { els.accountMergeNoticeBanner.hidden = true; return; }
+    els.accountMergeNoticeBanner.hidden = false;
+    if (els.accountMergeNoticeBannerText) {
+      els.accountMergeNoticeBannerText.textContent = '📢【アカウントについてのお知らせ】アカウントは1人1つです。複数のアカウントを使っている場合は、アカウントを1つにまとめます。使っていないアカウントは削除します。どのIDを使えばよいか分からない人や、IDやパスワードを忘れた人は、先生に聞いてね。新しくアカウントを作り直さないでね！';
     }
   }
 
