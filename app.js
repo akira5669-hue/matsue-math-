@@ -376,7 +376,7 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
@@ -398,7 +398,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
@@ -20632,6 +20632,9 @@
     ohachiEasyProgress: 0,
     // 特訓部屋(HPを増やすための部屋)の中にいるか。HPが10以上にならないと出られないので、ページを開き直しても部屋の中のまま。
     trainingActive: !!(savedGame && savedGame.trainingActive),
+    // 特訓部屋でその日に増やしたHP(正解+1・まちがい-1の差し引き)。1日TRAINING_DAILY_HP_MAX_まで。
+    trainingDayKey: (savedGame && savedGame.trainingDayKey) || '',
+    trainingDayGain: Number(savedGame && savedGame.trainingDayGain) || 0,
     // 成功は一度trueになったら戻らない実績フラグ(成功後は再挑戦不可)。
     ohachiEasyCompleted: !!((savedProgress && savedProgress.ohachiEasyCompleted) || (savedGame && savedGame.ohachiEasyCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -23444,7 +23447,7 @@
     els.trainingBanner.hidden = false;
     if (els.trainingBannerText) {
       els.trainingBannerText.textContent = (during ? '🏋️【11/15まで】「特訓部屋」オープン中！' : '🏋️【予告】11月1日(日)〜15日(日)は「特訓部屋」がオープン！')
-        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+1・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。特訓中は、キャラ（敵・レアキャラ）を倒すこともできません。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
+        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+1・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。特訓で増やせるHPは1日1000までです。特訓中は、キャラ（敵・レアキャラ）を倒すこともできません。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
     }
     if (els.trainingBannerBtn) els.trainingBannerBtn.hidden = !during || !!state.trainingActive;
   }
@@ -29090,6 +29093,12 @@
   // ・部屋の中ではMPは増えない。レアキャラ・ミッション・都道府県などのふだんの報酬もない。
   // ・HPは2000まで(2000以上の人は入れない)。TRAINING_OPEN_ALL_の期間だけは2000以上の人も入れて、HPも2000を超えて増やせる。
   // ・期間が終わったら、部屋の中にいた生徒も自動で外に出す(HPが10未満でも閉じ込めない)。
+  // 特訓部屋で増やせるHPは1日1000まで(正解+1・まちがい-1の差し引きで数える)。特訓以外で増えるHPには関係しない。
+  var TRAINING_DAILY_HP_MAX_ = 1000;
+  function trainingDayGain_() {
+    if (state.trainingDayKey !== todayKey()) { state.trainingDayKey = todayKey(); state.trainingDayGain = 0; }
+    return Number(state.trainingDayGain) || 0;
+  }
   var TRAINING_HP_MAX_ = 2000;
   var TRAINING_EXIT_MIN_HP_ = 10;
   var TRAINING_OPEN_ALL_START_ = '2026-11-01';
@@ -29115,6 +29124,7 @@
       + '・どの問題を解いてもOK\n'
       + '・正解するとHP+1・経験値+1\n'
       + '・まちがえるとHP-1（経験値は増えない）\n'
+      + '・特訓で増やせるHPは1日' + TRAINING_DAILY_HP_MAX_ + 'まで（今日はあと' + Math.max(0, TRAINING_DAILY_HP_MAX_ - trainingDayGain_()) + '）\n'
       + '・部屋の中ではHPが0になっても大丈夫\n'
       + '・MPは増えません\n'
       + '・特訓中は、キャラ（敵・レアキャラ）を倒すことはできません\n'
@@ -29164,7 +29174,7 @@
     if (state.trainingActive && els.trainingBarText) {
       var hp = Number(state.hp) || 0;
       var capText = trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）';
-      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません／キャラは倒せません'
+      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　今日増やしたHP ' + trainingDayGain_() + '／' + TRAINING_DAILY_HP_MAX_ + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません／キャラは倒せません'
         + (hp < TRAINING_EXIT_MIN_HP_ ? '　※HPが' + TRAINING_EXIT_MIN_HP_ + '以上で出られます' : '');
       if (els.trainingExitBtn) els.trainingExitBtn.disabled = hp < TRAINING_EXIT_MIN_HP_;
     }
@@ -29198,8 +29208,10 @@
       state.correct++;
       state.catStats[catId].correct++;
       clearWrongQuestion(q);
-      var canGainHp = trainingOpenAll_() || hp < TRAINING_HP_MAX_;
-      if (canGainHp) state.hp = hp + 1;
+      var dayGain = trainingDayGain_();
+      var dailyCapped = dayGain >= TRAINING_DAILY_HP_MAX_ && hp >= TRAINING_EXIT_MIN_HP_;
+      var canGainHp = (trainingOpenAll_() || hp < TRAINING_HP_MAX_) && !dailyCapped;
+      if (canGainHp) { state.hp = hp + 1; state.trainingDayGain = dayGain + 1; }
       if (isScience) state.scienceExp = (Number(state.scienceExp) || 0) + 1;
       else state.exp = (Number(state.exp) || 0) + 1;
       var newLevel = Math.min(MAX_LEVEL, Math.floor(((Number(state.exp) || 0) + (Number(state.scienceExp) || 0)) / EXP_PER_LEVEL) + 1);
@@ -29209,9 +29221,10 @@
         state.level = newLevel;
         lvlMsg = '🎉 レベルアップ！Lv.' + newLevel + '　';
       }
-      resultHtml = '<div class="training-result">🏋️ ' + lvlMsg + (canGainHp ? '+1HP' : '（HPは' + TRAINING_HP_MAX_ + 'が最大）') + '　+1経験値（HP ' + state.hp + '）</div>';
+      resultHtml = '<div class="training-result">🏋️ ' + lvlMsg + (canGainHp ? '+1HP' : dailyCapped ? '（今日の特訓で増やせるHP ' + TRAINING_DAILY_HP_MAX_ + 'に達しました）' : '（HPは' + TRAINING_HP_MAX_ + 'が最大）') + '　+1経験値（HP ' + state.hp + '）</div>';
     } else {
       recordWrongQuestion(q);
+      if (hp > 0) state.trainingDayGain = trainingDayGain_() - 1;
       state.hp = Math.max(0, hp - 1);
       resultHtml = '<div class="training-result">💔 HP-1（HP ' + state.hp + '）'
         + (state.hp <= 0 ? '　特訓部屋の中なので、HPが0でも大丈夫！' : '') + '</div>';
@@ -29241,6 +29254,8 @@
   var MANGA_LIST_ = [
     { id: 'm009', title: '中学理科 食塩水の濃度', img: 'images/manga/m009.jpg', free: true },
     { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
+    { id: 'm012', title: '学校って、最高だ！', img: 'images/manga/m012.jpg' },
+    { id: 'm011', title: '松江塾と行く！川越市の魅力', img: 'images/manga/m011.jpg' },
     { id: 'm010', title: '努力の差', img: 'images/manga/m010.jpg' },
     { id: 'm008', title: '話を聞いている子と聞いていない子のちがい', img: 'images/manga/m008.jpg' },
     { id: 'm007', title: '納豆英文法', img: 'images/manga/m007.jpg' },
