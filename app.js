@@ -29239,6 +29239,7 @@
   var MANGA_LIST_ = [
     { id: 'm009', title: '中学理科 食塩水の濃度', img: 'images/manga/m009.jpg', free: true },
     { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
+    { id: 'm010', title: '努力の差', img: 'images/manga/m010.jpg' },
     { id: 'm008', title: '話を聞いている子と聞いていない子のちがい', img: 'images/manga/m008.jpg' },
     { id: 'm007', title: '納豆英文法', img: 'images/manga/m007.jpg' },
     { id: 'm006', title: '勉強後の行動', img: 'images/manga/m006.jpg' },
