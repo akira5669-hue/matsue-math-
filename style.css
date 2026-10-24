@@ -2400,7 +2400,7 @@ h1 {
 .training-bar .training-exit-btn { width: auto; flex: 0 0 auto; }
 .training-bar .training-exit-btn:disabled { opacity: .5; }
 .training-result { margin-top: 6px; font-weight: 700; }
-.quiz-card.training-room-bg { background: linear-gradient(rgba(255,255,255,.84), rgba(255,255,255,.84)), url('images/training-room.jpg') center / cover no-repeat; border: 2px solid #f59f00; }
+.quiz-card.training-room-bg { background: linear-gradient(rgba(255,255,255,.84), rgba(255,255,255,.84)), url('images/training-room.jpg') center 150px / cover no-repeat var(--c-surface); border: 2px solid #f59f00; }
 .training-banner-img { display: block; width: 100%; max-width: 480px; margin: 0 auto 8px; border-radius: 10px; }
 .manga-item-actions .manga-like-btn { flex: 0 0 auto; }
 .manga-like-btn { width: auto; min-width: 64px; }
