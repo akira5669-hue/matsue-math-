@@ -29159,6 +29159,8 @@
     }
     if (els.hpGameOverTrainingBtn) els.hpGameOverTrainingBtn.hidden = !visible;
     if (els.trainingBar) els.trainingBar.hidden = !state.trainingActive;
+    // 部屋の中にいる間は、問題カードの背景を特訓部屋の絵にする。
+    if (els.quizCard) els.quizCard.classList.toggle('training-room-bg', !!state.trainingActive);
     if (state.trainingActive && els.trainingBarText) {
       var hp = Number(state.hp) || 0;
       var capText = trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）';
