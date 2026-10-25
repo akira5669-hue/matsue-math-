@@ -27526,6 +27526,8 @@
       }
       state.points = res.remainingPoints;
       state.fujiClimbStartedAt = Date.now();
+      // 新しい挑戦は必ず0合目から(前回の挑戦の合目・タイムアタックを持ち越さない)。
+      fujiResetToStation_(0);
       beginFujiClimbSession_();
     }).catch(function () {
       if (els.fujiClimbBtn) els.fujiClimbBtn.disabled = false;
