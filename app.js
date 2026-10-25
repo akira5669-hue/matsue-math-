@@ -93,7 +93,21 @@
     { id: 'girl4', img: 'images/avatar_preset_girl4.jpg', label: '女の子4' },
     { id: 'girl5', img: 'images/avatar_preset_girl5.jpg', label: '女の子5' },
     { id: 'girl6', img: 'images/avatar_preset_girl6.jpg', label: '女の子6' },
+    // ハロウィン用(2026-10-25〜)。変更するたびに50MP(サーバー側で引く)。
+    { id: 'hwboy1', img: 'images/avatar_hw_boy1.jpg', label: 'ドラキュラ（男の子）', hw: true },
+    { id: 'hwboy2', img: 'images/avatar_hw_boy2.jpg', label: '魔法使い（男の子）', hw: true },
+    { id: 'hwboy3', img: 'images/avatar_hw_boy3.jpg', label: 'かぼちゃ（男の子）', hw: true },
+    { id: 'hwboy4', img: 'images/avatar_hw_boy4.jpg', label: 'オオカミ男', hw: true },
+    { id: 'hwboy5', img: 'images/avatar_hw_boy5.jpg', label: 'ミイラ（男の子）', hw: true },
+    { id: 'hwboy6', img: 'images/avatar_hw_boy6.jpg', label: 'おばけ（男の子）', hw: true },
+    { id: 'hwgirl1', img: 'images/avatar_hw_girl1.jpg', label: '魔法使い（女の子）', hw: true },
+    { id: 'hwgirl2', img: 'images/avatar_hw_girl2.jpg', label: 'かぼちゃ（女の子）', hw: true },
+    { id: 'hwgirl3', img: 'images/avatar_hw_girl3.jpg', label: '黒ねこ', hw: true },
+    { id: 'hwgirl4', img: 'images/avatar_hw_girl4.jpg', label: 'ドラキュラ（女の子）', hw: true },
+    { id: 'hwgirl5', img: 'images/avatar_hw_girl5.jpg', label: 'ミイラ（女の子）', hw: true },
+    { id: 'hwgirl6', img: 'images/avatar_hw_girl6.jpg', label: 'おばけ（女の子）', hw: true },
   ];
+  var HALLOWEEN_AVATAR_COST_MP_ = 50;
   // 00001でログイン中のときだけ、JavaScriptエラーを画面上部に表示する開発用バナー。
   // 端末側でしか再現しない不具合(実際にボス戦のVS表示で発生した)の原因を、
   // スクリーンショットだけで特定できるようにするためのもの。
@@ -26755,11 +26769,17 @@
   function renderAvatarPresetGrid() {
     els.avatarPresetPreview.innerHTML = avatarPresetDraft ? avatarDisplayHtml_({ preset: avatarPresetDraft }) : '';
     els.avatarPresetGrid.innerHTML = '';
-    AVATAR_PRESETS.forEach(function (preset) {
+    AVATAR_PRESETS.forEach(function (preset, idx) {
+      if (preset.hw && !(AVATAR_PRESETS[idx - 1] && AVATAR_PRESETS[idx - 1].hw)) {
+        var head = document.createElement('div');
+        head.className = 'avatar-preset-section';
+        head.textContent = '🎃 ハロウィン用アバター（変えるたびに' + HALLOWEEN_AVATAR_COST_MP_ + 'MP）';
+        els.avatarPresetGrid.appendChild(head);
+      }
       var item = document.createElement('button');
       item.type = 'button';
       item.className = 'avatar-preset-item' + (avatarPresetDraft === preset.id ? ' is-selected' : '');
-      item.innerHTML = `<img src="${preset.img}" alt="${preset.label}"><span class="avatar-preset-item-label">${preset.label}</span>`;
+      item.innerHTML = `<img src="${preset.img}" alt="${preset.label}"><span class="avatar-preset-item-label">${preset.label}${preset.hw ? '<br>🎃' + HALLOWEEN_AVATAR_COST_MP_ + 'MP' : ''}</span>`;
       item.addEventListener('click', function () {
         avatarPresetDraft = preset.id;
         renderAvatarPresetGrid();
@@ -30767,6 +30787,15 @@
     var payload = avatarMode === 'photo' ? { photo: avatarPhotoDraft }
       : avatarMode === 'preset' ? { preset: avatarPresetDraft }
       : avatarDraft;
+    var hwPreset = avatarMode === 'preset' ? AVATAR_PRESETS.find(function (p) { return p.id === avatarPresetDraft && p.hw; }) : null;
+    if (hwPreset && !(state.avatar && state.avatar.preset === hwPreset.id)) {
+      if ((Number(state.points) || 0) < HALLOWEEN_AVATAR_COST_MP_) {
+        els.avatarSaveMsg.hidden = false;
+        els.avatarSaveMsg.textContent = 'ハロウィン用アバターに変えるには' + HALLOWEEN_AVATAR_COST_MP_ + 'MP必要です。';
+        return;
+      }
+      if (!window.confirm('🎃 ハロウィン用アバター「' + hwPreset.label + '」に変えます。' + HALLOWEEN_AVATAR_COST_MP_ + 'MPを使います。よろしいですか？')) return;
+    }
     els.avatarSaveBtn.disabled = true;
     apiPost('saveAvatar', { id: session.id, avatar: payload }).then(function (res) {
       els.avatarSaveBtn.disabled = false;
@@ -30778,14 +30807,21 @@
             ? '写真アバターは、保護者の方の同意が確認できている場合のみ使えます。'
             : res.error === 'photo_too_large'
               ? '写真のデータが大きすぎました。別の写真でお試しください。'
+              : res.error === 'insufficient_points'
+                ? 'MPが足りません（ハロウィン用アバターは' + HALLOWEEN_AVATAR_COST_MP_ + 'MP）。'
               : '保存に失敗しました。もう一度お試しください。';
         return;
       }
       state.avatar = Object.assign({}, payload);
+      if (res.costMp && res.remainingPoints != null) {
+        state.points = res.remainingPoints;
+        updateStats();
+        updateGameHud();
+      }
       saveGameState(state);
       updateUserAvatarBadge();
       els.avatarSaveMsg.hidden = false;
-      els.avatarSaveMsg.textContent = '保存しました！';
+      els.avatarSaveMsg.textContent = res.costMp ? '保存しました！（' + res.costMp + 'MP使いました）' : '保存しました！';
     }).catch(function () {
       els.avatarSaveBtn.disabled = false;
       els.avatarSaveMsg.hidden = false;

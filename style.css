@@ -2279,7 +2279,8 @@ h1 {
 .avatar-preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .avatar-preset-item { border-radius: var(--radius); border: 2px solid var(--c-line); background: var(--c-bg); cursor: pointer; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .avatar-preset-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
-.avatar-preset-item-label { font-size: 11px; font-weight: 700; color: var(--c-ink-soft); }
+.avatar-preset-item-label { font-size: 11px; font-weight: 700; color: var(--c-ink-soft); text-align: center; }
+.avatar-preset-section { grid-column: 1 / -1; margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: #fff0e0; color: #9a3d00; font-weight: 700; font-size: 13px; }
 .avatar-preset-item.is-selected { border-color: var(--c-positive); box-shadow: 0 0 0 2px var(--c-positive-soft); }
 .cal-header {
   display: flex;
