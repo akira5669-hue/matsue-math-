@@ -20089,6 +20089,35 @@
   function treasureItemKey_(prefix, tier) {
     return prefix + tier.charAt(0).toUpperCase() + tier.slice(1);
   }
+  // 宝箱の所持上限(銅・銀・金・虹色の合計)。10月末まで100個、11月は50個、12月以降は30個。
+  // 上限に達していたら新しい宝箱はもらえない(すでに上限より多く持っている人も、減らすまではもらえない)。
+  // サーバー側halloween.jsのtreasureChestMax_と揃えること。
+  function treasureChestMax_() {
+    var today = todayKey();
+    if (today <= '2026-10-31') return 100;
+    if (today <= '2026-11-30') return 50;
+    return 30;
+  }
+  function treasureChestTotal_() {
+    var t = state.treasureItems || {};
+    return ['bronze', 'silver', 'gold', 'rainbow'].reduce(function (sum, tier) {
+      return sum + (Number(t[treasureItemKey_('chest', tier)]) || 0);
+    }, 0);
+  }
+  function treasureChestFull_() {
+    return treasureChestTotal_() >= treasureChestMax_();
+  }
+  // 宝箱を1個足す。上限に達していて足せなかったらfalse。
+  function addTreasureChest_(tier) {
+    if (treasureChestFull_()) return false;
+    var key = treasureItemKey_('chest', tier);
+    state.treasureItems = state.treasureItems || {};
+    state.treasureItems[key] = (Number(state.treasureItems[key]) || 0) + 1;
+    return true;
+  }
+  function treasureChestFullHtml_() {
+    return '<div class="item-gain-banner">📦 宝箱は' + treasureChestMax_() + '個までしか持てないので、宝箱はもらえなかった…（開けて減らすと、またもらえるよ）</div>';
+  }
   // 指輪の護り：銀・金・虹色の指輪を持っていると、ボス戦の不正解のダメージを
   // 完全に防いでくれる(銅の指輪には効果なし)。1個の指輪につき防げる回数は
   // 銀=1回・金=2回・虹色=3回で、使い切ると壊れてなくなる(所持数から1個減る)。
@@ -22811,11 +22840,12 @@
       if (wasRareType && isTreasureChestActive_() && Math.random() < treasureChestDropChance_()) {
         const treasureTier = treasureTierForGrade_(categoryGrade[catId]);
         if (treasureTier) {
-          const chestKey = treasureItemKey_('chest', treasureTier);
-          state.treasureItems = state.treasureItems || {};
-          state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+          if (!addTreasureChest_(treasureTier)) {
+            treasureChestGainedHtml = treasureChestFullHtml_();
+          } else {
           treasureChestGainedHtml = `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[treasureTier]} ${TREASURE_TIER_LABEL_[treasureTier]}の宝箱を見つけた！（なんでも屋で${TREASURE_TIER_LABEL_[treasureTier]}の鍵を買うと開けられる）</div>`;
           if (session && session.id) syncPointsNow_(session.id);
+          }
         }
       }
 
@@ -22851,9 +22881,7 @@
           if (completedPrefectureLap_ >= 2) {
             const prefectureLapChestTiers_ = ['bronze', 'silver', 'gold', 'rainbow'];
             prefectureLapChestTier_ = prefectureLapChestTiers_[randInt(0, prefectureLapChestTiers_.length - 1)];
-            const prefectureLapChestKey_ = treasureItemKey_('chest', prefectureLapChestTier_);
-            state.treasureItems = state.treasureItems || {};
-            state.treasureItems[prefectureLapChestKey_] = (Number(state.treasureItems[prefectureLapChestKey_]) || 0) + 1;
+            if (!addTreasureChest_(prefectureLapChestTier_)) prefectureLapChestTier_ = 'full';
           }
         }
         state.prefectureCount = nextCount;
@@ -22903,7 +22931,9 @@
         prefectureGainedHtml = `<div class="prefecture-gain-banner">🗾「${newlyUnlockedPrefecture.name}」を制覇！（${state.prefectureCount}/47${prefectureLapLabel_}）<br><span class="prefecture-trivia">${newlyUnlockedPrefecture.trivia}</span></div>`;
         if (prefectureLapJustCompleted) {
           prefectureGainedHtml += `<div class="prefecture-complete-banner">🎉 ${state.prefectureLap - 1}周目、47都道府県制覇達成！おめでとう！${state.prefectureLap}周目スタート！🎉</div>`;
-          if (prefectureLapChestTier_) {
+          if (prefectureLapChestTier_ === 'full') {
+            prefectureGainedHtml += treasureChestFullHtml_();
+          } else if (prefectureLapChestTier_) {
             prefectureGainedHtml += `<div class="item-gain-banner">${TREASURE_TIER_EMOJI_[prefectureLapChestTier_]} ${TREASURE_TIER_LABEL_[prefectureLapChestTier_]}の宝箱を手に入れた！</div>`;
           }
         } else if (!prefectureLapEnabled_ && state.prefectureCount === 47) {
@@ -26621,10 +26651,9 @@
       html += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズ（' + modeLabel + '）で47都道府県制覇達成！おめでとう！🎉</div>';
       if (mode === 'easy') {
         // イージーモードの1周目達成のお祝いに、虹色の宝箱を1個。
-        var easyChestKey_ = treasureItemKey_('chest', 'rainbow');
-        state.treasureItems = state.treasureItems || {};
-        state.treasureItems[easyChestKey_] = (Number(state.treasureItems[easyChestKey_]) || 0) + 1;
-        html += '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_.rainbow + ' ' + TREASURE_TIER_LABEL_.rainbow + 'の宝箱を手に入れた！</div>';
+        html += addTreasureChest_('rainbow')
+          ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_.rainbow + ' ' + TREASURE_TIER_LABEL_.rainbow + 'の宝箱を手に入れた！</div>'
+          : treasureChestFullHtml_();
       } else {
         // 通常モードの1周目達成のお祝いに、3つ星の宝石をランダムで1個。
         var capitalQuizGemTiers_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
@@ -27068,10 +27097,9 @@
     }
     let worldBossChestHtml = '';
     if (worldBossGuaranteedChestActive_()) {
-      state.treasureItems = state.treasureItems || {};
-      const chestKeyWB_ = treasureItemKey_('chest', 'rainbow');
-      state.treasureItems[chestKeyWB_] = (Number(state.treasureItems[chestKeyWB_]) || 0) + 1;
-      worldBossChestHtml = `<div class="item-gain-banner">🌈 10月限定！ボス撃破で虹色の宝箱を手に入れた！🌈</div>`;
+      worldBossChestHtml = addTreasureChest_('rainbow')
+        ? `<div class="item-gain-banner">🌈 10月限定！ボス撃破で虹色の宝箱を手に入れた！🌈</div>`
+        : treasureChestFullHtml_();
     }
     // 次のボスへは持ち越さない(魔法で与えたダメージも撃破と同時にリセット)。
     state.streak = 0;
@@ -27766,9 +27794,7 @@
     state.ohachiEasyProgress = 0;
     state.hp = (Number(state.hp) || 0) + OHACHI_EASY_HP_REWARD_;
     var chestTier = OHACHI_EASY_CHEST_TIERS_[randInt(0, OHACHI_EASY_CHEST_TIERS_.length - 1)];
-    var chestKey = treasureItemKey_('chest', chestTier);
-    state.treasureItems = state.treasureItems || {};
-    state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    var chestAdded = addTreasureChest_(chestTier);
     // 通常版お鉢巡り(finishOhachiMeguri_)と同じく、この場で確実に保存・同期する
     // (以前は呼び忘れがあり、達成しても宝箱がサーバーに残らない不具合があった)。
     saveGameState(state);
@@ -27776,7 +27802,7 @@
     if (session && session.id) syncPointsNow_(session.id);
     return '<div class="win-banner">🎉🔄 お鉢巡りイージーモードを達成した！🎉</div>'
       + '<div class="item-gain-banner">💪 HPが' + OHACHI_EASY_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
-      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
+      + (chestAdded ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>' : treasureChestFullHtml_());
   }
   function renderOhachiEasyCard_() {
     if (!els.ohachiEasyCard) return;
@@ -27838,16 +27864,14 @@
     state.fujiDescentActive = false;
     state.fujiDescentCompleted = true;
     var chestTier = FUJI_DESCENT_CHEST_TIERS_[randInt(0, FUJI_DESCENT_CHEST_TIERS_.length - 1)];
-    var chestKey = treasureItemKey_('chest', chestTier);
-    state.treasureItems = state.treasureItems || {};
-    state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    var chestAdded = addTreasureChest_(chestTier);
     // この場で確実に保存・同期する(呼び出し元の追加ブロックはローカル保存のみで
     // サーバー同期までは保証しないため、達成時はここで明示的に行う)。
     saveGameState(state);
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     return '<div class="win-banner">🎉⛰️ 富士下山、5合目に到着した！🎉</div>'
-      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
+      + (chestAdded ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>' : treasureChestFullHtml_());
   }
   // 今の区間(20問連続正解)をクリアしたら1合下げる。5合目に達したら富士下山達成。
   function advanceFujiDescentIfReady_() {
@@ -27988,14 +28012,12 @@
     state.gemItems = state.gemItems || {};
     state.gemItems[gemId] = (Number(state.gemItems[gemId]) || 0) + 1;
     var chestTier = USA_CROSSING_CHEST_TIERS_[randInt(0, USA_CROSSING_CHEST_TIERS_.length - 1)];
-    var chestKey = treasureItemKey_('chest', chestTier);
-    state.treasureItems = state.treasureItems || {};
-    state.treasureItems[chestKey] = (Number(state.treasureItems[chestKey]) || 0) + 1;
+    var chestAdded = addTreasureChest_(chestTier);
     var gemDef = GEM_DEFS_[gemId];
     var html = '<div class="win-banner">🎉🇺🇸 アメリカ横断達成！🎉</div>'
       + '<div class="item-gain-banner">💪 HPが' + USA_CROSSING_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
       + '<div class="item-gain-banner">' + gemDef.emoji + ' ' + gemDef.label + 'を手に入れた！</div>'
-      + '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>';
+      + (chestAdded ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>' : treasureChestFullHtml_());
     // 制覇した直後、謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
     // なくてもその場で消える(ペナルティなし)が、渡した場合はクリスマス(12/25)に
     // ダイヤの指輪になって返ってくる。
@@ -29003,6 +29025,7 @@
         if (res.treat.mp) gifts.push('+' + res.treat.mp + 'MP');
         if (res.treat.hp) gifts.push('+' + res.treat.hp + 'HP');
         if (res.treat.chest) gifts.push(TREASURE_TIER_EMOJI_[res.treat.chest] + ' ' + TREASURE_TIER_LABEL_[res.treat.chest] + 'の宝箱');
+        if (res.treat.chestFull) gifts.push('（宝箱は' + treasureChestMax_() + '個まで持っているのでもらえなかった）');
         if (!gifts.length) gifts.push('笑顔');
         html += '<div>🍬 お菓子をあげた！（残り' + res.candy + '個）お礼に <b>' + gifts.join('・') + '</b> をもらった！</div>';
         if (res.todayMp >= res.dailyMpCap) html += '<div><small>（今日のハロウィンのMPは上限の' + res.dailyMpCap + 'MPに届いたよ）</small></div>';
