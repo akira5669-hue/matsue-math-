@@ -29335,6 +29335,7 @@
   var MANGA_LIST_ = [
     { id: 'm009', title: '中学理科 食塩水の濃度', img: 'images/manga/m009.jpg', free: true },
     { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
+    { id: 'm016', title: 'めっちゃ◯◯◯', img: 'images/manga/m016.jpg' },
     { id: 'm015', title: 'てんさい', img: 'images/manga/m015.jpg' },
     { id: 'm014', title: '気づいたらできてる。', img: 'images/manga/m014.jpg' },
     { id: 'm013', title: 'テストの見直しをしろ！', img: 'images/manga/m013.jpg' },
