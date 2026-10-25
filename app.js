@@ -20910,6 +20910,8 @@
     festivalBanner: document.getElementById('festivalBanner'),
     festivalBannerBtn: document.getElementById('festivalBannerBtn'),
     halloweenBanner: document.getElementById('halloweenBanner'),
+    treasureChestCapBanner: document.getElementById('treasureChestCapBanner'),
+    treasureChestCapBannerText: document.getElementById('treasureChestCapBannerText'),
     halloweenAvatarBanner: document.getElementById('halloweenAvatarBanner'),
     halloweenAvatarBannerText: document.getElementById('halloweenAvatarBannerText'),
     halloweenAvatarBannerBtn: document.getElementById('halloweenAvatarBannerBtn'),
@@ -22130,6 +22132,7 @@
     renderAccountMergeNoticeBanner_();
     // 世界一周ボスの虹色の宝箱の告知は終了(2026-10-25)。特典自体は10月末まで続く。
     if (els.worldBossChestBanner) els.worldBossChestBanner.hidden = true;
+    renderTreasureChestCapBanner_();
     renderHalloweenAvatarBanner_();
     renderSaltConcentrationBanner_();
     renderSuperAkirametalBanner_();
@@ -23417,6 +23420,22 @@
     els.readingDuplicateNoticeBanner.hidden = false;
     if (els.readingDuplicateNoticeBannerText) {
       els.readingDuplicateNoticeBannerText.textContent = '📢【読書ランキングについて】同じ月に同じタイトルの本を複数回投稿することはできなくなりました（1冊まで）。これに伴い、同じ月に同じタイトルで重複していた投稿は削除しました。';
+    }
+  }
+
+  // 宝箱の所持上限の告知(12/31まで全生徒に表示)。今の所持数も出す。
+  var TREASURE_CHEST_CAP_NOTICE_END_ = '2026-12-31';
+  function renderTreasureChestCapBanner_() {
+    if (!els.treasureChestCapBanner) return;
+    if (todayKey() > TREASURE_CHEST_CAP_NOTICE_END_) { els.treasureChestCapBanner.hidden = true; return; }
+    els.treasureChestCapBanner.hidden = false;
+    if (els.treasureChestCapBannerText) {
+      var total = treasureChestTotal_();
+      var max = treasureChestMax_();
+      els.treasureChestCapBannerText.textContent = '📦【大事なお知らせ】宝箱を持てる数（銅・銀・金・虹色の合計）に上限ができました！'
+        + '10月末までは100個、11月は50個、12月からは30個までです。上限に達すると、それ以上は宝箱がもらえません（貯まりません）。'
+        + '11月・12月になる前に、なんでも屋で鍵を買って宝箱を開けておこう！'
+        + '（今のあなたの宝箱：' + total + '個／いまの上限' + max + '個）';
     }
   }
 
