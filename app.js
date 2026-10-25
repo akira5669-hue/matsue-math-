@@ -20881,6 +20881,9 @@
     festivalBanner: document.getElementById('festivalBanner'),
     festivalBannerBtn: document.getElementById('festivalBannerBtn'),
     halloweenBanner: document.getElementById('halloweenBanner'),
+    halloweenAvatarBanner: document.getElementById('halloweenAvatarBanner'),
+    halloweenAvatarBannerText: document.getElementById('halloweenAvatarBannerText'),
+    halloweenAvatarBannerBtn: document.getElementById('halloweenAvatarBannerBtn'),
     halloweenBannerText: document.getElementById('halloweenBannerText'),
     halloweenBannerBtn: document.getElementById('halloweenBannerBtn'),
     ohachiEasyBanner: document.getElementById('ohachiEasyBanner'),
@@ -22066,7 +22069,8 @@
     updateFujiToggleVisibility();
     updateWorldSpellBtnVisibility_();
     renderPrefectureLapBanner_();
-    renderOhachiEasyBanner_();
+    // お鉢巡りイージーモードの告知は終了(2026-10-25)。機能自体はOHACHI_EASY_END_まで動く。
+    if (els.ohachiEasyBanner) els.ohachiEasyBanner.hidden = true;
     renderFestivalBanner_();
     renderHalloweenBanner_();
     renderTrainingBanner_();
@@ -22095,7 +22099,9 @@
     renderOhachiBanner_();
     renderProfessionNoticeBanner_();
     renderAccountMergeNoticeBanner_();
-    renderWorldBossChestBanner_();
+    // 世界一周ボスの虹色の宝箱の告知は終了(2026-10-25)。特典自体は10月末まで続く。
+    if (els.worldBossChestBanner) els.worldBossChestBanner.hidden = true;
+    renderHalloweenAvatarBanner_();
     renderSaltConcentrationBanner_();
     renderSuperAkirametalBanner_();
   }
@@ -23381,6 +23387,17 @@
     els.readingDuplicateNoticeBanner.hidden = false;
     if (els.readingDuplicateNoticeBannerText) {
       els.readingDuplicateNoticeBannerText.textContent = '📢【読書ランキングについて】同じ月に同じタイトルの本を複数回投稿することはできなくなりました（1冊まで）。これに伴い、同じ月に同じタイトルで重複していた投稿は削除しました。';
+    }
+  }
+
+  // ハロウィン用アバターの告知(10/31まで全生徒に表示)。アバター自体はその後もいつでも選べる。
+  var HALLOWEEN_AVATAR_NOTICE_END_ = '2026-10-31';
+  function renderHalloweenAvatarBanner_() {
+    if (!els.halloweenAvatarBanner) return;
+    if (todayKey() > HALLOWEEN_AVATAR_NOTICE_END_) { els.halloweenAvatarBanner.hidden = true; return; }
+    els.halloweenAvatarBanner.hidden = false;
+    if (els.halloweenAvatarBannerText) {
+      els.halloweenAvatarBannerText.textContent = '🎃【新登場】ハロウィンバージョンのアバターが12種類登場！ドラキュラ・魔法使い・かぼちゃ・オオカミ男・黒ねこ・ミイラ・おばけ（男の子・女の子）から選べるよ。アバターの「イラスト」のいちばん下にあります。変えるたびに' + HALLOWEEN_AVATAR_COST_MP_ + 'MP。ハロウィンが終わっても選べます！';
     }
   }
 
@@ -30963,6 +30980,11 @@
   els.grantToggle.addEventListener('click', toggleGrant);
   els.grantForm.addEventListener('submit', handleGrantSubmit);
   els.avatarSaveBtn.addEventListener('click', handleAvatarSave);
+  if (els.halloweenAvatarBannerBtn) els.halloweenAvatarBannerBtn.addEventListener('click', function () {
+    if (els.avatarPanel.hasAttribute('hidden')) toggleAvatar();
+    if (typeof setAvatarMode_ === 'function') setAvatarMode_('preset');
+    els.avatarPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   els.avatarModePresetBtn.addEventListener('click', function () { setAvatarMode_('preset'); });
   els.avatarModePartsBtn.addEventListener('click', function () { setAvatarMode_('parts'); });
   if (els.avatarModePhotoBtn) {
