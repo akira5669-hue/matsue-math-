@@ -29342,6 +29342,7 @@
   var MANGA_LIST_ = [
     { id: 'm009', title: '中学理科 食塩水の濃度', img: 'images/manga/m009.jpg', free: true },
     { id: 'm005', title: '中1 理科 光の屈折', img: 'images/manga/m005.jpg', free: true },
+    { id: 'm020', title: 'トイレにいきたいなら先生に言おう。', img: 'images/manga/m020.jpg' },
     { id: 'm019', title: '石橋をたたいてこわす（わたる）', img: 'images/manga/m019.jpg' },
     { id: 'm018', title: '悪夢', img: 'images/manga/m018v2.jpg' },
     { id: 'm017', title: '石の上にも三年', img: 'images/manga/m017.jpg' },
