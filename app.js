@@ -29448,21 +29448,28 @@
   function renderMangaPanel_() {
     var st = mangaStatusCache_;
     if (!st) return;
-    els.mangaStatusText.textContent = st.todayMangaId
-      ? '✅ 今日の1作品はもう選びました。新しい作品はまた明日読めます。'
-      : '📌 今日はまだ新しい作品を読んでいません（1日1作品まで）。';
+    var bonusN = st.bonusAnswers || 100;
+    var limitReached = st.viewLimitReached != null ? st.viewLimitReached : !!st.todayMangaId;
+    var viewCount = Number(st.todayViewCount) || (st.todayMangaId ? 1 : 0);
+    els.mangaStatusText.textContent = !viewCount
+      ? '📌 今日はまだ新しい作品を読んでいません（1日1作品まで。今日' + bonusN + '問以上解くと、特別にもう1作品読めます）。'
+      : !limitReached
+        ? '🎉 今日は' + bonusN + '問以上解いたので、特別にもう1作品読めます！'
+        : viewCount >= 2
+          ? '✅ 今日は特別の1作品も読みました。新しい作品はまた明日読めます。'
+          : '✅ 今日の1作品はもう選びました。今日' + bonusN + '問以上解くと、特別にもう1作品読めます（今日解いた問題：' + (Number(st.todayAnswers) || 0) + '問）。';
     if (els.mangaPriceHint) {
       var endParts = String(st.saleEnd || '').split('-');
       els.mangaPriceHint.innerHTML = st.sale
-        ? '<span class="manga-sale">🎉 期間限定（' + Number(endParts[1]) + '/' + Number(endParts[2]) + 'まで）半額セール中！</span><br>1日1作品、<s>' + MANGA_VIEW_COST_MP_ + 'MP</s> <b>' + st.costMp + 'MP</b>か<s>' + MANGA_VIEW_COST_HP_ + 'HP</s> <b>' + st.costHp + 'HP</b>のどちらかを払って読めます。一度読んだ作品は、次の日からも無料で読み直せます。'
-        : '1日1作品、<b>' + st.costMp + 'MP</b>か<b>' + st.costHp + 'HP</b>のどちらかを払って読めます。一度読んだ作品は、次の日からも無料で読み直せます。';
+        ? '<span class="manga-sale">🎉 期間限定（' + Number(endParts[1]) + '/' + Number(endParts[2]) + 'まで）半額セール中！</span><br>1日1作品、<s>' + MANGA_VIEW_COST_MP_ + 'MP</s> <b>' + st.costMp + 'MP</b>か<s>' + MANGA_VIEW_COST_HP_ + 'HP</s> <b>' + st.costHp + 'HP</b>のどちらかを払って読めます（その日に' + (st.bonusAnswers || 100) + '問以上解いたら、特別にもう1作品）。一度読んだ作品は、次の日からも無料で読み直せます。'
+        : '1日1作品、<b>' + st.costMp + 'MP</b>か<b>' + st.costHp + 'HP</b>のどちらかを払って読めます（その日に' + (st.bonusAnswers || 100) + '問以上解いたら、特別にもう1作品）。一度読んだ作品は、次の日からも無料で読み直せます。';
     }
     els.mangaList.innerHTML = MANGA_LIST_.map(function (m) {
       var unlocked = !!m.free || st.unlocked.indexOf(m.id) !== -1;
       var actions = unlocked
         ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="free">📖 読む</button>'
-        : st.todayMangaId
-          ? '<span class="manga-locked">🔒 また明日</span>'
+        : limitReached
+          ? '<span class="manga-locked">' + (viewCount >= 2 ? '🔒 また明日' : '🔒 ' + bonusN + '問解くと読める') + '</span>'
           : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + mangaCostMp_() + 'MPで読む</button>' +
             '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + mangaCostHp_() + 'HPで読む</button>';
       actions += mangaLikeBtnHtml_(m, m.free ? (mangaFreeRead_(m.id) || (mangaStatusCache_.myLikes || []).indexOf(m.id) !== -1) : unlocked);
@@ -29502,7 +29509,7 @@
     var pay = btn.getAttribute('data-pay');
     if (pay === 'free') { openMangaViewer_(m); return; }
     var label = pay === 'hp' ? mangaCostHp_() + 'HP' : mangaCostMp_() + 'MP';
-    if (!window.confirm('「' + m.title + '」を' + label + 'で読みます。新しく読めるのは1日1作品です。よろしいですか？')) return;
+    if (!window.confirm('「' + m.title + '」を' + label + 'で読みます。新しく読めるのは1日1作品です（' + ((mangaStatusCache_ && mangaStatusCache_.bonusAnswers) || 100) + '問以上解いた日は2作品）。よろしいですか？')) return;
     var session = loadSession();
     if (!session || !session.id) return;
     btn.disabled = true;
@@ -29512,7 +29519,8 @@
         var msg = '読めませんでした。もう一度お試しください。';
         if (res && res.error === 'insufficient_points') msg = 'MPが足りません。';
         else if (res && res.error === 'insufficient_hp') msg = 'HPが足りません（払ったあともHPが残るようにしてください）。';
-        else if (res && res.error === 'already_viewed_today') msg = '今日はもう1作品読みました。また明日読めます。';
+        else if (res && res.error === 'already_viewed_today') msg = '今日はもう1作品読みました。今日' + (res.bonusAnswers || 100) + '問以上解くと、特別にもう1作品読めます（今日解いた問題：' + (Number(res.todayAnswers) || 0) + '問）。';
+        else if (res && res.error === 'already_viewed_bonus') msg = '今日は特別の1作品も読みました。また明日読めます。';
         window.alert(msg);
         fetchMangaStatus_();
         return;
@@ -29524,7 +29532,11 @@
       updateGameHud();
       if (mangaStatusCache_) {
         if (mangaStatusCache_.unlocked.indexOf(m.id) === -1) mangaStatusCache_.unlocked.push(m.id);
-        if (!res.free) mangaStatusCache_.todayMangaId = m.id;
+        if (!res.free) {
+          mangaStatusCache_.todayMangaId = mangaStatusCache_.todayMangaId || m.id;
+          mangaStatusCache_.todayViewCount = (Number(mangaStatusCache_.todayViewCount) || 0) + 1;
+          mangaStatusCache_.viewLimitReached = mangaStatusCache_.todayViewCount >= (Number(mangaStatusCache_.viewsAllowedToday) || 1);
+        }
       }
       renderMangaPanel_();
       openMangaViewer_(m);
