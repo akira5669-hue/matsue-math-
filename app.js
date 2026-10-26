@@ -20910,6 +20910,7 @@
     festivalBanner: document.getElementById('festivalBanner'),
     festivalBannerBtn: document.getElementById('festivalBannerBtn'),
     halloweenBanner: document.getElementById('halloweenBanner'),
+    halloweenFixBanner: document.getElementById('halloweenFixBanner'),
     treasureChestCapBanner: document.getElementById('treasureChestCapBanner'),
     treasureChestCapBannerText: document.getElementById('treasureChestCapBannerText'),
     halloweenAvatarBanner: document.getElementById('halloweenAvatarBanner'),
@@ -22132,6 +22133,8 @@
     renderAccountMergeNoticeBanner_();
     // 世界一周ボスの虹色の宝箱の告知は終了(2026-10-25)。特典自体は10月末まで続く。
     if (els.worldBossChestBanner) els.worldBossChestBanner.hidden = true;
+    // ハロウィンのお化けが出なくなる不具合を直したお知らせ(10/31まで)。
+    if (els.halloweenFixBanner) els.halloweenFixBanner.hidden = todayKey() > '2026-10-31';
     renderTreasureChestCapBanner_();
     renderHalloweenAvatarBanner_();
     renderSaltConcentrationBanner_();
