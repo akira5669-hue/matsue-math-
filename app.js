@@ -29034,10 +29034,10 @@
     if (count % HALLOWEEN_ANSWERS_PER_GHOST_ !== 0) return;
     var banner = document.createElement('div');
     banner.className = 'halloween-banner';
-    banner.textContent = '🌙 …なにかが近づいてくる…';
-    els.feedback.appendChild(banner);
+    // お化けが出られた時だけ表示する(以前は先に「なにかが近づいてくる」を出して、出られないと消していたため、一瞬だけ文字が見えて怖がらせていた)。
     apiPost('halloweenGhost', { id: session.id }).then(function (res) {
-      if (!res || !res.ok) { banner.remove(); return; }
+      if (!res || !res.ok) return;
+      els.feedback.appendChild(banner);
       var g = halloweenGhostDef_(res.ghost);
       var html = '<div class="halloween-ghost-head">' + g.emoji + ' <b>' + g.name + '</b>が現れた！' + (res.isKing ? '<span class="halloween-rare">激レア！</span>' : '') + '</div>' +
         '<div class="halloween-ghost-line">「' + g.line + '」</div>';
@@ -29071,7 +29071,7 @@
       saveGameState(state);
       updateStats();
       updateGameHud();
-    }).catch(function () { banner.remove(); });
+    }).catch(function () { });
   }
 
   // 「次の問題」を押した直後に呼ぶ。イタズラ中なら、この1問だけ問題文を逆さまにする。
