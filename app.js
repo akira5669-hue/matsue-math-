@@ -23879,8 +23879,10 @@
       } else {
         showApp(res.name, false);
       }
-      if (res.pointsReset) {
-        window.alert('5日以上ログインが無かったため、MPが0にリセットされました。レベル・EXPはそのまま残っています。');
+      if (res.pointsReset || res.hpReset) {
+        var resetWhat = res.pointsReset && res.hpReset ? 'HPとMP' : res.hpReset ? 'HP' : 'MP';
+        window.alert((res.pointsReset ? (res.inactiveMpResetDays || 10) : (res.inactiveHpResetDays || 5)) + '日以上ログインが無かったため、' + resetWhat + 'が0にリセットされました。レベル・EXPはそのまま残っています。'
+          + '\n（' + (res.inactiveHpResetDays || 5) + '日以上ログインしないとHPが0、' + (res.inactiveMpResetDays || 10) + '日以上ログインしないとMPが0になります）');
       }
       if (res.apologyBonusAwarded > 0) {
         window.alert(`🙇 お詫びとして+${res.apologyBonusAwarded}MPを付与しました！`);
@@ -24038,7 +24040,9 @@
     if (isProgressGreater(sPrefectureLap, spc, Number(state.prefectureLap) || 1, state.prefectureCount)) {
       state.prefectureLap = sPrefectureLap; state.prefectureCount = spc; changed = true;
     }
-    if (sHp > (Number(state.hp) || 0)) { state.hp = sHp; changed = true; }
+    // ログインしていない日数でHPが0にリセットされた時は、端末に残っている古いHPで上書きしない。
+    if (server.hpReset) { if ((Number(state.hp) || 0) !== sHp) { state.hp = sHp; changed = true; } }
+    else if (sHp > (Number(state.hp) || 0)) { state.hp = sHp; changed = true; }
     if (sWorldCountry > (Number(state.worldCountry) || 0)) { state.worldCountry = sWorldCountry; changed = true; }
     sItems.forEach(function (itemId) {
       if (state.items.indexOf(itemId) === -1) { state.items.push(itemId); changed = true; }
