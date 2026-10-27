@@ -7466,13 +7466,17 @@
       choices = shuffle([answer, '圧力 = 力の大きさ × 力がはたらく面の面積', '圧力 = 力がはたらく面の面積 ÷ 力の大きさ', '圧力 = 力の大きさ + 力がはたらく面の面積']);
       steps = ['圧力(Pa) = 力の大きさ(N) ÷ 力がはたらく面の面積(m²)'];
     } else if (pat === 2) {
-      const p = randInt(1, 9);
-      const area = randInt(2, 10);
-      const forceN = p * area;
-      question = `重さ${forceN}Nの物体を、面積${area}cm²の面が下になるように置きました。この物体が面におよぼす圧力は何N/cm²ですか。`;
+      // 圧力の計算はすべて N/m²(=Pa) で答える(2026-10-27〜)。面積は m² で示し、1÷面積 が整数になるものだけ使う。
+      const AREAS_ = [['0.01', 100], ['0.02', 50], ['0.04', 25], ['0.05', 20], ['0.1', 10], ['0.2', 5], ['0.25', 4], ['0.5', 2]];
+      const pick = AREAS_[randInt(0, AREAS_.length - 1)];
+      const areaText = pick[0];
+      const inv = pick[1];
+      const forceN = randInt(1, 9) * (inv >= 20 ? 1 : randInt(1, 5));
+      const p = forceN * inv;
+      question = `重さ${forceN}Nの物体を、面積${areaText}m²の面が下になるように置きました。この物体が面におよぼす圧力は何N/m²ですか。`;
       answer = p;
-      const wrongs = [p + 1, p + 2, Math.max(1, p - 1)].filter(w => w !== p);
-      steps = [`圧力 = 力 ÷ 面積 = ${forceN} ÷ ${area} = ${p}N/cm²`];
+      const wrongs = [p * 10, p + inv, p * 2, Math.round(p / 10)].filter((w, i, arr) => w > 0 && w !== p && arr.indexOf(w) === i).slice(0, 3);
+      steps = [`圧力(N/m²) = 力の大きさ(N) ÷ 面積(m²) = ${forceN} ÷ ${areaText} = ${p}N/m²`];
       return { category: 'atmosphericPressureWind2', question, answer, choices: buildChoices(answer, wrongs), steps };
     } else if (pat === 3) {
       question = '同じ大きさの力がはたらくとき、力がはたらく面の面積が小さいほど、圧力はどうなりますか。';
