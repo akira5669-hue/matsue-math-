@@ -673,13 +673,15 @@
 
       <div class="test-photo-card" id="rankingTestCard" hidden>
         <h4 class="test-photo-card-title">📊 数学ランキングテスト</h4>
-        <p class="test-photo-hint">数学のランキングテストのみ提出できます（他教科は対象外）。提出は月1回までです。写真を選んでから、点数の帯を選んでください（100点=500MP、90点台=400MP、80点台=300MP、70点台=200MP、それ未満は加算なし）。</p>
+        <p class="test-photo-hint">数学のランキングテストのみ提出できます（他教科は対象外）。提出は月1回までです。写真を選んでから、点数の帯を選んでください（100点=500MP、90点台=400MP、80点台=300MP、70点台=200MP、60点台=100MP、60点未満=50MP）。先生から解説・アドバイスが届いたら、直しの写真を送ると +100MP！</p>
         <input type="file" accept="image/*" id="rankingTestFileInput" class="test-photo-file-input" />
         <div class="test-photo-tier-row" id="rankingTierRow">
           <button type="button" class="test-photo-tier-btn" data-tier="100">100点<span class="test-photo-tier-mp">500MP</span></button>
           <button type="button" class="test-photo-tier-btn" data-tier="90s">90点台<span class="test-photo-tier-mp">400MP</span></button>
           <button type="button" class="test-photo-tier-btn" data-tier="80s">80点台<span class="test-photo-tier-mp">300MP</span></button>
           <button type="button" class="test-photo-tier-btn" data-tier="70s">70点台<span class="test-photo-tier-mp">200MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="60s">60点台<span class="test-photo-tier-mp">100MP</span></button>
+          <button type="button" class="test-photo-tier-btn" data-tier="under60">60点未満<span class="test-photo-tier-mp">50MP</span></button>
         </div>
         <div class="test-photo-confirm" id="rankingTestConfirm" hidden>
           <p id="rankingTestConfirmText"></p>
@@ -689,6 +691,16 @@
           </div>
         </div>
         <p class="test-photo-result" id="rankingTestResult"></p>
+        <div class="ranking-review-box" id="rankingReviewBox" hidden>
+          <h5 class="ranking-review-title">📬 先生からの解説・アドバイス</h5>
+          <div id="rankingReviewList"></div>
+        </div>
+      </div>
+
+      <div class="test-photo-card" id="rankingAdminCard" hidden>
+        <h4 class="test-photo-card-title">🔒 ランキングテストの解説・直し（00001のみ）</h4>
+        <button type="button" class="ghost-btn" id="rankingAdminReload">一覧を読み込む</button>
+        <div id="rankingAdminList"></div>
       </div>
 
       <div class="test-photo-card" id="proofTestCard" hidden>

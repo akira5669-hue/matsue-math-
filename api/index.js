@@ -16,6 +16,7 @@ const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
 const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
+const { handleRankingReviewStatus, handleRankingReviewExplImage, handleRankingFixSubmit, handleRankingReviewList, handleRankingReviewPhoto, handleRankingReviewFeedback, handleRankingFixReview } = require('../lib/handlers/rankingReview');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRankingMonth, handleStudyCalendar } = require('../lib/handlers/studyReport');
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleEditReading, handleDistributeWisdomSeeds, handleReadingHallOfFame } = require('../lib/handlers/reading');
@@ -113,6 +114,13 @@ const ACTIONS = {
   weeklyQuizGet: handleWeeklyQuizGet,
   weeklyQuizAnswer: handleWeeklyQuizAnswer,
   submitTestPhoto: handleSubmitTestPhoto,
+  rankingReviewStatus: handleRankingReviewStatus,
+  rankingReviewExplImage: handleRankingReviewExplImage,
+  rankingFixSubmit: handleRankingFixSubmit,
+  rankingReviewList: handleRankingReviewList,
+  rankingReviewPhoto: handleRankingReviewPhoto,
+  rankingReviewFeedback: handleRankingReviewFeedback,
+  rankingFixReview: handleRankingFixReview,
   teamEventStatus: handleTeamEventStatus,
 };
 

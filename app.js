@@ -21090,6 +21090,11 @@
     rankingTestConfirmYes: document.getElementById('rankingTestConfirmYes'),
     rankingTestConfirmNo: document.getElementById('rankingTestConfirmNo'),
     rankingTestResult: document.getElementById('rankingTestResult'),
+    rankingReviewBox: document.getElementById('rankingReviewBox'),
+    rankingReviewList: document.getElementById('rankingReviewList'),
+    rankingAdminCard: document.getElementById('rankingAdminCard'),
+    rankingAdminReload: document.getElementById('rankingAdminReload'),
+    rankingAdminList: document.getElementById('rankingAdminList'),
     proofTestCard: document.getElementById('proofTestCard'),
     proofTestFileInput: document.getElementById('proofTestFileInput'),
     proofTestSubmitBtn: document.getElementById('proofTestSubmitBtn'),
@@ -29717,7 +29722,7 @@
 
   /* ---------- テスト画像提出（ペナテスト・抜き打ちテスト・ランキングテスト） ---------- */
 
-  var RANKING_TEST_TIER_LABELS_ = { '100': '100点（500MP）', '90s': '90点台（400MP）', '80s': '80点台（300MP）', '70s': '70点台（200MP）' };
+  var RANKING_TEST_TIER_LABELS_ = { '100': '100点（500MP）', '90s': '90点台（400MP）', '80s': '80点台（300MP）', '70s': '70点台（200MP）', '60s': '60点台（100MP）', 'under60': '60点未満（50MP）' };
   var rankingTestSelectedTier = null;
 
   function toggleTestPhoto() {
@@ -29770,6 +29775,9 @@
     rankingTestSubmitting = false;
     setRankingTestControlsDisabled(false);
     renderRankingTierButtons();
+    if (isMiddle) fetchRankingReviews_(); else els.rankingReviewBox.hidden = true;
+    els.rankingAdminCard.hidden = !isAdminSession_();
+    if (isAdminSession_()) els.rankingAdminList.innerHTML = '';
 
     var hyakuMasuAllowed = HYAKUMASU_ALLOWED_GRADES_.indexOf(grade) !== -1;
     els.hyakuMasuCard.hidden = !hyakuMasuAllowed;
@@ -30137,12 +30145,167 @@
       renderRankingTierButtons();
       els.rankingTestResult.textContent = res.pointsAwarded > 0
         ? ('✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！')
-        : '✅ 送信完了しました！（70点未満のため、MPの加算はありません）';
+        : '✅ 送信完了しました！';
+      fetchRankingReviews_();
     }).catch(function () {
       rankingTestSubmitting = false;
       setRankingTestControlsDisabled(false);
       els.rankingTestResult.textContent = '送信に失敗しました。もう一度お試しください。';
     });
+  }
+
+  /* ---------- ランキングテストの解説・弱点アドバイス・直し(2026-10-27〜) ---------- */
+
+  function rankingReviewWhen_(ts) {
+    var d = new Date(ts);
+    return (d.getMonth() + 1) + '/' + d.getDate();
+  }
+
+  function rankingFeedbackHtml_(r) {
+    var html = '';
+    if (r.explanation) html += '<div class="ranking-review-label">📘 解説</div><div class="ranking-review-text">' + escHtml(r.explanation) + '</div>';
+    if (r.advice) html += '<div class="ranking-review-label">💡 弱点・アドバイス</div><div class="ranking-review-text">' + escHtml(r.advice) + '</div>';
+    if (r.hasExplImage) html += '<button type="button" class="ghost-btn ranking-expl-img-btn" data-photo="' + r.photoId + '">解説の画像を見る</button><div id="rankingExplImg' + r.photoId + '"></div>';
+    return html;
+  }
+
+  // 生徒用：自分の提出と先生からの解説・直しの状況。
+  function fetchRankingReviews_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('rankingReviewStatus', { id: session.id }).then(function (res) {
+      if (!res || !res.ok || !res.reviews.length) { els.rankingReviewBox.hidden = true; return; }
+      var fixMp = res.fixMp || 100;
+      els.rankingReviewBox.hidden = false;
+      els.rankingReviewList.innerHTML = res.reviews.map(function (r) {
+        var html = '<div class="ranking-review-item"><div class="ranking-review-head">' + rankingReviewWhen_(r.ts) + ' 提出' + (r.tierLabel ? '（' + escHtml(r.tierLabel) + '）' : '') + '</div>';
+        if (!r.feedbackAt) return html + '<div class="test-photo-hint">⏳ 先生の解説を待っています。</div></div>';
+        html += rankingFeedbackHtml_(r);
+        if (r.fixStatus === 'approved') html += '<div class="ranking-review-label">✅ 直しOK！ +' + r.fixMp + 'MP</div>';
+        else if (r.fixStatus === 'pending') html += '<div class="ranking-review-label">⏳ 直しを送りました。先生の確認を待っています。</div>';
+        else {
+          html += '<div class="ranking-review-label">✏️ 直しの写真を送ると +' + fixMp + 'MP（先生が確認したら入ります）</div>'
+            + '<input type="file" accept="image/*" class="test-photo-file-input ranking-fix-file" id="rankingFixFile' + r.photoId + '">'
+            + '<button type="button" class="primary-btn ranking-fix-send" data-photo="' + r.photoId + '">直しを送る</button>'
+            + '<p class="test-photo-result" id="rankingFixResult' + r.photoId + '"></p>';
+        }
+        return html + '</div>';
+      }).join('');
+    }).catch(function () { els.rankingReviewBox.hidden = true; });
+  }
+
+  function showRankingImage_(action, params, box) {
+    box.textContent = '読み込み中…';
+    apiPost(action, params).then(function (res) {
+      if (!res || !res.ok) { box.textContent = '画像を読み込めませんでした（古い写真は消えています）。'; return; }
+      box.innerHTML = '<img alt="画像" src="data:' + escHtml(res.mimeType) + ';base64,' + res.imageBase64 + '">';
+    }).catch(function () { box.textContent = '画像を読み込めませんでした。'; });
+  }
+
+  function onRankingReviewClick_(e) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var imgBtn = e.target.closest('.ranking-expl-img-btn');
+    if (imgBtn) {
+      var pid = imgBtn.getAttribute('data-photo');
+      showRankingImage_('rankingReviewExplImage', { id: session.id, photoId: pid }, document.getElementById('rankingExplImg' + pid));
+      return;
+    }
+    var send = e.target.closest('.ranking-fix-send');
+    if (!send) return;
+    var photoId = send.getAttribute('data-photo');
+    var input = document.getElementById('rankingFixFile' + photoId);
+    var result = document.getElementById('rankingFixResult' + photoId);
+    var file = input && input.files && input.files[0];
+    if (!file) { result.textContent = '先に直しの写真を選んでください。'; return; }
+    send.disabled = true;
+    result.textContent = '送信中…';
+    compressImageFileToBase64(file, 1280, 0.7).then(function (base64) {
+      return apiPost('rankingFixSubmit', { id: session.id, photoId: photoId, imageBase64: base64 });
+    }).then(function (res) {
+      if (!res || !res.ok) {
+        send.disabled = false;
+        result.textContent = res && res.error === 'already_submitted' ? 'この直しはもう送っています。' : '送信に失敗しました。もう一度お試しください。';
+        return;
+      }
+      result.textContent = '✅ 送信完了！先生が確認したら +' + (res.fixMp || 100) + 'MP 入ります。';
+      setTimeout(fetchRankingReviews_, 1500);
+    }).catch(function () { send.disabled = false; result.textContent = '送信に失敗しました。もう一度お試しください。'; });
+  }
+
+  // 00001用：提出一覧・解説の送信・直しの確認。
+  function fetchRankingAdminList_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    els.rankingAdminList.innerHTML = '<p class="test-photo-hint">読み込み中…</p>';
+    apiPost('rankingReviewList', { id: session.id }).then(function (res) {
+      if (!res || !res.ok) { els.rankingAdminList.innerHTML = '<p class="test-photo-hint">読み込めませんでした。</p>'; return; }
+      if (!res.reviews.length) { els.rankingAdminList.innerHTML = '<p class="test-photo-hint">まだ提出はありません。</p>'; return; }
+      var fixMp = res.fixMp || 100;
+      els.rankingAdminList.innerHTML = res.reviews.map(function (r) {
+        var id = r.photoId;
+        var fix = r.fixStatus === 'pending'
+          ? '<div class="ranking-review-label">✏️ 直しが届いています</div><div class="ranking-review-actions">'
+            + '<button type="button" class="ghost-btn ranking-admin-photo" data-photo="' + id + '" data-kind="fix">直しを見る</button>'
+            + '<button type="button" class="primary-btn ranking-admin-fix" data-photo="' + id + '" data-approve="1">認める（+' + fixMp + 'MP）</button>'
+            + '<button type="button" class="ghost-btn ranking-admin-fix" data-photo="' + id + '" data-approve="0">認めない（送り直し）</button></div>'
+            + '<div id="rankingAdminFix' + id + '"></div><div id="rankingAdminImgfix' + id + '"></div>'
+          : r.fixStatus === 'approved' ? '<div class="ranking-review-label">✅ 直しOK（+' + r.fixMp + 'MP済み）</div>' : '';
+        return '<div class="ranking-review-item"><div class="ranking-review-head">' + rankingReviewWhen_(r.ts) + '　' + escHtml(r.name) + '（' + escHtml(r.grade) + '・ID ' + escHtml(r.studentId) + '）' + (r.tierLabel ? '　' + escHtml(r.tierLabel) : '') + '</div>'
+          + (r.feedbackAt ? '<div class="test-photo-hint">✅ 解説送信済み（書き直して送ると上書き）</div>' : '<div class="test-photo-hint">⏳ 解説まだ</div>')
+          + fix
+          + (r.photoAlive ? '<button type="button" class="ghost-btn ranking-admin-photo" data-photo="' + id + '" data-kind="answer">答案を見る</button>' : '<div class="test-photo-hint">（答案の写真は期限切れで消えています）</div>')
+          + '<div id="rankingAdminImganswer' + id + '"></div>'
+          + '<div class="ranking-review-label">📘 解説</div><textarea id="rankingAdminExpl' + id + '" placeholder="間違えた問題の解説">' + escHtml(r.explanation) + '</textarea>'
+          + '<div class="ranking-review-label">💡 弱点・アドバイス</div><textarea id="rankingAdminAdv' + id + '" placeholder="弱点や、これから何を練習するとよいか">' + escHtml(r.advice) + '</textarea>'
+          + '<div class="ranking-review-label">🖼 解説の画像（任意）' + (r.hasExplImage ? '　※送信済みの画像あり（新しく選ぶと差し替え）' : '') + '</div>'
+          + '<input type="file" accept="image/*" class="test-photo-file-input" id="rankingAdminImgFile' + id + '">'
+          + '<div class="ranking-review-actions"><button type="button" class="primary-btn ranking-admin-send" data-photo="' + id + '">解説・アドバイスを送る</button></div>'
+          + '<p class="test-photo-result" id="rankingAdminResult' + id + '"></p></div>';
+      }).join('');
+    }).catch(function () { els.rankingAdminList.innerHTML = '<p class="test-photo-hint">読み込めませんでした。</p>'; });
+  }
+
+  function onRankingAdminClick_(e) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var ph = e.target.closest('.ranking-admin-photo');
+    if (ph) {
+      var kind = ph.getAttribute('data-kind');
+      var phId = ph.getAttribute('data-photo');
+      showRankingImage_('rankingReviewPhoto', { id: session.id, photoId: phId, kind: kind }, document.getElementById('rankingAdminImg' + kind + phId));
+      return;
+    }
+    var fx = e.target.closest('.ranking-admin-fix');
+    if (fx) {
+      var fxId = fx.getAttribute('data-photo');
+      var approve = fx.getAttribute('data-approve') === '1';
+      var fxBox = document.getElementById('rankingAdminFix' + fxId);
+      if (!window.confirm(approve ? 'この直しを認めて +100MP を入れます。よろしいですか？' : 'この直しを認めません（生徒はもう一度送り直せます）。よろしいですか？')) return;
+      fxBox.textContent = '送信中…';
+      apiPost('rankingFixReview', { id: session.id, photoId: fxId, approve: approve }).then(function (res) {
+        if (!res || !res.ok) { fxBox.textContent = res && res.error === 'not_pending' ? 'もう確認済みです。' : '失敗しました。'; return; }
+        fxBox.textContent = res.status === 'approved' ? '✅ 認めた（+' + res.fixMp + 'MP）' : '❌ 認めなかった（送り直し待ち）';
+      }).catch(function () { fxBox.textContent = '失敗しました。'; });
+      return;
+    }
+    var sd = e.target.closest('.ranking-admin-send');
+    if (!sd) return;
+    var sdId = sd.getAttribute('data-photo');
+    var result = document.getElementById('rankingAdminResult' + sdId);
+    var expl = document.getElementById('rankingAdminExpl' + sdId).value;
+    var adv = document.getElementById('rankingAdminAdv' + sdId).value;
+    var fileInput = document.getElementById('rankingAdminImgFile' + sdId);
+    var file = fileInput.files && fileInput.files[0];
+    if (!expl.trim() && !adv.trim() && !file) { result.textContent = '解説・アドバイス・画像のどれかを入れてください。'; return; }
+    sd.disabled = true;
+    result.textContent = '送信中…';
+    (file ? compressImageFileToBase64(file, 1600, 0.8) : Promise.resolve(null)).then(function (base64) {
+      return apiPost('rankingReviewFeedback', { id: session.id, photoId: sdId, explanation: expl, advice: adv, imageBase64: base64 });
+    }).then(function (res) {
+      sd.disabled = false;
+      result.textContent = res && res.ok ? '✅ 送りました（生徒が次にアプリを開くとお知らせが出ます）。' : '送信に失敗しました。';
+    }).catch(function () { sd.disabled = false; result.textContent = '送信に失敗しました。'; });
   }
 
   function cancelRankingTierConfirm() {
@@ -31095,6 +31258,9 @@
     btn.addEventListener('click', function () { handleRankingTierClick(btn.dataset.tier); });
   });
   els.rankingTestConfirmYes.addEventListener('click', submitRankingTestPhoto);
+  els.rankingReviewList.addEventListener('click', onRankingReviewClick_);
+  els.rankingAdminList.addEventListener('click', onRankingAdminClick_);
+  els.rankingAdminReload.addEventListener('click', fetchRankingAdminList_);
   els.rankingTestConfirmNo.addEventListener('click', cancelRankingTierConfirm);
   els.hyakuMasuFileInput.addEventListener('change', updateHyakuMasuSubmitEnabled);
   els.hyakuMasuConfirmCheckbox.addEventListener('change', updateHyakuMasuSubmitEnabled);
