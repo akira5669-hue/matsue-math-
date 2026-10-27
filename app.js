@@ -29362,7 +29362,7 @@
     { id: 'm015', title: 'てんさい', img: 'images/manga/m015.jpg' },
     { id: 'm014', title: '気づいたらできてる。', img: 'images/manga/m014.jpg' },
     { id: 'm013', title: 'テストの見直しをしろ！', img: 'images/manga/m013.jpg' },
-    { id: 'm012', title: '学校って、最高だ！', img: 'images/manga/m012.jpg' },
+    { id: 'm012', title: '学校って、最高だ！', img: 'images/manga/m012v2.jpg' },
     { id: 'm011', title: '松江塾と行く！川越市の魅力', img: 'images/manga/m011.jpg' },
     { id: 'm010', title: '努力の差', img: 'images/manga/m010.jpg' },
     { id: 'm008', title: '話を聞いている子と聞いていない子のちがい', img: 'images/manga/m008.jpg' },
