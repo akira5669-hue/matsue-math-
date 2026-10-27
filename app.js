@@ -30184,7 +30184,7 @@
         if (r.fixStatus === 'approved') html += '<div class="ranking-review-label">✅ 直しOK！ +' + r.fixMp + 'MP</div>';
         else if (r.fixStatus === 'pending') html += '<div class="ranking-review-label">⏳ 直しを送りました。先生の確認を待っています。</div>';
         else {
-          html += '<div class="ranking-review-label">✏️ 直しの写真を送ると +' + fixMp + 'MP（先生が確認したら入ります）</div>'
+          html += '<div class="ranking-review-label">✏️ 直しの写真を送ると +' + fixMp + 'MP！</div>'
             + '<input type="file" accept="image/*" class="test-photo-file-input ranking-fix-file" id="rankingFixFile' + r.photoId + '">'
             + '<button type="button" class="primary-btn ranking-fix-send" data-photo="' + r.photoId + '">直しを送る</button>'
             + '<p class="test-photo-result" id="rankingFixResult' + r.photoId + '"></p>';
@@ -30225,10 +30225,11 @@
     }).then(function (res) {
       if (!res || !res.ok) {
         send.disabled = false;
-        result.textContent = res && res.error === 'already_submitted' ? 'この直しはもう送っています。' : '送信に失敗しました。もう一度お試しください。';
+        result.textContent = res && res.error === 'already_submitted' ? 'この直しはもう送っています。' : res && res.error === 'no_feedback_yet' ? '先生の解説が届いてから送ってね。' : '送信に失敗しました。もう一度お試しください。';
         return;
       }
-      result.textContent = '✅ 送信完了！先生が確認したら +' + (res.fixMp || 100) + 'MP 入ります。';
+      if (res.newTotalPoints != null) applyTestPhotoPointsResult(res);
+      result.textContent = '✅ 送信完了！ +' + (res.fixMp || 100) + 'MP 獲得しました！';
       setTimeout(fetchRankingReviews_, 1500);
     }).catch(function () { send.disabled = false; result.textContent = '送信に失敗しました。もう一度お試しください。'; });
   }
@@ -30250,7 +30251,7 @@
             + '<button type="button" class="primary-btn ranking-admin-fix" data-photo="' + id + '" data-approve="1">認める（+' + fixMp + 'MP）</button>'
             + '<button type="button" class="ghost-btn ranking-admin-fix" data-photo="' + id + '" data-approve="0">認めない（送り直し）</button></div>'
             + '<div id="rankingAdminFix' + id + '"></div><div id="rankingAdminImgfix' + id + '"></div>'
-          : r.fixStatus === 'approved' ? '<div class="ranking-review-label">✅ 直しOK（+' + r.fixMp + 'MP済み）</div>' : '';
+          : r.fixStatus === 'approved' ? '<div class="ranking-review-label">✅ 直し提出済み（+' + r.fixMp + 'MP済み）</div><button type="button" class="ghost-btn ranking-admin-photo" data-photo="' + id + '" data-kind="fix">直しを見る</button><div id="rankingAdminImgfix' + id + '"></div>' : '';
         return '<div class="ranking-review-item"><div class="ranking-review-head">' + rankingReviewWhen_(r.ts) + '　' + escHtml(r.name) + '（' + escHtml(r.grade) + '・ID ' + escHtml(r.studentId) + '）' + (r.tierLabel ? '　' + escHtml(r.tierLabel) : '') + '</div>'
           + (r.feedbackAt ? '<div class="test-photo-hint">✅ 解説送信済み（書き直して送ると上書き）</div>' : '<div class="test-photo-hint">⏳ 解説まだ</div>')
           + fix
