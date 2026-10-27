@@ -2435,3 +2435,5 @@ h1 {
 .halloween-book-emoji { font-size: 1.8em; line-height: 1.2; }
 .halloween-book-name { font-size: .8em; font-weight: 700; }
 .halloween-book-count { font-size: .75em; color: #868e96; }
+
+#rankingTestResult { white-space: pre-wrap; }

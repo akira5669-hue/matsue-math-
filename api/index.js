@@ -16,7 +16,7 @@ const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
 const { handleSubmitTestPhoto } = require('../lib/handlers/testPhoto');
-const { handleRankingReviewStatus, handleRankingReviewExplImage, handleRankingFixSubmit, handleRankingReviewList, handleRankingReviewPhoto, handleRankingReviewFeedback, handleRankingFixReview } = require('../lib/handlers/rankingReview');
+const { handleRankingAutoExplain, handleRankingReviewStatus, handleRankingReviewExplImage, handleRankingFixSubmit, handleRankingReviewList, handleRankingReviewPhoto, handleRankingReviewFeedback, handleRankingFixReview } = require('../lib/handlers/rankingReview');
 const { handleTeamEventStatus } = require('../lib/handlers/teamEvent');
 const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRankingMonth, handleStudyCalendar } = require('../lib/handlers/studyReport');
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleEditReading, handleDistributeWisdomSeeds, handleReadingHallOfFame } = require('../lib/handlers/reading');
@@ -115,6 +115,7 @@ const ACTIONS = {
   weeklyQuizAnswer: handleWeeklyQuizAnswer,
   submitTestPhoto: handleSubmitTestPhoto,
   rankingReviewStatus: handleRankingReviewStatus,
+  rankingAutoExplain: handleRankingAutoExplain,
   rankingReviewExplImage: handleRankingReviewExplImage,
   rankingFixSubmit: handleRankingFixSubmit,
   rankingReviewList: handleRankingReviewList,

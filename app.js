@@ -29759,7 +29759,7 @@
     var isMiddle = grade.charAt(0) === '中';
     els.penaTestCardTitle.textContent = isMiddle ? '📝 抜き打ちテスト' : '📝 ペナテスト';
     els.penaTestCard.hidden = false;
-    els.rankingTestCard.hidden = !isMiddle;
+    els.rankingTestCard.hidden = !isMiddle && !isAdminSession_();
     // 証明の問題(9/19配布、中2限定)提出：9/26を過ぎたら画面ごと消す。
     els.proofTestCard.hidden = (grade !== '中2' && !isAdminSession_()) || todayKey() > PROOF_TEST_DEADLINE_;
     els.proofTestFileInput.value = '';
@@ -29775,7 +29775,7 @@
     rankingTestSubmitting = false;
     setRankingTestControlsDisabled(false);
     renderRankingTierButtons();
-    if (isMiddle) fetchRankingReviews_(); else els.rankingReviewBox.hidden = true;
+    if (isMiddle || isAdminSession_()) fetchRankingReviews_(); else els.rankingReviewBox.hidden = true;
     els.rankingAdminCard.hidden = !isAdminSession_();
     if (isAdminSession_()) els.rankingAdminList.innerHTML = '';
 
@@ -30146,6 +30146,20 @@
       els.rankingTestResult.textContent = res.pointsAwarded > 0
         ? ('✅ 送信完了！ +' + res.pointsAwarded + 'MP獲得しました！')
         : '✅ 送信完了しました！';
+      // AI解説を試している生徒(今は00001のみ)は、提出直後にAIが解説・弱点アドバイスを作る。
+      if (rankingAiExplainEnabled_ && res.photoId) {
+        els.rankingTestResult.textContent += '\n🤖 AIが解説とアドバイスを作っています…（1分ほどかかります）';
+        var resultLine = els.rankingTestResult.textContent;
+        apiPost('rankingAutoExplain', { id: session.id, photoId: res.photoId }).then(function (ai) {
+          els.rankingTestResult.textContent = resultLine.replace(/\n🤖.*$/, '') + (ai && ai.ok
+            ? '\n📬 解説とアドバイスが届きました！下で見てね。'
+            : '\n（AIの解説を作れませんでした：' + ((ai && ai.error) || 'error') + '）');
+          fetchRankingReviews_();
+        }).catch(function () {
+          els.rankingTestResult.textContent = resultLine.replace(/\n🤖.*$/, '') + '\n（AIの解説を作れませんでした）';
+          fetchRankingReviews_();
+        });
+      }
       fetchRankingReviews_();
     }).catch(function () {
       rankingTestSubmitting = false;
@@ -30170,16 +30184,18 @@
   }
 
   // 生徒用：自分の提出と先生からの解説・直しの状況。
+  var rankingAiExplainEnabled_ = false;
   function fetchRankingReviews_() {
     var session = loadSession();
     if (!session || !session.id) return;
     apiPost('rankingReviewStatus', { id: session.id }).then(function (res) {
+      if (res && res.ok) rankingAiExplainEnabled_ = !!res.aiExplain;
       if (!res || !res.ok || !res.reviews.length) { els.rankingReviewBox.hidden = true; return; }
       var fixMp = res.fixMp || 100;
       els.rankingReviewBox.hidden = false;
       els.rankingReviewList.innerHTML = res.reviews.map(function (r) {
         var html = '<div class="ranking-review-item"><div class="ranking-review-head">' + rankingReviewWhen_(r.ts) + ' 提出' + (r.tierLabel ? '（' + escHtml(r.tierLabel) + '）' : '') + '</div>';
-        if (!r.feedbackAt) return html + '<div class="test-photo-hint">⏳ 先生の解説を待っています。</div></div>';
+        if (!r.feedbackAt) return html + '<div class="test-photo-hint">⏳ 解説を待っています。</div></div>';
         html += rankingFeedbackHtml_(r);
         if (r.fixStatus === 'approved') html += '<div class="ranking-review-label">✅ 直しOK！ +' + r.fixMp + 'MP</div>';
         else if (r.fixStatus === 'pending') html += '<div class="ranking-review-label">⏳ 直しを送りました。先生の確認を待っています。</div>';
