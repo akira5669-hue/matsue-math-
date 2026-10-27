@@ -533,7 +533,8 @@
   }
 
   function stepToHtml(s) {
-    const parts = String(s).split(/(√?[\w]+\/√?[\w]+)/);
+    // 分母の単位の²・³(例: N/m²、g/cm³)も分母に入れて、mの右上に付くようにする。
+    const parts = String(s).split(/(√?[\w]+\/√?[\w]+[²³]?)/);
     return parts.map((part, i) => {
       if (i % 2 === 1) {
         const slash = part.indexOf('/');
