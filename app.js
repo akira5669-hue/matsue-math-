@@ -30190,7 +30190,8 @@
     if (!session || !session.id) return;
     apiPost('rankingReviewStatus', { id: session.id }).then(function (res) {
       if (res && res.ok) rankingAiExplainEnabled_ = !!res.aiExplain;
-      if (!res || !res.ok || !res.reviews.length) { els.rankingReviewBox.hidden = true; return; }
+      // 解説・アドバイス・直しの表示は、まだAI解説を試している生徒(今は00001のみ)にだけ出す。
+      if (!res || !res.ok || !res.aiExplain || !res.reviews.length) { els.rankingReviewBox.hidden = true; return; }
       var fixMp = res.fixMp || 100;
       els.rankingReviewBox.hidden = false;
       els.rankingReviewList.innerHTML = res.reviews.map(function (r) {
