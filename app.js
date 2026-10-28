@@ -23064,7 +23064,7 @@
     if (state.answered) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (!els.nextBtn.disabled) nextQuestion();
+        if (!els.nextBtn.disabled) { nextQuestion(); applyHalloweenPrank_(); }
       }
       return;
     }
@@ -29048,9 +29048,19 @@
     var banner = document.createElement('div');
     banner.className = 'halloween-banner';
     // お化けが出られた時だけ表示する(以前は先に「なにかが近づいてくる」を出して、出られないと消していたため、一瞬だけ文字が見えて怖がらせていた)。
+    // 通信に数秒かかることがあり、その間に「次の問題」を押していると、お化けが新しい問題の
+    // 答え欄に出てしまい、「次の問題」が灰色のまま(まだ答えていないので当然)なのに
+    // 結果画面に見えて、先に進めなくなったように見えていた(2026-10-28 生徒から報告)。
+    // 問題が変わっていたら、問題文の上に出して「この問題に答えてね」と書く。
+    var askedQ = state.current;
     apiPost('halloweenGhost', { id: session.id }).then(function (res) {
       if (!res || !res.ok) return;
-      els.feedback.appendChild(banner);
+      var late = state.current !== askedQ || !state.answered;
+      if (late && els.questionText && els.questionText.parentNode) {
+        els.questionText.parentNode.insertBefore(banner, els.questionText);
+      } else {
+        els.feedback.appendChild(banner);
+      }
       var g = halloweenGhostDef_(res.ghost);
       var html = '<div class="halloween-ghost-head">' + g.emoji + ' <b>' + g.name + '</b>が現れた！' + (res.isKing ? '<span class="halloween-rare">激レア！</span>' : '') + '</div>' +
         '<div class="halloween-ghost-line">「' + g.line + '」</div>';
@@ -29071,7 +29081,8 @@
       }
       if (res.isNew) html += '<div>📖 お化け図鑑に「' + g.name + '」が登録された！</div>';
       if (res.completeBonusMp) html += '<div class="halloween-rare">🎉 お化け図鑑コンプリート！ +' + res.completeBonusMp + 'MP！</div>';
-      banner.className = 'halloween-banner' + (res.isKing ? ' is-king' : '');
+      if (late) html += '<div><small>👇 下の問題に答えると、また「次の問題」に進めるよ</small></div>';
+      banner.className = 'halloween-banner' + (res.isKing ? ' is-king' : '') + (late ? ' is-late' : '');
       banner.innerHTML = html;
       state.points = res.newTotalPoints;
       state.hp = res.hp;
@@ -29090,6 +29101,10 @@
   // 「次の問題」を押した直後に呼ぶ。イタズラ中なら、この1問だけ問題文を逆さまにする。
   function applyHalloweenPrank_() {
     if (!els.questionText) return;
+    // 問題文の上に出した遅れて来たお化けは、次の問題に進んだら消す。
+    if (els.questionText.parentNode) {
+      Array.prototype.slice.call(els.questionText.parentNode.querySelectorAll('.halloween-banner.is-late')).forEach(function (b) { b.remove(); });
+    }
     if (halloweenPrankPending_) {
       halloweenPrankPending_ = false;
       els.questionText.classList.add('halloween-upside');
