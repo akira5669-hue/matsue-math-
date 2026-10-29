@@ -25789,13 +25789,9 @@
     if (!window.confirm(`${label}の宝箱を開けます（${label}の鍵を1個使います）。よろしいですか？`)) return;
 
     btn.disabled = true;
-    var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     var reward = TREASURE_CHEST_REWARD_[tier];
-    // 宝箱のMP報酬は(指輪の売却と違って)1日の上限100MP(計算50+文章題50)に
-    // 含める。今日まだ獲得できる分だけをmpGrantとしてサーバーに伝える。
-    var headroom = Math.max(0, (POINTS_DAILY_CAP_CALC + POINTS_DAILY_CAP_WORD) - (Number(state.pointsToday) || 0));
-    var mpGrant = Math.min(reward.mp, headroom);
+    // 宝箱のMP報酬は、1日の上限100MPとは関係なく全額もらえる(2026-10-29〜)。
+    var mpGrant = reward.mp;
     apiPost('openTreasureChest', { id: session.id, tier: tier, mpGrant: mpGrant }).then(function (res) {
       if (!res.ok) {
         var msg = res.error === 'no_key' ? `${label}の鍵がありません。`
@@ -25810,9 +25806,6 @@
       state.hp = res.hp;
       state.treasureItems = res.treasureItems;
       if (res.gemItems) state.gemItems = res.gemItems;
-      state.pointsToday = (Number(state.pointsToday) || 0) + granted;
-      state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + granted;
-      state.pointsDate = today;
       saveGameState(state);
       updateGameHud();
       renderShopList();
