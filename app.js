@@ -27927,8 +27927,13 @@
   function advanceFujiDescentIfReady_() {
     state.fujiDescentStation = Math.max(0, (Number(state.fujiDescentStation) || FUJI_DESCENT_TOP_STATION_) - 1);
     state.fujiDescentLegStreak = 0;
+    var legToday = todayKey();
+    if (state.pointsDate !== legToday) { state.pointsDate = legToday; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     state.points = (Number(state.points) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
     state.pointsToday = (Number(state.pointsToday) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
+    // ボーナス枠(1日の上限なし)として数える。以前はどの枠にも数えていなかったため、
+    // サーバーが増えた分として認めず、同期すると+20MPが消えていた(2026-10-29修正)。
+    state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
     // 区間クリアのたびに確実に保存・同期する(以前はローカル保存のみでサーバー
     // 同期まで保証していなかった)。
     saveGameState(state);
