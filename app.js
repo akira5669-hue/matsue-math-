@@ -20916,6 +20916,7 @@
     festivalBannerBtn: document.getElementById('festivalBannerBtn'),
     halloweenBanner: document.getElementById('halloweenBanner'),
     halloweenFixBanner: document.getElementById('halloweenFixBanner'),
+    chestMpFixBanner: document.getElementById('chestMpFixBanner'),
     treasureChestCapBanner: document.getElementById('treasureChestCapBanner'),
     treasureChestCapBannerText: document.getElementById('treasureChestCapBannerText'),
     halloweenAvatarBanner: document.getElementById('halloweenAvatarBanner'),
@@ -22145,6 +22146,8 @@
     if (els.worldBossChestBanner) els.worldBossChestBanner.hidden = true;
     // ハロウィンのお化けが出なくなる不具合を直したお知らせ(10/31まで)。
     if (els.halloweenFixBanner) els.halloweenFixBanner.hidden = todayKey() > '2026-10-31';
+    // 宝箱のMPが上限で減っていた不具合のおわびと鍵のプレゼントのお知らせ(11/5まで)。
+    if (els.chestMpFixBanner) els.chestMpFixBanner.hidden = todayKey() > '2026-11-05';
     renderTreasureChestCapBanner_();
     renderHalloweenAvatarBanner_();
     renderSaltConcentrationBanner_();
@@ -24742,6 +24745,24 @@
 
   // 管理者(ID 00001)がgrantItemsで付与予約したアイテム・レアキャラ図鑑を、
   // ログイン/再開時に受け取ってstateへ反映する。
+  // 先生がまとめて配った宝箱の鍵を足す(reconcilePointsより前に呼ぶので、増えた数がそのままサーバーへ同期される)。
+  function applyPendingKeys_(grant) {
+    var keys = (grant && grant.keys) || {};
+    state.treasureItems = state.treasureItems || {};
+    var names = [];
+    ['bronze', 'silver', 'gold', 'rainbow'].forEach(function (tier) {
+      var k = 'key' + tier[0].toUpperCase() + tier.slice(1);
+      var n = Math.max(0, Math.floor(Number(keys[k]) || 0));
+      if (!n) return;
+      state.treasureItems[k] = (Number(state.treasureItems[k]) || 0) + n;
+      names.push(TREASURE_TIER_LABEL_[tier] + 'の鍵' + (n > 1 ? '×' + n : ''));
+    });
+    if (!names.length) return;
+    saveGameState(state);
+    updateGameHud();
+    window.alert((grant.message ? grant.message + '\n\n' : '') + '🗝️ プレゼント：' + names.join('・'));
+  }
+
   function applyPendingItemGrants(itemIds) {
     var changed = false;
     var grantedNames = [];
@@ -31356,12 +31377,13 @@
   if (existingSession) {
     showApp(existingSession.name, !!existingSession.guest);
     if (existingSession.id) {
-      apiPost('getPoints', { id: existingSession.id }).then(function (res) {
+      apiPost('getPoints', { id: existingSession.id, keyGrantV1: true }).then(function (res) {
         if (res.ok) {
           photoAvatarConsent_ = !!res.photoAvatarConsent;
           var parsedAvatar = parseAvatarJson(res.avatar);
           if (parsedAvatar) { state.avatar = parsedAvatar; saveGameState(state); updateUserAvatarBadge(); }
           if (res.pendingItems && res.pendingItems.length > 0) applyPendingItemGrants(res.pendingItems);
+          if (res.pendingKeys) applyPendingKeys_(res.pendingKeys);
           if (res.apologyBonusAwarded > 0) { state.points += res.apologyBonusAwarded; saveGameState(state); }
           reconcilePoints(existingSession.id, res);
           if (res.pendingNotice) {
