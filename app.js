@@ -29524,7 +29524,8 @@
         : '1日1作品、<b>' + st.costMp + 'MP</b>か<b>' + st.costHp + 'HP</b>のどちらかを払って読めます（その日に' + (st.bonusAnswers || 100) + '問以上解いたら、特別にもう1作品を無料で）。一度読んだ作品は、次の日からも無料で読み直せます。';
     }
     els.mangaList.innerHTML = MANGA_LIST_.map(function (m) {
-      var unlocked = !!m.free || st.unlocked.indexOf(m.id) !== -1;
+      // 00001(先生)は全作品を無料で、1日何作品でも読める(確認用)。
+      var unlocked = !!m.free || isAdminSession_() || st.unlocked.indexOf(m.id) !== -1;
       var actions = unlocked
         ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="free">📖 読む</button>'
         : limitReached
