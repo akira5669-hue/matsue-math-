@@ -267,11 +267,12 @@
   // 立っている間、アプリを開くたびに毎回表示する(退会するまで=行が消えるまで続く)。
   var FORCE_WITHDRAW_NOTICE_TEXT_ = 'このアプリは、小4から中3の生徒さん限定のアプリです。お手数ですが、画面上の「退会」ボタンから退会手続きをお願いします。';
   var POINTS_DAILY_CAP = 100;
-  // 1日のMP上限を「計算問題(理科含む)」と「文章題」で別々の50MPずつに分ける
-  // (合計は今までと同じ100MPのまま)。計算問題は10問正解あたりのMPも
-  // 10→5MPに変更(学年より上の単元に挑戦したボーナスは20→10MPで、2倍の比率は維持)。
-  var POINTS_DAILY_CAP_CALC = 50;
-  var POINTS_DAILY_CAP_WORD = 50;
+  // 1日のMP上限は「計算問題40」「文章題40」「理科20」の3つの枠に分ける(2026-10-31〜。
+  // それまでは計算(理科含む)50・文章題50)。合計は今までと同じ100MP。
+  // lib/handlers/sync.jsのPOINTS_DAILY_CAP_*_SERVERと必ず揃えること。
+  var POINTS_DAILY_CAP_CALC = 40;
+  var POINTS_DAILY_CAP_WORD = 40;
+  var POINTS_DAILY_CAP_SCIENCE = 20;
   var EXP_PER_LEVEL = 10;
   var MAX_LEVEL = 99999;
 
@@ -391,7 +392,7 @@
       localStorage.setItem(GAME_KEY, JSON.stringify({
         points: s.points, level: s.level, exp: s.exp,
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
-        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, curseBonusToday: s.curseBonusToday, enemyIdx: s.enemyIdx,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayScience: s.pointsTodayScience, pointsTodayBonus: s.pointsTodayBonus, curseBonusToday: s.curseBonusToday, enemyIdx: s.enemyIdx,
         rareType: s.rareType, items: s.items, prefectureCount: s.prefectureCount, avatar: s.avatar,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
@@ -413,7 +414,7 @@
     if (sess && sess.id) {
       saveAccountProgress_(sess.id, {
         pointsToday: s.pointsToday, pointsDate: s.pointsDate,
-        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayBonus: s.pointsTodayBonus, curseBonusToday: s.curseBonusToday,
+        pointsTodayCalc: s.pointsTodayCalc, pointsTodayWord: s.pointsTodayWord, pointsTodayScience: s.pointsTodayScience, pointsTodayBonus: s.pointsTodayBonus, curseBonusToday: s.curseBonusToday,
         items: s.items, rareDefeats: s.rareDefeats, rareCollected: s.rareCollected,
         thinkerMilestone: s.thinkerMilestone,
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
@@ -20518,6 +20519,7 @@
     // pointsDateが変わったタイミングでpointsTodayと一緒にリセットする。
     pointsTodayCalc: (savedProgress && Number(savedProgress.pointsTodayCalc)) || (savedGame && Number(savedGame.pointsTodayCalc)) || 0,
     pointsTodayWord: (savedProgress && Number(savedProgress.pointsTodayWord)) || (savedGame && Number(savedGame.pointsTodayWord)) || 0,
+    pointsTodayScience: (savedProgress && Number(savedProgress.pointsTodayScience)) || (savedGame && Number(savedGame.pointsTodayScience)) || 0,
     // ダブル成功・今日のミッションなど、1日上限を経由しない加算の当日合計
     // (サーバー側でも保持し、複数端末で二重に加算されないようにする用)。
     pointsTodayBonus: (savedProgress && Number(savedProgress.pointsTodayBonus)) || (savedGame && Number(savedGame.pointsTodayBonus)) || 0,
@@ -21810,17 +21812,17 @@
       state.scienceStreak = (state.scienceStreak || 0) + 1;
       if (state.scienceStreak >= SCIENCE_STREAK_REQUIRED) {
         const today = todayKey();
-        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+        if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
         // 新単元「食塩水の濃度」のお披露目キャンペーン中、その単元の問題で5問連続
         // 正解を達成した場合はMP・経験値・HPが2倍になる。
         const isSaltConcentrationBonus = catId === 'saltConcentration1' && saltConcentrationBonusActive_();
         const scienceStreakMpThisWin_ = isSaltConcentrationBonus ? SCIENCE_STREAK_MP * 2 : SCIENCE_STREAK_MP;
         const scienceExpThisWin_ = isSaltConcentrationBonus ? SCIENCE_EXP_PER_STREAK * 2 : SCIENCE_EXP_PER_STREAK;
-        // 理科は文章題ではないので「計算問題」側の1日上限(50MP)を共有する。
-        const pointsToAdd = Math.max(0, Math.min(scienceStreakMpThisWin_, POINTS_DAILY_CAP_CALC - state.pointsTodayCalc));
+        // 理科は専用の1日上限(POINTS_DAILY_CAP_SCIENCE=20MP)を使う(2026-10-31〜)。
+        const pointsToAdd = Math.max(0, Math.min(scienceStreakMpThisWin_, POINTS_DAILY_CAP_SCIENCE - (Number(state.pointsTodayScience) || 0)));
         state.points += pointsToAdd;
         state.pointsToday += pointsToAdd;
-        state.pointsTodayCalc += pointsToAdd;
+        state.pointsTodayScience = (Number(state.pointsTodayScience) || 0) + pointsToAdd;
         state.scienceExp += scienceExpThisWin_;
         state.scienceStreak = 0;
         // シルバーウィーク理科サービスデイ(〜2026-09-24)：期間中は5問連続正解でHPも
@@ -22761,7 +22763,7 @@
       winHtml = finishWorldBossWin_(state.worldBossActiveStage, bossSubIndexForWin);
     } else if (isCorrect && state.streak >= requiredStreak) {
       const today = todayKey();
-      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
@@ -23262,7 +23264,7 @@
     }
     els.mpCapBanner.hidden = false;
     if (els.mpCapBannerText) {
-      els.mpCapBannerText.textContent = '📢 9月1日からのお知らせ：🔬理科は、10問連続正解ではなく5問連続正解ごとに+5MP（理科の経験値+5）がもらえるようになりました！ログイン時にもらえるMPも、1日最大100MP（計算50＋文章題50）の上限に含まれるようになりました（何度ログインし直しても増えません）。';
+      els.mpCapBannerText.textContent = '📢 9月1日からのお知らせ：🔬理科は、10問連続正解ではなく5問連続正解ごとに+5MP（理科の経験値+5）がもらえるようになりました！ログイン時にもらえるMPも、1日最大100MP（計算40＋文章題40＋理科20）の上限に含まれるようになりました（何度ログインし直しても増えません）。';
     }
   }
 
@@ -23713,7 +23715,7 @@
     // HPボーナスの1日1回判定用に既にあるhpLoginBonusDate(サーバー側で端末をまたいで
     // マージ済み)を、MPボーナスの判定にも流用する。
     var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     var alreadyClaimedLoginBonusToday = state.hpLoginBonusDate === today;
     var pointsToAdd = 0;
     var hpBonusAwarded = 0;
@@ -23812,6 +23814,7 @@
         state.pointsDate = progress.pointsDate || null;
         state.pointsTodayCalc = Number(progress.pointsTodayCalc) || 0;
         state.pointsTodayWord = Number(progress.pointsTodayWord) || 0;
+        state.pointsTodayScience = Number(progress.pointsTodayScience) || 0;
         state.pointsTodayBonus = Number(progress.pointsTodayBonus) || 0;
         state.curseBonusToday = Number(progress.curseBonusToday) || 0;
         state.items = Array.isArray(progress.items) ? progress.items.slice() : state.items;
@@ -23903,9 +23906,11 @@
         showApp(res.name, false);
       }
       if (res.pointsReset || res.hpReset) {
-        var resetWhat = res.pointsReset && res.hpReset ? 'HPとMP' : res.hpReset ? 'HP' : 'MP';
-        window.alert((res.pointsReset ? (res.inactiveMpResetDays || 10) : (res.inactiveHpResetDays || 5)) + '日以上ログインが無かったため、' + resetWhat + 'が0にリセットされました。レベル・EXPはそのまま残っています。'
-          + '\n（' + (res.inactiveHpResetDays || 5) + '日以上ログインしないとHPが0、' + (res.inactiveMpResetDays || 10) + '日以上ログインしないとMPが0になります）');
+        var hpTo = res.inactiveHpResetTo != null ? res.inactiveHpResetTo : 10;
+        var mpTo = res.inactiveMpResetTo != null ? res.inactiveMpResetTo : 100;
+        var resetWhat = res.pointsReset && res.hpReset ? 'HPが' + hpTo + '、MPが' + mpTo : res.hpReset ? 'HPが' + hpTo : 'MPが' + mpTo;
+        window.alert((res.pointsReset ? (res.inactiveMpResetDays || 8) : (res.inactiveHpResetDays || 5)) + '日以上ログインが無かったため、' + resetWhat + 'に下がりました。レベル・EXPはそのまま残っています。'
+          + '\n（' + (res.inactiveHpResetDays || 5) + '日以上ログインしないとHPが' + hpTo + '、' + (res.inactiveMpResetDays || 8) + '日以上ログインしないとMPが' + mpTo + 'に下がります）');
       }
       if (res.apologyBonusAwarded > 0) {
         window.alert(`🙇 お詫びとして+${res.apologyBonusAwarded}MPを付与しました！`);
@@ -23955,7 +23960,7 @@
       // (2026-09-07〜)。サーバー側はこれと自身の保持値のうち大きい方を採用して
       // マージするため、端末を複数使っても実際に加算されるMPの合計が上限を
       // 超えないようになる(詳しくはlib/handlers/sync.js参照)。
-      pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord,
+      pointsDate: state.pointsDate, pointsTodayCalc: state.pointsTodayCalc, pointsTodayWord: state.pointsTodayWord, pointsTodayScience: state.pointsTodayScience || 0,
       pointsTodayBonus: state.pointsTodayBonus,
       curseBonusToday: state.curseBonusToday,
       missionDate: state.missionDate, missionCorrect: state.missionCorrect, missionClaimed: state.missionClaimed,
@@ -24186,21 +24191,25 @@
       var localCalc = localTodayValid ? (Number(state.pointsTodayCalc) || 0) : 0;
       var localWord = localTodayValid ? (Number(state.pointsTodayWord) || 0) : 0;
       var localBonus = localTodayValid ? (Number(state.pointsTodayBonus) || 0) : 0;
+      var localScience = localTodayValid ? (Number(state.pointsTodayScience) || 0) : 0;
       var serverCalcD = serverTodayValid ? (Number(server.pointsTodayCalc) || 0) : 0;
       var serverWordD = serverTodayValid ? (Number(server.pointsTodayWord) || 0) : 0;
       var serverBonusD = serverTodayValid ? (Number(server.pointsTodayBonus) || 0) : 0;
+      var serverScienceD = serverTodayValid ? (Number(server.pointsTodayScience) || 0) : 0;
       var mergedCalc = Math.max(localCalc, serverCalcD);
       var mergedWord = Math.max(localWord, serverWordD);
       var mergedBonus = Math.max(localBonus, serverBonusD);
-      if (state.pointsDate !== todayNow || mergedCalc !== localCalc || mergedWord !== localWord || mergedBonus !== localBonus) {
+      var mergedScience = Math.max(localScience, serverScienceD);
+      if (state.pointsDate !== todayNow || mergedCalc !== localCalc || mergedWord !== localWord || mergedBonus !== localBonus || mergedScience !== localScience) {
         state.pointsDate = todayNow;
         state.pointsTodayCalc = mergedCalc;
         state.pointsTodayWord = mergedWord;
         state.pointsTodayBonus = mergedBonus;
-        state.pointsToday = mergedCalc + mergedWord + mergedBonus;
+        state.pointsTodayScience = mergedScience;
+        state.pointsToday = mergedCalc + mergedWord + mergedBonus + mergedScience;
         changed = true;
       }
-      dailyLocalAhead = localCalc > serverCalcD || localWord > serverWordD || localBonus > serverBonusD;
+      dailyLocalAhead = localCalc > serverCalcD || localWord > serverWordD || localBonus > serverBonusD || localScience > serverScienceD;
     }
     if (server.missionDate) {
       var todayNow2 = todayKey();
@@ -26729,7 +26738,7 @@
   function finishCapitalQuizBonus_() {
     var q = state.current;
     var today = todayKey();
-    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     var pointsToAdd = Math.max(0, Math.min(CAPITAL_QUIZ_BONUS_MP_, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
     state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + pointsToAdd;
     state.points += pointsToAdd;
@@ -27935,7 +27944,7 @@
     state.fujiDescentStation = Math.max(0, (Number(state.fujiDescentStation) || FUJI_DESCENT_TOP_STATION_) - 1);
     state.fujiDescentLegStreak = 0;
     var legToday = todayKey();
-    if (state.pointsDate !== legToday) { state.pointsDate = legToday; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+    if (state.pointsDate !== legToday) { state.pointsDate = legToday; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
     state.points = (Number(state.points) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
     state.pointsToday = (Number(state.pointsToday) || 0) + FUJI_DESCENT_LEG_MP_BONUS_;
     // ボーナス枠(1日の上限なし)として数える。以前はどの枠にも数えていなかったため、
@@ -30891,7 +30900,7 @@
       els.teamEventBannerText.textContent =
         `🤝 9月のチーム対抗経験値バトルは、${ev.startDate}からスタート予定！お楽しみに！\n` +
         `1チームおよそ30人で、期間中の経験値の上がり方を競います。最終的なチーム編成は開始直前に確定するので、新しく登録した人・最近また遊び始めた人もどこかのチームに入ります。\n` +
-        `📌 MPは1日最大100MP（計算50＋文章題50）までで、ログイン時にもらえるMPもこの上限に含まれます（何度もログインし直しても増えません）。`;
+        `📌 MPは1日最大100MP（計算40＋文章題40＋理科20）までで、ログイン時にもらえるMPもこの上限に含まれます（何度もログインし直しても増えません）。`;
       return;
     }
     if (!my) {
