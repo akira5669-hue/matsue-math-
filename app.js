@@ -29400,6 +29400,7 @@
   // 作品を増やすときは images/manga/ に画像を置いて、ここに1行足す(新しいものを上に)。
   // free: true の作品は無料公開。MP・HPを払わずに誰でも読めて、1日1作品の数にも入らない。
   var MANGA_LIST_ = [
+    { id: 'm025', title: 'テストあるある～裏面にもめっちゃ問題ある～', img: 'images/manga/m025.jpg' },
     { id: 'm024', title: '勉強あるある～結局やらないやつ～', img: 'images/manga/m024.jpg' },
     { id: 'm023', title: '中1 理科 光合成を知ろう', img: 'images/manga/m023v2.jpg', free: true },
     { id: 'm009', title: '中学理科 食塩水の濃度', img: 'images/manga/m009.jpg', free: true },
