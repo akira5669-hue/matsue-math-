@@ -212,6 +212,13 @@
       // 送信内容の不備)の分もキューから取り除く。以前はこれらがキューに残り続け、
       // 2分ごとに永久に再送(=DBアクセス)し続けてしまっていた。
       var dropBatch = res && (res.ok || LOG_QUEUE_DROP_ERRORS_[res.error]);
+      // 連続学習日数ボーナス(7日50MP/15日150MP/30日300MP)。サーバーがMPを足し済みなので、
+      // お知らせを出して最新のMPを取り込む。
+      if (res && res.ok && res.streakBonus && res.streakBonus.mp) {
+        var sb = res.streakBonus;
+        window.alert('🔥 ' + sb.days + '日連続で問題を解いたね！\n連続学習ボーナス +' + sb.mp + 'MP！');
+        syncPointsNow_(targetId);
+      }
       if (dropBatch) {
         var remaining = loadLogQueue_();
         remaining.splice(0, batch.length);
