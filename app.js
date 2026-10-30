@@ -23905,13 +23905,8 @@
       } else {
         showApp(res.name, false);
       }
-      if (res.pointsReset || res.hpReset) {
-        var hpTo = res.inactiveHpResetTo != null ? res.inactiveHpResetTo : 10;
-        var mpTo = res.inactiveMpResetTo != null ? res.inactiveMpResetTo : 100;
-        var resetWhat = res.pointsReset && res.hpReset ? 'HPが' + hpTo + '、MPが' + mpTo : res.hpReset ? 'HPが' + hpTo : 'MPが' + mpTo;
-        window.alert((res.pointsReset ? (res.inactiveMpResetDays || 8) : (res.inactiveHpResetDays || 5)) + '日以上ログインが無かったため、' + resetWhat + 'に下がりました。レベル・EXPはそのまま残っています。'
-          + '\n（' + (res.inactiveHpResetDays || 5) + '日以上ログインしないとHPが' + hpTo + '、' + (res.inactiveMpResetDays || 8) + '日以上ログインしないとMPが' + mpTo + 'に下がります）');
-      }
+      // ログインしない日が続いてHP・MPが下がった時(pointsReset/hpReset)は、授業で説明しているので
+      // アプリではお知らせを出さない(2026-10-31〜)。
       if (res.apologyBonusAwarded > 0) {
         window.alert(`🙇 お詫びとして+${res.apologyBonusAwarded}MPを付与しました！`);
       }
