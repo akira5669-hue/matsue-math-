@@ -23540,7 +23540,8 @@
   function renderHalloweenBanner_() {
     if (!els.halloweenBanner) return;
     var today = todayKey();
-    if (today > HALLOWEEN_END_) { els.halloweenBanner.hidden = true; return; }
+    // 2026-10-31夜に掲載終了(イベント自体は10/31までハロウィンボタンから遊べる)。
+    els.halloweenBanner.hidden = true; return;
     var during = today >= HALLOWEEN_START_;
     els.halloweenBanner.hidden = false;
     if (els.halloweenBannerText) {
