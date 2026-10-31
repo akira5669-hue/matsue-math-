@@ -22008,6 +22008,8 @@
   function updateGameHud() {
     renderForceBlockedGate_();
     if (els.halloweenToggle) els.halloweenToggle.hidden = !halloweenActive_();
+    // アンサー10は今は00001(管理者)だけに表示(試験公開)。
+    if (els.answer10Toggle) { els.answer10Toggle.hidden = !isAdminSession_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
