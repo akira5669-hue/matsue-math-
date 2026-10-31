@@ -22162,7 +22162,7 @@
     // 世界一周ボスの虹色の宝箱の告知は終了(2026-10-25)。特典自体は10月末まで続く。
     if (els.worldBossChestBanner) els.worldBossChestBanner.hidden = true;
     // ハロウィンのお化けが出なくなる不具合を直したお知らせ(10/31まで)。
-    if (els.halloweenFixBanner) els.halloweenFixBanner.hidden = todayKey() > '2026-10-31';
+    if (els.halloweenFixBanner) els.halloweenFixBanner.hidden = true; // 2026-10-31 掲載終了
     // 宝箱のMPが上限で減っていた不具合のおわびと鍵のプレゼントのお知らせ(11/5まで)。
     if (els.chestMpFixBanner) els.chestMpFixBanner.hidden = todayKey() > '2026-11-05';
     renderTreasureChestCapBanner_();
@@ -23473,7 +23473,7 @@
   }
 
   // ハロウィン用アバターの告知(10/31まで全生徒に表示)。アバター自体はその後もいつでも選べる。
-  var HALLOWEEN_AVATAR_NOTICE_END_ = '2026-10-31';
+  var HALLOWEEN_AVATAR_NOTICE_END_ = '2026-10-30'; // 2026-10-31 掲載終了
   function renderHalloweenAvatarBanner_() {
     if (!els.halloweenAvatarBanner) return;
     if (todayKey() > HALLOWEEN_AVATAR_NOTICE_END_) { els.halloweenAvatarBanner.hidden = true; return; }
