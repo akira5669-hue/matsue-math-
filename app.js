@@ -21173,6 +21173,12 @@
     weeklyQuizResult: document.getElementById('weeklyQuizResult'),
     bakuretsuQuizToggle: document.getElementById('bakuretsuQuizToggle'),
     bakuretsuQuizPanel: document.getElementById('bakuretsuQuizPanel'),
+    answer10Toggle: document.getElementById('answer10Toggle'),
+    answer10Panel: document.getElementById('answer10Panel'),
+    answer10Nums: document.getElementById('answer10Nums'),
+    answer10Expr: document.getElementById('answer10Expr'),
+    answer10Result: document.getElementById('answer10Result'),
+    answer10Next: document.getElementById('answer10Next'),
     bakuretsuQuizUnavailable: document.getElementById('bakuretsuQuizUnavailable'),
     bakuretsuQuizUnavailableText: document.getElementById('bakuretsuQuizUnavailableText'),
     bakuretsuQuizBody: document.getElementById('bakuretsuQuizBody'),
@@ -31362,6 +31368,167 @@
   els.weeklyQuizSpecialBannerBtn.addEventListener('click', toggleWeeklyQuiz);
   els.weeklyQuizConfirmYes.addEventListener('click', submitWeeklyQuizAnswer);
   els.weeklyQuizConfirmNo.addEventListener('click', cancelWeeklyQuizConfirm);
+  /* ---------- アンサー10(2026-10-31〜) ----------
+     4つの数字に＋−×÷と( )を入れて、答えを10にするゲーム。数字の順番は入れかえてOK、
+     4つとも1回ずつ使う。正解すると+2MP(計算問題の1日上限40MPに含む)。
+     問題は1〜9の数字4つをランダムに選び、10が作れる組み合わせだけを出す。 */
+  var ANSWER10_MP_ = 2;
+  var answer10_ = { nums: [], tokens: [], used: [], solved: false };
+
+  // 分数で正確に計算する([分子, 分母])。÷で割り切れない途中式も正しく扱うため。
+  function a10Gcd_(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
+  function a10Frac_(n, d) { if (d < 0) { n = -n; d = -d; } var g = a10Gcd_(n, d); return [n / g, d / g]; }
+  function a10Op_(x, y, op) {
+    if (op === '+') return a10Frac_(x[0] * y[1] + y[0] * x[1], x[1] * y[1]);
+    if (op === '-') return a10Frac_(x[0] * y[1] - y[0] * x[1], x[1] * y[1]);
+    if (op === '×') return a10Frac_(x[0] * y[0], x[1] * y[1]);
+    if (y[0] === 0) return null;
+    return a10Frac_(x[0] * y[1], x[1] * y[0]);
+  }
+  // 10が作れるなら、その式の一例を返す(作れなければnull)。
+  function a10Solve_(items) {
+    if (items.length === 1) return items[0].v[0] === 10 && items[0].v[1] === 1 ? items[0].s : null;
+    for (var i = 0; i < items.length; i++) {
+      for (var j = 0; j < items.length; j++) {
+        if (i === j) continue;
+        var rest = items.filter(function (_, k) { return k !== i && k !== j; });
+        var ops = ['+', '-', '×', '÷'];
+        for (var o = 0; o < ops.length; o++) {
+          var v = a10Op_(items[i].v, items[j].v, ops[o]);
+          if (!v) continue;
+          var r = a10Solve_(rest.concat([{ v: v, s: '(' + items[i].s + ops[o] + items[j].s + ')' }]));
+          if (r) return r;
+        }
+      }
+    }
+    return null;
+  }
+  function a10Example_(nums) {
+    var s = a10Solve_(nums.map(function (n) { return { v: [n, 1], s: String(n) }; }));
+    if (!s) return null;
+    return s.replace(/^\((.*)\)$/, '$1');
+  }
+  function a10NewPuzzle_() {
+    var nums;
+    for (var tries = 0; tries < 200; tries++) {
+      nums = [0, 0, 0, 0].map(function () { return 1 + Math.floor(Math.random() * 9); });
+      if (a10Example_(nums)) break;
+    }
+    answer10_ = { nums: nums, tokens: [], used: [false, false, false, false], solved: false };
+  }
+  // 入力した式を計算する。式として正しくなければnullを返す。
+  function a10Eval_(tokens) {
+    var pos = 0;
+    function peek() { return tokens[pos]; }
+    function expr() {
+      var v = term(); if (!v) return null;
+      while (peek() && (peek().t === '+' || peek().t === '-')) { var op = tokens[pos++].t; var r = term(); if (!r) return null; v = a10Op_(v, r, op); }
+      return v;
+    }
+    function term() {
+      var v = factor(); if (!v) return null;
+      while (peek() && (peek().t === '×' || peek().t === '÷')) { var op = tokens[pos++].t; var r = factor(); if (!r) return null; v = a10Op_(v, r, op); if (!v) return null; }
+      return v;
+    }
+    function factor() {
+      var tk = peek(); if (!tk) return null;
+      if (tk.t === '(') { pos++; var v = expr(); if (!v || !peek() || peek().t !== ')') return null; pos++; return v; }
+      if (tk.n != null) { pos++; return [tk.n, 1]; }
+      return null;
+    }
+    var v = expr();
+    return v && pos === tokens.length ? v : null;
+  }
+  function renderAnswer10_() {
+    if (!answer10_.nums.length) a10NewPuzzle_();
+    var a = answer10_;
+    els.answer10Nums.innerHTML = a.nums.map(function (n, i) {
+      return '<button type="button" class="answer10-num" data-a10-num="' + i + '"' + (a.used[i] || a.solved ? ' disabled' : '') + '>' + n + '</button>';
+    }).join('');
+    els.answer10Expr.textContent = a.tokens.length ? a.tokens.map(function (t) { return t.n != null ? t.n : t.t; }).join(' ') : '数字と記号をタップして式を作ろう';
+    els.answer10Expr.classList.toggle('is-empty', !a.tokens.length);
+    Array.prototype.forEach.call(els.answer10Panel.querySelectorAll('[data-a10-op], #answer10Back, #answer10Clear, #answer10Check, #answer10GiveUp'), function (b) { b.disabled = a.solved; });
+    els.answer10Next.hidden = !a.solved;
+  }
+  function onAnswer10Click_(e) {
+    var a = answer10_;
+    var numBtn = e.target.closest('[data-a10-num]');
+    var opBtn = e.target.closest('[data-a10-op]');
+    if (numBtn) {
+      var i = Number(numBtn.getAttribute('data-a10-num'));
+      if (a.used[i] || a.solved) return;
+      a.used[i] = true; a.tokens.push({ n: a.nums[i], idx: i });
+      els.answer10Result.innerHTML = '';
+    } else if (opBtn) {
+      if (a.solved) return;
+      a.tokens.push({ t: opBtn.getAttribute('data-a10-op') });
+      els.answer10Result.innerHTML = '';
+    } else if (e.target.closest('#answer10Back')) {
+      var last = a.tokens.pop();
+      if (last && last.idx != null) a.used[last.idx] = false;
+      els.answer10Result.innerHTML = '';
+    } else if (e.target.closest('#answer10Clear')) {
+      a.tokens = []; a.used = [false, false, false, false];
+      els.answer10Result.innerHTML = '';
+    } else if (e.target.closest('#answer10Check')) {
+      checkAnswer10_(); return;
+    } else if (e.target.closest('#answer10GiveUp')) {
+      a.solved = true;
+      els.answer10Result.innerHTML = '<div class="test-photo-hint">💡 答えの例：' + escHtml(a10Example_(a.nums) || '') + ' ＝ 10</div>';
+    } else if (e.target.closest('#answer10Next')) {
+      a10NewPuzzle_(); els.answer10Result.innerHTML = '';
+    } else {
+      return;
+    }
+    renderAnswer10_();
+  }
+  function checkAnswer10_() {
+    var a = answer10_;
+    if (a.used.indexOf(false) !== -1) { els.answer10Result.innerHTML = '<div class="test-photo-hint">4つの数字をぜんぶ1回ずつ使ってね。</div>'; return; }
+    var v = a10Eval_(a.tokens);
+    if (!v) { els.answer10Result.innerHTML = '<div class="test-photo-hint">式の形が正しくないみたい。記号や( )を見直してね。</div>'; return; }
+    if (!(v[0] === 10 && v[1] === 1)) {
+      var shown = v[1] === 1 ? String(v[0]) : v[0] + '/' + v[1];
+      els.answer10Result.innerHTML = '<div class="test-photo-hint">❌ 答えは ' + escHtml(shown) + ' になったよ。もう一度考えてみよう！</div>';
+      return;
+    }
+    a.solved = true;
+    var today = todayKey();
+    if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+    var pointsToAdd = Math.max(0, Math.min(ANSWER10_MP_, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
+    state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + pointsToAdd;
+    state.points += pointsToAdd;
+    state.pointsToday += pointsToAdd;
+    saveGameState(state);
+    updateGameHud();
+    var session = loadSession();
+    if (session && session.id) syncPointsNow_(session.id);
+    els.answer10Result.innerHTML = '<div class="win-banner">🎉 正解！10になった！' + (pointsToAdd > 0 ? ' +' + pointsToAdd + 'MP' : '（本日の計算のMP上限のためMPなし）') + '</div>';
+    renderAnswer10_();
+  }
+  function toggleAnswer10() {
+    var isHidden = els.answer10Panel.hasAttribute('hidden');
+    if (!isHidden) { els.answer10Panel.setAttribute('hidden', ''); return; }
+    // ほかの画面(パネル)はすべて閉じてから開く。
+    ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel',
+      'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+      var p = document.getElementById(pid);
+      if (p) p.setAttribute('hidden', '');
+    });
+    els.answer10Panel.removeAttribute('hidden');
+    renderAnswer10_();
+  }
+  if (els.answer10Toggle) {
+    els.answer10Toggle.addEventListener('click', toggleAnswer10);
+    els.answer10Panel.addEventListener('click', onAnswer10Click_);
+    // ほかのボタンで別の画面を開いたら、アンサー10は閉じる。
+    var answer10Bar_ = els.answer10Toggle.parentNode;
+    answer10Bar_.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== els.answer10Toggle) els.answer10Panel.setAttribute('hidden', '');
+    });
+  }
+
   if (els.bakuretsuQuizToggle) els.bakuretsuQuizToggle.addEventListener('click', toggleBakuretsuQuiz);
   if (els.teamEventToggle) els.teamEventToggle.addEventListener('click', toggleTeamEvent);
   if (els.teamEventBannerBtn) els.teamEventBannerBtn.addEventListener('click', toggleTeamEvent);

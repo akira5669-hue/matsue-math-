@@ -2437,3 +2437,14 @@ h1 {
 .halloween-book-count { font-size: .75em; color: #868e96; }
 
 #rankingTestResult { white-space: pre-wrap; }
+
+/* アンサー10 */
+.answer10-nums { display: flex; justify-content: center; gap: 12px; margin: 14px 0 10px; }
+.answer10-num { width: 64px; height: 64px; border-radius: 14px; border: 2px solid #f59e0b; background: #fff7e6; font-size: 2rem; font-weight: 800; color: #92400e; cursor: pointer; }
+.answer10-num:disabled { opacity: 0.3; cursor: default; }
+.answer10-expr { min-height: 52px; padding: 10px 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 1.6rem; font-weight: 700; text-align: center; letter-spacing: 0.04em; word-break: break-all; color: #0f172a; }
+.answer10-expr.is-empty { font-size: 0.95rem; font-weight: 400; color: #94a3b8; }
+.answer10-ops { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 12px 0; }
+.answer10-op { height: 52px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; font-size: 1.5rem; font-weight: 700; color: #1e293b; cursor: pointer; }
+.answer10-op:disabled { opacity: 0.4; cursor: default; }
+.answer10-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }

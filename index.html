@@ -204,6 +204,7 @@
       <div class="user-bar-actions">
         <button id="trainingToggle" class="ghost-btn is-new" type="button" hidden>🏋️特訓部屋<span class="new-badge">NEW</span></button>
         <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
+        <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button">🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
@@ -823,6 +824,31 @@
         <div class="test-photo-tier-row" id="bakuretsuQuizChoiceRow"></div>
       </div>
       <p class="test-photo-result" id="bakuretsuQuizResult"></p>
+    </section>
+
+    <section class="weekly-quiz-panel" id="answer10Panel" hidden>
+      <h3 class="history-title">🔟 アンサー10</h3>
+      <p class="test-photo-hint">4つの数字に「＋ − × ÷」と「( )」を入れて、答えを<b>10</b>にしよう！数字は4つとも1回ずつ使ってね（順番は入れかえてOK）。正解すると+2MP（計算問題の1日のMP上限に入るよ）。</p>
+      <div class="answer10-nums" id="answer10Nums"></div>
+      <div class="answer10-expr" id="answer10Expr"></div>
+      <div class="answer10-ops">
+        <button type="button" class="answer10-op" data-a10-op="+">＋</button>
+        <button type="button" class="answer10-op" data-a10-op="-">−</button>
+        <button type="button" class="answer10-op" data-a10-op="×">×</button>
+        <button type="button" class="answer10-op" data-a10-op="÷">÷</button>
+        <button type="button" class="answer10-op" data-a10-op="(">(</button>
+        <button type="button" class="answer10-op" data-a10-op=")">)</button>
+      </div>
+      <div class="answer10-actions">
+        <button type="button" class="ghost-btn" id="answer10Back">⌫ 1つ消す</button>
+        <button type="button" class="ghost-btn" id="answer10Clear">ぜんぶ消す</button>
+        <button type="button" class="primary-btn" id="answer10Check">答え合わせ</button>
+      </div>
+      <div class="answer10-actions">
+        <button type="button" class="ghost-btn" id="answer10GiveUp">ギブアップ（答えを見る）</button>
+        <button type="button" class="primary-btn" id="answer10Next" hidden>次の問題 ▶</button>
+      </div>
+      <div id="answer10Result"></div>
     </section>
 
     <section class="withdraw-panel" id="withdrawPanel" hidden>
