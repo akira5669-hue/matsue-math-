@@ -205,6 +205,7 @@
         <button id="trainingToggle" class="ghost-btn is-new" type="button" hidden>🏋️特訓部屋<span class="new-badge">NEW</span></button>
         <button id="superTrainingToggle" class="ghost-btn is-new" type="button" hidden>🔥超特訓部屋<span class="new-badge">NEW</span></button>
         <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
+        <button id="zukeiToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧊超絶！図形！トレーニング！！<span class="new-badge">NEW</span></button>
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
@@ -235,6 +236,11 @@
       <img class="training-banner-img" src="images/training-room.jpg" alt="特訓部屋" loading="lazy">
       <p class="mp-cap-banner-text" id="trainingBannerText"></p>
       <button type="button" class="ghost-btn" id="trainingBannerBtn" hidden>🏋️特訓部屋に入る</button>
+    </section>
+
+    <section class="mp-cap-banner eye-catch-frame" id="answer10Banner" hidden>
+      <p class="mp-cap-banner-text" id="answer10BannerText"></p>
+      <button type="button" class="ghost-btn" id="answer10BannerBtn" hidden>🔟アンサー10であそぶ</button>
     </section>
 
     <section class="mp-cap-banner eye-catch-frame" id="chestMpFixBanner" hidden>
@@ -825,6 +831,20 @@
         <div class="test-photo-tier-row" id="bakuretsuQuizChoiceRow"></div>
       </div>
       <p class="test-photo-result" id="bakuretsuQuizResult"></p>
+    </section>
+
+    <section class="weekly-quiz-panel" id="zukeiPanel" hidden>
+      <h3 class="history-title">🧊 超絶！図形！トレーニング！！</h3>
+      <p class="test-photo-hint">新！図形問題！キャンペーン！ 積み木・見え方・展開図・回転と裏返しの問題で、図形の力をきたえよう！正解すると+1MP（1日20MPまで。ふだんの1日100MPの上限とは別だよ）。まちがえても何も減らないよ。</p>
+      <p class="zukei-mp-info" id="zukeiMpInfo"></p>
+      <p class="zukei-q-title" id="zukeiQTitle"></p>
+      <p class="zukei-q-text" id="zukeiQText"></p>
+      <div class="zukei-figure" id="zukeiFigure"></div>
+      <div class="zukei-choices" id="zukeiChoices"></div>
+      <div id="zukeiResult"></div>
+      <div class="answer10-actions">
+        <button type="button" class="primary-btn" id="zukeiNext" hidden>次の問題 ▶</button>
+      </div>
     </section>
 
     <section class="weekly-quiz-panel" id="answer10Panel" hidden>

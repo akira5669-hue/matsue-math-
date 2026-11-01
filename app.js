@@ -21180,6 +21180,18 @@
     bakuretsuQuizToggle: document.getElementById('bakuretsuQuizToggle'),
     bakuretsuQuizPanel: document.getElementById('bakuretsuQuizPanel'),
     answer10Toggle: document.getElementById('answer10Toggle'),
+    answer10Banner: document.getElementById('answer10Banner'),
+    answer10BannerText: document.getElementById('answer10BannerText'),
+    answer10BannerBtn: document.getElementById('answer10BannerBtn'),
+    zukeiToggle: document.getElementById('zukeiToggle'),
+    zukeiPanel: document.getElementById('zukeiPanel'),
+    zukeiMpInfo: document.getElementById('zukeiMpInfo'),
+    zukeiQTitle: document.getElementById('zukeiQTitle'),
+    zukeiQText: document.getElementById('zukeiQText'),
+    zukeiFigure: document.getElementById('zukeiFigure'),
+    zukeiChoices: document.getElementById('zukeiChoices'),
+    zukeiResult: document.getElementById('zukeiResult'),
+    zukeiNext: document.getElementById('zukeiNext'),
     answer10Panel: document.getElementById('answer10Panel'),
     answer10Nums: document.getElementById('answer10Nums'),
     answer10Expr: document.getElementById('answer10Expr'),
@@ -22024,7 +22036,9 @@
     renderForceBlockedGate_();
     if (els.halloweenToggle) els.halloweenToggle.hidden = !halloweenActive_();
     // アンサー10は今は00001(管理者)だけに表示(試験公開)。
-    if (els.answer10Toggle) { els.answer10Toggle.hidden = !isAdminSession_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
+    if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
+    renderAnswer10Banner_();
+    if (els.zukeiToggle) { els.zukeiToggle.hidden = !zukeiVisible_(); if (els.zukeiToggle.hidden && els.zukeiPanel) els.zukeiPanel.setAttribute('hidden', ''); }
     renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
     const isFuji = !!state.fujiActive;
@@ -23568,6 +23582,23 @@
   }
 
   // 特訓部屋の告知(11/15まで全生徒に表示)。開始前は予告、期間中は入るボタン付き。
+  // アンサー10は2026-11-25(水)から全員に公開(それまでは00001だけ)。公開前は予告、公開後11/30までは「スタート！」の告知を出す。
+  var ANSWER10_START_ = '2026-11-25';
+  var ANSWER10_BANNER_END_ = '2026-11-30';
+  function answer10Visible_() { return isAdminSession_() || todayKey() >= ANSWER10_START_; }
+  function renderAnswer10Banner_() {
+    if (!els.answer10Banner) return;
+    var today = todayKey();
+    if (today > ANSWER10_BANNER_END_) { els.answer10Banner.hidden = true; return; }
+    var started = today >= ANSWER10_START_;
+    els.answer10Banner.hidden = false;
+    if (els.answer10BannerText) {
+      els.answer10BannerText.textContent = (started ? '🔟 新ゲーム「アンサー10」スタート！' : '🔟【予告】11月25日(水)から、新ゲーム「アンサー10」がスタート！')
+        + '4つの数字に「＋ − × ÷」と「( )」を入れて、答えを10にしよう！数字は4つとも1回ずつ使ってね（順番は入れかえてOK）。正解すると+2MP（計算問題の1日のMP上限に入るよ）。';
+    }
+    if (els.answer10BannerBtn) els.answer10BannerBtn.hidden = !started;
+  }
+
   function renderTrainingBanner_() {
     if (!els.trainingBanner) return;
     var today = todayKey();
@@ -31708,7 +31739,413 @@
     els.answer10Panel.removeAttribute('hidden');
     renderAnswer10_();
   }
+  /* ---------- 超絶！図形！トレーニング！！(新！図形問題！キャンペーン！ 2026-11-03〜) ----------
+     平面図形・空間図形の力をきたえる問題。問題は毎回この端末で作る(図はSVGで描く)。
+     ① 積み木の数(見えない下の段も数える) ② 見え方あて(上・正面・右から見た図)
+     ③ 展開図(立方体になるか／向かい合う面) ⑤ 回転・裏返し(同じ形はどれ？)
+     正解で+1MP(1日20MPまで、ふだんの1日100MPの上限とは別枠)。まちがえても何も減らない。
+     MPはサーバー(lib/handlers/zukei.js)で付ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
+  var ZUKEI_OPEN_ALL_ = false;
+  var ZUKEI_START_ = '2026-11-03';
+  var ZUKEI_DAILY_MP_CAP_ = 20;
+  var zukei_ = { q: null, answered: false, todayMp: 0, busy: false };
+  function zukeiVisible_() { return isAdminSession_() || (ZUKEI_OPEN_ALL_ && todayKey() >= ZUKEI_START_); }
+  function zukeiIsJunior_() {
+    var s = loadSession();
+    return (GRADE_RANK[s && s.grade] || 0) >= GRADE_RANK['中1'];
+  }
+  function zkShuffle_(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = randInt(0, i); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function zkSvg_(w, h, body, cls) { return '<svg class="' + (cls || 'zukei-svg') + '" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" xmlns="http://www.w3.org/2000/svg">' + body + '</svg>'; }
+
+  // ---- 積み木(①②)：横nx×奥ny のマスに、すき間なく積んだ高さの表 ----
+  var ZK_W_ = 22, ZK_H_ = 12, ZK_Z_ = 24;
+  function zkP_(x, y, z) { return [(x - y) * ZK_W_, (x + y) * ZK_H_ - z * ZK_Z_]; }
+  function zkPoly_(pts, fill) { return '<polygon points="' + pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="' + fill + '" stroke="#334155" stroke-width="1" stroke-linejoin="round"/>'; }
+  function zkCubeFaces_(x, y, z) {
+    return [
+      [zkP_(x, y, z + 1), zkP_(x + 1, y, z + 1), zkP_(x + 1, y + 1, z + 1), zkP_(x, y + 1, z + 1)],
+      [zkP_(x + 1, y, z), zkP_(x + 1, y + 1, z), zkP_(x + 1, y + 1, z + 1), zkP_(x + 1, y, z + 1)],
+      [zkP_(x, y + 1, z), zkP_(x + 1, y + 1, z), zkP_(x + 1, y + 1, z + 1), zkP_(x, y + 1, z + 1)]
+    ];
+  }
+  function zkInside_(pt, poly) {
+    // 辺の上や辺のすぐ近くは「かくれていない」とみなす(少しでも見えていればよい)。
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var a = poly[i], b = poly[j];
+      var dx = b[0] - a[0], dy = b[1] - a[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var dist = Math.abs(dy * (pt[0] - a[0]) - dx * (pt[1] - a[1])) / len;
+      var tt = ((pt[0] - a[0]) * dx + (pt[1] - a[1]) * dy) / (len * len);
+      if (dist < 1.5 && tt >= -0.05 && tt <= 1.05) return false;
+      if (((a[1] > pt[1]) !== (b[1] > pt[1])) && (pt[0] < (b[0] - a[0]) * (pt[1] - a[1]) / (b[1] - a[1]) + a[0])) inside = !inside;
+    }
+    return inside;
+  }
+  function zkCubes_(hm) {
+    var cubes = [];
+    for (var y = 0; y < hm.length; y++) for (var x = 0; x < hm[y].length; x++) for (var z = 0; z < hm[y][x]; z++) cubes.push([x, y, z]);
+    cubes.sort(function (a, b) { return (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]) || a[2] - b[2]; });
+    return cubes;
+  }
+  // どのマスも、いちばん上の面(何もないマスは床)が見えているか。見えないマスがあると答えが決まらないので作り直す。
+  function zkAllVisible_(hm) {
+    var cubes = zkCubes_(hm);
+    for (var y = 0; y < hm.length; y++) for (var x = 0; x < hm[y].length; x++) {
+      var h = hm[y][x];
+      var pt = zkP_(x + 0.5, y + 0.5, h);
+      var myKey = x + y + h - 1;
+      for (var i = 0; i < cubes.length; i++) {
+        var c = cubes[i];
+        if (c[0] === x && c[1] === y) continue;
+        if (h > 0 && (c[0] + c[1] + c[2]) < myKey) continue;
+        var faces = zkCubeFaces_(c[0], c[1], c[2]);
+        for (var f = 0; f < 3; f++) if (zkInside_(pt, faces[f])) return false;
+      }
+    }
+    return true;
+  }
+  function zkMakeHeights_(nx, ny, maxH, zeroRate) {
+    for (var t = 0; t < 400; t++) {
+      var hm = [];
+      for (var y = 0; y < ny; y++) { var row = []; for (var x = 0; x < nx; x++) row.push(Math.random() < zeroRate ? 0 : randInt(1, maxH)); hm.push(row); }
+      var total = hm.reduce(function (s, r) { return s + r.reduce(function (a, b) { return a + b; }, 0); }, 0);
+      if (total < 4) continue;
+      if (zkAllVisible_(hm)) return hm;
+    }
+    return [[1, 1], [1, 2]];
+  }
+  function zkBlocksSvg_(hm, withArrows) {
+    var ny = hm.length, nx = hm[0].length;
+    var cubes = zkCubes_(hm);
+    var body = '';
+    // 床(何も積んでいないマスも分かるように)
+    for (var y = 0; y < ny; y++) for (var x = 0; x < nx; x++) body += zkPoly_([zkP_(x, y, 0), zkP_(x + 1, y, 0), zkP_(x + 1, y + 1, 0), zkP_(x, y + 1, 0)], '#e2e8f0');
+    cubes.forEach(function (c) {
+      var f = zkCubeFaces_(c[0], c[1], c[2]);
+      body += zkPoly_(f[0], '#fde68a') + zkPoly_(f[1], '#60a5fa') + zkPoly_(f[2], '#93c5fd');
+    });
+    var pts = [];
+    for (var yy = 0; yy <= ny; yy++) for (var xx = 0; xx <= nx; xx++) { var top = 0; for (var k = 0; k < cubes.length; k++) top = Math.max(top, cubes[k][2] + 1); pts.push(zkP_(xx, yy, 0)); pts.push(zkP_(xx, yy, top)); }
+    if (withArrows) {
+      var a1 = zkP_(nx / 2, ny, 0), a2 = zkP_(nx, ny / 2, 0);
+      var o1 = [a1[0] - 34, a1[1] + 22], o2 = [a2[0] + 34, a2[1] + 22];
+      body += '<line x1="' + o1[0] + '" y1="' + o1[1] + '" x2="' + (a1[0] - 8) + '" y2="' + (a1[1] + 5) + '" stroke="#dc2626" stroke-width="2.5" marker-end="url(#zkArrow)"/>'
+        + '<text x="' + (o1[0] - 4) + '" y="' + (o1[1] + 16) + '" font-size="13" fill="#dc2626" font-weight="700" text-anchor="middle">正面</text>'
+        + '<line x1="' + o2[0] + '" y1="' + o2[1] + '" x2="' + (a2[0] + 8) + '" y2="' + (a2[1] + 5) + '" stroke="#16a34a" stroke-width="2.5" marker-end="url(#zkArrow2)"/>'
+        + '<text x="' + (o2[0] + 4) + '" y="' + (o2[1] + 16) + '" font-size="13" fill="#16a34a" font-weight="700" text-anchor="middle">右</text>';
+      pts.push([o1[0] - 30, o1[1] + 22]); pts.push([o2[0] + 30, o2[1] + 22]);
+    }
+    var minX = Math.min.apply(null, pts.map(function (p) { return p[0]; })) - 6, maxX = Math.max.apply(null, pts.map(function (p) { return p[0]; })) + 6;
+    var minY = Math.min.apply(null, pts.map(function (p) { return p[1]; })) - 6, maxY = Math.max.apply(null, pts.map(function (p) { return p[1]; })) + 6;
+    var defs = '<defs><marker id="zkArrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#dc2626"/></marker>'
+      + '<marker id="zkArrow2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#16a34a"/></marker></defs>';
+    var w = maxX - minX, h = maxY - minY;
+    return '<svg class="zukei-svg" viewBox="' + minX.toFixed(0) + ' ' + minY.toFixed(0) + ' ' + w.toFixed(0) + ' ' + h.toFixed(0) + '" width="' + Math.min(320, w * 1.3).toFixed(0) + '" xmlns="http://www.w3.org/2000/svg">' + defs + body + '</svg>';
+  }
+  // 見え方：rows×colsの0/1の表(0行目が上)
+  function zkViewTop_(hm) { return hm.map(function (r) { return r.map(function (h) { return h > 0 ? 1 : 0; }); }); }
+  function zkColsToGrid_(cols, H) {
+    var g = [];
+    for (var r = 0; r < H; r++) g.push(cols.map(function (h) { return r >= H - h ? 1 : 0; }));
+    return g;
+  }
+  function zkViewFront_(hm, H) {
+    var nx = hm[0].length, cols = [];
+    for (var x = 0; x < nx; x++) cols.push(Math.max.apply(null, hm.map(function (r) { return r[x]; })));
+    return zkColsToGrid_(cols, H);
+  }
+  function zkViewRight_(hm, H) {
+    var cols = [];
+    for (var y = hm.length - 1; y >= 0; y--) cols.push(Math.max.apply(null, hm[y]));
+    return zkColsToGrid_(cols, H);
+  }
+  function zkGridKey_(g) { return g.map(function (r) { return r.join(''); }).join('/'); }
+  function zkGridSvg_(g, label) {
+    var s = 20, rows = g.length, cols = g[0].length, body = '';
+    for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+      body += '<rect x="' + (c * s + 2) + '" y="' + (r * s + 2) + '" width="' + s + '" height="' + s + '" fill="' + (g[r][c] ? '#60a5fa' : '#ffffff') + '" stroke="' + (g[r][c] ? '#1e3a8a' : '#e2e8f0') + '" stroke-width="1"/>';
+    }
+    var h = rows * s + 4 + (label ? 16 : 0);
+    if (label) body += '<text x="' + (cols * s / 2 + 2) + '" y="' + (rows * s + 17) + '" font-size="11" fill="#dc2626" text-anchor="middle">▼' + label + '</text>';
+    return zkSvg_(cols * s + 4, h, body, 'zukei-svg zukei-choice-svg');
+  }
+  function zkMutateGrid_(g, keepBottom) {
+    var n = g.map(function (r) { return r.slice(); });
+    var rows = n.length, cols = n[0].length;
+    if (keepBottom) {
+      // 縦の柱の形のまま、1列の高さを1つ変える
+      var heights = [];
+      for (var c = 0; c < cols; c++) { var h = 0; for (var r = 0; r < rows; r++) if (n[r][c]) h++; heights.push(h); }
+      var ci = randInt(0, cols - 1);
+      var nh = heights[ci] + (heights[ci] >= rows ? -1 : heights[ci] <= 1 ? 1 : (Math.random() < 0.5 ? -1 : 1));
+      heights[ci] = Math.max(1, Math.min(rows, nh));
+      return zkColsToGrid_(heights, rows);
+    }
+    var rr = randInt(0, rows - 1), cc = randInt(0, cols - 1);
+    n[rr][cc] = n[rr][cc] ? 0 : 1;
+    return n;
+  }
+
+  function zkMakeCountQ_() {
+    var jr = zukeiIsJunior_();
+    var hm = zkMakeHeights_(jr ? randInt(3, 4) : 3, jr ? 3 : randInt(2, 3), jr ? 4 : 3, 0.15);
+    var ans = hm.reduce(function (s, r) { return s + r.reduce(function (a, b) { return a + b; }, 0); }, 0);
+    var set = [ans];
+    [-2, -1, 1, 2, 3, -3].forEach(function (d) { if (set.length < 4 && ans + d > 0 && Math.random() < 0.8) set.push(ans + d); });
+    for (var d = 4; set.length < 4; d++) set.push(ans + d);
+    var choices = zkShuffle_(set).map(function (v) { return { html: v + '個', ok: v === ans }; });
+    var colsText = hm.map(function (r) { return r.join('＋'); }).join('＋');
+    return {
+      title: '① 積み木の数',
+      text: '積み木はいくつある？（すき間なく積んであって、浮いている積み木はないよ。見えない下の段も数えよう）',
+      figure: zkBlocksSvg_(hm, false),
+      choices: choices,
+      explain: 'それぞれのマスに積んである数を足すと、' + colsText + '＝' + ans + '個。'
+    };
+  }
+  function zkMakeViewQ_() {
+    for (var tries = 0; tries < 30; tries++) { var q = zkMakeViewQ1_(); if (q && q.choices.length >= 3) return q; }
+    return zkMakeCountQ_();
+  }
+  function zkMakeViewQ1_() {
+    var jr = zukeiIsJunior_();
+    var hm = zkMakeHeights_(3, jr ? 3 : randInt(2, 3), jr ? 3 : 3, 0.25);
+    var H = Math.max.apply(null, hm.map(function (r) { return Math.max.apply(null, r); }));
+    var kind = ['top', 'front', 'right'][randInt(0, 2)];
+    var views = { top: zkViewTop_(hm), front: zkViewFront_(hm, H), right: zkViewRight_(hm, H) };
+    var correct = views[kind];
+    var cand = [];
+    var sameShape = function (g) { return g.length === correct.length && g[0].length === correct[0].length; };
+    ['top', 'front', 'right'].forEach(function (k) { if (k !== kind && sameShape(views[k])) cand.push(views[k]); });
+    cand.push(correct.map(function (r) { return r.slice().reverse(); }));
+    if (kind === 'top') cand.push(correct.slice().reverse());
+    for (var i = 0; i < 12; i++) cand.push(zkMutateGrid_(correct, kind !== 'top'));
+    var keys = {}; keys[zkGridKey_(correct)] = true;
+    var picked = [];
+    zkShuffle_(cand.slice(0, cand.length - 12)).concat(cand.slice(cand.length - 12)).forEach(function (g) {
+      var k = zkGridKey_(g);
+      if (picked.length < 3 && !keys[k] && g.some(function (r) { return r.indexOf(1) !== -1; })) { keys[k] = true; picked.push(g); }
+    });
+    var label = kind === 'top' ? '正面' : '';
+    var choices = zkShuffle_([{ g: correct, ok: true }].concat(picked.map(function (g) { return { g: g, ok: false }; }))).map(function (c) {
+      return { html: zkGridSvg_(c.g, label), ok: c.ok };
+    });
+    var name = { top: '真上', front: '正面（赤い矢印）', right: '右（緑の矢印）' }[kind];
+    return {
+      title: '② 見え方あて',
+      text: 'この積み木を' + name + 'から見ると、どう見える？' + (kind === 'top' ? '（下が正面の側だよ）' : ''),
+      figure: zkBlocksSvg_(hm, true),
+      choices: choices,
+      explain: kind === 'top' ? '真上から見ると、積み木が1個でもあるマスが見えるよ。' : '横から見ると、その方向に並んだ列の中でいちばん高い積み木の高さが見えるよ。'
+    };
+  }
+
+  // ---- 展開図(③)：6マスの形を、さいころを転がすように組み立てる ----
+  function zkRoll_(st, dir) {
+    if (dir === 'E') return { b: st.e, t: st.w, e: st.t, w: st.b, n: st.n, s: st.s };
+    if (dir === 'W') return { b: st.w, t: st.e, w: st.t, e: st.b, n: st.n, s: st.s };
+    if (dir === 'S') return { b: st.s, t: st.n, s: st.t, n: st.b, e: st.e, w: st.w };
+    return { b: st.n, t: st.s, n: st.t, s: st.b, e: st.e, w: st.w };
+  }
+  // cells: [[c,r],...] → 各マスが立方体のどの面(0〜5)になるか。0と1、2と3、4と5が向かい合う面。
+  function zkFold_(cells) {
+    var key = function (c, r) { return c + ',' + r; };
+    var has = {}; cells.forEach(function (p) { has[key(p[0], p[1])] = true; });
+    var face = {}; face[key(cells[0][0], cells[0][1])] = 0;
+    var queue = [[cells[0][0], cells[0][1], { b: 0, t: 1, n: 2, s: 3, e: 4, w: 5 }]];
+    var dirs = [['E', 1, 0], ['W', -1, 0], ['S', 0, 1], ['N', 0, -1]];
+    while (queue.length) {
+      var cur = queue.shift();
+      dirs.forEach(function (d) {
+        var nc = cur[0] + d[1], nr = cur[1] + d[2], k = key(nc, nr);
+        if (!has[k] || face[k] !== undefined) return;
+        var st = zkRoll_(cur[2], d[0]);
+        face[k] = st.b;
+        queue.push([nc, nr, st]);
+      });
+    }
+    return cells.map(function (p) { return face[key(p[0], p[1])]; });
+  }
+  function zkIsNet_(cells) {
+    var f = zkFold_(cells);
+    return f.every(function (v) { return v !== undefined; }) && new Set(f).size === 6;
+  }
+  function zkRandomPolyomino_(n) {
+    var cells = [[0, 0]], has = { '0,0': true };
+    while (cells.length < n) {
+      var p = cells[randInt(0, cells.length - 1)];
+      var d = [[1, 0], [-1, 0], [0, 1], [0, -1]][randInt(0, 3)];
+      var c = p[0] + d[0], r = p[1] + d[1];
+      if (has[c + ',' + r]) continue;
+      has[c + ',' + r] = true; cells.push([c, r]);
+    }
+    return zkNormalize_(cells);
+  }
+  function zkNormalize_(cells) {
+    var minC = Math.min.apply(null, cells.map(function (p) { return p[0]; })), minR = Math.min.apply(null, cells.map(function (p) { return p[1]; }));
+    return cells.map(function (p) { return [p[0] - minC, p[1] - minR]; }).sort(function (a, b) { return a[1] - b[1] || a[0] - b[0]; });
+  }
+  function zkCellsKey_(cells) { return zkNormalize_(cells).map(function (p) { return p.join(','); }).join(';'); }
+  function zkRotate_(cells) { return zkNormalize_(cells.map(function (p) { return [-p[1], p[0]]; })); }
+  function zkMirror_(cells) { return zkNormalize_(cells.map(function (p) { return [-p[0], p[1]]; })); }
+  function zkCellsSvg_(cells, opt) {
+    opt = opt || {};
+    var s = opt.size || 30;
+    var cols = Math.max.apply(null, cells.map(function (p) { return p[0]; })) + 1, rows = Math.max.apply(null, cells.map(function (p) { return p[1]; })) + 1;
+    var body = '';
+    cells.forEach(function (p, i) {
+      var fill = opt.mark === i ? '#f87171' : (opt.fill || '#fde68a');
+      body += '<rect x="' + (p[0] * s + 2) + '" y="' + (p[1] * s + 2) + '" width="' + s + '" height="' + s + '" fill="' + fill + '" stroke="#334155" stroke-width="1.5"/>';
+      if (opt.labels) body += '<text x="' + (p[0] * s + 2 + s / 2) + '" y="' + (p[1] * s + 2 + s / 2 + 6) + '" font-size="' + Math.round(s * 0.5) + '" text-anchor="middle" fill="#0f172a" font-weight="700">' + opt.labels[i] + '</text>';
+    });
+    return zkSvg_(cols * s + 4, rows * s + 4, body, opt.cls || 'zukei-svg');
+  }
+  function zkMakeNetQ_() {
+    var cells;
+    var askOpposite = Math.random() < 0.5;
+    var wantNet = askOpposite || Math.random() < 0.5;
+    for (var t = 0; t < 2000; t++) {
+      cells = zkRandomPolyomino_(6);
+      if (zkIsNet_(cells) === wantNet) break;
+    }
+    if (Math.random() < 0.5) cells = zkMirror_(cells);
+    var isNet = zkIsNet_(cells);
+    if (!askOpposite) {
+      return {
+        title: '③ 展開図',
+        text: 'この図を折り曲げて組み立てると、立方体（さいころの形）になる？',
+        figure: zkCellsSvg_(cells, { size: 34 }),
+        choices: [{ html: 'なる', ok: isNet }, { html: 'ならない', ok: !isNet }],
+        explain: isNet ? '組み立てると6つの面がぴったり重ならずに、立方体になるよ。' : '組み立てると面が重なってしまい、立方体にはならないよ。'
+      };
+    }
+    var faces = zkFold_(cells);
+    var labels = zkShuffle_(['ア', 'イ', 'ウ', 'エ', 'オ', 'カ']);
+    var mark = randInt(0, 5);
+    var opp = faces[mark] ^ 1;
+    var ansIdx = faces.indexOf(opp);
+    var choices = [];
+    for (var i = 0; i < 6; i++) if (i !== mark) choices.push({ html: labels[i], ok: i === ansIdx, order: labels[i] });
+    choices.sort(function (a, b) { return a.order < b.order ? -1 : 1; });
+    return {
+      title: '③ 展開図',
+      text: 'この展開図を組み立てて立方体にしたとき、赤い面（' + labels[mark] + '）と向かい合う面はどれ？',
+      figure: zkCellsSvg_(cells, { size: 38, labels: labels, mark: mark }),
+      choices: choices,
+      explain: '赤い面（' + labels[mark] + '）と向かい合うのは「' + labels[ansIdx] + '」。展開図では、1マスとばした面どうしが向かい合うことが多いよ。'
+    };
+  }
+
+  // ---- 回転・裏返し(⑤) ----
+  function zkMakeTurnQ_() {
+    var n = zukeiIsJunior_() ? 6 : 5;
+    var cells;
+    for (var t = 0; t < 500; t++) {
+      cells = zkRandomPolyomino_(n);
+      var rots = [cells, zkRotate_(cells)]; rots.push(zkRotate_(rots[1])); rots.push(zkRotate_(rots[2]));
+      var rk = rots.map(zkCellsKey_);
+      var m = zkMirror_(cells), mk = [m, zkRotate_(m), zkRotate_(zkRotate_(m)), zkRotate_(zkRotate_(zkRotate_(m)))].map(zkCellsKey_);
+      // 4つの向きが全部ちがい、裏返すと回しても重ならない形だけ使う(答えが1つに決まるように)
+      if (new Set(rk).size === 4 && mk.every(function (k) { return rk.indexOf(k) === -1; })) break;
+    }
+    var rotateN = function (c, k) { for (var i = 0; i < k; i++) c = zkRotate_(c); return c; };
+    var flip = Math.random() < 0.5;
+    var mir = zkMirror_(cells);
+    var right = flip ? rotateN(mir, randInt(0, 3)) : rotateN(cells, randInt(1, 3));
+    var wrongBase = flip ? cells : mir;
+    var wrongs = zkShuffle_([0, 1, 2, 3]).slice(0, 3).map(function (k) { return rotateN(wrongBase, k); });
+    var choices = zkShuffle_([{ c: right, ok: true }].concat(wrongs.map(function (c) { return { c: c, ok: false }; }))).map(function (o) {
+      return { html: zkCellsSvg_(o.c, { size: 18, fill: '#93c5fd', cls: 'zukei-svg zukei-choice-svg' }), ok: o.ok };
+    });
+    return {
+      title: '⑤ 回転・裏返し',
+      text: flip ? 'この形を<b>裏返した</b>形はどれ？（裏返したあと、回してもいいよ）' : 'この形を<b>回して</b>（裏返さずに）できる形はどれ？',
+      figure: zkCellsSvg_(cells, { size: 28 }),
+      choices: choices,
+      explain: flip ? 'ほかの3つは、裏返さずに回しただけの形だよ。' : 'ほかの3つは、裏返した形を回したものだよ。回すだけでは重ならないね。'
+    };
+  }
+
+  function zkNewQuestion_() {
+    var makers = [zkMakeCountQ_, zkMakeViewQ_, zkMakeNetQ_, zkMakeTurnQ_];
+    zukei_.q = makers[randInt(0, makers.length - 1)]();
+    zukei_.answered = false;
+  }
+  function renderZukei_() {
+    if (!zukei_.q) zkNewQuestion_();
+    var q = zukei_.q;
+    els.zukeiMpInfo.textContent = '今日の図形MP ' + zukei_.todayMp + '／' + ZUKEI_DAILY_MP_CAP_ + '（ふだんの100MPとは別）';
+    els.zukeiQTitle.textContent = q.title;
+    els.zukeiQText.innerHTML = q.text;
+    els.zukeiFigure.innerHTML = q.figure;
+    els.zukeiChoices.innerHTML = q.choices.map(function (c, i) {
+      var cls = 'zukei-choice' + (zukei_.answered ? (c.ok ? ' is-correct' : (zukei_.picked === i ? ' is-incorrect' : '')) : '');
+      return '<button type="button" class="' + cls + '" data-zk-choice="' + i + '"' + (zukei_.answered ? ' disabled' : '') + '>' + c.html + '</button>';
+    }).join('');
+    els.zukeiNext.hidden = !zukei_.answered;
+  }
+  function onZukeiChoice_(i) {
+    if (zukei_.answered || zukei_.busy) return;
+    var q = zukei_.q;
+    zukei_.answered = true;
+    zukei_.picked = i;
+    var ok = !!q.choices[i].ok;
+    renderZukei_();
+    if (!ok) {
+      els.zukeiResult.innerHTML = '<div class="test-photo-hint">❌ ざんねん！ 緑の答えが正解だよ。<br>' + q.explain + '</div>';
+      return;
+    }
+    els.zukeiResult.innerHTML = '<div class="win-banner">⭕ 正解！</div><div class="test-photo-hint">' + q.explain + '</div>';
+    var session = loadSession();
+    if (!session || !session.id) return;
+    zukei_.busy = true;
+    apiPost('zukeiReward', { id: session.id }).then(function (res) {
+      zukei_.busy = false;
+      if (!res || !res.ok) return;
+      zukei_.todayMp = Number(res.todayMp) || 0;
+      if (res.granted > 0 && res.newTotalPoints != null) {
+        state.points = res.newTotalPoints;
+        saveGameState(state);
+        updateGameHud();
+      }
+      els.zukeiResult.innerHTML = '<div class="win-banner">⭕ 正解！' + (res.granted > 0 ? ' +1MP' : '（今日の図形MPは' + ZUKEI_DAILY_MP_CAP_ + 'に達したのでMPなし）') + '</div><div class="test-photo-hint">' + q.explain + '</div>';
+      renderZukei_();
+    }).catch(function () { zukei_.busy = false; });
+  }
+  function toggleZukei() {
+    var isHidden = els.zukeiPanel.hasAttribute('hidden');
+    if (!isHidden) { els.zukeiPanel.setAttribute('hidden', ''); return; }
+    ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel',
+      'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+      var p = document.getElementById(pid);
+      if (p) p.setAttribute('hidden', '');
+    });
+    els.zukeiPanel.removeAttribute('hidden');
+    els.zukeiResult.innerHTML = '';
+    renderZukei_();
+    var session = loadSession();
+    if (session && session.id) {
+      apiPost('zukeiStatus', { id: session.id }).then(function (res) {
+        if (res && res.ok) { zukei_.todayMp = Number(res.todayMp) || 0; renderZukei_(); }
+      }).catch(function () {});
+    }
+  }
+  if (els.zukeiToggle) {
+    els.zukeiToggle.addEventListener('click', toggleZukei);
+    els.zukeiPanel.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-zk-choice]');
+      if (b) { onZukeiChoice_(Number(b.getAttribute('data-zk-choice'))); return; }
+      if (e.target.closest('#zukeiNext')) { zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_(); }
+    });
+    // ほかのボタンで別の画面を開いたら、図形トレーニングは閉じる。
+    els.zukeiToggle.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== els.zukeiToggle) els.zukeiPanel.setAttribute('hidden', '');
+    });
+  }
+
   if (els.answer10Toggle) {
+    if (els.answer10BannerBtn) els.answer10BannerBtn.addEventListener('click', function () { if (els.answer10Panel.hasAttribute('hidden')) toggleAnswer10(); els.answer10Panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     els.answer10Toggle.addEventListener('click', toggleAnswer10);
     els.answer10Panel.addEventListener('click', onAnswer10Click_);
     // ほかのボタンで別の画面を開いたら、アンサー10は閉じる。

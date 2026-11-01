@@ -2448,3 +2448,16 @@ h1 {
 .answer10-op { height: 52px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; font-size: 1.5rem; font-weight: 700; color: #1e293b; cursor: pointer; }
 .answer10-op:disabled { opacity: 0.4; cursor: default; }
 .answer10-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }
+
+/* 超絶！図形！トレーニング！！ */
+.zukei-mp-info { text-align: right; font-size: 0.85rem; color: #475569; margin: 4px 0; }
+.zukei-q-title { font-weight: 800; color: #1d4ed8; margin: 8px 0 2px; }
+.zukei-q-text { font-size: 1.05rem; margin: 2px 0 8px; }
+.zukei-figure { display: flex; justify-content: center; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; }
+.zukei-svg { max-width: 100%; height: auto; }
+.zukei-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0; }
+.zukei-choice { min-height: 56px; padding: 8px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; font-size: 1.3rem; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.zukei-choice:disabled { cursor: default; }
+.zukei-choice.is-correct { border-color: #16a34a; background: #dcfce7; }
+.zukei-choice.is-incorrect { border-color: #dc2626; background: #fee2e2; }
+.zukei-choice-svg { max-width: 100%; height: auto; }
