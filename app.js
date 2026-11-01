@@ -28312,16 +28312,30 @@
     renderShopList();
     renderItems();
   }
+  // 売却はサーバーで個数を減らしてMPを足す(端末で足すとsyncで切り捨てられるため。2026-11-01)。
+  var sellWisdomFruitClick_Busy_ = false;
   function sellWisdomFruitClick_() {
-    if ((Number(state.wisdomFruitCount) || 0) <= 0) return;
-    state.wisdomFruitCount = (Number(state.wisdomFruitCount) || 0) - 1;
-    state.points = (Number(state.points) || 0) + WISDOM_FRUIT_SELL_MP_;
-    saveGameState(state);
+    if ((Number(state.wisdomFruitCount) || 0) <= 0 || sellWisdomFruitClick_Busy_) return;
     var session = loadSession();
-    if (session && session.id) syncPointsNow_(session.id);
-    updateGameHud();
-    renderShopList();
-    renderItems();
+    if (!session || !session.id) return;
+    sellWisdomFruitClick_Busy_ = true;
+    apiPost('sellWisdomFruit', { id: session.id }).then(function (res) {
+      sellWisdomFruitClick_Busy_ = false;
+      if (!res.ok) {
+        if (res.error === 'no_item') { state.wisdomFruitCount = 0; saveGameState(state); renderShopList(); renderItems(); }
+        window.alert(res.error === 'no_item' ? '賢さの実を持っていません。' : '売却に失敗しました。もう一度お試しください。');
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.wisdomFruitCount = res.count;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+    }).catch(function () {
+      sellWisdomFruitClick_Busy_ = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
   }
 
   // 努力の種：購入不可(勉強時間ランキングの日間・月間上位者への配布品)。
@@ -28339,16 +28353,30 @@
     renderShopList();
     renderItems();
   }
+  // 売却はサーバーで個数を減らしてMPを足す(端末で足すとsyncで切り捨てられるため。2026-11-01)。
+  var sellEffortSeedClick_Busy_ = false;
   function sellEffortSeedClick_() {
-    if ((Number(state.effortSeedCount) || 0) <= 0) return;
-    state.effortSeedCount = (Number(state.effortSeedCount) || 0) - 1;
-    state.points = (Number(state.points) || 0) + EFFORT_SEED_SELL_MP_;
-    saveGameState(state);
+    if ((Number(state.effortSeedCount) || 0) <= 0 || sellEffortSeedClick_Busy_) return;
     var session = loadSession();
-    if (session && session.id) syncPointsNow_(session.id);
-    updateGameHud();
-    renderShopList();
-    renderItems();
+    if (!session || !session.id) return;
+    sellEffortSeedClick_Busy_ = true;
+    apiPost('sellEffortSeed', { id: session.id }).then(function (res) {
+      sellEffortSeedClick_Busy_ = false;
+      if (!res.ok) {
+        if (res.error === 'no_item') { state.effortSeedCount = 0; saveGameState(state); renderShopList(); renderItems(); }
+        window.alert(res.error === 'no_item' ? '努力の種を持っていません。' : '売却に失敗しました。もう一度お試しください。');
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.effortSeedCount = res.count;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+    }).catch(function () {
+      sellEffortSeedClick_Busy_ = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
   }
 
   // 今のボスに使える魔法の書を、1冊ごとにボタンとして並べる(1体のボスに複数の
