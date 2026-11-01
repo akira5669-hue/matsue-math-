@@ -398,7 +398,7 @@
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         rareDefeats: s.rareDefeats, rareCollected: s.rareCollected, thinkerMilestone: s.thinkerMilestone,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain, trainingSuper: !!s.trainingSuper, superTrainingDayKey: s.superTrainingDayKey, superTrainingDayGain: s.superTrainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
@@ -420,7 +420,7 @@
         missionDate: s.missionDate, missionGrade: s.missionGrade, missionCategoryId: s.missionCategoryId,
         missionCorrect: s.missionCorrect, missionClaimed: s.missionClaimed, hpLoginBonusDate: s.hpLoginBonusDate, studyReportDate: s.studyReportDate, studyReportTotal: s.studyReportTotal,
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
-        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain,
+        categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain, trainingSuper: !!s.trainingSuper, superTrainingDayKey: s.superTrainingDayKey, superTrainingDayGain: s.superTrainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
@@ -20693,6 +20693,10 @@
     // 特訓部屋でその日に増やしたHP(正解+1・まちがい-1の差し引き)。1日TRAINING_DAILY_HP_MAX_まで。
     trainingDayKey: (savedGame && savedGame.trainingDayKey) || '',
     trainingDayGain: Number(savedGame && savedGame.trainingDayGain) || 0,
+    // 超特訓部屋の中にいるか(trainingActiveもtrueになる)。超特訓で今日増やしたHPも別に数える。
+    trainingSuper: !!(savedGame && savedGame.trainingActive && savedGame.trainingSuper),
+    superTrainingDayKey: (savedGame && savedGame.superTrainingDayKey) || '',
+    superTrainingDayGain: Number(savedGame && savedGame.superTrainingDayGain) || 0,
     // 成功は一度trueになったら戻らない実績フラグ(成功後は再挑戦不可)。
     ohachiEasyCompleted: !!((savedProgress && savedProgress.ohachiEasyCompleted) || (savedGame && savedGame.ohachiEasyCompleted)),
     // 勇者の剣(富士登山の山頂=10合目に到達すると誰でも入手)の所持数。0か1で、ボスに
@@ -20955,6 +20959,7 @@
     hpGameOverPanel: document.getElementById('hpGameOverPanel'),
     hpGameOverTrainingBtn: document.getElementById('hpGameOverTrainingBtn'),
     trainingToggle: document.getElementById('trainingToggle'),
+    superTrainingToggle: document.getElementById('superTrainingToggle'),
     trainingBanner: document.getElementById('trainingBanner'),
     trainingBannerText: document.getElementById('trainingBannerText'),
     trainingBannerBtn: document.getElementById('trainingBannerBtn'),
@@ -21296,6 +21301,10 @@
   }
 
   function pickGenerator() {
+    if (state.trainingActive && state.trainingSuper) {
+      const eligible = superTrainingCategories_();
+      if (eligible.length > 0) return eligible[randInt(0, eligible.length - 1)];
+    }
     if (state.worldBossActiveStage) {
       // 挑戦開始時にworldBossEligibleIds_へ固定した単元リストだけを使う。
       // 生の state.enabled をその都度参照すると、挑戦中に設定画面で単元を
@@ -21926,6 +21935,10 @@
   // 算数・数学 ⇔ 理科の科目を切り替える。単元設定・出題プール・HUD表示が
   // 丸ごと入れ替わる。MPは共通プールのまま、経験値だけ理科専用に分ける。
   function toggleSubject() {
+    if (state.trainingActive && state.trainingSuper) {
+      window.alert('超特訓部屋は算数・数学だけの部屋です。理科は部屋を出てから解いてね。');
+      return;
+    }
     state.subject = state.subject === 'science' ? 'math' : 'science';
     syncSubjectUi_();
     saveGameState(state);
@@ -21953,7 +21966,7 @@
     // 出題条件を必ず守らせるため、この間違えた問題の保存庫は使わない(間違い大魔王/
     // 算数デビルちゃん/ボン・ミスコの呪い中にお鉢巡りへ入っても、固定した単元
     // リストからの出題を優先する)。
-    let mistakeQ = (state.ohachiActive || state.fujiDescentActive || state.ohachiEasyActive) ? null
+    let mistakeQ = (state.ohachiActive || state.fujiDescentActive || state.ohachiEasyActive || (state.trainingActive && state.trainingSuper)) ? null
       : state.rareType === 'percentkun' ? pickPercentKunQuestion()
       : (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
@@ -29323,6 +29336,68 @@
     return !!(state.fujiActive || state.fujiDescentActive || state.ohachiActive || state.ohachiEasyActive || state.worldBossActiveStage || state.usaCrossingActive);
   }
 
+  /* ---------- 超特訓部屋(2026-11-02〜) ----------
+     基本は特訓部屋と同じ(入るのは無料・HPが0でも死なない・HPが10以上で出られる・MPは増えない・キャラは倒せない)。
+     ちがうところ：
+     ・問題は「自分の学年」と「1つ上の学年」の算数・数学の単元からランダム(単元設定は見ない)。中3は中3だけ。
+     ・正解でHP+5・経験値+1、まちがえるとHP-2。
+     ・超特訓で増やせるHPは1日SUPER_TRAINING_DAILY_HP_MAX_まで(特訓部屋の1日1000とは別に数える)。 */
+  var SUPER_TRAINING_HP_GAIN_ = 5;
+  var SUPER_TRAINING_HP_LOSS_ = 2;
+  var SUPER_TRAINING_DAILY_HP_MAX_ = 1000;
+  // 今は00001だけに表示(先生が試してから公開する)。全員に公開するときはtrainingVisible_()にする。
+  function superTrainingVisible_() { return isAdminSession_(); }
+  function superTrainingDayGain_() {
+    if (state.superTrainingDayKey !== todayKey()) { state.superTrainingDayKey = todayKey(); state.superTrainingDayGain = 0; }
+    return Number(state.superTrainingDayGain) || 0;
+  }
+  function superTrainingCategories_() {
+    var session = loadSession();
+    var ownGrade = session && session.grade;
+    var ownRank = GRADE_RANK[ownGrade];
+    if (!ownRank) return CATEGORIES.slice();
+    var maxRank = Math.min(ownRank + 1, GRADE_RANK['中3']);
+    return CATEGORIES.filter(function (c) {
+      var r = GRADE_RANK[categoryGrade[c.id]];
+      return r && r >= ownRank && r <= maxRank;
+    });
+  }
+  function enterSuperTrainingRoom_() {
+    if (state.trainingActive || !superTrainingVisible_()) return;
+    var hp = Number(state.hp) || 0;
+    if (hp >= TRAINING_HP_MAX_ && !trainingOpenAll_()) {
+      window.alert('超特訓部屋は、HPが' + TRAINING_HP_MAX_ + 'より少ない人が入れる部屋です。');
+      return;
+    }
+    if (trainingOtherModeActive_()) {
+      window.alert('富士登山・お鉢巡り・ボス戦などの挑戦中は、超特訓部屋に入れません。');
+      return;
+    }
+    var session = loadSession();
+    var ownGrade = session && session.grade;
+    var rangeText = ownGrade === '中3' ? '中3' : (ownGrade && GRADE_RANK[ownGrade] ? ownGrade + 'と1つ上の学年' : '');
+    if (!window.confirm('🔥 超特訓部屋に入ります（入るのは無料）。\n\n'
+      + '・問題は' + (rangeText ? rangeText + 'の' : '') + '算数・数学からランダム\n'
+      + '・正解するとHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1\n'
+      + '・まちがえるとHP-' + SUPER_TRAINING_HP_LOSS_ + '（経験値は増えない）\n'
+      + '・超特訓で増やせるHPは1日' + SUPER_TRAINING_DAILY_HP_MAX_ + 'まで（今日はあと' + Math.max(0, SUPER_TRAINING_DAILY_HP_MAX_ - superTrainingDayGain_()) + '）\n'
+      + '・部屋の中ではHPが0になっても大丈夫\n'
+      + '・MPは増えません\n'
+      + '・特訓中は、キャラ（敵・レアキャラ）を倒すことはできません\n'
+      + '・HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと部屋から出られません\n\n入りますか？')) return;
+    state.trainingActive = true;
+    state.trainingSuper = true;
+    state.streak = 0;
+    state.rareType = null;
+    if (state.subject !== 'math') { state.subject = 'math'; syncSubjectUi_(); }
+    saveGameState(state);
+    renderTrainingUi_();
+    if (els.hpGameOverPanel) els.hpGameOverPanel.hidden = true;
+    renderTrainingBanner_();
+    updateGameHud();
+    nextQuestion();
+  }
+
   function enterTrainingRoom_() {
     if (state.trainingActive || !trainingVisible_()) return;
     var hp = Number(state.hp) || 0;
@@ -29360,8 +29435,9 @@
       window.alert('HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと、特訓部屋からは出られません。（今のHP: ' + hp + '）');
       return;
     }
-    if (!window.confirm('特訓部屋から出ますか？（今のHP: ' + hp + '）')) return;
+    if (!window.confirm((state.trainingSuper ? '超' : '') + '特訓部屋から出ますか？（今のHP: ' + hp + '）')) return;
     state.trainingActive = false;
+    state.trainingSuper = false;
     state.streak = 0;
     saveGameState(state);
     var session = loadSession();
@@ -29373,19 +29449,31 @@
 
   function renderTrainingUi_() {
     var visible = trainingVisible_();
-    if (state.trainingActive && !visible) {
+    var superVisible = superTrainingVisible_();
+    if (state.trainingActive && (state.trainingSuper ? !superVisible : !visible)) {
       state.trainingActive = false;
+      state.trainingSuper = false;
       saveGameState(state);
     }
+    if (!state.trainingActive && state.trainingSuper) state.trainingSuper = false;
+    if (els.superTrainingToggle) {
+      els.superTrainingToggle.hidden = !superVisible || (state.trainingActive && !state.trainingSuper);
+      els.superTrainingToggle.firstChild.textContent = state.trainingSuper ? '🔥超特訓部屋を出る' : '🔥超特訓部屋';
+    }
     if (els.trainingToggle) {
-      els.trainingToggle.hidden = !visible;
+      els.trainingToggle.hidden = !visible || !!state.trainingSuper;
       els.trainingToggle.firstChild.textContent = state.trainingActive ? '🏋️特訓部屋を出る' : '🏋️特訓部屋';
     }
     if (els.hpGameOverTrainingBtn) els.hpGameOverTrainingBtn.hidden = !visible;
     if (els.trainingBar) els.trainingBar.hidden = !state.trainingActive;
     // 部屋の中にいる間は、問題カードの背景を特訓部屋の絵にする。
     if (els.quizCard) els.quizCard.classList.toggle('training-room-bg', !!state.trainingActive);
-    if (state.trainingActive && els.trainingBarText) {
+    if (state.trainingActive && state.trainingSuper && els.trainingBarText) {
+      var shp = Number(state.hp) || 0;
+      els.trainingBarText.textContent = '🔥 超特訓部屋　HP ' + shp + (trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）') + '　今日増やしたHP ' + superTrainingDayGain_() + '／' + SUPER_TRAINING_DAILY_HP_MAX_ + '　正解でHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1／まちがえるとHP-' + SUPER_TRAINING_HP_LOSS_ + '／MPは増えません／キャラは倒せません'
+        + (shp < TRAINING_EXIT_MIN_HP_ ? '　※HPが' + TRAINING_EXIT_MIN_HP_ + '以上で出られます' : '');
+      if (els.trainingExitBtn) els.trainingExitBtn.disabled = shp < TRAINING_EXIT_MIN_HP_;
+    } else if (state.trainingActive && els.trainingBarText) {
       var hp = Number(state.hp) || 0;
       var capText = trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）';
       els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　今日増やしたHP ' + trainingDayGain_() + '／' + TRAINING_DAILY_HP_MAX_ + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません／キャラは倒せません'
@@ -29422,10 +29510,20 @@
       state.correct++;
       state.catStats[catId].correct++;
       clearWrongQuestion(q);
-      var dayGain = trainingDayGain_();
-      var dailyCapped = dayGain >= TRAINING_DAILY_HP_MAX_ && hp >= TRAINING_EXIT_MIN_HP_;
+      var isSuper = !!state.trainingSuper;
+      var dayCap = isSuper ? SUPER_TRAINING_DAILY_HP_MAX_ : TRAINING_DAILY_HP_MAX_;
+      var dayGain = isSuper ? superTrainingDayGain_() : trainingDayGain_();
+      var dailyCapped = dayGain >= dayCap && hp >= TRAINING_EXIT_MIN_HP_;
       var canGainHp = (trainingOpenAll_() || hp < TRAINING_HP_MAX_) && !dailyCapped;
-      if (canGainHp) { state.hp = hp + 1; state.trainingDayGain = dayGain + 1; }
+      var gainHp = 0;
+      if (canGainHp) {
+        gainHp = isSuper ? SUPER_TRAINING_HP_GAIN_ : 1;
+        if (!trainingOpenAll_()) gainHp = Math.min(gainHp, TRAINING_HP_MAX_ - hp);
+        if (hp >= TRAINING_EXIT_MIN_HP_) gainHp = Math.min(gainHp, dayCap - dayGain);
+        gainHp = Math.max(0, gainHp);
+        state.hp = hp + gainHp;
+        if (isSuper) state.superTrainingDayGain = dayGain + gainHp; else state.trainingDayGain = dayGain + gainHp;
+      }
       if (isScience) state.scienceExp = (Number(state.scienceExp) || 0) + 1;
       else state.exp = (Number(state.exp) || 0) + 1;
       var newLevel = Math.min(MAX_LEVEL, Math.floor(((Number(state.exp) || 0) + (Number(state.scienceExp) || 0)) / EXP_PER_LEVEL) + 1);
@@ -29435,12 +29533,14 @@
         state.level = newLevel;
         lvlMsg = '🎉 レベルアップ！Lv.' + newLevel + '　';
       }
-      resultHtml = '<div class="training-result">🏋️ ' + lvlMsg + (canGainHp ? '+1HP' : dailyCapped ? '（今日の特訓で増やせるHP ' + TRAINING_DAILY_HP_MAX_ + 'に達しました）' : '（HPは' + TRAINING_HP_MAX_ + 'が最大）') + '　+1経験値（HP ' + state.hp + '）</div>';
+      resultHtml = '<div class="training-result">' + (isSuper ? '🔥 ' : '🏋️ ') + lvlMsg + (canGainHp ? '+' + gainHp + 'HP' : dailyCapped ? '（今日の' + (isSuper ? '超' : '') + '特訓で増やせるHP ' + dayCap + 'に達しました）' : '（HPは' + TRAINING_HP_MAX_ + 'が最大）') + '　+1経験値（HP ' + state.hp + '）</div>';
     } else {
       recordWrongQuestion(q);
-      if (hp > 0) state.trainingDayGain = trainingDayGain_() - 1;
-      state.hp = Math.max(0, hp - 1);
-      resultHtml = '<div class="training-result">💔 HP-1（HP ' + state.hp + '）'
+      var lossHp = Math.min(hp, state.trainingSuper ? SUPER_TRAINING_HP_LOSS_ : 1);
+      if (state.trainingSuper) state.superTrainingDayGain = superTrainingDayGain_() - lossHp;
+      else state.trainingDayGain = trainingDayGain_() - lossHp;
+      state.hp = Math.max(0, hp - lossHp);
+      resultHtml = '<div class="training-result">💔 HP-' + (state.trainingSuper ? SUPER_TRAINING_HP_LOSS_ : 1) + '（HP ' + state.hp + '）'
         + (state.hp <= 0 ? '　特訓部屋の中なので、HPが0でも大丈夫！' : '') + '</div>';
     }
     saveGameState(state);
@@ -31275,6 +31375,7 @@
   if (els.hpGameOverShopBtn) els.hpGameOverShopBtn.addEventListener('click', toggleShop);
   if (els.hpGameOverTrainingBtn) els.hpGameOverTrainingBtn.addEventListener('click', enterTrainingRoom_);
   if (els.trainingToggle) els.trainingToggle.addEventListener('click', function () { if (state.trainingActive) exitTrainingRoom_(); else enterTrainingRoom_(); });
+  if (els.superTrainingToggle) els.superTrainingToggle.addEventListener('click', function () { if (state.trainingActive) exitTrainingRoom_(); else enterSuperTrainingRoom_(); });
   if (els.trainingExitBtn) els.trainingExitBtn.addEventListener('click', exitTrainingRoom_);
   if (els.trainingBannerBtn) els.trainingBannerBtn.addEventListener('click', enterTrainingRoom_);
   els.prefectureToggle.addEventListener('click', togglePrefecture);
