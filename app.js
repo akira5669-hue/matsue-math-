@@ -24013,6 +24013,10 @@
       state.treasureItems = Object.assign({}, res.treasureItems);
       changed = true;
     }
+    if (res.treasureStale && res.gemItems && typeof res.gemItems === 'object') {
+      state.gemItems = Object.assign({}, res.gemItems);
+      changed = true;
+    }
     if (res.treasureRev > (Number(state.treasureRev) || 0) || changed) { state.treasureRev = res.treasureRev; changed = true; }
     if (changed) {
       saveGameState(state);
@@ -24136,6 +24140,7 @@
     var sTreasureRev = Number(server.treasureRev) || 0;
     if (sTreasureRev > (Number(state.treasureRev) || 0)) {
       state.treasureItems = Object.assign({}, sTreasureItems);
+      state.gemItems = Object.assign({}, sGemItems);
       state.treasureRev = sTreasureRev;
       changed = true;
     }
@@ -25936,6 +25941,7 @@
       }
       state.points = res.remainingPoints;
       state.gemItems = res.gemItems;
+      if (typeof res.treasureRev === 'number') state.treasureRev = res.treasureRev;
       saveGameState(state);
       updateGameHud();
       renderShopList();
