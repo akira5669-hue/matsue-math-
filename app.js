@@ -29342,7 +29342,8 @@
      ちがうところ：
      ・問題は「自分の学年」と「1つ上の学年」の算数・数学の単元からランダム(単元設定は見ない)。中3は中3だけ。
      ・3問に1問くらい(SUPER_TRAINING_WRONG_RATE_)は、過去に間違えた算数・数学の問題(間違えた問題の保存庫)から出す。
-     ・使えるのはレベル100以上の生徒だけ。2026-11-16から(終わりなし)。00001はいつでも入れる。
+     ・使えるのはレベル100以上の生徒だけ。2026-11-16〜11-30の期間限定。00001はいつでも入れる。
+     ・期間中はHPが2000以上でも入れて、HPも2000を超えて増やせる。
      ・正解でHP+5・経験値+1、まちがえるとHP-2。
      ・超特訓で増やせるHPは1日SUPER_TRAINING_DAILY_HP_MAX_まで(特訓部屋の1日1000とは別に数える)。 */
   var SUPER_TRAINING_HP_GAIN_ = 5;
@@ -29351,10 +29352,14 @@
   var SUPER_TRAINING_WRONG_RATE_ = 0.3;
   var SUPER_TRAINING_MIN_LEVEL_ = 100;
   var SUPER_TRAINING_START_ = '2026-11-16';
+  var SUPER_TRAINING_END_ = '2026-11-30';
+  function superTrainingPeriod_() { var t = todayKey(); return t >= SUPER_TRAINING_START_ && t <= SUPER_TRAINING_END_; }
   function superTrainingVisible_() {
     if (isAdminSession_()) return true;
-    return todayKey() >= SUPER_TRAINING_START_ && (Number(state.level) || 0) >= SUPER_TRAINING_MIN_LEVEL_;
+    return superTrainingPeriod_() && (Number(state.level) || 0) >= SUPER_TRAINING_MIN_LEVEL_;
   }
+  // 部屋の中のHPに2000の上限をかけないか(特訓部屋は11/1〜15、超特訓部屋は11/16〜30の期間中)。
+  function trainingNoHpCap_() { return trainingOpenAll_() || (!!state.trainingSuper && superTrainingPeriod_()); }
   // 過去に間違えた算数・数学の問題(理科は除く。単元設定は見ない)から1問選ぶ。無ければnull。
   function pickSuperTrainingWrongQuestion_() {
     var pool = [];
@@ -29384,7 +29389,7 @@
   function enterSuperTrainingRoom_() {
     if (state.trainingActive || !superTrainingVisible_()) return;
     var hp = Number(state.hp) || 0;
-    if (hp >= TRAINING_HP_MAX_ && !trainingOpenAll_()) {
+    if (hp >= TRAINING_HP_MAX_ && !trainingOpenAll_() && !superTrainingPeriod_()) {
       window.alert('超特訓部屋は、HPが' + TRAINING_HP_MAX_ + 'より少ない人が入れる部屋です。');
       return;
     }
@@ -29489,7 +29494,7 @@
     if (els.quizCard) els.quizCard.classList.toggle('training-room-bg', !!state.trainingActive);
     if (state.trainingActive && state.trainingSuper && els.trainingBarText) {
       var shp = Number(state.hp) || 0;
-      els.trainingBarText.textContent = '🔥 超特訓部屋　HP ' + shp + (trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）') + '　今日増やしたHP ' + superTrainingDayGain_() + '／' + SUPER_TRAINING_DAILY_HP_MAX_ + '　正解でHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1／まちがえるとHP-' + SUPER_TRAINING_HP_LOSS_ + '／MPは増えません／キャラは倒せません'
+      els.trainingBarText.textContent = '🔥 超特訓部屋　HP ' + shp + (trainingNoHpCap_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）') + '　今日増やしたHP ' + superTrainingDayGain_() + '／' + SUPER_TRAINING_DAILY_HP_MAX_ + '　正解でHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1／まちがえるとHP-' + SUPER_TRAINING_HP_LOSS_ + '／MPは増えません／キャラは倒せません'
         + (shp < TRAINING_EXIT_MIN_HP_ ? '　※HPが' + TRAINING_EXIT_MIN_HP_ + '以上で出られます' : '');
       if (els.trainingExitBtn) els.trainingExitBtn.disabled = shp < TRAINING_EXIT_MIN_HP_;
     } else if (state.trainingActive && els.trainingBarText) {
@@ -29533,11 +29538,11 @@
       var dayCap = isSuper ? SUPER_TRAINING_DAILY_HP_MAX_ : TRAINING_DAILY_HP_MAX_;
       var dayGain = isSuper ? superTrainingDayGain_() : trainingDayGain_();
       var dailyCapped = dayGain >= dayCap && hp >= TRAINING_EXIT_MIN_HP_;
-      var canGainHp = (trainingOpenAll_() || hp < TRAINING_HP_MAX_) && !dailyCapped;
+      var canGainHp = (trainingNoHpCap_() || hp < TRAINING_HP_MAX_) && !dailyCapped;
       var gainHp = 0;
       if (canGainHp) {
         gainHp = isSuper ? SUPER_TRAINING_HP_GAIN_ : 1;
-        if (!trainingOpenAll_()) gainHp = Math.min(gainHp, TRAINING_HP_MAX_ - hp);
+        if (!trainingNoHpCap_()) gainHp = Math.min(gainHp, TRAINING_HP_MAX_ - hp);
         if (hp >= TRAINING_EXIT_MIN_HP_) gainHp = Math.min(gainHp, dayCap - dayGain);
         gainHp = Math.max(0, gainHp);
         state.hp = hp + gainHp;
