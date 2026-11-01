@@ -21966,7 +21966,8 @@
     // 出題条件を必ず守らせるため、この間違えた問題の保存庫は使わない(間違い大魔王/
     // 算数デビルちゃん/ボン・ミスコの呪い中にお鉢巡りへ入っても、固定した単元
     // リストからの出題を優先する)。
-    let mistakeQ = (state.ohachiActive || state.fujiDescentActive || state.ohachiEasyActive || (state.trainingActive && state.trainingSuper)) ? null
+    let mistakeQ = (state.trainingActive && state.trainingSuper) ? (Math.random() < SUPER_TRAINING_WRONG_RATE_ ? pickSuperTrainingWrongQuestion_() : null)
+      : (state.ohachiActive || state.fujiDescentActive || state.ohachiEasyActive) ? null
       : state.rareType === 'percentkun' ? pickPercentKunQuestion()
       : (state.rareType === 'mistakeking' || state.rareType === 'sansudevil' || state.cursed) ? pickMistakeKingQuestion() : null;
     if (!mistakeQ && state.worldBossActiveStage === 4 && Math.random() < WORLD_BOSS_STAGE4_WRONG_BIAS) {
@@ -29340,13 +29341,31 @@
      基本は特訓部屋と同じ(入るのは無料・HPが0でも死なない・HPが10以上で出られる・MPは増えない・キャラは倒せない)。
      ちがうところ：
      ・問題は「自分の学年」と「1つ上の学年」の算数・数学の単元からランダム(単元設定は見ない)。中3は中3だけ。
+     ・3問に1問くらい(SUPER_TRAINING_WRONG_RATE_)は、過去に間違えた算数・数学の問題(間違えた問題の保存庫)から出す。
+     ・使えるのはレベル100以上の生徒だけ。2026-11-16から(終わりなし)。00001はいつでも入れる。
      ・正解でHP+5・経験値+1、まちがえるとHP-2。
      ・超特訓で増やせるHPは1日SUPER_TRAINING_DAILY_HP_MAX_まで(特訓部屋の1日1000とは別に数える)。 */
   var SUPER_TRAINING_HP_GAIN_ = 5;
   var SUPER_TRAINING_HP_LOSS_ = 2;
   var SUPER_TRAINING_DAILY_HP_MAX_ = 1000;
-  // 今は00001だけに表示(先生が試してから公開する)。全員に公開するときはtrainingVisible_()にする。
-  function superTrainingVisible_() { return isAdminSession_(); }
+  var SUPER_TRAINING_WRONG_RATE_ = 0.3;
+  var SUPER_TRAINING_MIN_LEVEL_ = 100;
+  var SUPER_TRAINING_START_ = '2026-11-16';
+  function superTrainingVisible_() {
+    if (isAdminSession_()) return true;
+    return todayKey() >= SUPER_TRAINING_START_ && (Number(state.level) || 0) >= SUPER_TRAINING_MIN_LEVEL_;
+  }
+  // 過去に間違えた算数・数学の問題(理科は除く。単元設定は見ない)から1問選ぶ。無ければnull。
+  function pickSuperTrainingWrongQuestion_() {
+    var pool = [];
+    Object.keys(state.wrongBank || {}).forEach(function (catId) {
+      if (!MATH_CATEGORY_ID_SET_.has(catId)) return;
+      var bank = state.wrongBank[catId];
+      if (bank && bank.length > 0) bank.forEach(function (snap) { pool.push(snap); });
+    });
+    if (pool.length === 0) return null;
+    return JSON.parse(JSON.stringify(pool[randInt(0, pool.length - 1)]));
+  }
   function superTrainingDayGain_() {
     if (state.superTrainingDayKey !== todayKey()) { state.superTrainingDayKey = todayKey(); state.superTrainingDayGain = 0; }
     return Number(state.superTrainingDayGain) || 0;
@@ -29377,7 +29396,7 @@
     var ownGrade = session && session.grade;
     var rangeText = ownGrade === '中3' ? '中3' : (ownGrade && GRADE_RANK[ownGrade] ? ownGrade + 'と1つ上の学年' : '');
     if (!window.confirm('🔥 超特訓部屋に入ります（入るのは無料）。\n\n'
-      + '・問題は' + (rangeText ? rangeText + 'の' : '') + '算数・数学からランダム\n'
+      + '・問題は' + (rangeText ? rangeText + 'の' : '') + '算数・数学からランダム（過去に間違えた問題も出るよ）\n'
       + '・正解するとHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1\n'
       + '・まちがえるとHP-' + SUPER_TRAINING_HP_LOSS_ + '（経験値は増えない）\n'
       + '・超特訓で増やせるHPは1日' + SUPER_TRAINING_DAILY_HP_MAX_ + 'まで（今日はあと' + Math.max(0, SUPER_TRAINING_DAILY_HP_MAX_ - superTrainingDayGain_()) + '）\n'
