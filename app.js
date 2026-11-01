@@ -32136,8 +32136,8 @@
       }).catch(function () {});
     }
   }
-  /* ---------- 月イチアンケート ----------
-     紙の「月イチアンケート」(テストの進み具合・目標・授業・相談したいこと・頑張っていること・不安度・面談)を
+  /* ---------- 月1アンケート ----------
+     紙の「月1アンケート」(テストの進み具合・目標・授業・相談したいこと・頑張っていること・不安度・面談)を
      アプリにしたもの＋満足度・改善点。生徒本人か保護者が、生徒のアカウントで答える。
      答えられるのは毎月1回だけで、答えると+50MP。答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
      今は00001だけに表示(SURVEY_OPEN_ALL_をtrueにすると全員。survey.js側も揃えること)。 */
@@ -32169,7 +32169,7 @@
       if (p) p.setAttribute('hidden', '');
     });
     var title = document.getElementById('surveyTitle');
-    if (title) title.textContent = '📝 ' + Number(todayKey().slice(5, 7)) + '月 月イチアンケート';
+    if (title) title.textContent = '📝 ' + Number(todayKey().slice(5, 7)) + '月 月1アンケート';
     els.surveyPanel.removeAttribute('hidden');
     renderSurveyStars_();
     var session = loadSession();
