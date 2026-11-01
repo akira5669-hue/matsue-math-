@@ -29178,7 +29178,9 @@
 
   function halloweenActive_() {
     var today = todayKey();
-    return isAdminSession_() || (today >= HALLOWEEN_START_ && today <= HALLOWEEN_END_);
+    // 期間が終わったら00001にも出さない(ボタン・お化けとも。2026-11-02、来年また使うのでコードは残す)。
+    if (today > HALLOWEEN_END_) return false;
+    return isAdminSession_() || today >= HALLOWEEN_START_;
   }
   function halloweenGhostDef_(id) {
     if (id === HALLOWEEN_KING_.id) return HALLOWEEN_KING_;
