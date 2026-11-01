@@ -32008,39 +32008,182 @@
     });
     return zkSvg_(cols * s + 4, rows * s + 4, body, opt.cls || 'zukei-svg');
   }
-  function zkMakeNetQ_() {
+  // 展開図を立方体に組み立てたとき、展開図の各点(マスの角)が立方体のどの頂点にくるかを求める。
+  // 立方体をマスからマスへ転がしていき、3Dの向き(回転行列)を追いかける。
+  function zkMatMul_(A, B) {
+    var C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) for (var k = 0; k < 3; k++) C[i][j] += A[i][k] * B[k][j];
+    return C;
+  }
+  var ZK_ROLL_MAT_ = {
+    E: [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], W: [[0, 0, -1], [0, 1, 0], [1, 0, 0]],
+    S: [[1, 0, 0], [0, 0, 1], [0, -1, 0]], N: [[1, 0, 0], [0, 0, -1], [0, 1, 0]]
+  };
+  function zkNetPoints_(cells) {
+    var key = function (c, r) { return c + ',' + r; };
+    var has = {}; cells.forEach(function (p) { has[key(p[0], p[1])] = true; });
+    var rot = {}; rot[key(cells[0][0], cells[0][1])] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    var queue = [cells[0]];
+    var dirs = [['E', 1, 0], ['W', -1, 0], ['S', 0, 1], ['N', 0, -1]];
+    while (queue.length) {
+      var cur = queue.shift(), R = rot[key(cur[0], cur[1])];
+      dirs.forEach(function (d) {
+        var nc = cur[0] + d[1], nr = cur[1] + d[2], k = key(nc, nr);
+        if (!has[k] || rot[k]) return;
+        rot[k] = zkMatMul_(ZK_ROLL_MAT_[d[0]], R);
+        queue.push([nc, nr]);
+      });
+    }
+    // 点(マスの角) → 立方体の頂点(体の座標 ±1,±1,±1)
+    var pts = {}, list = [];
+    cells.forEach(function (p) {
+      var R = rot[key(p[0], p[1])];
+      for (var dx = 0; dx <= 1; dx++) for (var dy = 0; dy <= 1; dy++) {
+        var w = [2 * dx - 1, 2 * dy - 1, -1];
+        var v = [0, 1, 2].map(function (i) { return R[0][i] * w[0] + R[1][i] * w[1] + R[2][i] * w[2]; }); // R^T w
+        var pk = key(p[0] + dx, p[1] + dy);
+        if (!pts[pk]) { pts[pk] = { c: p[0] + dx, r: p[1] + dy, v: v.join(',') }; list.push(pts[pk]); }
+      }
+    });
+    list.sort(function (a, b) { return a.r - b.r || a.c - b.c; });
+    list.forEach(function (pt, i) { pt.label = 'ABCDEFGHIJKLMNOPQRST'.charAt(i); });
+    // 外まわりの辺(1マスだけに接している辺)。組み立てると、ほかの外まわりの辺とぴったり重なる。
+    var edges = [];
+    var cnt = {};
+    cells.forEach(function (p) {
+      [[p[0], p[1], p[0] + 1, p[1]], [p[0], p[1] + 1, p[0] + 1, p[1] + 1], [p[0], p[1], p[0], p[1] + 1], [p[0] + 1, p[1], p[0] + 1, p[1] + 1]].forEach(function (e) {
+        var ek = e.join(','); cnt[ek] = (cnt[ek] || 0) + 1;
+      });
+    });
+    Object.keys(cnt).forEach(function (ek) {
+      if (cnt[ek] !== 1) return;
+      var e = ek.split(',').map(Number);
+      edges.push({ a: pts[key(e[0], e[1])], b: pts[key(e[2], e[3])] });
+    });
+    return { points: list, edges: edges };
+  }
+  function zkNetFigure_(cells, opt) {
+    opt = opt || {};
+    var s = 40, pad = 14, np = opt.net;
+    var cols = Math.max.apply(null, cells.map(function (p) { return p[0]; })) + 1, rows = Math.max.apply(null, cells.map(function (p) { return p[1]; })) + 1;
+    var body = '';
+    cells.forEach(function (p, i) {
+      var fill = opt.mark === i ? '#f87171' : '#fde68a';
+      body += '<rect x="' + (p[0] * s + pad) + '" y="' + (p[1] * s + pad) + '" width="' + s + '" height="' + s + '" fill="' + fill + '" stroke="#334155" stroke-width="1.5"/>';
+      if (opt.labels) body += '<text x="' + (p[0] * s + pad + s / 2) + '" y="' + (p[1] * s + pad + s / 2 + 7) + '" font-size="19" text-anchor="middle" fill="#0f172a" font-weight="700">' + opt.labels[i] + '</text>';
+    });
+    if (opt.edge) body += '<line x1="' + (opt.edge.a.c * s + pad) + '" y1="' + (opt.edge.a.r * s + pad) + '" x2="' + (opt.edge.b.c * s + pad) + '" y2="' + (opt.edge.b.r * s + pad) + '" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>';
+    if (np) np.points.forEach(function (pt) {
+      var x = pt.c * s + pad, y = pt.r * s + pad, hot = opt.point === pt;
+      body += '<circle cx="' + x + '" cy="' + y + '" r="' + (hot ? 5 : 2.5) + '" fill="' + (hot ? '#dc2626' : '#334155') + '"/>'
+        + '<text x="' + (x + 3) + '" y="' + (y - 3) + '" font-size="12" font-weight="700" fill="' + (hot ? '#dc2626' : '#1e3a8a') + '" stroke="#ffffff" stroke-width="3" paint-order="stroke">' + pt.label + '</text>';
+    });
+    return zkSvg_(cols * s + pad * 2, rows * s + pad * 2, body, 'zukei-svg');
+  }
+  function zkPickNet_(wantNet) {
     var cells;
-    var askOpposite = Math.random() < 0.5;
-    var wantNet = askOpposite || Math.random() < 0.5;
     for (var t = 0; t < 2000; t++) {
       cells = zkRandomPolyomino_(6);
       if (zkIsNet_(cells) === wantNet) break;
     }
     if (Math.random() < 0.5) cells = zkMirror_(cells);
-    var isNet = zkIsNet_(cells);
-    if (!askOpposite) {
+    return cells;
+  }
+  function zkMakeNetQ_() {
+    var kind = ['cube', 'parallel', 'perp', 'edge', 'point'][randInt(0, 4)];
+    if (kind === 'cube') {
+      var cellsA = zkPickNet_(Math.random() < 0.5);
+      var isNet = zkIsNet_(cellsA);
       return {
         title: '③ 展開図',
         text: 'この図を折り曲げて組み立てると、立方体（さいころの形）になる？',
-        figure: zkCellsSvg_(cells, { size: 34 }),
+        figure: zkNetFigure_(cellsA),
         choices: [{ html: 'なる', ok: isNet }, { html: 'ならない', ok: !isNet }],
         explain: isNet ? '組み立てると6つの面がぴったり重ならずに、立方体になるよ。' : '組み立てると面が重なってしまい、立方体にはならないよ。'
       };
     }
-    var faces = zkFold_(cells);
-    var labels = zkShuffle_(['ア', 'イ', 'ウ', 'エ', 'オ', 'カ']);
-    var mark = randInt(0, 5);
-    var opp = faces[mark] ^ 1;
-    var ansIdx = faces.indexOf(opp);
-    var choices = [];
-    for (var i = 0; i < 6; i++) if (i !== mark) choices.push({ html: labels[i], ok: i === ansIdx, order: labels[i] });
-    choices.sort(function (a, b) { return a.order < b.order ? -1 : 1; });
+    var cells = zkPickNet_(true);
+    if (kind === 'parallel' || kind === 'perp') {
+      var faces = zkFold_(cells);
+      var labels = zkShuffle_(['ア', 'イ', 'ウ', 'エ', 'オ', 'カ']);
+      var mark = randInt(0, 5);
+      var ansIdx = faces.indexOf(faces[mark] ^ 1);
+      var fig = zkNetFigure_(cells, { labels: labels, mark: mark });
+      if (kind === 'parallel') {
+        var choices = [];
+        for (var i = 0; i < 6; i++) if (i !== mark) choices.push({ html: labels[i], ok: i === ansIdx, order: labels[i] });
+        choices.sort(function (a, b) { return a.order < b.order ? -1 : 1; });
+        return {
+          title: '③ 展開図（平行な面）',
+          text: 'この展開図を組み立てて立方体にしたとき、赤い面（' + labels[mark] + '）と<b>平行な面</b>はどれ？',
+          figure: fig, choices: choices,
+          explain: '赤い面（' + labels[mark] + '）と平行なのは、向かい合う面の「' + labels[ansIdx] + '」。展開図では、1マスとばした面どうしが向かい合うことが多いよ。'
+        };
+      }
+      var perps = [];
+      for (var j = 0; j < 6; j++) if (j !== mark && j !== ansIdx) perps.push(labels[j]);
+      var setText = function (arr) { return arr.slice().sort().join('・'); };
+      var opts = [{ html: setText(perps), ok: true }];
+      zkShuffle_([0, 1, 2, 3]).slice(0, 3).forEach(function (k) {
+        var w = perps.slice(); w[k] = labels[ansIdx];
+        opts.push({ html: setText(w), ok: false });
+      });
+      return {
+        title: '③ 展開図（垂直な面）',
+        text: 'この展開図を組み立てて立方体にしたとき、赤い面（' + labels[mark] + '）と<b>垂直な面</b>を全部あげたものはどれ？',
+        figure: fig, choices: zkShuffle_(opts),
+        explain: '立方体の1つの面と垂直な面は4つ。向かい合う面（' + labels[ansIdx] + '）だけは平行で、それ以外の' + setText(perps) + 'が垂直だよ。'
+      };
+    }
+    var np = zkNetPoints_(cells);
+    if (kind === 'point') {
+      var groups = {};
+      np.points.forEach(function (pt) { (groups[pt.v] = groups[pt.v] || []).push(pt); });
+      var cand = np.points.filter(function (pt) { return groups[pt.v].length >= 2; });
+      var P = cand[randInt(0, cand.length - 1)];
+      var partners = groups[P.v].filter(function (q) { return q !== P; }).map(function (q) { return q.label; }).sort();
+      var size = partners.length;
+      var others = np.points.filter(function (q) { return q !== P && partners.indexOf(q.label) === -1; }).map(function (q) { return q.label; });
+      var seen = {}; seen[partners.join('')] = true;
+      var popts = [{ html: '点' + partners.join('と点'), ok: true }];
+      for (var tt = 0; tt < 200 && popts.length < 4; tt++) {
+        var pick = zkShuffle_(size > 1 && Math.random() < 0.5 ? [partners[randInt(0, size - 1)]].concat(zkShuffle_(others).slice(0, size - 1)) : zkShuffle_(others).slice(0, size)).sort();
+        var pkey = pick.join('');
+        if (seen[pkey] || new Set(pick).size !== size) continue;
+        seen[pkey] = true;
+        popts.push({ html: '点' + pick.join('と点'), ok: false });
+      }
+      return {
+        title: '③ 展開図（重なる点）',
+        text: 'この展開図を組み立てて立方体にしたとき、<b>点' + P.label + 'と重なる点</b>をすべてあげたものはどれ？',
+        figure: zkNetFigure_(cells, { net: np, point: P }),
+        choices: zkShuffle_(popts),
+        explain: '組み立てると、点' + P.label + 'には点' + partners.join('と点') + 'が集まって、立方体の1つの頂点になるよ。'
+      };
+    }
+    // 重なる辺
+    var E = np.edges[randInt(0, np.edges.length - 1)];
+    var partner = null;
+    np.edges.forEach(function (e) {
+      if (e === E) return;
+      if (e.a.v === E.a.v && e.b.v === E.b.v) partner = { a: e.a, b: e.b };
+      else if (e.a.v === E.b.v && e.b.v === E.a.v) partner = { a: e.b, b: e.a };
+    });
+    var ename = function (e) { return '辺' + e.a.label + e.b.label; };
+    var eopts = [{ html: ename(partner), ok: true }];
+    var used = {}; used[[partner.a.label, partner.b.label].sort().join('')] = true; used[[E.a.label, E.b.label].sort().join('')] = true;
+    zkShuffle_(np.edges).forEach(function (e) {
+      var k = [e.a.label, e.b.label].sort().join('');
+      if (eopts.length >= 4 || used[k]) return;
+      used[k] = true;
+      eopts.push({ html: ename(Math.random() < 0.5 ? e : { a: e.b, b: e.a }), ok: false });
+    });
     return {
-      title: '③ 展開図',
-      text: 'この展開図を組み立てて立方体にしたとき、赤い面（' + labels[mark] + '）と向かい合う面はどれ？',
-      figure: zkCellsSvg_(cells, { size: 38, labels: labels, mark: mark }),
-      choices: choices,
-      explain: '赤い面（' + labels[mark] + '）と向かい合うのは「' + labels[ansIdx] + '」。展開図では、1マスとばした面どうしが向かい合うことが多いよ。'
+      title: '③ 展開図（重なる辺）',
+      text: 'この展開図を組み立てて立方体にしたとき、<b>赤い辺' + E.a.label + E.b.label + 'と重なる辺</b>はどれ？',
+      figure: zkNetFigure_(cells, { net: np, edge: E }),
+      choices: zkShuffle_(eopts),
+      explain: '組み立てると、点' + E.a.label + 'は点' + partner.a.label + 'と、点' + E.b.label + 'は点' + partner.b.label + 'と重なるので、辺' + E.a.label + E.b.label + 'は' + ename(partner) + 'と重なるよ。'
     };
   }
 
