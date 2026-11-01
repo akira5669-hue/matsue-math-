@@ -31750,7 +31750,7 @@
   /* ---------- 超絶！図形！トレーニング！！(新！図形問題！キャンペーン！ 2026-11-03〜) ----------
      平面図形・空間図形の力をきたえる問題。問題は毎回この端末で作る(図はSVGで描く)。
      ① 積み木の数(見えない下の段も数える) ② 見え方あて(上・正面・右から見た図)
-     ③ 展開図(立方体になるか／向かい合う面) ⑤ 回転・裏返し(同じ形はどれ？)
+     ③ 展開図(立方体になるか／向かい合う面) ④ 回転体(1回転させてできる立体) ⑤ 回転・裏返し(同じ形はどれ？)
      正解で+1MP(1日20MPまで、ふだんの1日100MPの上限とは別枠)。まちがえても何も減らない。
      MPはサーバー(lib/handlers/zukei.js)で付ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
   var ZUKEI_OPEN_ALL_ = false;
@@ -32074,8 +32074,52 @@
     };
   }
 
+  // ---- 回転体(④)：平面図形を直線(軸)のまわりに1回転させてできる立体 ----
+  var ZK_SOLID_STYLE_ = 'fill="#bfdbfe" stroke="#1e3a8a" stroke-width="1.5" stroke-linejoin="round"';
+  var ZK_SOLID_TOP_ = 'fill="#dbeafe" stroke="#1e3a8a" stroke-width="1.5"';
+  var ZK_REVOLVE_ = [
+    { name: '円柱', fig: '<rect x="30" y="25" width="30" height="50" />',
+      solid: '<path d="M15,25 L15,80 A30,8 0 0 0 75,80 L75,25 Z" ' + ZK_SOLID_STYLE_ + '/><ellipse cx="45" cy="25" rx="30" ry="8" ' + ZK_SOLID_TOP_ + '/>' },
+    { name: '円すい', fig: '<polygon points="30,20 30,80 65,80" />',
+      solid: '<path d="M45,12 L75,80 A30,8 0 0 1 15,80 Z" ' + ZK_SOLID_STYLE_ + '/>' },
+    { name: '球', fig: '<path d="M30,20 A30,30 0 0 1 30,80 Z" />',
+      solid: '<circle cx="45" cy="50" r="32" ' + ZK_SOLID_STYLE_ + '/><path d="M13,50 A32,9 0 0 0 77,50" fill="none" stroke="#1e3a8a" stroke-width="1" stroke-dasharray="3,3"/>' },
+    { name: '半球', fig: '<path d="M30,40 A35,35 0 0 1 65,75 L30,75 Z" />',
+      solid: '<path d="M13,70 A32,32 0 0 1 77,70 A32,9 0 0 1 13,70 Z" ' + ZK_SOLID_STYLE_ + '/>' },
+    { name: '円すい台', fig: '<polygon points="30,25 48,25 65,75 30,75" />',
+      solid: '<path d="M30,25 L15,80 A30,8 0 0 0 75,80 L60,25 Z" ' + ZK_SOLID_STYLE_ + '/><ellipse cx="45" cy="25" rx="15" ry="4" ' + ZK_SOLID_TOP_ + '/>' },
+    { name: 'ドーナツのような形', fig: '<circle cx="62" cy="50" r="14" />',
+      solid: '<ellipse cx="45" cy="50" rx="40" ry="22" ' + ZK_SOLID_STYLE_ + '/><ellipse cx="45" cy="47" rx="14" ry="5" fill="#ffffff" stroke="#1e3a8a" stroke-width="1.5"/>' },
+    { name: '穴のあいた円柱（つつ）', fig: '<rect x="46" y="25" width="20" height="50" />',
+      solid: '<path d="M10,25 L10,80 A35,9 0 0 0 80,80 L80,25 Z" ' + ZK_SOLID_STYLE_ + '/><ellipse cx="45" cy="25" rx="35" ry="9" ' + ZK_SOLID_TOP_ + '/><ellipse cx="45" cy="25" rx="17" ry="4.5" fill="#ffffff" stroke="#1e3a8a" stroke-width="1.5"/>' },
+    { name: '円柱の上に円すいがのった形', fig: '<polygon points="30,10 60,40 60,85 30,85" />',
+      solid: '<path d="M45,8 L75,45 L75,85 A30,8 0 0 1 15,85 L15,45 Z" ' + ZK_SOLID_STYLE_ + '/><path d="M15,45 A30,8 0 0 0 75,45" fill="none" stroke="#1e3a8a" stroke-width="1"/>' },
+    { name: '2つの円すいを底面でくっつけた形', fig: '<polygon points="30,12 65,50 30,88" />',
+      solid: '<path d="M45,8 L77,50 L45,92 L13,50 Z" ' + ZK_SOLID_STYLE_ + '/><path d="M13,50 A32,8 0 0 0 77,50" fill="none" stroke="#1e3a8a" stroke-width="1"/>' }
+  ];
+  function zkMakeRevolveQ_() {
+    var order = zkShuffle_(ZK_REVOLVE_.map(function (_, i) { return i; }));
+    var ans = order[0];
+    var item = ZK_REVOLVE_[ans];
+    var axis = '<line x1="30" y1="2" x2="30" y2="98" stroke="#dc2626" stroke-width="2" stroke-dasharray="10,3,2,3"/>'
+      + '<text x="22" y="12" font-size="12" fill="#dc2626" font-weight="700" text-anchor="middle">ℓ</text>'
+      + '<path d="M14,92 A16,5 0 1 0 46,92" fill="none" stroke="#dc2626" stroke-width="1.5" marker-end="url(#zkRevArrow)"/>';
+    var figure = zkSvg_(110, 100, '<defs><marker id="zkRevArrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#dc2626"/></marker></defs>'
+      + '<g fill="#fde68a" stroke="#334155" stroke-width="1.5">' + item.fig + '</g>' + axis, 'zukei-svg zukei-revolve-fig');
+    var choices = zkShuffle_(order.slice(0, 4)).map(function (i) {
+      return { html: zkSvg_(90, 100, ZK_REVOLVE_[i].solid, 'zukei-svg zukei-choice-svg'), ok: i === ans };
+    });
+    return {
+      title: '④ 回転体',
+      text: 'この図形を、赤い直線ℓを軸として1回転させると、どんな立体ができる？',
+      figure: figure,
+      choices: choices,
+      explain: '1回転させると「' + item.name + '」ができるよ。軸からはなれた所は、円をえがいて回るよ。'
+    };
+  }
+
   function zkNewQuestion_() {
-    var makers = [zkMakeCountQ_, zkMakeViewQ_, zkMakeNetQ_, zkMakeTurnQ_];
+    var makers = [zkMakeCountQ_, zkMakeViewQ_, zkMakeNetQ_, zkMakeRevolveQ_, zkMakeTurnQ_];
     zukei_.q = makers[randInt(0, makers.length - 1)]();
     zukei_.answered = false;
   }

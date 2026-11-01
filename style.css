@@ -2478,3 +2478,5 @@ h1 {
 .survey-inline input[type="range"] { flex: 1; max-width: 260px; }
 input.survey-text { margin-top: 4px; }
 input.survey-text.survey-short { width: 5em; margin-top: 0; }
+
+.zukei-revolve-fig { width: 200px; }
