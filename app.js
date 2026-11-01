@@ -21184,6 +21184,11 @@
     answer10BannerText: document.getElementById('answer10BannerText'),
     answer10BannerBtn: document.getElementById('answer10BannerBtn'),
     zukeiToggle: document.getElementById('zukeiToggle'),
+    surveyToggle: document.getElementById('surveyToggle'),
+    surveyPanel: document.getElementById('surveyPanel'),
+    surveyStatus: document.getElementById('surveyStatus'),
+    surveyResult: document.getElementById('surveyResult'),
+    surveySubmit: document.getElementById('surveySubmit'),
     zukeiPanel: document.getElementById('zukeiPanel'),
     zukeiMpInfo: document.getElementById('zukeiMpInfo'),
     zukeiQTitle: document.getElementById('zukeiQTitle'),
@@ -22038,6 +22043,7 @@
     // アンサー10は今は00001(管理者)だけに表示(試験公開)。
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
+    if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.zukeiToggle) { els.zukeiToggle.hidden = !zukeiVisible_(); if (els.zukeiToggle.hidden && els.zukeiPanel) els.zukeiPanel.setAttribute('hidden', ''); }
     renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
@@ -32130,6 +32136,82 @@
       }).catch(function () {});
     }
   }
+  /* ---------- アンケート(授業・悩みや不安・不満・改善点・満足度) ----------
+     生徒本人か保護者が、生徒のアカウントで答える。答えると+100MP(アンケート1回につき1回まで)。
+     答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
+     今は00001だけに表示(SURVEY_OPEN_ALL_をtrueにすると全員。survey.js側も揃えること)。 */
+  var SURVEY_OPEN_ALL_ = false;
+  var surveySat_ = { satClass: 0, satOverall: 0 };
+  function surveyVisible_() { return isAdminSession_() || SURVEY_OPEN_ALL_; }
+  function renderSurveyStars_() {
+    Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('[data-sv-star]'), function (b) {
+      var key = b.getAttribute('data-sv-key');
+      var n = Number(b.getAttribute('data-sv-star'));
+      b.textContent = n <= surveySat_[key] ? '★' : '☆';
+      b.classList.toggle('is-on', n <= surveySat_[key]);
+    });
+  }
+  function toggleSurvey() {
+    var isHidden = els.surveyPanel.hasAttribute('hidden');
+    if (!isHidden) { els.surveyPanel.setAttribute('hidden', ''); return; }
+    ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel',
+      'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+      var p = document.getElementById(pid);
+      if (p) p.setAttribute('hidden', '');
+    });
+    els.surveyPanel.removeAttribute('hidden');
+    renderSurveyStars_();
+    var session = loadSession();
+    if (session && session.id) {
+      apiPost('surveyStatus', { id: session.id }).then(function (res) {
+        if (res && res.ok && res.rewarded) els.surveyStatus.textContent = '✅ このアンケートには答えてくれました（100MPは受け取り済み）。追加で書きたいことがあれば、もう一度送ることもできます（MPは増えません）。';
+        else els.surveyStatus.textContent = '';
+      }).catch(function () {});
+    }
+  }
+  function submitSurvey_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var respondentEl = els.surveyPanel.querySelector('input[name="surveyRespondent"]:checked');
+    if (!surveySat_.satClass || !surveySat_.satOverall) { els.surveyResult.innerHTML = '<div class="test-photo-hint">満足度（★）を2つとも選んでね。</div>'; return; }
+    var body = { id: session.id, respondent: respondentEl ? respondentEl.value : 'student', satClass: surveySat_.satClass, satOverall: surveySat_.satOverall };
+    ['class_text', 'worry_text', 'complaint_text', 'improve_text', 'other_text'].forEach(function (k) {
+      var el = els.surveyPanel.querySelector('[data-sv-text="' + k + '"]');
+      body[k] = el ? el.value : '';
+    });
+    var len = ['class_text', 'worry_text', 'complaint_text', 'improve_text', 'other_text'].reduce(function (s, k) { return s + String(body[k]).trim().length; }, 0);
+    if (len < 10) { els.surveyResult.innerHTML = '<div class="test-photo-hint">もう少しくわしく書いてね（どこか1つでもOK、合わせて10文字以上）。</div>'; return; }
+    els.surveySubmit.disabled = true;
+    apiPost('surveySubmit', body).then(function (res) {
+      els.surveySubmit.disabled = false;
+      if (!res || !res.ok) { els.surveyResult.innerHTML = '<div class="test-photo-hint">送信できませんでした。もう一度お試しください。</div>'; return; }
+      if (res.rewarded && res.newTotalPoints != null) {
+        state.points = res.newTotalPoints;
+        saveGameState(state);
+        updateGameHud();
+      }
+      els.surveyResult.innerHTML = '<div class="win-banner">📝 アンケートを送りました。ありがとうございます！' + (res.rewarded ? ' +' + res.rewardMp + 'MP' : '') + '</div>';
+      Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('[data-sv-text]'), function (el) { el.value = ''; });
+      surveySat_ = { satClass: 0, satOverall: 0 };
+      renderSurveyStars_();
+    }).catch(function () {
+      els.surveySubmit.disabled = false;
+      els.surveyResult.innerHTML = '<div class="test-photo-hint">通信に失敗しました。もう一度お試しください。</div>';
+    });
+  }
+  if (els.surveyToggle) {
+    els.surveyToggle.addEventListener('click', toggleSurvey);
+    els.surveyPanel.addEventListener('click', function (e) {
+      var star = e.target.closest('[data-sv-star]');
+      if (star) { surveySat_[star.getAttribute('data-sv-key')] = Number(star.getAttribute('data-sv-star')); renderSurveyStars_(); return; }
+      if (e.target.closest('#surveySubmit')) submitSurvey_();
+    });
+    els.surveyToggle.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== els.surveyToggle) els.surveyPanel.setAttribute('hidden', '');
+    });
+  }
+
   if (els.zukeiToggle) {
     els.zukeiToggle.addEventListener('click', toggleZukei);
     els.zukeiPanel.addEventListener('click', function (e) {

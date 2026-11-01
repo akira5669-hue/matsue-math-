@@ -205,6 +205,7 @@
         <button id="trainingToggle" class="ghost-btn is-new" type="button" hidden>🏋️特訓部屋<span class="new-badge">NEW</span></button>
         <button id="superTrainingToggle" class="ghost-btn is-new" type="button" hidden>🔥超特訓部屋<span class="new-badge">NEW</span></button>
         <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
+        <button id="surveyToggle" class="ghost-btn is-new" type="button" hidden>📝アンケート<span class="new-badge">NEW</span></button>
         <button id="zukeiToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧊超絶！図形！トレーニング！！<span class="new-badge">NEW</span></button>
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
@@ -831,6 +832,25 @@
         <div class="test-photo-tier-row" id="bakuretsuQuizChoiceRow"></div>
       </div>
       <p class="test-photo-result" id="bakuretsuQuizResult"></p>
+    </section>
+
+    <section class="weekly-quiz-panel" id="surveyPanel" hidden>
+      <h3 class="history-title">📝 アンケート</h3>
+      <p class="test-photo-hint">授業のこと、悩みや不安、不満、こうしてほしいことなど、なんでも書いてください。生徒のみなさんも、保護者の方も答えられます。答えてくれた人には<b>+100MP</b>！（書いた内容は先生だけが読みます）</p>
+      <p class="test-photo-hint" id="surveyStatus"></p>
+      <div class="survey-q"><p class="survey-label">答える人</p>
+        <label class="survey-radio"><input type="radio" name="surveyRespondent" value="student" checked> 生徒本人</label>
+        <label class="survey-radio"><input type="radio" name="surveyRespondent" value="guardian"> 保護者</label>
+      </div>
+      <div class="survey-q"><p class="survey-label">授業の満足度</p><div class="survey-stars"><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="1">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="2">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="3">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="4">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="5">☆</button></div></div>
+      <div class="survey-q"><p class="survey-label">松江塾全体の満足度</p><div class="survey-stars"><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="1">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="2">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="3">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="4">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="5">☆</button></div></div>
+      <div class="survey-q"><p class="survey-label">授業について</p><textarea class="survey-text" data-sv-text="class_text" maxlength="2000" rows="3" placeholder="分かりやすさ、進むスピード、楽しさなど"></textarea></div>
+      <div class="survey-q"><p class="survey-label">悩みや不安</p><textarea class="survey-text" data-sv-text="worry_text" maxlength="2000" rows="3" placeholder="勉強のこと、成績、受験、友だちのことなど"></textarea></div>
+      <div class="survey-q"><p class="survey-label">不満</p><textarea class="survey-text" data-sv-text="complaint_text" maxlength="2000" rows="3" placeholder="いやだったこと、困っていること"></textarea></div>
+      <div class="survey-q"><p class="survey-label">改善してほしいこと</p><textarea class="survey-text" data-sv-text="improve_text" maxlength="2000" rows="3" placeholder="授業・アプリ・塾のことなど、こうしてほしいこと"></textarea></div>
+      <div class="survey-q"><p class="survey-label">その他</p><textarea class="survey-text" data-sv-text="other_text" maxlength="2000" rows="3" placeholder="なんでも自由に"></textarea></div>
+      <div class="answer10-actions"><button type="button" class="primary-btn" id="surveySubmit">送信する</button></div>
+      <div id="surveyResult"></div>
     </section>
 
     <section class="weekly-quiz-panel" id="zukeiPanel" hidden>

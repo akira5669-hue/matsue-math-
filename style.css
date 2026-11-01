@@ -2461,3 +2461,12 @@ h1 {
 .zukei-choice.is-correct { border-color: #16a34a; background: #dcfce7; }
 .zukei-choice.is-incorrect { border-color: #dc2626; background: #fee2e2; }
 .zukei-choice-svg { max-width: 100%; height: auto; }
+
+/* アンケート */
+.survey-q { margin: 12px 0; }
+.survey-label { font-weight: 700; margin: 0 0 4px; }
+.survey-radio { margin-right: 16px; font-size: 1rem; }
+.survey-stars { display: flex; gap: 4px; }
+.survey-star { background: none; border: none; font-size: 2rem; line-height: 1; color: #cbd5e1; cursor: pointer; padding: 0 2px; }
+.survey-star.is-on { color: #f59e0b; }
+.survey-text { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; font-family: inherit; resize: vertical; }
