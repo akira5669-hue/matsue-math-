@@ -32139,7 +32139,7 @@
   /* ---------- 月イチアンケート ----------
      紙の「月イチアンケート」(テストの進み具合・目標・授業・相談したいこと・頑張っていること・不安度・面談)を
      アプリにしたもの＋満足度・改善点。生徒本人か保護者が、生徒のアカウントで答える。
-     答えると+100MP(毎月1回まで)。答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
+     答えられるのは毎月1回だけで、答えると+50MP。答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
      今は00001だけに表示(SURVEY_OPEN_ALL_をtrueにすると全員。survey.js側も揃えること)。 */
   var SURVEY_OPEN_ALL_ = false;
   var surveySat_ = { satClass: 0, satOverall: 0 };
@@ -32154,6 +32154,10 @@
     var r = document.getElementById('surveyAnxiety');
     var out = document.getElementById('surveyAnxietyVal');
     if (r && out) out.textContent = r.value + '%';
+  }
+  // 今月もう答えた人には、質問と送信ボタンをかくす(1か月に1回だけ)。
+  function surveySetFormHidden_(hide) {
+    Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('.survey-q, .answer10-actions'), function (el) { el.hidden = hide; });
   }
   function surveyRadio_(name) { var el = els.surveyPanel.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
   function toggleSurvey() {
@@ -32171,8 +32175,9 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('surveyStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok && res.rewarded) els.surveyStatus.textContent = '✅ 今月のアンケートには答えてくれました（100MPは受け取り済み）。追加で書きたいことがあれば、もう一度送ることもできます（MPは増えません）。';
-        else els.surveyStatus.textContent = '';
+        var done = !!(res && res.ok && res.answered);
+        els.surveyStatus.textContent = done ? '✅ 今月のアンケートには答えてくれました。ありがとう！次は来月また答えてね。' : '';
+        surveySetFormHidden_(done);
       }).catch(function () {});
     }
   }
@@ -32202,7 +32207,9 @@
     els.surveySubmit.disabled = true;
     apiPost('surveySubmit', body).then(function (res) {
       els.surveySubmit.disabled = false;
+      if (res && res.error === 'already_answered') { els.surveyResult.innerHTML = '<div class="test-photo-hint">今月のアンケートには、もう答えています。次は来月また答えてね。</div>'; surveySetFormHidden_(true); return; }
       if (!res || !res.ok) { els.surveyResult.innerHTML = '<div class="test-photo-hint">送信できませんでした。もう一度お試しください。</div>'; return; }
+      surveySetFormHidden_(true);
       if (res.rewarded && res.newTotalPoints != null) {
         state.points = res.newTotalPoints;
         saveGameState(state);
