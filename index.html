@@ -205,7 +205,7 @@
         <button id="trainingToggle" class="ghost-btn is-new" type="button" hidden>🏋️特訓部屋<span class="new-badge">NEW</span></button>
         <button id="superTrainingToggle" class="ghost-btn is-new" type="button" hidden>🔥超特訓部屋<span class="new-badge">NEW</span></button>
         <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
-        <button id="surveyToggle" class="ghost-btn is-new" type="button" hidden>📝アンケート<span class="new-badge">NEW</span></button>
+        <button id="surveyToggle" class="ghost-btn is-new" type="button" hidden>📝月イチアンケート<span class="new-badge">NEW</span></button>
         <button id="zukeiToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧊超絶！図形！トレーニング！！<span class="new-badge">NEW</span></button>
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
@@ -835,20 +835,39 @@
     </section>
 
     <section class="weekly-quiz-panel" id="surveyPanel" hidden>
-      <h3 class="history-title">📝 アンケート</h3>
-      <p class="test-photo-hint">授業のこと、悩みや不安、不満、こうしてほしいことなど、なんでも書いてください。生徒のみなさんも、保護者の方も答えられます。答えてくれた人には<b>+100MP</b>！（書いた内容は先生だけが読みます）</p>
+      <h3 class="history-title" id="surveyTitle">📝 月イチアンケート</h3>
+      <p class="test-photo-hint">答えてくれた人には<b>+100MP</b>（毎月1回）！生徒のみなさんも、保護者の方も答えられます。このアンケートはプライバシー保護に配慮し、先生だけが読みます。</p>
       <p class="test-photo-hint" id="surveyStatus"></p>
       <div class="survey-q"><p class="survey-label">答える人</p>
-        <label class="survey-radio"><input type="radio" name="surveyRespondent" value="student" checked> 生徒本人</label>
-        <label class="survey-radio"><input type="radio" name="surveyRespondent" value="guardian"> 保護者</label>
+        <label class="survey-radio"><input type="radio" name="surveyRespondent" value="student" checked> 生徒本人</label><label class="survey-radio"><input type="radio" name="surveyRespondent" value="guardian"> 保護者</label>
+      </div>
+      <div class="survey-q"><p class="survey-label">1. 大事なテストの勉強の進み具合はどうですか？</p>
+        <div class="survey-choices"><label class="survey-radio"><input type="radio" name="surveyTestMark" value="◎"> ◎</label><label class="survey-radio"><input type="radio" name="surveyTestMark" value="○"> ○</label><label class="survey-radio"><input type="radio" name="surveyTestMark" value="△"> △</label><label class="survey-radio"><input type="radio" name="surveyTestMark" value="×"> ×</label></div>
+        <input type="text" class="survey-text " data-sv-text="testReason" maxlength="300" placeholder="その理由">
+      </div>
+      <div class="survey-q"><p class="survey-label">2. テストに向けて、目標順位と、そのための行動を宣言しよう！</p>
+        <div class="survey-inline">目標 <input type="text" class="survey-text survey-short" data-sv-text="goalRank" maxlength="20" placeholder="例：10"> 位</div>
+        <input type="text" class="survey-text " data-sv-text="goalAction" maxlength="300" placeholder="行動（例：毎日アプリで30問解く）">
+      </div>
+      <div class="survey-q"><p class="survey-label">3. 今の授業の進度や難易度・座席について</p>
+        <div class="survey-choices"><label class="survey-radio"><input type="radio" name="surveyClass" value="ok"> 特に不満はない</label><label class="survey-radio"><input type="radio" name="surveyClass" value="change"> ちょっと変えてほしいことがある</label></div>
+        <textarea class="survey-text" data-sv-text="classRequest" maxlength="2000" rows="2" placeholder="「ある」と答えた人は、具体的な要望を書いてね（いくつでもOK）"></textarea>
+      </div>
+      <div class="survey-q"><p class="survey-label">4. 相談したいことや不安なこと、問題を抱えていることにチェックをつけてください</p>
+        <div class="survey-checks"><label class="survey-check"><input type="checkbox" name="surveyWorry" value="成績"> 成績</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="受験"> 受験</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="学校"> 学校</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="部活"> 部活</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="家庭"> 家庭</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="恋愛"> 恋愛</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="趣味"> 趣味</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="人間関係"> 人間関係</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="その他"> その他</label></div>
+        <input type="text" class="survey-text " data-sv-text="worryOther" maxlength="300" placeholder="その他（　　　　）">
+      </div>
+      <div class="survey-q"><p class="survey-label">自由記入欄</p><p class="survey-sub">（相談したいことがあったら書いてね！）</p><textarea class="survey-text" data-sv-text="consult" maxlength="2000" rows="3" placeholder=""></textarea></div>
+      <div class="survey-q"><p class="survey-label">最近頑張っていること（学総がある子は意気込みを！）</p><p class="survey-sub">（自分、これめっちゃ頑張ってます！をアピールして！！）</p><textarea class="survey-text" data-sv-text="effort" maxlength="2000" rows="3" placeholder=""></textarea></div>
+      <div class="survey-q"><p class="survey-label">チェック欄・自由記入欄に書いたことの不安度・モヤモヤ度</p>
+        <div class="survey-inline"><input type="range" id="surveyAnxiety" min="0" max="100" step="10" value="0"> <b id="surveyAnxietyVal">0%</b></div>
+      </div>
+      <div class="survey-q"><p class="survey-label">どちらかを選んでね！</p>
+        <div class="survey-choices"><label class="survey-radio"><input type="radio" name="surveyInterview" value="want"> 面談を希望する</label><label class="survey-radio"><input type="radio" name="surveyInterview" value="fine"> 今は大丈夫</label></div>
       </div>
       <div class="survey-q"><p class="survey-label">授業の満足度</p><div class="survey-stars"><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="1">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="2">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="3">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="4">☆</button><button type="button" class="survey-star" data-sv-key="satClass" data-sv-star="5">☆</button></div></div>
       <div class="survey-q"><p class="survey-label">松江塾全体の満足度</p><div class="survey-stars"><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="1">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="2">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="3">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="4">☆</button><button type="button" class="survey-star" data-sv-key="satOverall" data-sv-star="5">☆</button></div></div>
-      <div class="survey-q"><p class="survey-label">授業について</p><textarea class="survey-text" data-sv-text="class_text" maxlength="2000" rows="3" placeholder="分かりやすさ、進むスピード、楽しさなど"></textarea></div>
-      <div class="survey-q"><p class="survey-label">悩みや不安</p><textarea class="survey-text" data-sv-text="worry_text" maxlength="2000" rows="3" placeholder="勉強のこと、成績、受験、友だちのことなど"></textarea></div>
-      <div class="survey-q"><p class="survey-label">不満</p><textarea class="survey-text" data-sv-text="complaint_text" maxlength="2000" rows="3" placeholder="いやだったこと、困っていること"></textarea></div>
-      <div class="survey-q"><p class="survey-label">改善してほしいこと</p><textarea class="survey-text" data-sv-text="improve_text" maxlength="2000" rows="3" placeholder="授業・アプリ・塾のことなど、こうしてほしいこと"></textarea></div>
-      <div class="survey-q"><p class="survey-label">その他</p><textarea class="survey-text" data-sv-text="other_text" maxlength="2000" rows="3" placeholder="なんでも自由に"></textarea></div>
+      <div class="survey-q"><p class="survey-label">不満・改善してほしいこと</p><textarea class="survey-text" data-sv-text="improve" maxlength="2000" rows="3" placeholder="授業・アプリ・塾のことなど、こうしてほしいこと"></textarea></div>
       <div class="answer10-actions"><button type="button" class="primary-btn" id="surveySubmit">送信する</button></div>
       <div id="surveyResult"></div>
     </section>

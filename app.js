@@ -32136,9 +32136,10 @@
       }).catch(function () {});
     }
   }
-  /* ---------- アンケート(授業・悩みや不安・不満・改善点・満足度) ----------
-     生徒本人か保護者が、生徒のアカウントで答える。答えると+100MP(アンケート1回につき1回まで)。
-     答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
+  /* ---------- 月イチアンケート ----------
+     紙の「月イチアンケート」(テストの進み具合・目標・授業・相談したいこと・頑張っていること・不安度・面談)を
+     アプリにしたもの＋満足度・改善点。生徒本人か保護者が、生徒のアカウントで答える。
+     答えると+100MP(毎月1回まで)。答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
      今は00001だけに表示(SURVEY_OPEN_ALL_をtrueにすると全員。survey.js側も揃えること)。 */
   var SURVEY_OPEN_ALL_ = false;
   var surveySat_ = { satClass: 0, satOverall: 0 };
@@ -32150,7 +32151,11 @@
       b.textContent = n <= surveySat_[key] ? '★' : '☆';
       b.classList.toggle('is-on', n <= surveySat_[key]);
     });
+    var r = document.getElementById('surveyAnxiety');
+    var out = document.getElementById('surveyAnxietyVal');
+    if (r && out) out.textContent = r.value + '%';
   }
+  function surveyRadio_(name) { var el = els.surveyPanel.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
   function toggleSurvey() {
     var isHidden = els.surveyPanel.hasAttribute('hidden');
     if (!isHidden) { els.surveyPanel.setAttribute('hidden', ''); return; }
@@ -32159,12 +32164,14 @@
       var p = document.getElementById(pid);
       if (p) p.setAttribute('hidden', '');
     });
+    var title = document.getElementById('surveyTitle');
+    if (title) title.textContent = '📝 ' + Number(todayKey().slice(5, 7)) + '月 月イチアンケート';
     els.surveyPanel.removeAttribute('hidden');
     renderSurveyStars_();
     var session = loadSession();
     if (session && session.id) {
       apiPost('surveyStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok && res.rewarded) els.surveyStatus.textContent = '✅ このアンケートには答えてくれました（100MPは受け取り済み）。追加で書きたいことがあれば、もう一度送ることもできます（MPは増えません）。';
+        if (res && res.ok && res.rewarded) els.surveyStatus.textContent = '✅ 今月のアンケートには答えてくれました（100MPは受け取り済み）。追加で書きたいことがあれば、もう一度送ることもできます（MPは増えません）。';
         else els.surveyStatus.textContent = '';
       }).catch(function () {});
     }
@@ -32172,15 +32179,26 @@
   function submitSurvey_() {
     var session = loadSession();
     if (!session || !session.id) return;
-    var respondentEl = els.surveyPanel.querySelector('input[name="surveyRespondent"]:checked');
-    if (!surveySat_.satClass || !surveySat_.satOverall) { els.surveyResult.innerHTML = '<div class="test-photo-hint">満足度（★）を2つとも選んでね。</div>'; return; }
-    var body = { id: session.id, respondent: respondentEl ? respondentEl.value : 'student', satClass: surveySat_.satClass, satOverall: surveySat_.satOverall };
-    ['class_text', 'worry_text', 'complaint_text', 'improve_text', 'other_text'].forEach(function (k) {
-      var el = els.surveyPanel.querySelector('[data-sv-text="' + k + '"]');
-      body[k] = el ? el.value : '';
-    });
-    var len = ['class_text', 'worry_text', 'complaint_text', 'improve_text', 'other_text'].reduce(function (s, k) { return s + String(body[k]).trim().length; }, 0);
-    if (len < 10) { els.surveyResult.innerHTML = '<div class="test-photo-hint">もう少しくわしく書いてね（どこか1つでもOK、合わせて10文字以上）。</div>'; return; }
+    var val = function (k) { var el = els.surveyPanel.querySelector('[data-sv-text="' + k + '"]'); return el ? el.value : ''; };
+    var body = {
+      id: session.id, respondent: surveyRadio_('surveyRespondent') || 'student',
+      testMark: surveyRadio_('surveyTestMark'), testReason: val('testReason'),
+      goalRank: val('goalRank'), goalAction: val('goalAction'),
+      classStatus: surveyRadio_('surveyClass'), classRequest: val('classRequest'),
+      worries: Array.prototype.map.call(els.surveyPanel.querySelectorAll('input[name="surveyWorry"]:checked'), function (el) { return el.value; }),
+      worryOther: val('worryOther'), consult: val('consult'), effort: val('effort'),
+      anxiety: Number((document.getElementById('surveyAnxiety') || {}).value) || 0,
+      interview: surveyRadio_('surveyInterview'),
+      satClass: surveySat_.satClass, satOverall: surveySat_.satOverall, improve: val('improve')
+    };
+    var missing = [];
+    if (!body.testMark) missing.push('1. テストの進み具合');
+    if (!body.classStatus) missing.push('3. 授業について');
+    if (!body.interview) missing.push('面談の希望');
+    if (!body.satClass || !body.satOverall) missing.push('満足度（★）');
+    if (missing.length) { els.surveyResult.innerHTML = '<div class="test-photo-hint">まだ答えていないところがあるよ：' + escHtml(missing.join('、')) + '</div>'; return; }
+    var len = ['testReason', 'goalRank', 'goalAction', 'classRequest', 'worryOther', 'consult', 'effort', 'improve'].reduce(function (s, k) { return s + String(body[k]).trim().length; }, 0);
+    if (len < 5) { els.surveyResult.innerHTML = '<div class="test-photo-hint">書くところに、どこか1つでも書いてね（目標や頑張っていることなど）。</div>'; return; }
     els.surveySubmit.disabled = true;
     apiPost('surveySubmit', body).then(function (res) {
       els.surveySubmit.disabled = false;
@@ -32190,8 +32208,10 @@
         saveGameState(state);
         updateGameHud();
       }
-      els.surveyResult.innerHTML = '<div class="win-banner">📝 アンケートを送りました。ありがとうございます！' + (res.rewarded ? ' +' + res.rewardMp + 'MP' : '') + '</div>';
+      els.surveyResult.innerHTML = '<div class="win-banner">📝 アンケートを送りました。回答ありがとうございました！' + (res.rewarded ? ' +' + res.rewardMp + 'MP' : '') + '</div>';
       Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('[data-sv-text]'), function (el) { el.value = ''; });
+      Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('input[type="radio"]:not([name="surveyRespondent"]), input[type="checkbox"]'), function (el) { el.checked = false; });
+      var r = document.getElementById('surveyAnxiety'); if (r) r.value = 0;
       surveySat_ = { satClass: 0, satOverall: 0 };
       renderSurveyStars_();
     }).catch(function () {
@@ -32206,6 +32226,7 @@
       if (star) { surveySat_[star.getAttribute('data-sv-key')] = Number(star.getAttribute('data-sv-star')); renderSurveyStars_(); return; }
       if (e.target.closest('#surveySubmit')) submitSurvey_();
     });
+    els.surveyPanel.addEventListener('input', function (e) { if (e.target.id === 'surveyAnxiety') renderSurveyStars_(); });
     els.surveyToggle.parentNode.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b && b !== els.surveyToggle) els.surveyPanel.setAttribute('hidden', '');
