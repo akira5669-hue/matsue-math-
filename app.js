@@ -400,7 +400,7 @@
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled), doubleOrHalfSnapshot: s.doubleOrHalfSnapshot,
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
-        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
@@ -422,7 +422,7 @@
         wrongBank: s.wrongBank, enabled: Array.from(s.enabled),
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
-        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, gemItems: s.gemItems,
+        worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
@@ -20579,6 +20579,7 @@
     // 宝箱・鍵・指輪の所持数。{chestBronze,keyBronze,ringBronze,...}
     // のようにティア(bronze/silver/gold/rainbow)ごとに数える。
     treasureItems: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? Object.assign({}, savedProgress.treasureItems) : ((savedGame && savedGame.treasureItems && typeof savedGame.treasureItems === 'object') ? Object.assign({}, savedGame.treasureItems) : {}),
+    treasureRev: (savedProgress && savedProgress.treasureItems && typeof savedProgress.treasureItems === 'object') ? (Number(savedProgress.treasureRev) || 0) : ((savedGame && Number(savedGame.treasureRev)) || 0),
     gemItems: (savedProgress && savedProgress.gemItems && typeof savedProgress.gemItems === 'object') ? Object.assign({}, savedProgress.gemItems) : ((savedGame && savedGame.gemItems && typeof savedGame.gemItems === 'object') ? Object.assign({}, savedGame.gemItems) : {}),
     // 職業(全生徒に公開済み。レベル/7日連続ログイン称号のティアに応じて解禁。
     // 設定内容はランキングで誰からも見える)。
@@ -23945,6 +23946,7 @@
       worldLap: state.worldLap, worldLapStartLevel: state.worldLapStartLevel, worldCountry: state.worldCountry,
       worldBossDefeated: state.worldBossDefeated, worldAllies: state.worldAllies,
       treasureItems: state.treasureItems || {},
+      treasureRev: Number(state.treasureRev) || 0,
       gemItems: state.gemItems || {},
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
@@ -24002,7 +24004,23 @@
   // している間に端末側だけで上限を超えて加算され続けた「盛られた」MPが、
   // サーバーの正しい値へ補正される機会が無かった(reconcilePointsも「大きい方」を
   // 採用していたため、一度盛られるとずっと盛られたままになっていた)。
+  // 宝箱・鍵・指輪の版番号(treasureRev)。サーバーの方が新しければ端末の数は古いので、
+  // サーバーの数に置きかえる(古い端末で指輪などの数が戻って何度も売れる不具合の対策、2026-11-01)。
+  function applyTreasureRev_(res) {
+    if (!res || !res.ok || typeof res.treasureRev !== 'number') return;
+    var changed = false;
+    if (res.treasureStale && res.treasureItems && typeof res.treasureItems === 'object') {
+      state.treasureItems = Object.assign({}, res.treasureItems);
+      changed = true;
+    }
+    if (res.treasureRev > (Number(state.treasureRev) || 0) || changed) { state.treasureRev = res.treasureRev; changed = true; }
+    if (changed) {
+      saveGameState(state);
+      if (els.shopPanel && !els.shopPanel.hasAttribute('hidden')) renderShopList();
+    }
+  }
   function applySyncedPoints_(res) {
+    applyTreasureRev_(res);
     if (res && res.ok && typeof res.points === 'number' && res.points !== state.points) {
       state.points = res.points;
       saveGameState(state);
@@ -24114,6 +24132,13 @@
     // あるため(指輪をシールドとして使うと個数が減る等)、大きい方を採用する
     // (ゼロから作り直した端末で古いキャッシュに戻ってしまわないための保険。
     // 通常はbuildProgressSyncPayloadで直近の値がすぐ同期される)。
+    // サーバー側の宝箱・鍵・指輪の版番号が端末より新しければ、端末の数は古いのでサーバーの数に置きかえる。
+    var sTreasureRev = Number(server.treasureRev) || 0;
+    if (sTreasureRev > (Number(state.treasureRev) || 0)) {
+      state.treasureItems = Object.assign({}, sTreasureItems);
+      state.treasureRev = sTreasureRev;
+      changed = true;
+    }
     TREASURE_ITEM_ALL_KEYS_.forEach(function (k) {
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
@@ -25786,6 +25811,7 @@
       }
       state.points = res.remainingPoints;
       state.treasureItems = res.treasureItems;
+      if (typeof res.treasureRev === 'number') state.treasureRev = res.treasureRev;
       saveGameState(state);
       updateGameHud();
       renderShopList();
@@ -25813,6 +25839,7 @@
       }
       state.points = res.remainingPoints;
       state.treasureItems = res.treasureItems;
+      if (typeof res.treasureRev === 'number') state.treasureRev = res.treasureRev;
       saveGameState(state);
       updateGameHud();
       renderShopList();
@@ -25846,6 +25873,7 @@
       state.points = res.remainingPoints;
       state.hp = res.hp;
       state.treasureItems = res.treasureItems;
+      if (typeof res.treasureRev === 'number') state.treasureRev = res.treasureRev;
       if (res.gemItems) state.gemItems = res.gemItems;
       saveGameState(state);
       updateGameHud();
