@@ -21184,6 +21184,8 @@
     answer10BannerText: document.getElementById('answer10BannerText'),
     answer10BannerBtn: document.getElementById('answer10BannerBtn'),
     zukeiToggle: document.getElementById('zukeiToggle'),
+    gachaToggle: document.getElementById('gachaToggle'),
+    gachaPanel: document.getElementById('gachaPanel'),
     surveyToggle: document.getElementById('surveyToggle'),
     surveyPanel: document.getElementById('surveyPanel'),
     surveyStatus: document.getElementById('surveyStatus'),
@@ -22044,6 +22046,7 @@
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
+    if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.zukeiToggle) { els.zukeiToggle.hidden = !zukeiVisible_(); if (els.zukeiToggle.hidden && els.zukeiPanel) els.zukeiPanel.setAttribute('hidden', ''); }
     renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
@@ -32426,6 +32429,172 @@
     els.surveyToggle.parentNode.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b && b !== els.surveyToggle) els.surveyPanel.setAttribute('hidden', '');
+    });
+  }
+
+  /* ---------- ガチャ(サイコロ・大吉占い・豆知識・ミッション) ----------
+     どれも1日1回ずつ無料。結果とMPはサーバー(lib/handlers/gacha.js)で決める(ふだんの1日100MPの上限とは別枠)。
+     豆知識・ミッションの文はここに持ち、サーバーは番号だけ返す(GACHA_TRIVIA_/GACHA_MISSIONS_の数はgacha.jsと揃える)。
+     今は00001だけに表示(GACHA_OPEN_ALL_をtrueにすると全員。gacha.js側も揃えること)。 */
+  var GACHA_OPEN_ALL_ = false;
+  var GACHA_DICE_FACE_ = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+  var GACHA_TRIVIA_ = [
+    '円周率3.14159…は、どこまで行っても終わらず、同じ並びのくり返しにもならない数だよ。',
+    '1から100までをたすと5050。ガウスは子どものころ、(1＋100)×50で一瞬で計算したと言われているよ。',
+    '0を「数」として使い始めたのは、昔のインドの人たちだと言われているよ。',
+    'サイコロの向かい合う面の数をたすと、どこも7になるよ。',
+    '三角形の3つの角をたすと、どんな三角形でも180°になるよ。',
+    'ハチの巣が正六角形なのは、すき間なく並べられて、少ない材料で広い部屋が作れるからだよ。',
+    '111111111×111111111＝12345678987654321。きれいな数がならぶよ。',
+    '9の段の答えは、各位の数をたすと必ず9になるよ（例：9×7＝63 → 6＋3＝9）。',
+    '素数は「1とその数自身でしかわり切れない数」。2は、ただ1つの偶数の素数だよ。',
+    'Aの用紙を半分に切ると、元と同じ形（縦と横の比が同じ）になるよ。比は1：√2だよ。',
+    '光は1秒間に約30万km進むよ。地球を7周半できる速さだよ。',
+    '太陽の光が地球にとどくまでには、約8分20秒かかるよ。',
+    '水は4℃のときがいちばん重い（密度が大きい）。だから冬の池は底から凍らないよ。',
+    '雷の光が見えてから音が聞こえるまでの秒数×340mで、雷までのきょりがだいたい分かるよ。',
+    '人の体の約60％は水でできているよ。',
+    '月はいつも同じ面を地球に向けているよ。だから地球から月の裏側は見えないよ。',
+    '植物は光合成で、二酸化炭素と水から、でんぷんと酸素を作っているよ。',
+    'ダイヤモンドとえんぴつのしんは、どちらも炭素でできているよ。',
+    '空が青いのは、太陽の光のうち青い光が空気でよく散らばるからだよ。',
+    'アリは自分の体重の何十倍もの重さを運べると言われているよ。',
+    '音は空気中で1秒に約340m進むけど、水の中では約1500mも進むよ。',
+    '地球の表面の約70％は海だよ。',
+    'ふっとうした水の温度は、高い山の上では100℃より低くなるよ。気圧が低いからだよ。',
+    '昆虫のあしは6本。クモはあしが8本なので、昆虫のなかまではないよ。',
+    '正多面体は、正四面体・正六面体・正八面体・正十二面体・正二十面体の5種類しかないよ。',
+    '円の面積は「半径×半径×円周率」。半径が2倍になると、面積は4倍になるよ。',
+    '立方体の展開図は、全部で11種類あるよ。',
+    'カレンダーで、たて・横に並んだ3つの数の真ん中×3は、3つの数の合計になるよ。',
+    '1年が365日なのは、地球が太陽のまわりを1周するのに約365.24日かかるからだよ。うるう年でずれを直しているよ。',
+    '鉄は磁石につくけど、アルミニウムや銅は磁石につかないよ。'
+  ];
+  var GACHA_MISSIONS_ = [
+    '特訓部屋で10問チャレンジしよう！',
+    '今日まちがえた問題を、もう一度ときなおしてみよう！',
+    '九九（または計算）を声に出して1回とおそう！',
+    '図形トレーニングを3問ときてみよう！',
+    '理科モードで5問チャレンジしよう！',
+    '今日習ったことを、家の人に1つ説明してみよう！',
+    'ノートの字を、いつもよりていねいに書いてみよう！',
+    '15分だけ、スマホをはなして集中して勉強しよう！',
+    '計算のあと、たしかめ算を1回やってみよう！',
+    '分からなかった問題を1つ、先生に質問しよう！',
+    '教科書の太字の言葉を3つ覚えよう！',
+    '寝る前に、今日の勉強を1分ふりかえろう！',
+    '連続正解5問を目指そう！',
+    '問題文の大事なところに線を引きながら読もう！',
+    '図や表をかいてから問題をとこう！',
+    '前に習った単元の問題を1問ときなおそう！',
+    '机の上を片づけてから勉強を始めよう！',
+    '単位（cm・g・Lなど）をつけわすれないように気をつけよう！',
+    '時間を計って、5問をなるべく速く正確にとこう！',
+    '「できた！」と思った問題を1つ、ノートにまとめよう！'
+  ];
+  var GACHA_FORTUNE_MSG_ = {
+    '大吉': '最高の1日！何にチャレンジしてもうまくいきそう。むずかしい問題にもいどんでみよう！',
+    '中吉': 'とても良い日！コツコツやったことが、しっかり力になるよ。',
+    '小吉': '良いことがありそう。いつもより少しだけがんばると、もっと良くなるよ。',
+    '吉': 'おだやかな1日。落ち着いて、ていねいに問題をとこう。',
+    '末吉': 'あとからどんどん良くなる日！最後まであきらめずにやろう。',
+    '凶': 'ここからは上がるだけ！見直しをしっかりすれば、ピンチもチャンスに変わるよ。'
+  };
+  var GACHA_LUCKY_SUBJECT_ = ['計算', '図形', '文章題', '割合', '速さ', '方程式', '関数', '理科（生物）', '理科（化学）', '理科（物理）', '理科（地学）', '単位'];
+  var GACHA_LUCKY_ITEM_ = ['消しゴム', '定規', 'コンパス', '赤ペン', '青ペン', 'ノート', 'ふせん', '分度器', '水とう', 'えんぴつ', '時計', 'ハンカチ'];
+  var GACHA_LUCKY_COLOR_ = ['赤', '青', '黄色', '緑', 'オレンジ', 'むらさき', 'ピンク', '水色', '白', '金色'];
+  var gacha_ = { today: {}, busy: false };
+  function gachaVisible_() { return isAdminSession_() || GACHA_OPEN_ALL_; }
+  function gachaResultHtml_(kind, r, mp) {
+    var res = (r && r.result) || {};
+    var mpTxt = '<div class="gacha-mp">+' + (mp != null ? mp : r.mp) + 'MP</div>';
+    if (kind === 'dice') {
+      var d = res.dice || [1, 1];
+      return '<div class="gacha-dice">' + GACHA_DICE_FACE_[d[0]] + GACHA_DICE_FACE_[d[1]] + '</div>'
+        + '<div class="gacha-line">' + d[0] + ' ＋ ' + d[1] + ' ＝ ' + (d[0] + d[1]) + (res.zorome ? '　<b>ゾロ目で2倍！🎉</b>' : '') + '</div>' + mpTxt;
+    }
+    if (kind === 'omikuji') {
+      var s = Number(res.seed) || 0;
+      return '<div class="gacha-fortune gacha-rank-' + escHtml(res.rank) + '">' + escHtml(res.rank) + '</div>'
+        + '<div class="gacha-line">' + escHtml(GACHA_FORTUNE_MSG_[res.rank] || '') + '</div>'
+        + '<div class="gacha-lucky">ラッキー単元：<b>' + GACHA_LUCKY_SUBJECT_[s % GACHA_LUCKY_SUBJECT_.length] + '</b>　ラッキーアイテム：<b>' + GACHA_LUCKY_ITEM_[Math.floor(s / 13) % GACHA_LUCKY_ITEM_.length] + '</b>　ラッキーカラー：<b>' + GACHA_LUCKY_COLOR_[Math.floor(s / 173) % GACHA_LUCKY_COLOR_.length] + '</b></div>' + mpTxt;
+    }
+    if (kind === 'trivia') return '<div class="gacha-line gacha-text">💡 ' + escHtml(GACHA_TRIVIA_[Number(res.pick) % GACHA_TRIVIA_.length]) + '</div>' + mpTxt;
+    return '<div class="gacha-line gacha-text">🎯 今日のミッション：<b>' + escHtml(GACHA_MISSIONS_[Number(res.pick) % GACHA_MISSIONS_.length]) + '</b></div>' + mpTxt;
+  }
+  function renderGacha_() {
+    Array.prototype.forEach.call(els.gachaPanel.querySelectorAll('[data-gacha]'), function (card) {
+      var kind = card.getAttribute('data-gacha');
+      var done = gacha_.today[kind];
+      var btn = card.querySelector('.gacha-btn');
+      var out = card.querySelector('.gacha-out');
+      btn.disabled = !!done || gacha_.busy;
+      btn.textContent = done ? '今日は引いたよ（また明日）' : 'ガチャを引く！';
+      if (done && !out.getAttribute('data-anim')) out.innerHTML = gachaResultHtml_(kind, done);
+    });
+  }
+  function drawGacha_(kind) {
+    var session = loadSession();
+    if (!session || !session.id || gacha_.busy || gacha_.today[kind]) return;
+    gacha_.busy = true;
+    var card = els.gachaPanel.querySelector('[data-gacha="' + kind + '"]');
+    var out = card.querySelector('.gacha-out');
+    out.setAttribute('data-anim', '1');
+    renderGacha_();
+    // くるくる回る演出(約1.2秒)。その間にサーバーへ問い合わせる。
+    var frames = kind === 'dice' ? ['⚀⚃', '⚁⚄', '⚂⚅', '⚃⚀', '⚄⚁', '⚅⚂'] : kind === 'omikuji' ? ['⛩️', '🎋', '⛩️', '🎋'] : ['❓', '❔'];
+    var fi = 0;
+    var timer = setInterval(function () { out.innerHTML = '<div class="gacha-dice gacha-spin">' + frames[fi++ % frames.length] + '</div>'; }, 120);
+    var started = Date.now();
+    var finish = function (html) {
+      setTimeout(function () {
+        clearInterval(timer);
+        out.removeAttribute('data-anim');
+        out.innerHTML = html;
+        gacha_.busy = false;
+        renderGacha_();
+      }, Math.max(0, 1200 - (Date.now() - started)));
+    };
+    apiPost('gachaDraw', { id: session.id, kind: kind }).then(function (res) {
+      if (res && res.ok) {
+        gacha_.today[kind] = { result: res.result, mp: res.mp };
+        if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+        finish(gachaResultHtml_(kind, gacha_.today[kind]));
+      } else if (res && res.error === 'already_drawn' && res.prev) {
+        gacha_.today[kind] = res.prev;
+        finish(gachaResultHtml_(kind, res.prev));
+      } else {
+        finish('<div class="test-photo-hint">引けませんでした。もう一度お試しください。</div>');
+      }
+    }).catch(function () { finish('<div class="test-photo-hint">通信に失敗しました。もう一度お試しください。</div>'); });
+  }
+  function toggleGacha() {
+    var isHidden = els.gachaPanel.hasAttribute('hidden');
+    if (!isHidden) { els.gachaPanel.setAttribute('hidden', ''); return; }
+    ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel',
+      'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+      var p = document.getElementById(pid);
+      if (p) p.setAttribute('hidden', '');
+    });
+    els.gachaPanel.removeAttribute('hidden');
+    renderGacha_();
+    var session = loadSession();
+    if (session && session.id) {
+      apiPost('gachaStatus', { id: session.id }).then(function (res) {
+        if (res && res.ok) { gacha_.today = res.today || {}; renderGacha_(); }
+      }).catch(function () {});
+    }
+  }
+  if (els.gachaToggle) {
+    els.gachaToggle.addEventListener('click', toggleGacha);
+    els.gachaPanel.addEventListener('click', function (e) {
+      var card = e.target.closest('[data-gacha]');
+      if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));
+    });
+    // ほかのボタンで別の画面を開いたら、ガチャは閉じる。
+    els.gachaToggle.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== els.gachaToggle) els.gachaPanel.setAttribute('hidden', '');
     });
   }
 

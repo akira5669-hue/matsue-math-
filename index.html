@@ -206,6 +206,7 @@
         <button id="superTrainingToggle" class="ghost-btn is-new" type="button" hidden>🔥超特訓部屋<span class="new-badge">NEW</span></button>
         <button id="halloweenToggle" class="ghost-btn is-new eye-catch-frame halloween-toggle" type="button" hidden>🎃ハロウィン<span class="new-badge">NEW</span></button>
         <button id="surveyToggle" class="ghost-btn is-new" type="button" hidden>📝月1アンケート<span class="new-badge">NEW</span></button>
+        <button id="gachaToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🎰ガチャ<span class="new-badge">NEW</span></button>
         <button id="zukeiToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧊超絶！図形！トレーニング！！<span class="new-badge">NEW</span></button>
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
@@ -870,6 +871,37 @@
       <div class="survey-q"><p class="survey-label">不満・改善してほしいこと</p><textarea class="survey-text" data-sv-text="improve" maxlength="2000" rows="3" placeholder="授業・アプリ・塾のことなど、こうしてほしいこと"></textarea></div>
       <div class="answer10-actions"><button type="button" class="primary-btn" id="surveySubmit">送信する</button></div>
       <div id="surveyResult"></div>
+    </section>
+
+    <section class="weekly-quiz-panel" id="gachaPanel" hidden>
+      <h3 class="history-title">🎰 ガチャ</h3>
+      <p class="test-photo-hint">どのガチャも<b>1日1回ずつ無料</b>で引けるよ！もらえるMPは、ふだんの1日100MPの上限とは別だよ。</p>
+      <div class="gacha-grid">
+      <div class="gacha-card" data-gacha="dice">
+        <div class="gacha-title">🎲 サイコロガチャ</div>
+        <div class="gacha-desc">サイコロ2個をふって、出た目の合計がMPに！ゾロ目なら2倍！（2〜24MP）</div>
+        <div class="gacha-out"></div>
+        <button type="button" class="primary-btn gacha-btn">ガチャを引く！</button>
+      </div>
+      <div class="gacha-card" data-gacha="omikuji">
+        <div class="gacha-title">⛩️ 大吉占いガチャ</div>
+        <div class="gacha-desc">今日の運勢をうらなうよ。大吉なら+20MP！ラッキー単元・アイテム・カラーも分かるよ。</div>
+        <div class="gacha-out"></div>
+        <button type="button" class="primary-btn gacha-btn">ガチャを引く！</button>
+      </div>
+      <div class="gacha-card" data-gacha="trivia">
+        <div class="gacha-title">💡 豆知識ガチャ</div>
+        <div class="gacha-desc">算数・理科の「へぇ〜！」な豆知識が出るよ。（+1MP）</div>
+        <div class="gacha-out"></div>
+        <button type="button" class="primary-btn gacha-btn">ガチャを引く！</button>
+      </div>
+      <div class="gacha-card" data-gacha="mission">
+        <div class="gacha-title">🎯 ミッションガチャ</div>
+        <div class="gacha-desc">今日の勉強ミッションが出るよ。チャレンジしてみよう！（+1MP）</div>
+        <div class="gacha-out"></div>
+        <button type="button" class="primary-btn gacha-btn">ガチャを引く！</button>
+      </div>
+      </div>
     </section>
 
     <section class="weekly-quiz-panel" id="zukeiPanel" hidden>

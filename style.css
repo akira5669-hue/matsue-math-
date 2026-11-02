@@ -2480,3 +2480,20 @@ input.survey-text { margin-top: 4px; }
 input.survey-text.survey-short { width: 5em; margin-top: 0; }
 
 .zukei-revolve-fig { width: 200px; }
+
+/* ガチャ */
+.gacha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+.gacha-card { border: 2px solid #fcd34d; border-radius: 14px; padding: 12px; background: linear-gradient(180deg, #fffbeb, #fff); text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.gacha-title { font-weight: 800; font-size: 1.15rem; color: #b45309; }
+.gacha-desc { font-size: 0.85rem; color: #475569; }
+.gacha-out { min-height: 70px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.gacha-dice { font-size: 3rem; line-height: 1.1; }
+.gacha-spin { animation: gachaShake 0.24s ease-in-out infinite; }
+@keyframes gachaShake { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+.gacha-line { font-size: 0.95rem; }
+.gacha-text { text-align: left; }
+.gacha-lucky { font-size: 0.85rem; color: #334155; }
+.gacha-mp { font-weight: 800; color: #16a34a; font-size: 1.2rem; }
+.gacha-fortune { font-size: 2.6rem; font-weight: 900; color: #b91c1c; letter-spacing: 0.1em; }
+.gacha-rank-大吉 { color: #dc2626; text-shadow: 0 0 8px #fde047; }
+.gacha-rank-凶 { color: #475569; }
