@@ -31785,6 +31785,12 @@
     return (GRADE_RANK[s && s.grade] || 0) >= GRADE_RANK['中1'];
   }
   function zkShuffle_(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = randInt(0, i); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  // 解説の形：💡ポイント → ①②③…の手順 → 答え。
+  function zkEx_(point, steps, ans) {
+    return '<div class="zk-ex">' + (point ? '<div class="zk-ex-point">💡 ' + point + '</div>' : '')
+      + '<ol class="zk-ex-steps">' + steps.filter(Boolean).map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>'
+      + (ans ? '<div class="zk-ex-ans">答え：<b>' + ans + '</b></div>' : '') + '</div>';
+  }
   function zkSvg_(w, h, body, cls) { return '<svg class="' + (cls || 'zukei-svg') + '" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" xmlns="http://www.w3.org/2000/svg">' + body + '</svg>'; }
 
   // ---- 積み木(①②)：横nx×奥ny のマスに、すき間なく積んだ高さの表 ----
@@ -31930,7 +31936,12 @@
       text: '積み木はいくつある？（すき間なく積んであって、浮いている積み木はないよ。見えない下の段も数えよう）',
       figure: zkBlocksSvg_(hm, false),
       choices: choices,
-      explain: 'それぞれのマスに積んである数を足すと、' + colsText + '＝' + ans + '個。'
+      explain: zkEx_('見えない下の段の積み木も数えるよ。浮いている積み木はないので、上に積み木があれば、その下にも必ず積み木があるよ。', [
+        '真上から見て、マスごとに「何段積んであるか」を考えよう。',
+        '1列ずつ書き出すと：' + hm.map(function (r, i) { return (i + 1) + '列目 ' + r.join('・'); }).join('、') + '（段の数）',
+        '全部たすと ' + colsText + ' ＝ ' + ans + '個。',
+        '（別の数え方）段ごとに数えると、' + (function () { var H = Math.max.apply(null, hm.map(function (r) { return Math.max.apply(null, r); })), out = []; for (var h = 1; h <= H; h++) { var c = 0; hm.forEach(function (r) { r.forEach(function (v) { if (v >= h) c++; }); }); out.push(h + '段目 ' + c + '個'); } return out.join('、'); })() + ' で、合わせて ' + ans + '個。'
+      ], ans + '個')
     };
   }
   function zkMakeViewQ_() {
@@ -31966,7 +31977,17 @@
       text: 'この積み木を' + name + 'から見ると、どう見える？' + (kind === 'top' ? '（下が正面の側だよ）' : ''),
       figure: zkBlocksSvg_(hm, true),
       choices: choices,
-      explain: kind === 'top' ? '真上から見ると、積み木が1個でもあるマスが見えるよ。' : '横から見ると、その方向に並んだ列の中でいちばん高い積み木の高さが見えるよ。'
+      explain: kind === 'top'
+        ? zkEx_('真上から見ると、高さは関係なく「積み木が1個でもあるマス」が正方形に見えるよ。', [
+          '上から見た形は、床の上で積み木が置いてあるマスの形と同じ。',
+          '何段積んであるかは、上からは分からない（重なって1つに見える）よ。',
+          '下が正面の側なので、図の手前の列が、答えの図では下の行になるように考えよう。'
+        ], '緑のわくの図')
+        : zkEx_('横から見ると、奥に並んだ積み木は重なって見えるよ。見えるのは、その列でいちばん高い積み木の高さだけ。', [
+          '見る方向から、手前から奥へ並んだ1列ずつを考えよう。',
+          'それぞれの列で、いちばん高い所が何段かを調べると、左から ' + (function () { var g = correct, out = []; for (var c = 0; c < g[0].length; c++) { var n = 0; for (var r = 0; r < g.length; r++) if (g[r][c]) n++; out.push(n); } return out.join('・'); })() + '段。',
+          'その高さを左から順に並べた形が答えだよ。低い列は、手前にあっても奥の高い列にかくれずに見えるよ。'
+        ], '緑のわくの図')
     };
   }
 
@@ -32121,7 +32142,15 @@
         text: 'この図を折り曲げて組み立てると、立方体（さいころの形）になる？',
         figure: zkNetFigure_(cellsA),
         choices: [{ html: 'なる', ok: isNet }, { html: 'ならない', ok: !isNet }],
-        explain: isNet ? '組み立てると6つの面がぴったり重ならずに、立方体になるよ。' : '組み立てると面が重なってしまい、立方体にはならないよ。'
+        explain: zkEx_('立方体の展開図は全部で11種類。組み立てたとき、6つの面が重ならずに1つずつ使われれば立方体になるよ。', isNet ? [
+          '1つの面を「底」に決めて、まわりの面を折り上げていこう。',
+          '前・後ろ・左・右・上の面が、どれも重ならずに1つずつできるよ。',
+          'だから、この図は立方体になる。'
+        ] : [
+          '1つの面を「底」に決めて、まわりの面を折り上げていこう。',
+          'どこかで2つの面が同じ場所に重なってしまい、そのかわりにあいたままの面ができるよ。',
+          'たとえば、1列に5つ以上並んでいる・4マスで正方形のかたまり（田の字）がある、という形は必ず立方体にならないよ。'
+        ], isNet ? 'なる' : 'ならない')
       };
     }
     var cells = zkPickNet_(true);
@@ -32139,7 +32168,11 @@
           title: '③ 展開図（平行な面）',
           text: 'この展開図を組み立てて立方体にしたとき、赤い面（' + labels[mark] + '）と<b>平行な面</b>はどれ？',
           figure: fig, choices: choices,
-          explain: '赤い面（' + labels[mark] + '）と平行なのは、向かい合う面の「' + labels[ansIdx] + '」。展開図では、1マスとばした面どうしが向かい合うことが多いよ。'
+          explain: zkEx_('立方体で「向かい合う面」どうしが平行。辺でくっついているとなりの面は、折ると垂直になるので平行ではないよ。', [
+            '赤い面（' + labels[mark] + '）にくっついている面は、組み立てるととなりの面（垂直）になるので答えではないよ。',
+            'まっすぐ3つ並んだ面では、両はしの2つが向かい合う（間に1マスはさむ）。L字にずれていても、折り曲げたときに1つとばしになる面が向かい合うよ。',
+            '頭の中で組み立てると、' + labels[mark] + 'の反対側に来るのは「' + labels[ansIdx] + '」。'
+          ], labels[ansIdx])
         };
       }
       var perps = [];
@@ -32154,7 +32187,11 @@
         title: '③ 展開図（垂直な面）',
         text: 'この展開図を組み立てて立方体にしたとき、赤い面（' + labels[mark] + '）と<b>垂直な面</b>を全部あげたものはどれ？',
         figure: fig, choices: zkShuffle_(opts),
-        explain: '立方体の1つの面と垂直な面は4つ。向かい合う面（' + labels[ansIdx] + '）だけは平行で、それ以外の' + setText(perps) + 'が垂直だよ。'
+        explain: zkEx_('立方体の1つの面には、となり合う面が4つ（垂直）と、向かい合う面が1つ（平行）あるよ。', [
+          'まず、赤い面（' + labels[mark] + '）と向かい合う面（平行な面）を見つける → 「' + labels[ansIdx] + '」。',
+          '残りの4つの面は、どれも赤い面ととなり合うので垂直になる。',
+          'だから垂直な面は ' + setText(perps) + ' の4つ。'
+        ], setText(perps))
       };
     }
     var np = zkNetPoints_(cells);
@@ -32180,7 +32217,11 @@
         text: 'この展開図を組み立てて立方体にしたとき、<b>点' + P.label + 'と重なる点</b>をすべてあげたものはどれ？',
         figure: zkNetFigure_(cells, { net: np, point: P }),
         choices: zkShuffle_(popts),
-        explain: '組み立てると、点' + P.label + 'には点' + partners.join('と点') + 'が集まって、立方体の1つの頂点になるよ。'
+        explain: zkEx_('立方体の1つの頂点には3つの面が集まるよ。展開図では、1つの頂点が2か所か3か所に分かれているよ。', [
+          '点' + P.label + 'をふくむ面から、となりの面へ折っていこう。',
+          '折ってくっつく辺の両はしの点は、同じ点になるよ。とくに、展開図の「へこんだ角（90°のすき間）」の両側の点は、折るとぴったり合わさるよ。',
+          'たどっていくと、点' + P.label + 'と同じ場所に来るのは 点' + partners.join('と点') + '。'
+        ], '点' + partners.join('と点'))
       };
     }
     // 重なる辺
@@ -32205,7 +32246,11 @@
       text: 'この展開図を組み立てて立方体にしたとき、<b>赤い辺' + E.a.label + E.b.label + 'と重なる辺</b>はどれ？',
       figure: zkNetFigure_(cells, { net: np, edge: E }),
       choices: zkShuffle_(eopts),
-      explain: '組み立てると、点' + E.a.label + 'は点' + partner.a.label + 'と、点' + E.b.label + 'は点' + partner.b.label + 'と重なるので、辺' + E.a.label + E.b.label + 'は' + ename(partner) + 'と重なるよ。'
+      explain: zkEx_('辺が重なるのは、その両はしの点がそれぞれ重なるとき。展開図の「へこんだ角」の両側の辺は、折るとくっつくよ。', [
+          'まず、点' + E.a.label + 'と重なる点を探す → 点' + partner.a.label + '。',
+          '次に、点' + E.b.label + 'と重なる点を探す → 点' + partner.b.label + '。',
+          'だから、辺' + E.a.label + E.b.label + 'は ' + ename(partner) + ' と重なる。'
+        ], ename(partner))
     };
   }
 
@@ -32235,7 +32280,17 @@
       text: flip ? 'この形を<b>裏返した</b>形はどれ？（裏返したあと、回してもいいよ）' : 'この形を<b>回して</b>（裏返さずに）できる形はどれ？',
       figure: zkCellsSvg_(cells, { size: 28 }),
       choices: choices,
-      explain: flip ? 'ほかの3つは、裏返さずに回しただけの形だよ。' : 'ほかの3つは、裏返した形を回したものだよ。回すだけでは重ならないね。'
+      explain: flip
+        ? zkEx_('「裏返す」は紙をひっくり返すこと。鏡にうつしたように、左右（または上下）が反対になるよ。', [
+          'もとの形を裏返した形（鏡にうつした形）を思いうかべよう。',
+          '裏返したあと、回して向きを変えてもいいので、その形を回したものを探そう。',
+          'ほかの3つは、裏返さずに回しただけの形。でっぱりの並び方がもとの形と同じ向きのままだよ。'
+        ], '緑のわくの形')
+        : zkEx_('「回す」だけなら、形の左右は入れかわらないよ（でっぱりの並ぶ順番が時計回りに同じ）。', [
+          'もとの形を、90°・180°・270°回した形を思いうかべよう。',
+          '形のはしやでっぱりを1つ決めて、回したときにどこに行くかを追いかけるとわかりやすいよ。',
+          'ほかの3つは、裏返した形を回したもの。回すだけでは、もとの形と重ならないよ。'
+        ], '緑のわくの形')
     };
   }
 
@@ -32279,7 +32334,12 @@
       text: 'この図形を、赤い直線ℓを軸として1回転させると、どんな立体ができる？',
       figure: figure,
       choices: choices,
-      explain: '1回転させると「' + item.name + '」ができるよ。軸からはなれた所は、円をえがいて回るよ。'
+      explain: zkEx_('回転体は、図形を軸のまわりに1回転させてできる立体。軸からはなれた点は、軸を中心に円をえがいて回るよ。', [
+        '軸にくっついている辺は、回っても動かず、立体のまん中の線になるよ。',
+        '軸からいちばん遠い所が、立体のいちばん太い所になるよ。軸からはなれている図形は、まん中に穴があくよ。',
+        '基本の形：長方形 → 円柱、直角三角形 → 円すい、半円 → 球。組み合わさった形は、それぞれの部分を回してくっつけよう。',
+        'この図形を回すと「' + item.name + '」になる。'
+      ], item.name)
     };
   }
 
@@ -32335,7 +32395,11 @@
         text: 'この図形の<b>対称の軸</b>は何本？',
         figure: zkSymSvg_(it, 'zukei-svg'),
         choices: zkShuffle_(nums).map(function (n) { return { html: n + '本', ok: n === it.line }; }),
-        explain: zkSymDesc_(it) + ' 折り目にしてぴったり重なる直線が' + it.line + '本あるね。'
+        explain: zkEx_('対称の軸は、その線で2つに折るとぴったり重なる直線。たて・よこ・ななめを全部調べよう。', [
+          'たての線、よこの線、ななめの線（頂点どうしを結ぶ線、辺の真ん中を通る線）で折ったときを考えよう。',
+          /^正.角形$/.test(it.name) ? '正多角形の対称の軸の本数は、頂点の数と同じ（' + it.name + 'なら' + it.line + '本）。' : '',
+          zkSymDesc_(it)
+        ], it.line + '本')
       };
     }
     var defs = [
@@ -32350,7 +32414,12 @@
       text: defs.q,
       figure: '',
       choices: zkShuffle_([ans].concat(wrongs)).map(function (s) { return { html: zkSymSvg_(s), ok: s === ans }; }),
-      explain: zkSymDesc_(ans) + '<br>（線対称：1本の直線で折るとぴったり重なる形。点対称：1つの点のまわりに180°回すとぴったり重なる形）'
+      explain: zkEx_('線対称：1本の直線で折るとぴったり重なる形。点対称：まん中の点のまわりに180°（半回転）回すと、もとの形とぴったり重なる形。', [
+        '線対称か調べる：形のまん中に1本の線を引いて、2つに折ったときに重なるか考えよう。',
+        '点対称か調べる：紙を180°回して（さかさまにして）、もとの形と同じに見えるか考えよう。',
+        zkSymDesc_(ans),
+        'ほかの図形：' + wrongs.map(function (w) { return zkSymDesc_(w); }).join(' ')
+      ], ans.name)
     };
   }
 
@@ -32392,13 +32461,20 @@
         x = C;
         body += zkAngleMark_(P[0], P[1], P[2], A + '°') + zkAngleMark_(P[1], P[2], P[0], B + '°') + zkAngleMark_(P[2], P[0], P[1], 'x', '#dc2626');
         text = '三角形の角 <b>x</b> は何度？';
-        explain = '三角形の3つの角をたすと180°。だから x ＝ 180 − ' + A + ' − ' + B + ' ＝ ' + C + '° だよ。';
+        explain = zkEx_('三角形の3つの角をたすと、どんな三角形でも 180°。', [
+          'わかっている2つの角をたす：' + A + ' ＋ ' + B + ' ＝ ' + (A + B) + '°',
+          '180°からひく：180 − ' + (A + B) + ' ＝ ' + C + '°'
+        ], C + '°');
       } else {
         x = A + C;
         var ext = [P[1][0] + 60, 150];
         body += line(P[1], ext) + zkAngleMark_(P[0], P[1], P[2], A + '°') + zkAngleMark_(P[2], P[0], P[1], C + '°') + zkAngleMark_(P[1], ext, P[2], 'x', '#dc2626');
         text = '三角形の外側の角 <b>x</b> は何度？';
-        explain = '三角形の外角は、となりにない2つの内角の和に等しいよ。x ＝ ' + A + ' ＋ ' + C + ' ＝ ' + x + '°（180 − ' + B + ' でも求められるよ）。';
+        explain = zkEx_('三角形の外角（辺をのばしてできる外側の角）は、となりにない2つの内角の和と等しいよ。', [
+          'x のとなりにない2つの内角は ' + A + '° と ' + C + '°。',
+          'x ＝ ' + A + ' ＋ ' + C + ' ＝ ' + x + '°',
+          '（たしかめ）x のとなりの内角は ' + B + '° で、一直線は180°なので、180 − ' + B + ' ＝ ' + x + '° でも同じになるね。'
+        ], x + '°');
       }
       return { title: '③ 角度', text: text, figure: zkSvg_(260, 170, body, 'zukei-svg'), choices: zkAngleChoices_(x), explain: explain };
     }
@@ -32420,7 +32496,13 @@
         text: '同じしるしの辺は長さが等しいよ。角 <b>x</b> は何度？',
         figure: zkSvg_(260, 170, body, 'zukei-svg'),
         choices: zkAngleChoices_(x),
-        explain: '二等辺三角形の2つの底角は等しいよ。' + (askBase ? 'x ＝ (180 − ' + apex + ') ÷ 2 ＝ ' + base + '°' : 'x ＝ 180 − ' + base + ' × 2 ＝ ' + apex + '°') + ' だよ。'
+        explain: zkEx_('同じしるしの辺が2本ある三角形は二等辺三角形。二等辺三角形の2つの底角（等しい辺の下の2つの角）は等しいよ。', askBase ? [
+          '三角形の角の和180°から、上の角（頂角）をひく：180 − ' + apex + ' ＝ ' + (180 - apex) + '°',
+          'これが2つの底角の合計。2つは等しいので半分にする：' + (180 - apex) + ' ÷ 2 ＝ ' + base + '°'
+        ] : [
+          '2つの底角は等しいので、どちらも ' + base + '°。合わせて ' + base + ' × 2 ＝ ' + (base * 2) + '°',
+          '三角形の角の和180°からひく：180 − ' + (base * 2) + ' ＝ ' + apex + '°'
+        ], x + '°')
       };
     }
     if (kind === 3) {
@@ -32432,7 +32514,12 @@
         text: '<b>正' + n + '角形</b>の1つの角の大きさは何度？',
         figure: zkSvg_(160, 150, '<polygon points="' + zkPolyAttr_(pts) + '" fill="#fef3c7" stroke="#334155" stroke-width="2"/>' + zkAngleMark_(pts[0], pts[n - 1], pts[1], 'x', '#dc2626'), 'zukei-svg'),
         choices: zkAngleChoices_(x),
-        explain: n + '角形の角の和は 180 × (' + n + ' − 2) ＝ ' + (180 * (n - 2)) + '°。正' + n + '角形は全部の角が等しいので、' + (180 * (n - 2)) + ' ÷ ' + n + ' ＝ ' + x + '° だよ。'
+        explain: zkEx_('多角形は、1つの頂点から対角線を引くと三角形に分けられるよ。三角形1つの角の和は180°。', [
+          n + '角形は、1つの頂点から対角線を引くと (' + n + ' − 2) ＝ ' + (n - 2) + '個の三角形に分けられる。',
+          'だから角の和は 180 × ' + (n - 2) + ' ＝ ' + (180 * (n - 2)) + '°。',
+          '正' + n + '角形は' + n + 'つの角が全部等しいので、' + (180 * (n - 2)) + ' ÷ ' + n + ' ＝ ' + x + '°。',
+          '（別の方法）外角の和はいつも360°。1つの外角は 360 ÷ ' + n + ' ＝ ' + (360 / n) + '° なので、180 − ' + (360 / n) + ' ＝ ' + x + '°。'
+        ], x + '°')
       };
     }
     // 平行線と角(同位角・錯角・同じ側の内角)
@@ -32448,16 +32535,16 @@
     var sub = randInt(0, 2);
     var right = [1, 0], left = [-1, 0], up = dir, down = [-dir[0], -dir[1]];
     var markU, markL, how;
-    if (sub === 0) { markU = [right, up]; markL = [right, up]; x = a; how = '同位角は等しいので、x ＝ ' + a + '°'; }
-    else if (sub === 1) { markU = [left, down]; markL = [right, up]; x = a; how = '錯角は等しいので、x ＝ ' + a + '°'; }
-    else { markU = [left, down]; markL = [left, up]; x = 180 - a; how = '平行線の同じ側の内角をたすと180°なので、x ＝ 180 − ' + a + ' ＝ ' + x + '°'; }
+    if (sub === 0) { markU = [right, up]; markL = [right, up]; x = a; how = zkEx_('平行な2本の直線に1本の直線が交わるとき、同じ位置にある角（同位角）は等しいよ。', ['ℓと交わる所の ' + a + '° と、mと交わる所の x は、どちらも交わった点の「右上」の角。', '同じ位置にある角（同位角）なので等しい：x ＝ ' + a + '°'], a + '°'); }
+    else if (sub === 1) { markU = [left, down]; markL = [right, up]; x = a; how = zkEx_('平行な2本の直線の間で、Zの字（または逆Zの字）の形にできる2つの角を「錯角」というよ。平行線の錯角は等しいよ。', ['ℓの所の ' + a + '°（ℓの左下）と、mの所の x（mの右上）を結ぶと、Zの字の形になるね。', '錯角なので等しい：x ＝ ' + a + '°'], a + '°'); }
+    else { markU = [left, down]; markL = [left, up]; x = 180 - a; how = zkEx_('一直線の角は180°。それと、平行線の同位角・錯角が等しいことを組み合わせよう。', ['ℓの所で、' + a + '° のとなりの角（ℓの左上）は、一直線なので 180 − ' + a + ' ＝ ' + x + '°。', 'その角と x（mの左上）は同じ位置にある角（同位角）なので等しい。', 'だから x ＝ ' + x + '°。（ℓとmの間で同じ側にある2つの角は、たすと180°になる、とも覚えておこう）'], x + '°'); }
     body += zkAngleMark_(Up, far(Up, markU[0], 30), far(Up, markU[1], 30), a + '°') + zkAngleMark_(Lp, far(Lp, markL[0], 30), far(Lp, markL[1], 30), 'x', '#dc2626');
     return {
       title: '③ 角度（平行線）',
       text: '直線ℓとmは<b>平行</b>だよ。角 <b>x</b> は何度？',
       figure: zkSvg_(270, 170, body, 'zukei-svg'),
       choices: zkAngleChoices_(x),
-      explain: how + ' だよ。'
+      explain: how
     };
   }
 
@@ -32470,22 +32557,22 @@
     if (kind === 0) {
       var b = randInt(3, 7), h = randInt(2, 5), x0 = randInt(0, COLS - b), y0 = randInt(0, ROWS - h), ax = randInt(0, COLS);
       pts = [[x0, y0 + h], [x0 + b, y0 + h], [ax, y0]]; area = b * h / 2; name = '三角形';
-      explain = '底辺 ' + b + 'cm、高さ ' + h + 'cm の三角形だから、' + b + ' × ' + h + ' ÷ 2 ＝ ' + zkFmtArea_(area) + ' だよ。（高さは、頂点から底辺に垂直にはかるよ）';
+      explain = zkEx_('三角形の面積 ＝ 底辺 × 高さ ÷ 2', ['底辺は、方眼のよこの線にそった辺：' + b + 'マス ＝ ' + b + 'cm。', '高さは、底辺から向かいの頂点まで、まっすぐ（垂直に）はかる：' + h + 'マス ＝ ' + h + 'cm。頂点が底辺の真上になくても、高さは同じだよ。', b + ' × ' + h + ' ÷ 2 ＝ ' + zkFmtArea_(area)], zkFmtArea_(area));
     } else if (kind === 1) {
       var b1 = randInt(2, 5), h1 = randInt(2, 5), sh = randInt(1, 3) * (Math.random() < 0.5 ? 1 : -1);
       var x1 = Math.max(0, -sh) + randInt(0, Math.max(0, COLS - b1 - Math.abs(sh))), y1 = randInt(0, ROWS - h1);
       pts = [[x1, y1 + h1], [x1 + b1, y1 + h1], [x1 + b1 + sh, y1], [x1 + sh, y1]]; area = b1 * h1; name = '平行四辺形';
-      explain = '底辺 ' + b1 + 'cm、高さ ' + h1 + 'cm の平行四辺形だから、' + b1 + ' × ' + h1 + ' ＝ ' + zkFmtArea_(area) + ' だよ。';
+      explain = zkEx_('平行四辺形の面積 ＝ 底辺 × 高さ（はしの三角形を切って反対側に動かすと、長方形になるからだよ）', ['底辺（下の辺）：' + b1 + 'マス ＝ ' + b1 + 'cm。', '高さは、上の辺と下の辺の間のたての長さ：' + h1 + 'cm。ななめの辺の長さではないので注意！', b1 + ' × ' + h1 + ' ＝ ' + zkFmtArea_(area)], zkFmtArea_(area));
     } else if (kind === 2) {
       var lo = randInt(4, 8), up = randInt(1, lo - 1), h2 = randInt(2, 5), x2 = randInt(0, COLS - lo), y2 = randInt(0, ROWS - h2), s2 = randInt(0, lo - up);
       pts = [[x2, y2 + h2], [x2 + lo, y2 + h2], [x2 + s2 + up, y2], [x2 + s2, y2]]; area = (up + lo) * h2 / 2; name = '台形';
-      explain = '上底 ' + up + 'cm、下底 ' + lo + 'cm、高さ ' + h2 + 'cm の台形だから、(' + up + ' ＋ ' + lo + ') × ' + h2 + ' ÷ 2 ＝ ' + zkFmtArea_(area) + ' だよ。';
+      explain = zkEx_('台形の面積 ＝ (上底 ＋ 下底) × 高さ ÷ 2（同じ台形をさかさまにしてくっつけると平行四辺形になり、その半分だからだよ）', ['上底（上の辺）：' + up + 'cm、下底（下の辺）：' + lo + 'cm。', '高さ（上の辺と下の辺の間のたての長さ）：' + h2 + 'cm。', '(' + up + ' ＋ ' + lo + ') × ' + h2 + ' ÷ 2 ＝ ' + (up + lo) + ' × ' + h2 + ' ÷ 2 ＝ ' + zkFmtArea_(area)], zkFmtArea_(area));
     } else {
       var W = randInt(3, 6), H = randInt(3, 5), a = randInt(1, H - 1), bb = randInt(1, W - 1), x3 = randInt(0, COLS - W), y3 = randInt(0, ROWS - H);
       pts = [[x3, y3 + H], [x3 + W, y3 + H - a], [x3 + bb, y3]]; name = '三角形';
       var t1 = W * a / 2, t2 = bb * H / 2, t3 = (W - bb) * (H - a) / 2;
       area = W * H - t1 - t2 - t3;
-      explain = 'まわりの長方形（' + W + ' × ' + H + ' ＝ ' + W * H + 'cm²）から、まわりの3つの直角三角形（' + zkFmtArea_(t1) + '・' + zkFmtArea_(t2) + '・' + zkFmtArea_(t3) + '）をひくと、' + zkFmtArea_(area) + ' だよ。';
+      explain = zkEx_('どの辺も方眼の線にそっていないときは、まわりを長方形でかこんで、よぶんな所をひこう。', ['三角形をかこむ長方形：' + W + ' × ' + H + ' ＝ ' + (W * H) + 'cm²', 'まわりのよぶんな直角三角形3つ：' + W + '×' + a + '÷2 ＝ ' + zkFmtArea_(t1) + '、' + bb + '×' + H + '÷2 ＝ ' + zkFmtArea_(t2) + '、' + (W - bb) + '×' + (H - a) + '÷2 ＝ ' + zkFmtArea_(t3), '長方形からひく：' + (W * H) + ' − ' + zkNum_(t1) + ' − ' + zkNum_(t2) + ' − ' + zkNum_(t3) + ' ＝ ' + zkFmtArea_(area)], zkFmtArea_(area));
     }
     var grid = '';
     for (var c = 0; c <= COLS; c++) grid += '<line x1="' + (PAD + c * S) + '" y1="' + PAD + '" x2="' + (PAD + c * S) + '" y2="' + (PAD + ROWS * S) + '" stroke="#cbd5e1" stroke-width="1"/>';
@@ -32627,7 +32714,13 @@
       text: '立方体を、3つの点 <b>P・Q・R</b> を通る平面で切るよ。切り口はどんな形？（点は頂点か、辺のちょうど真ん中だよ）',
       figure: zkCutSvg_(item, false),
       choices: zkShuffle_([ans].concat(wrongs)).map(function (nm) { return { html: nm, ok: nm === ans }; }),
-      explain: '切り口は「' + ans + '」になるよ。同じ面の上にある2点は直線で結べるよ。向かい合う面の切り口は平行になるよ。<br>' + zkCutSvg_(item, true)
+      explain: zkEx_('切断のルール：①同じ面の上にある2点は、まっすぐ結べる。②向かい合う面にできる切り口の線は平行になる。', [
+        'P・Q・Rのうち、同じ面の上にある2点を結ぶ。これが切り口の辺になるよ。',
+        'ほかの面では、向かい合う面にできた線と平行になるように線を引いて、切り口を1周つなげよう。',
+        '切り口が通る面の数が、切り口の辺の数になる：' + item.poly.length + '本の辺。',
+        { '正三角形': '3つの辺の長さがすべて等しいので正三角形。', '二等辺三角形': '3つの辺のうち2つの長さが等しいので二等辺三角形。', '正方形': '4つの辺が等しく、4つの角がすべて直角なので正方形。', '長方形': '向かい合う辺が平行で、4つの角が直角。となりの辺の長さはちがうので長方形。', 'ひし形': '4つの辺の長さはすべて等しいけど、角は直角ではないのでひし形。', '台形': '向かい合う面の切り口どうしの1組だけが平行なので台形。', '五角形': '5つの面を通るので五角形。', '正六角形': '6つの面を通り、6本の辺の真ん中を通るので、辺の長さも角もすべて等しい正六角形。' }[ans] || '',
+        '下の図の赤い所が切り口だよ。' + zkCutSvg_(item, true)
+      ], ans)
     };
   }
 
@@ -32673,7 +32766,7 @@
         body += zkLabel_([p[0] + dx / L * 26, p[1] + dy / L * 26 + 5], labs[i], 0, 0, labs[i] === 'x' ? '#dc2626' : '#2563eb');
       });
       text = '星形の5つの先の角のうち、4つが分かっているよ。角 <b>x</b> は何度？';
-      explain = '星形の5つの先の角の和は<b>180°</b>（三角形の外角を使うと、5つの角が1つの三角形に集まるよ）。x ＝ 180 − (' + vals.join(' ＋ ') + ') ＝ ' + x + '° だよ。';
+      explain = zkEx_('星形の5つの先の角の和は、いつも 180°。', ['星形の中の、とがった先を1つふくむ三角形に注目しよう。', '三角形の外角は、となりにない2つの内角の和。これを2回使うと、5つの先の角がすべて1つの三角形の3つの角に集まるよ。', 'だから5つの先の角の和は、三角形の角の和と同じ 180°。', 'わかっている4つの角の和：' + vals.join(' ＋ ') + ' ＝ ' + (180 - x) + '°', 'x ＝ 180 − ' + (180 - x) + ' ＝ ' + x + '°'], x + '°');
     } else if (kind === 1) {
       // くさび形(ブーメラン形)：x ＝ a ＋ b ＋ c
       var a = randInt(6, 12) * 5, b = randInt(3, 8) * 5, c = randInt(3, 8) * 5;
@@ -32682,7 +32775,7 @@
       body = '<polygon points="' + zkPolyAttr_([A, B, D, C]) + '" fill="#fef3c7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>'
         + zkAngleMark_(A, B, C, a + '°') + zkAngleMark_(B, A, D, b + '°') + zkAngleMark_(C, D, A, c + '°') + zkAngleMark_(D, B, C, 'x', '#dc2626');
       text = 'へこんだ四角形（ブーメラン形）の角 <b>x</b> は何度？';
-      explain = 'ブーメラン形のへこんだ所の角は、ほかの3つの角の和になるよ。x ＝ ' + a + ' ＋ ' + b + ' ＋ ' + c + ' ＝ ' + x + '° だよ。';
+      explain = zkEx_('ブーメラン形（へこんだ四角形）の、へこんだ所の外側の角 ＝ ほかの3つの角の和。', ['上の頂点と、へこんだ点を結ぶ直線を引いて、のばしてみよう。2つの三角形に分かれるよ。', '左の三角形の外角 ＝ ' + a + '°の一部 ＋ ' + b + '°、右の三角形の外角 ＝ ' + a + '°の残り ＋ ' + c + '°。', 'x はその2つの外角の和なので、x ＝ ' + a + ' ＋ ' + b + ' ＋ ' + c + ' ＝ ' + x + '°'], x + '°');
     } else if (kind === 2) {
       // 平行線の間の折れ線：x ＝ a ＋ b
       var a2 = randInt(5, 14) * 5, b2 = randInt(5, 14) * 5;
@@ -32692,7 +32785,7 @@
         + zkLabel_([258, 35], 'ℓ', 0, 0, '#334155') + zkLabel_([258, 165], 'm', 0, 0, '#334155')
         + zkAngleMark_(Q, [110, 30], P, a2 + '°') + zkAngleMark_(R, P, [110, 160], b2 + '°') + zkAngleMark_(P, Q, R, 'x', '#dc2626');
       text = '直線ℓとmは<b>平行</b>だよ。角 <b>x</b> は何度？';
-      explain = '折れ曲がった点を通ってℓに平行な線を引くと、錯角が2つできるよ。x ＝ ' + a2 + ' ＋ ' + b2 + ' ＝ ' + x + '° だよ。';
+      explain = zkEx_('折れ曲がった点を通って、ℓとmに平行な補助線を引くのがコツ。', ['折れ曲がった点を通る、ℓとmに平行な線を引くと、x が上と下の2つに分かれるよ。', '上の部分は、ℓの所の ' + a2 + '° と錯角なので等しい → ' + a2 + '°', '下の部分は、mの所の ' + b2 + '° と錯角なので等しい → ' + b2 + '°', 'x ＝ ' + a2 + ' ＋ ' + b2 + ' ＝ ' + x + '°'], x + '°');
     } else {
       // 2つの角の二等分線が交わってできる角：x ＝ 90 ＋ a ÷ 2
       var aa = randInt(15, 50) * 2;
@@ -32708,7 +32801,7 @@
         + zkAngleMark_(Bp, Cp, I, '●', '#059669') + zkAngleMark_(Bp, I, Ap, '●', '#059669')
         + zkAngleMark_(Cp, I, Bp, '○', '#7c3aed') + zkAngleMark_(Cp, Ap, I, '○', '#7c3aed');
       text = '●の角どうし、○の角どうしは等しいよ（角を半分にする線）。角 <b>x</b> は何度？';
-      explain = '●＋○ ＝ (180 − ' + aa + ') ÷ 2 ＝ ' + ((180 - aa) / 2) + '°。だから x ＝ 180 − ' + ((180 - aa) / 2) + ' ＝ ' + x + '°（＝ 90 ＋ ' + aa + ' ÷ 2）だよ。';
+      explain = zkEx_('●は左下の角の半分、○は右下の角の半分。まず ●＋○ を求めよう。', ['大きい三角形で、上の角が ' + aa + '° なので、下の2つの角の和は 180 − ' + aa + ' ＝ ' + (180 - aa) + '°。', '●＋●＋○＋○ ＝ ' + (180 - aa) + '° なので、●＋○ ＝ ' + (180 - aa) + ' ÷ 2 ＝ ' + ((180 - aa) / 2) + '°。', 'x がある小さい三角形の角の和も180°なので、x ＝ 180 − ' + ((180 - aa) / 2) + ' ＝ ' + x + '°。', '（覚え方）x ＝ 90 ＋ 上の角 ÷ 2 ＝ 90 ＋ ' + aa + ' ÷ 2 ＝ ' + x + '°'], x + '°');
     }
     return {
       title: '🎓① 角度（応用）',
@@ -32736,11 +32829,11 @@
         var k = randInt(1, 3) * (m + n) * (randInt(0, 1) ? 1 : 2), de = k * m / (m + n);
         body += zkLabel_([135, 182], 'BC ＝ ' + k + 'cm', 0, 0, '#334155');
         text = 'DEとBCは<b>平行</b>で、AD：DB ＝ ' + m + '：' + n + ' だよ。DEの長さは何cm？';
-        explain = '三角形ADEと三角形ABCは相似（ピラミッド型）。相似比は AD：AB ＝ ' + m + '：' + (m + n) + ' なので、DE ＝ ' + k + ' × ' + m + ' ÷ ' + (m + n) + ' ＝ ' + de + 'cm だよ。';
+        explain = zkEx_('DEとBCが平行なので、三角形ADEと三角形ABCは形が同じ（相似）。「ピラミッド型」とよぶよ。', ['AD：DB ＝ ' + m + '：' + n + ' なので、AD：AB ＝ ' + m + '：(' + m + '＋' + n + ') ＝ ' + m + '：' + (m + n) + '。これが相似比。', 'DE：BC も同じ比 ' + m + '：' + (m + n) + '。', 'BC ＝ ' + k + 'cm を ' + (m + n) + ' 等分した ' + m + ' つ分：' + k + ' ÷ ' + (m + n) + ' × ' + m + ' ＝ ' + de + 'cm', '注意：DE：BC は ' + m + '：' + n + ' ではないよ。AB全体（' + (m + n) + '）と比べよう。'], de + 'cm');
         choices = zkNumChoices_(de, [k * n / (m + n), k * m / n, k / 2, de + 1, de * 2], function (v) { return zkNum_(v) + 'cm'; });
       } else {
         text = 'DEとBCは<b>平行</b>で、AD：DB ＝ ' + m + '：' + n + ' だよ。三角形ADE（青）と三角形ABCの面積の比は？';
-        explain = '相似比が ' + m + '：' + (m + n) + ' なら、面積比は<b>2回かけた比</b>で ' + (m * m) + '：' + ((m + n) * (m + n)) + ' だよ。';
+        explain = zkEx_('相似な図形の面積の比は、相似比（辺の比）を2回かけた比になるよ。', ['DEとBCが平行なので、三角形ADEと三角形ABCは相似（ピラミッド型）。', '相似比は AD：AB ＝ ' + m + '：' + (m + n) + '。', '面積は「底辺 × 高さ」のように長さを2回かけるので、面積比は ' + m + '×' + m + '：' + (m + n) + '×' + (m + n) + ' ＝ ' + (m * m) + '：' + ((m + n) * (m + n)) + '。'], zkRatio_(m * m, (m + n) * (m + n)));
         var right = zkRatio_(m * m, (m + n) * (m + n));
         var ws = [zkRatio_(m, m + n), zkRatio_(m * m, n * n), zkRatio_(m, n), zkRatio_(m * m * m, (m + n) * (m + n) * (m + n))];
         var opts = [right]; zkShuffle_(ws).forEach(function (w) { if (opts.length < 4 && opts.indexOf(w) === -1) opts.push(w); });
@@ -32754,7 +32847,7 @@
       var askLeft = Math.random() < 0.5, ans = S * (askLeft ? p : q) / (p + q);
       body = tri + '<polygon points="' + zkPolyAttr_(askLeft ? [A, B, D2] : [A, D2, C]) + '" fill="rgba(96,165,250,0.35)" stroke="none"/>' + zkLine_(A, D2, ' stroke="#2563eb"') + abc + zkLabel_(D2, 'D', 0, 18);
       text = '三角形ABCの面積は <b>' + S + 'cm²</b>、BD：DC ＝ ' + p + '：' + q + ' だよ。青い三角形' + (askLeft ? 'ABD' : 'ADC') + 'の面積は何cm²？';
-      explain = '高さが同じ三角形は、面積の比 ＝ 底辺の比。' + S + ' × ' + (askLeft ? p : q) + ' ÷ ' + (p + q) + ' ＝ ' + ans + 'cm² だよ。';
+      explain = zkEx_('高さが同じ三角形の面積の比は、底辺の比と同じ。', ['三角形ABDとADCは、どちらも頂点Aから底辺BCに下ろした高さが同じ。', 'だから面積の比 ＝ BD：DC ＝ ' + p + '：' + q + '。', '全体 ' + S + 'cm² を ' + (p + q) + ' 等分すると、1つ分は ' + S + ' ÷ ' + (p + q) + ' ＝ ' + (S / (p + q)) + 'cm²。', '三角形' + (askLeft ? 'ABD' : 'ADC') + 'は ' + (askLeft ? p : q) + ' つ分なので、' + (S / (p + q)) + ' × ' + (askLeft ? p : q) + ' ＝ ' + ans + 'cm²'], ans + 'cm²');
       choices = zkNumChoices_(ans, [S * (askLeft ? q : p) / (p + q), S / 2, S * (askLeft ? p : q) / (askLeft ? q : p), ans + 2], function (v) { return zkNum_(v) + 'cm²'; });
     } else {
       // 砂時計型(ちょうちょ型)：AB // CD
@@ -32768,7 +32861,7 @@
         + zkLabel_(A3, 'A', -8, -6) + zkLabel_(B3, 'B', 8, -6) + zkLabel_(C3, 'C', -8, 18) + zkLabel_(D3, 'D', 8, 18) + zkLabel_(O, 'O', 0, -8)
         + zkLabel_([(A3[0] + B3[0]) / 2, top], a + 'cm', 0, -6, '#2563eb') + zkLabel_([(C3[0] + D3[0]) / 2, bot], c + 'cm', 0, 20, '#2563eb');
       text = 'ABとCDは<b>平行</b>だよ。AO：OD を、いちばん簡単な整数の比で表すと？';
-      explain = '三角形OABと三角形ODCは相似（砂時計型）。相似比は AB：DC ＝ ' + a + '：' + c + ' なので、AO：OD ＝ ' + zkRatio_(a, c) + ' だよ。';
+      explain = zkEx_('ABとCDが平行なので、三角形OABと三角形ODCは形が同じ（相似）。「砂時計型（ちょうちょ型）」とよぶよ。', ['相似な三角形で、対応する辺を見つけよう：AB と DC、AO と DO、BO と CO が対応するよ。', '相似比は AB：DC ＝ ' + a + '：' + c + '。', 'AO：OD も同じ比なので ' + a + '：' + c + (zkGcd_(a, c) > 1 ? '。両方を ' + zkGcd_(a, c) + ' でわって ' + zkRatio_(a, c) : '') + '。'], zkRatio_(a, c));
       var right2 = zkRatio_(a, c);
       var ws2 = [zkRatio_(c, a), zkRatio_(a, a + c), zkRatio_(a * a, c * c), zkRatio_(c, a + c)];
       var opts2 = [right2]; zkShuffle_(ws2).forEach(function (w) { if (opts2.length < 4 && opts2.indexOf(w) === -1) opts2.push(w); });
@@ -32801,8 +32894,13 @@
       text: '1辺 <b>' + s + 'cm</b> の立方体から、赤い平面で角を切り取るよ。' + (askBig ? '<b>残った大きいほうの立体</b>' : '<b>切り取った小さい立体</b>') + 'の体積は何cm³？',
       figure: zkSvg_(220, 200, body, 'zukei-svg'),
       choices: zkNumChoices_(ans, askBig ? [s * s * s - a * b * c / 2, s * s * s - a * b * c / 3, s * s * s, small] : [a * b * c / 2, a * b * c / 3, a * b * c, small * 2], function (v) { return zkNum_(v) + 'cm³'; }),
-      explain: '切り取った立体は<b>三角すい</b>。底面は直角三角形（' + a + ' × ' + b + ' ÷ 2）、高さは ' + c + 'cm なので、' + a + ' × ' + b + ' ÷ 2 × ' + c + ' ÷ 3 ＝ ' + small + 'cm³。'
-        + (askBig ? '残りは ' + s + ' × ' + s + ' × ' + s + ' − ' + small + ' ＝ ' + ans + 'cm³ だよ。' : '（すいの体積は ÷3 をわすれずに！）')
+      explain: zkEx_('角を切り取った立体は「三角すい」。すいの体積 ＝ 底面積 × 高さ ÷ 3（÷3をわすれずに！）', [
+        '切り取った立体は、直角に集まる3本の辺（' + a + 'cm・' + b + 'cm・' + c + 'cm）でできた三角すい。',
+        '底面：直角をはさむ2辺が ' + a + 'cm と ' + b + 'cm の直角三角形 → ' + a + ' × ' + b + ' ÷ 2 ＝ ' + (a * b / 2) + 'cm²',
+        '高さ：もう1本の辺 ' + c + 'cm。',
+        '体積：' + (a * b / 2) + ' × ' + c + ' ÷ 3 ＝ ' + small + 'cm³',
+        askBig ? '残った立体 ＝ 立方体 − 三角すい ＝ ' + s + '×' + s + '×' + s + ' − ' + small + ' ＝ ' + (s * s * s) + ' − ' + small + ' ＝ ' + ans + 'cm³' : ''
+      ], ans + 'cm³')
     };
   }
 
@@ -32827,11 +32925,11 @@
       body = body + cone;
       if (kind === 0) {
         text = '円すいの展開図だよ。母線（おうぎ形の半径）が ' + L + 'cm、底面の円の半径が ' + r + 'cm のとき、おうぎ形の中心角 <b>x</b> は何度？';
-        explain = '中心角 ＝ 360 × 底面の半径 ÷ 母線。360 × ' + r + ' ÷ ' + L + ' ＝ ' + ang + '° だよ。（おうぎ形の弧の長さ ＝ 底面の円周 になるからだよ）';
+        explain = zkEx_('円すいの展開図では、おうぎ形の弧（まるい部分）の長さ ＝ 底面の円周。ここから「中心角 ＝ 360 × 底面の半径 ÷ 母線」になるよ。', ['おうぎ形の弧は、半径' + L + 'cm（母線）の円周の一部。底面の円周は、半径' + r + 'cm の円周。', 'この2つが同じ長さなので、中心角/360 ＝ ' + r + '/' + L + '（円周は半径に比例するから）。', '中心角 ＝ 360 × ' + r + ' ÷ ' + L + ' ＝ ' + ang + '°'], ang + '°');
         choices = zkNumChoices_(ang, [360 * (L - r) / L, 180 * r / L, 360 * r / L / 2, ang + 30, ang - 30, 360 - ang], function (v) { return zkNum_(v) + '°'; });
       } else {
         text = '円すいの展開図だよ。母線が ' + L + 'cm、おうぎ形の中心角が ' + ang + '° のとき、底面の円の半径は何cm？';
-        explain = '底面の半径 ＝ 母線 × 中心角 ÷ 360。' + L + ' × ' + ang + ' ÷ 360 ＝ ' + r + 'cm だよ。';
+        explain = zkEx_('円すいの展開図では、中心角/360 ＝ 底面の半径/母線。', ['おうぎ形の弧の長さ ＝ 底面の円周 なので、中心角/360 ＝ 底面の半径/母線 になるよ。', '' + ang + '/360 ＝ □/' + L + ' → □ ＝ ' + L + ' × ' + ang + ' ÷ 360', '計算すると ' + r + 'cm。'], r + 'cm');
         choices = zkNumChoices_(r, [L - r, r * 2, L * ang / 180, r + 1, r - 1], function (v) { return zkNum_(v) + 'cm'; });
       }
     } else {
@@ -32841,7 +32939,7 @@
         + zkLabel_([100, 98], '?', 0, 0, '#dc2626') + zkLabel_([195, 95], hh + 'cm', 6, 0, '#2563eb')
         + zkLine_([100, 25], [122, 25], ' stroke-width="1.2"') + zkLabel_([111, 20], rr2 + 'cm', 0, 0, '#2563eb');
       text = '円柱の展開図だよ。底面の円の半径が ' + rr2 + 'cm、高さが ' + hh + 'cm のとき、側面の長方形の<b>横の長さ</b>は何cm？（円周率は3.14）';
-      explain = '側面の横の長さ ＝ 底面の円周 ＝ 直径 × 3.14。' + (rr2 * 2) + ' × 3.14 ＝ ' + zkNum_(w) + 'cm だよ。';
+      explain = zkEx_('円柱を開くと、側面は長方形、上と下は円になるよ。側面の横の長さは、底面の円周と同じ。', ['側面の長方形は、底面の円のまわりにぐるっと1周まきついているよ。', 'だから横の長さ ＝ 底面の円周 ＝ 直径 × 3.14。', '直径は 半径 × 2 ＝ ' + rr2 + ' × 2 ＝ ' + (rr2 * 2) + 'cm。', (rr2 * 2) + ' × 3.14 ＝ ' + zkNum_(w) + 'cm（高さ' + hh + 'cmは、長方形のたての長さだよ）'], zkNum_(w) + 'cm');
       choices = zkNumChoices_(Math.round(w * 100) / 100, [Math.round(rr2 * 3.14 * 100) / 100, Math.round(rr2 * rr2 * 3.14 * 100) / 100, Math.round(w * hh * 100) / 100, Math.round((w + 3.14) * 100) / 100], function (v) { return zkNum_(v) + 'cm'; });
     }
     return { title: '🎓④ 展開図（円すい・円柱）', text: text, figure: zkSvg_(270, Math.round(H), body, 'zukei-svg') + ZK_NOT_EXACT_, choices: choices, explain: explain };
@@ -32858,44 +32956,47 @@
     var rows = [row(1, false, true), row(2, true, true), row(3, true, true)];
     if (nn > 4) rows.push('<div class="zk-step-row">　　　⋮</div>');
     rows.push(row(nn, true, false));
-    return '<b>ポイント：となりどうしの数のかけ算が分母の分数は、「ひき算」に分けられる！</b><br>'
+    return '<div class="zk-ex"><div class="zk-ex-point">💡 となりどうしの数のかけ算が分母の分数は、「ひき算」に分けられる！</div>'
       + '例）' + zkFrac_(1, '2×3') + ' ＝ ' + zkFrac_(1, 2) + ' − ' + zkFrac_(1, 3) + '　（' + zkFrac_(3, 6) + ' − ' + zkFrac_(2, 6) + ' ＝ ' + zkFrac_(1, 6) + ' になるね）<br>'
       + '1つずつ分けて、たてに並べてみよう。<div class="zk-steps">' + rows.join('') + '</div>'
       + '全部たすと、<b style="color:#dc2626">赤い斜線の数</b>は、上の行の「−」と下の行の「＋」で消し合うよ（たとえば −' + zkFrac_(1, 2) + ' と ＋' + zkFrac_(1, 2) + '）。<br>'
       + '残るのは、いちばん最初の <b>1</b> と、いちばん最後の <b>−' + zkFrac_(1, nn + 1) + '</b> だけ。<br>'
-      + 'だから　1 − ' + zkFrac_(1, nn + 1) + ' ＝ <b>' + right + '</b>　だよ。';
+      + 'だから　1 − ' + zkFrac_(1, nn + 1) + ' ＝ <b>' + right + '</b>　だよ。'
+      + '<div class="zk-ex-ans">答え：<b>' + right + '</b></div></div>';
   }
   function zkMakeJCalcQ_() {
     var kind = randInt(0, 6), q, ans, explain, wrongs;
     if (kind === 0) {
       var pair = [[25, 4], [125, 8], [25, 8], [125, 4]][randInt(0, 3)], m = randInt(11, 49);
       q = pair[0] + ' × ' + m + ' × ' + pair[1]; ans = pair[0] * pair[1] * m;
-      explain = '先に ' + pair[0] + ' × ' + pair[1] + ' ＝ ' + (pair[0] * pair[1]) + ' を計算すると、' + (pair[0] * pair[1]) + ' × ' + m + ' ＝ ' + ans + ' だよ。';
+      explain = zkEx_('かけ算は、順番を入れかえてもいい（交換法則）。キリのいい数になる組み合わせを先に計算しよう。', ['覚えておきたい組み合わせ：25 × 4 ＝ 100、25 × 8 ＝ 200、125 × 8 ＝ 1000、125 × 4 ＝ 500。', '先に ' + pair[0] + ' × ' + pair[1] + ' ＝ ' + (pair[0] * pair[1]) + ' を計算する。', (pair[0] * pair[1]) + ' × ' + m + ' ＝ ' + ans], String(ans));
       wrongs = [ans + 100, ans - 100, ans * 10, ans + 10];
     } else if (kind === 1) {
       var x = randInt(11, 39), y = randInt(11, 89), z = 100 - y;
       q = x + ' × ' + y + ' ＋ ' + x + ' × ' + z; ans = x * 100;
-      explain = '分配法則で ' + x + ' × (' + y + ' ＋ ' + z + ') ＝ ' + x + ' × 100 ＝ ' + ans + ' だよ。';
+      explain = zkEx_('同じ数がかかっている足し算は、まとめられる（分配法則）：□×A ＋ □×B ＝ □×(A＋B)', ['どちらにも ' + x + ' がかかっているね。', x + ' × ' + y + ' ＋ ' + x + ' × ' + z + ' ＝ ' + x + ' × (' + y + ' ＋ ' + z + ')', y + ' ＋ ' + z + ' ＝ 100 なので、' + x + ' × 100 ＝ ' + ans], String(ans));
       wrongs = [ans + 10, ans - 10, x * 10, ans + 100];
     } else if (kind === 2) {
       var k = [99, 999, 101][randInt(0, 2)], n = randInt(12, 68);
       q = k + ' × ' + n; ans = k * n;
-      explain = k === 101 ? '101 ＝ 100 ＋ 1 なので、' + n + '00 ＋ ' + n + ' ＝ ' + ans + ' だよ。' : k + ' ＝ ' + (k + 1) + ' − 1 なので、' + (k + 1) * n + ' − ' + n + ' ＝ ' + ans + ' だよ。';
+      explain = k === 101
+        ? zkEx_('101 は 100 ＋ 1 と考えると、かけ算がかんたんになるよ。', ['101 × ' + n + ' ＝ (100 ＋ 1) × ' + n, '＝ 100 × ' + n + ' ＋ 1 × ' + n + ' ＝ ' + (100 * n) + ' ＋ ' + n, '＝ ' + ans], String(ans))
+        : zkEx_(k + ' は ' + (k + 1) + ' − 1 と考えると、かけ算がかんたんになるよ。', [k + ' × ' + n + ' ＝ (' + (k + 1) + ' − 1) × ' + n, '＝ ' + (k + 1) + ' × ' + n + ' − 1 × ' + n + ' ＝ ' + ((k + 1) * n) + ' − ' + n, '＝ ' + ans], String(ans));
       wrongs = [ans + n, ans - n * 2, ans + 1, ans - 1, ans + 10];
     } else if (kind === 3) {
       var N = [10, 20, 30, 40, 50, 100][randInt(0, 5)];
       q = '1 ＋ 2 ＋ 3 ＋ … ＋ ' + N; ans = N * (N + 1) / 2;
-      explain = '(はじめ ＋ おわり) × 個数 ÷ 2 ＝ (1 ＋ ' + N + ') × ' + N + ' ÷ 2 ＝ ' + ans + ' だよ。';
+      explain = zkEx_('連続する数の和 ＝ (はじめ ＋ おわり) × 個数 ÷ 2', ['1 ＋ 2 ＋ … ＋ ' + N + ' と、ぎゃくの順番 ' + N + ' ＋ … ＋ 2 ＋ 1 をたてに並べてたすと、どの組も 1 ＋ ' + N + ' ＝ ' + (N + 1) + ' になるよ。', 'その組が ' + N + ' 個あるので、2つ分の合計は ' + (N + 1) + ' × ' + N + ' ＝ ' + ((N + 1) * N) + '。', '同じものを2回たしているので ÷ 2：' + ((N + 1) * N) + ' ÷ 2 ＝ ' + ans], String(ans));
       wrongs = [N * N / 2, (N + 1) * N, ans + N, ans - N];
     } else if (kind === 4) {
       var f = randInt(1, 5), d = randInt(2, 6), cnt = randInt(6, 15), last = f + d * (cnt - 1);
       q = f + ' ＋ ' + (f + d) + ' ＋ ' + (f + 2 * d) + ' ＋ … ＋ ' + last; ans = (f + last) * cnt / 2;
-      explain = 'ちがいが ' + d + ' ずつの数の列。個数は (' + last + ' − ' + f + ') ÷ ' + d + ' ＋ 1 ＝ ' + cnt + '個。(' + f + ' ＋ ' + last + ') × ' + cnt + ' ÷ 2 ＝ ' + ans + ' だよ。';
+      explain = zkEx_('同じ数ずつふえる数の列（等差数列）の和 ＝ (はじめ ＋ おわり) × 個数 ÷ 2', ['この列は ' + d + ' ずつふえているね。', '個数は (おわり − はじめ) ÷ ふえる数 ＋ 1：(' + last + ' − ' + f + ') ÷ ' + d + ' ＋ 1 ＝ ' + cnt + '個。（＋1をわすれやすいので注意！）', '和は (' + f + ' ＋ ' + last + ') × ' + cnt + ' ÷ 2 ＝ ' + (f + last) + ' × ' + cnt + ' ÷ 2 ＝ ' + ans], String(ans));
       wrongs = [(f + last) * (cnt - 1) / 2, (f + last) * (cnt + 1) / 2, (f + last) * cnt, ans + d];
     } else if (kind === 5) {
       var u = randInt(2, 9), v = 10 - u, mul = [3.14, 2.5, 1.5][randInt(0, 2)];
       q = mul + ' × ' + u + ' ＋ ' + mul + ' × ' + v; ans = Math.round(mul * 10 * 100) / 100;
-      explain = mul + ' × (' + u + ' ＋ ' + v + ') ＝ ' + mul + ' × 10 ＝ ' + zkNum_(ans) + ' だよ。';
+      explain = zkEx_('同じ数がかかっている足し算は、まとめられる（分配法則）：□×A ＋ □×B ＝ □×(A＋B)', ['どちらにも ' + mul + ' がかかっているね。', mul + ' × ' + u + ' ＋ ' + mul + ' × ' + v + ' ＝ ' + mul + ' × (' + u + ' ＋ ' + v + ')', u + ' ＋ ' + v + ' ＝ 10 なので、' + mul + ' × 10 ＝ ' + zkNum_(ans)], zkNum_(ans));
       wrongs = [Math.round(mul * 100 * 100) / 100, Math.round(mul * 100) / 100, ans + 1, Math.round((ans - 0.1) * 100) / 100];
     } else {
       var nn = randInt(4, 12);
