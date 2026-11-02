@@ -21903,7 +21903,7 @@
         state.hp = Math.max(0, (Number(state.hp) || 0) - USA_CROSSING_MISS_HP_PENALTY_);
         winHtml = `<div class="enemy-quote-banner">💥 間違えた！5問連続正解がリセットされた…HPが${USA_CROSSING_MISS_HP_PENALTY_}減った（現在地：${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}州）</div>`;
         if (state.hp <= 0) {
-          winHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+          winHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
       } else if (isHpDamageActive_() && hasSteelArmorCharge_()) {
         state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
@@ -21913,7 +21913,7 @@
       } else if (isHpDamageActive_()) {
         state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
         if (state.hp <= 0) {
-          winHtml = `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+          winHtml = `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
       }
     }
@@ -22674,7 +22674,7 @@
         state.hp = Math.max(0, (Number(state.hp) || 0) - GYOSHI_HP_STEAL_);
         missLineHtml += `<div class="enemy-quote-banner">🎣 漁師AKRに、HPを${GYOSHI_HP_STEAL_}つ奪われた！（残りHP: ${state.hp}）</div>`;
         if (state.hp <= 0) {
-          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
       } else if (state.rareType === 'marubatsukun' && hasSteelArmorCharge_()) {
@@ -22689,7 +22689,7 @@
         state.hp = Math.max(0, (Number(state.hp) || 0) - MARUBATSUKUN_HP_LOSS_);
         missLineHtml += `<div class="enemy-quote-banner">❌ 丸バツ君に、HPを${MARUBATSUKUN_HP_LOSS_}奪われた！（残りHP: ${state.hp}）</div>`;
         if (state.hp <= 0) {
-          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
       } else if (state.rareType === 'superakirametal' && hasSteelArmorCharge_()) {
@@ -22708,7 +22708,7 @@
         state.hp = Math.max(0, (Number(state.hp) || 0) - SUPERAKIRAMETAL_HP_PENALTY_);
         missLineHtml += `<div class="enemy-quote-banner">🎸 スーパーアキラメタルに、MPを${SUPERAKIRAMETAL_MP_PENALTY_}・HPを${SUPERAKIRAMETAL_HP_PENALTY_}奪われた！（残りMP: ${state.points} / 残りHP: ${state.hp}）</div>`;
         if (state.hp <= 0) {
-          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
         if (session && session.id) {
@@ -22729,10 +22729,10 @@
         saveGameState(state);
       } else if (isHpDamageActive_()) {
         // ボス戦以外の不正解は、8/13からHPが1減る。0になると、なんでも屋で回復するか
-        // 再ログイン時の文章題3問連続正解(HP+3)をするまで、問題に答えられなくなる。
+        // 再ログイン時の文章題1問正解(HP+3)をするまで、問題に答えられなくなる。
         state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
         if (state.hp <= 0) {
-          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題を3問連続正解するまで、問題に答えられません。</div>`;
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
         saveGameState(state);
       }
@@ -23229,7 +23229,7 @@
 
   /* ---------- HPダメージ制・ゲームオーバー(8/13から) ----------
      問題を間違えるとHPが1減る(ボス戦をのぞく。ボス戦は既存の専用ペナルティのまま)。
-     HPが0になると、ログアウトして再ログイン後に文章題3問連続正解(HP+3)するか、
+     HPが0になると、ログアウトして再ログイン後に文章題1問正解(HP+3)するか、
      なんでも屋で薬草を購入してHPを回復するまで、問題に答えられなくなる。
      8/12から予告バナーを出し、8/13に適用開始、8/18までバナーを表示する。 */
   var HP_DAMAGE_START_ = '2026-08-13';
@@ -23293,8 +23293,8 @@
     els.hpRulesBanner.hidden = false;
     if (els.hpRulesBannerText) {
       els.hpRulesBannerText.textContent = isHpDamageActive_()
-        ? '❤️ HPのルール：ボスキャラ以外でも、問題を間違えるとHPが1減ります。HPが0になるとゲームオーバーになり、問題に答えられなくなります。ログアウトして再ログインし、文章題を3問連続正解するとHPが3回復します。または🏪なんでも屋で薬草を購入してもHPを回復できます。'
-        : '❤️ 8月13日からのお知らせ：ボスキャラ以外でも、問題を間違えるとHPが1減るようになります。HPが0になるとゲームオーバーになり、問題に答えられなくなります。ログアウトして再ログインし、文章題を3問連続正解するとHPが3回復します。または🏪なんでも屋で薬草を購入してもHPを回復できます。';
+        ? '❤️ HPのルール：ボスキャラ以外でも、問題を間違えるとHPが1減ります。HPが0になるとゲームオーバーになり、問題に答えられなくなります。ログアウトして再ログインし、文章題に1問正解するとHPが3回復します。または🏪なんでも屋で薬草を購入してもHPを回復できます。'
+        : '❤️ 8月13日からのお知らせ：ボスキャラ以外でも、問題を間違えるとHPが1減るようになります。HPが0になるとゲームオーバーになり、問題に答えられなくなります。ログアウトして再ログインし、文章題に1問正解するとHPが3回復します。または🏪なんでも屋で薬草を購入してもHPを回復できます。';
     }
   }
 
@@ -23675,10 +23675,11 @@
 
   /* ---------- ログイン前チェック(文章題3問連続正解、8/10から) ---------- */
   var LOGIN_GATE_START_ = '2026-08-10';
-  var LOGIN_GATE_REQUIRED_STREAK_ = 3;
+  var LOGIN_GATE_REQUIRED_STREAK_ = 1;
   var LOGIN_GATE_REWARD_MP_ = 5;
   // 2026-09-01から、中学生だけは1問正解ですぐ入れるように短縮する代わりに、
-  // 間違えるたびにHPが1減るようにする(小学生は今までどおり3問連続正解・HP減少なし)。
+  // 間違えるたびにHPが1減るようにする(小学生はHP減少なし)。
+  // 2026-11-02から、小学生も3問連続正解ではなく1問正解で入れるようにした(間違えてもHPは減らない)。
   var LOGIN_GATE_MIDDLE_SCHOOL_START_ = '2026-09-01';
   var LOGIN_GATE_REQUIRED_STREAK_MIDDLE_ = 1;
   var GRADE_ORDER_ = ['小4', '小5', '小6', '中1', '中2', '中3'];
@@ -23699,11 +23700,12 @@
     if (idx > 0) ids.push(GRADE_WORD_PROBLEM_CATEGORY_[GRADE_ORDER_[idx - 1]]);
     return ids.filter(Boolean);
   }
-  var loginGate = { streak: 0, requiredStreak: LOGIN_GATE_REQUIRED_STREAK_, categories: [], current: null, pendingId: null, pendingName: null };
+  var loginGate = { isMiddle: false, streak: 0, requiredStreak: LOGIN_GATE_REQUIRED_STREAK_, categories: [], current: null, pendingId: null, pendingName: null };
 
   function startLoginGate(id, name, grade) {
     loginGate.streak = 0;
     loginGate.requiredStreak = loginGateRequiredStreakForGrade_(grade);
+    loginGate.isMiddle = String(grade || '').charAt(0) === '中' && todayKey() >= LOGIN_GATE_MIDDLE_SCHOOL_START_;
     loginGate.categories = CATEGORIES.filter(function (c) { return loginGateCategoryIdsForGrade_(grade).indexOf(c.id) !== -1; });
     loginGate.pendingId = id;
     loginGate.pendingName = name;
@@ -23736,7 +23738,7 @@
   function handleLoginGateAnswer(choiceStr) {
     Array.from(els.loginGateChoiceRow.children).forEach(function (btn) { btn.disabled = true; });
     var isCorrect = choiceStr === String(loginGate.current.answer);
-    var isFastMode = loginGate.requiredStreak === LOGIN_GATE_REQUIRED_STREAK_MIDDLE_;
+    var isFastMode = loginGate.isMiddle;
     if (isCorrect) {
       loginGate.streak++;
       if (loginGate.streak >= loginGate.requiredStreak) {
@@ -23762,7 +23764,7 @@
         saveGameState(state);
         els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。' + hpLostHtml;
       } else {
-        els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。最初からやり直しです。';
+        els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。' + (loginGate.requiredStreak > 1 ? '最初からやり直しです。' : 'もう1問チャレンジ！');
       }
       window.setTimeout(renderLoginGateQuestion, 1400);
     }
