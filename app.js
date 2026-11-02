@@ -23679,7 +23679,8 @@
   var LOGIN_GATE_REWARD_MP_ = 5;
   // 2026-09-01から、中学生だけは1問正解ですぐ入れるように短縮する代わりに、
   // 間違えるたびにHPが1減るようにする(小学生はHP減少なし)。
-  // 2026-11-02から、小学生も3問連続正解ではなく1問正解で入れるようにした(間違えてもHPは減らない)。
+  // 2026-11-02から、小学生も3問連続正解ではなく1問正解で入れるようにした。そのかわり小学生は間違えるとHPが3減る。
+  var LOGIN_GATE_ELEMENTARY_HP_PENALTY_ = 3;
   var LOGIN_GATE_MIDDLE_SCHOOL_START_ = '2026-09-01';
   var LOGIN_GATE_REQUIRED_STREAK_MIDDLE_ = 1;
   var GRADE_ORDER_ = ['小4', '小5', '小6', '中1', '中2', '中3'];
@@ -23738,7 +23739,8 @@
   function handleLoginGateAnswer(choiceStr) {
     Array.from(els.loginGateChoiceRow.children).forEach(function (btn) { btn.disabled = true; });
     var isCorrect = choiceStr === String(loginGate.current.answer);
-    var isFastMode = loginGate.isMiddle;
+    var isFastMode = loginGate.requiredStreak <= 1;
+    var loginHpPenalty = loginGate.isMiddle ? HP_WRONG_ANSWER_PENALTY_ : LOGIN_GATE_ELEMENTARY_HP_PENALTY_;
     if (isCorrect) {
       loginGate.streak++;
       if (loginGate.streak >= loginGate.requiredStreak) {
@@ -23750,7 +23752,7 @@
     } else {
       loginGate.streak = 0;
       if (isFastMode) {
-        // 中学生の1問モードでは、間違えるたびにHPが1減る(鋼の鎧があれば代わりに1回分消費)。
+        // 1問モードでは、間違えるたびにHPが減る(中学生1・小学生3。鋼の鎧があれば代わりに1回分消費)。
         var hpLostHtml = '';
         if (isHpDamageActive_() && hasSteelArmorCharge_()) {
           state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
@@ -23758,8 +23760,8 @@
             ? '🛡️ 鋼の鎧のおかげでHPは減りませんでした（残り' + state.steelArmorCharges + '回）。'
             : '🛡️ 鋼の鎧を使い切りました。HPは減りませんでした。';
         } else if (isHpDamageActive_()) {
-          state.hp = Math.max(0, (Number(state.hp) || 0) - HP_WRONG_ANSWER_PENALTY_);
-          hpLostHtml = '💔 HPが' + HP_WRONG_ANSWER_PENALTY_ + '減りました（残りHP: ' + state.hp + '）。';
+          state.hp = Math.max(0, (Number(state.hp) || 0) - loginHpPenalty);
+          hpLostHtml = '💔 HPが' + loginHpPenalty + '減りました（残りHP: ' + state.hp + '）。';
         }
         saveGameState(state);
         els.loginGateResult.textContent = '❌ 不正解…正解は「' + loginGate.current.answer + '」でした。' + hpLostHtml;
