@@ -32848,6 +32848,23 @@
   }
 
   // ---- 🎓⑤ 計算の技(工夫して速く計算する) ----
+  // 1/(1×2)＋1/(2×3)＋…＋1/(n×(n＋1)) の解説。1つずつ「ひき算」に分けて、たてに並べて消えるところを見せる。
+  function zkFracSumExplain_(nn, right) {
+    var f = function (k) { return k === 1 ? '1' : zkFrac_(1, k); };
+    var row = function (k, cancelL, cancelR) {
+      var l = f(k), r = zkFrac_(1, k + 1);
+      return '<div class="zk-step-row">' + zkFrac_(1, k + '×' + (k + 1)) + ' ＝ <span class="' + (cancelL ? 'zk-cancel' : 'zk-keep') + '">' + l + '</span> − <span class="' + (cancelR ? 'zk-cancel' : 'zk-keep') + '">' + r + '</span></div>';
+    };
+    var rows = [row(1, false, true), row(2, true, true), row(3, true, true)];
+    if (nn > 4) rows.push('<div class="zk-step-row">　　　⋮</div>');
+    rows.push(row(nn, true, false));
+    return '<b>ポイント：となりどうしの数のかけ算が分母の分数は、「ひき算」に分けられる！</b><br>'
+      + '例）' + zkFrac_(1, '2×3') + ' ＝ ' + zkFrac_(1, 2) + ' − ' + zkFrac_(1, 3) + '　（' + zkFrac_(3, 6) + ' − ' + zkFrac_(2, 6) + ' ＝ ' + zkFrac_(1, 6) + ' になるね）<br>'
+      + '1つずつ分けて、たてに並べてみよう。<div class="zk-steps">' + rows.join('') + '</div>'
+      + '全部たすと、<b style="color:#dc2626">赤い斜線の数</b>は、上の行の「−」と下の行の「＋」で消し合うよ（たとえば −' + zkFrac_(1, 2) + ' と ＋' + zkFrac_(1, 2) + '）。<br>'
+      + '残るのは、いちばん最初の <b>1</b> と、いちばん最後の <b>−' + zkFrac_(1, nn + 1) + '</b> だけ。<br>'
+      + 'だから　1 − ' + zkFrac_(1, nn + 1) + ' ＝ <b>' + right + '</b>　だよ。';
+  }
   function zkMakeJCalcQ_() {
     var kind = randInt(0, 6), q, ans, explain, wrongs;
     if (kind === 0) {
@@ -32892,7 +32909,7 @@
         text: '工夫して計算しよう。<div class="zk-calc">' + q + '</div>',
         figure: '',
         choices: zkShuffle_(opts).map(function (o) { return { html: o, ok: o === right }; }),
-        explain: zkFrac_(1, 'A×B') + ' ＝ ' + zkFrac_(1, 'A') + ' − ' + zkFrac_(1, 'B') + '（BがAより1大きいとき）を使うと、となりどうしが消えて、1 − ' + zkFrac_(1, nn + 1) + ' ＝ ' + right + ' だよ。'
+        explain: zkFracSumExplain_(nn, right)
       };
     }
     return {

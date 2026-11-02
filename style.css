@@ -2512,3 +2512,13 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .zk-note { display: block; width: 100%; text-align: right; font-size: 0.75rem; color: #64748b; }
 .zukei-figure { flex-wrap: wrap; }
 .zk-calc { margin: 10px 0 4px; font-size: 1.35rem; font-weight: 800; text-align: center; color: #0f172a; overflow-x: auto; }
+
+/* 計算の技の解説(分数のひき算に分けて消える所を見せる) */
+.zk-steps { margin: 8px 0; padding: 6px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; display: table; }
+.zk-step-row { margin: 4px 0; font-size: 1.05rem; }
+.zk-cancel { position: relative; display: inline-block; color: #94a3b8; }
+.zk-cancel::after { content: ""; position: absolute; left: -3px; right: -3px; top: 50%; border-top: 2px solid #dc2626; transform: rotate(-25deg); }
+.zk-cancel .zk-frac > span:first-child { border-bottom-color: #94a3b8; }
+.zk-keep { color: #dc2626; font-weight: 800; }
+.zk-cancel-legend { position: relative; display: inline-block; }
+.zk-cancel-legend::after { content: ""; position: absolute; left: -2px; right: -2px; top: 50%; border-top: 2px solid #dc2626; transform: rotate(-8deg); }
