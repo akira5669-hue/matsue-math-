@@ -2505,3 +2505,10 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .zukei-type-list { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .zukei-type-item { font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
 .zukei-types input[type="checkbox"] { width: 18px; height: 18px; vertical-align: -3px; }
+
+/* 図形トレーニング：中学受験 */
+.zk-frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; font-size: 0.85em; line-height: 1.15; margin: 0 2px; }
+.zk-frac > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 2px; }
+.zk-note { display: block; width: 100%; text-align: right; font-size: 0.75rem; color: #64748b; }
+.zukei-figure { flex-wrap: wrap; }
+.zk-calc { margin: 10px 0 4px; font-size: 1.35rem; font-weight: 800; text-align: center; color: #0f172a; overflow-x: auto; }
