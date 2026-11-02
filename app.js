@@ -23616,7 +23616,7 @@
     els.trainingBanner.hidden = false;
     if (els.trainingBannerText) {
       els.trainingBannerText.textContent = (during ? '🏋️【11/15まで】「特訓部屋」オープン中！' : '🏋️【予告】11月1日(日)〜15日(日)は「特訓部屋」がオープン！')
-        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+1・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。特訓で増やせるHPは1日1000までです。特訓中は、キャラ（敵・レアキャラ）を倒すこともできません。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
+        + '問題を解いてHPを増やせる部屋だよ。入るのは無料。どの問題を解いてもOK！正解するとHP+' + TRAINING_HP_GAIN_ + '・経験値+1、まちがえるとHP-1（部屋の中ではMPは増えません）。特訓で増やせるHPは1日1000までです。特訓中は、キャラ（敵・レアキャラ）を倒すこともできません。部屋の中ではHPが0になっても大丈夫。ただし、HPが10以上にならないと部屋から出られないので注意！期間中はHP2000以上の人も参加できるよ。';
     }
     if (els.trainingBannerBtn) els.trainingBannerBtn.hidden = !during || !!state.trainingActive;
   }
@@ -29373,13 +29373,14 @@
   /* ---------- 特訓部屋 ---------- */
   // 問題を解いてHPを増やすための部屋。2026-11-01〜11-15の期間限定で全生徒に公開(00001はいつでも入れる)。
   // ・入るのは無料。どの学年・どの単元の問題を解いてもよい(算数・数学も理科も)。
-  // ・正解：HP+1・経験値+1。不正解：HP-1(0より下にはならない)・経験値は増えない。
+  // ・正解：HP+TRAINING_HP_GAIN_(2026-11-02から+2。前は+1)・経験値+1。不正解：HP-1(0より下にはならない)・経験値は増えない。
   // ・部屋の中ではHPが0になっても死なない(ゲームオーバーにならない)。HPが10以上ないと部屋から出られない。
   // ・部屋の中ではMPは増えない。レアキャラ・ミッション・都道府県などのふだんの報酬もない。
   // ・HPは2000まで(2000以上の人は入れない)。TRAINING_OPEN_ALL_の期間だけは2000以上の人も入れて、HPも2000を超えて増やせる。
   // ・期間が終わったら、部屋の中にいた生徒も自動で外に出す(HPが10未満でも閉じ込めない)。
   // 特訓部屋で増やせるHPは1日1000まで(正解+1・まちがい-1の差し引きで数える)。特訓以外で増えるHPには関係しない。
   var TRAINING_DAILY_HP_MAX_ = 1000;
+  var TRAINING_HP_GAIN_ = 2;
   function trainingDayGain_() {
     if (state.trainingDayKey !== todayKey()) { state.trainingDayKey = todayKey(); state.trainingDayGain = 0; }
     return Number(state.trainingDayGain) || 0;
@@ -29492,7 +29493,7 @@
     }
     if (!window.confirm('🏋️ 特訓部屋に入ります（入るのは無料）。\n\n'
       + '・どの問題を解いてもOK\n'
-      + '・正解するとHP+1・経験値+1\n'
+      + '・正解するとHP+' + TRAINING_HP_GAIN_ + '・経験値+1\n'
       + '・まちがえるとHP-1（経験値は増えない）\n'
       + '・特訓で増やせるHPは1日' + TRAINING_DAILY_HP_MAX_ + 'まで（今日はあと' + Math.max(0, TRAINING_DAILY_HP_MAX_ - trainingDayGain_()) + '）\n'
       + '・部屋の中ではHPが0になっても大丈夫\n'
@@ -29557,7 +29558,7 @@
     } else if (state.trainingActive && els.trainingBarText) {
       var hp = Number(state.hp) || 0;
       var capText = trainingOpenAll_() ? '' : '（最大' + TRAINING_HP_MAX_ + '）';
-      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　今日増やしたHP ' + trainingDayGain_() + '／' + TRAINING_DAILY_HP_MAX_ + '　正解でHP+1・経験値+1／まちがえるとHP-1／MPは増えません／キャラは倒せません'
+      els.trainingBarText.textContent = '🏋️ 特訓部屋　HP ' + hp + capText + '　今日増やしたHP ' + trainingDayGain_() + '／' + TRAINING_DAILY_HP_MAX_ + '　正解でHP+' + TRAINING_HP_GAIN_ + '・経験値+1／まちがえるとHP-1／MPは増えません／キャラは倒せません'
         + (hp < TRAINING_EXIT_MIN_HP_ ? '　※HPが' + TRAINING_EXIT_MIN_HP_ + '以上で出られます' : '');
       if (els.trainingExitBtn) els.trainingExitBtn.disabled = hp < TRAINING_EXIT_MIN_HP_;
     }
@@ -29598,7 +29599,7 @@
       var canGainHp = (trainingNoHpCap_() || hp < TRAINING_HP_MAX_) && !dailyCapped;
       var gainHp = 0;
       if (canGainHp) {
-        gainHp = isSuper ? SUPER_TRAINING_HP_GAIN_ : 1;
+        gainHp = isSuper ? SUPER_TRAINING_HP_GAIN_ : TRAINING_HP_GAIN_;
         if (!trainingNoHpCap_()) gainHp = Math.min(gainHp, TRAINING_HP_MAX_ - hp);
         if (hp >= TRAINING_EXIT_MIN_HP_) gainHp = Math.min(gainHp, dayCap - dayGain);
         gainHp = Math.max(0, gainHp);
