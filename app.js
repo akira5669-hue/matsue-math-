@@ -31770,12 +31770,12 @@
      平面図形・空間図形の力をきたえる問題。問題は毎回この端末で作る(図はSVGで描く)。
      ① 積み木の数(見えない下の段も数える) ② 見え方あて(上・正面・右から見た図)
      ③ 展開図(立方体になるか／向かい合う面) ④ 回転体(1回転させてできる立体) ⑤ 回転・裏返し(同じ形はどれ？)
-     正解で+1MP(1日20MPまで、ふだんの1日100MPの上限とは別枠)。まちがえても何も減らない。
-     MPはサーバー(lib/handlers/zukei.js)で付ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
+     2026-11-02から：正解でHP+1・まちがいでHP-1(0より下にはならない)。MPは増えない。
+     解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上解くとその日のサイコロガチャが引ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
   var ZUKEI_OPEN_ALL_ = false;
   var ZUKEI_START_ = '2026-11-03';
-  var ZUKEI_DAILY_MP_CAP_ = 20;
-  var zukei_ = { q: null, answered: false, todayMp: 0, busy: false };
+  var ZUKEI_GACHA_UNLOCK_ = 20;
+  var zukei_ = { q: null, answered: false, answeredToday: 0 };
   function zukeiVisible_() { return isAdminSession_() || (ZUKEI_OPEN_ALL_ && todayKey() >= ZUKEI_START_); }
   function zukeiIsJunior_() {
     var s = loadSession();
@@ -32288,7 +32288,7 @@
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    els.zukeiMpInfo.textContent = '今日の図形MP ' + zukei_.todayMp + '／' + ZUKEI_DAILY_MP_CAP_ + '（ふだんの100MPとは別）';
+    els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問' + (zukei_.answeredToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.answeredToday) + '問で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
     els.zukeiFigure.innerHTML = q.figure;
@@ -32299,32 +32299,30 @@
     els.zukeiNext.hidden = !zukei_.answered;
   }
   function onZukeiChoice_(i) {
-    if (zukei_.answered || zukei_.busy) return;
+    if (zukei_.answered) return;
     var q = zukei_.q;
     zukei_.answered = true;
     zukei_.picked = i;
     var ok = !!q.choices[i].ok;
-    renderZukei_();
-    if (!ok) {
-      els.zukeiResult.innerHTML = '<div class="test-photo-hint">❌ ざんねん！ 緑の答えが正解だよ。<br>' + q.explain + '</div>';
-      return;
-    }
-    els.zukeiResult.innerHTML = '<div class="win-banner">⭕ 正解！</div><div class="test-photo-hint">' + q.explain + '</div>';
+    // HPは端末で増減して、ふだんの同期でサーバーへ送る。
+    var hp = Number(state.hp) || 0;
+    var hpChange = ok ? 1 : -Math.min(1, hp);
+    state.hp = hp + hpChange;
+    saveGameState(state);
+    updateGameHud();
     var session = loadSession();
+    if (session && session.id) syncPointsNow_(session.id);
+    zukei_.answeredToday++;
+    renderZukei_();
+    els.zukeiResult.innerHTML = ok
+      ? '<div class="win-banner">⭕ 正解！ HP+1</div><div class="test-photo-hint">' + q.explain + '</div>'
+      : '<div class="test-photo-hint">❌ ざんねん！' + (hpChange < 0 ? ' HP-1。' : '') + '緑の答えが正解だよ。<br>' + q.explain + '</div>';
     if (!session || !session.id) return;
-    zukei_.busy = true;
-    apiPost('zukeiReward', { id: session.id }).then(function (res) {
-      zukei_.busy = false;
+    apiPost('zukeiAnswer', { id: session.id, correct: ok }).then(function (res) {
       if (!res || !res.ok) return;
-      zukei_.todayMp = Number(res.todayMp) || 0;
-      if (res.granted > 0 && res.newTotalPoints != null) {
-        state.points = res.newTotalPoints;
-        saveGameState(state);
-        updateGameHud();
-      }
-      els.zukeiResult.innerHTML = '<div class="win-banner">⭕ 正解！' + (res.granted > 0 ? ' +1MP' : '（今日の図形MPは' + ZUKEI_DAILY_MP_CAP_ + 'に達したのでMPなし）') + '</div><div class="test-photo-hint">' + q.explain + '</div>';
+      zukei_.answeredToday = Number(res.answeredToday) || 0;
       renderZukei_();
-    }).catch(function () { zukei_.busy = false; });
+    }).catch(function () {});
   }
   function toggleZukei() {
     var isHidden = els.zukeiPanel.hasAttribute('hidden');
@@ -32340,7 +32338,7 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('zukeiStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { zukei_.todayMp = Number(res.todayMp) || 0; renderZukei_(); }
+        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; renderZukei_(); }
       }).catch(function () {});
     }
   }
@@ -32519,7 +32517,7 @@
   var GACHA_LUCKY_SUBJECT_ = ['計算', '図形', '文章題', '割合', '速さ', '方程式', '関数', '理科（生物）', '理科（化学）', '理科（物理）', '理科（地学）', '単位'];
   var GACHA_LUCKY_ITEM_ = ['消しゴム', '定規', 'コンパス', '赤ペン', '青ペン', 'ノート', 'ふせん', '分度器', '水とう', 'えんぴつ', '時計', 'ハンカチ'];
   var GACHA_LUCKY_COLOR_ = ['赤', '青', '黄色', '緑', 'オレンジ', 'むらさき', 'ピンク', '水色', '白', '金色'];
-  var gacha_ = { today: {}, busy: false };
+  var gacha_ = { today: {}, busy: false, zukeiAnswered: 0, diceUnlock: 20 };
   function gachaVisible_() { return isAdminSession_() || GACHA_OPEN_ALL_; }
   function gachaResultHtml_(kind, r, mp) {
     var res = (r && r.result) || {};
@@ -32544,8 +32542,9 @@
       var done = gacha_.today[kind];
       var btn = card.querySelector('.gacha-btn');
       var out = card.querySelector('.gacha-out');
-      btn.disabled = !!done || gacha_.busy;
-      btn.textContent = done ? '今日は引いたよ（また明日）' : 'ガチャを引く！';
+      var locked = kind === 'dice' && !done && gacha_.zukeiAnswered < gacha_.diceUnlock;
+      btn.disabled = !!done || gacha_.busy || locked;
+      btn.textContent = done ? '今日は引いたよ（また明日）' : locked ? '🔒 図形トレーニングをあと' + (gacha_.diceUnlock - gacha_.zukeiAnswered) + '問' : 'ガチャを引く！';
       if (done && !out.getAttribute('data-anim')) out.innerHTML = gachaResultHtml_(kind, done);
     });
   }
@@ -32576,6 +32575,9 @@
         gacha_.today[kind] = { result: res.result, mp: res.mp };
         if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
         finish(gachaResultHtml_(kind, gacha_.today[kind]));
+      } else if (res && res.error === 'dice_locked') {
+        gacha_.zukeiAnswered = Number(res.zukeiAnswered) || 0;
+        finish('<div class="test-photo-hint">🔒 超絶！図形！トレーニング！！を今日' + (Number(res.diceUnlock) || 20) + '問解くと引けるよ。</div>');
       } else if (res && res.error === 'already_drawn' && res.prev) {
         gacha_.today[kind] = res.prev;
         finish(gachaResultHtml_(kind, res.prev));
@@ -32597,7 +32599,7 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('gachaStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { gacha_.today = res.today || {}; renderGacha_(); }
+        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiAnswered = Number(res.zukeiAnswered) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; renderGacha_(); }
       }).catch(function () {});
     }
   }
