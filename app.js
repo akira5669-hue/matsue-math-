@@ -24079,6 +24079,17 @@
   }
   function applySyncedPoints_(res) {
     applyTreasureRev_(res);
+    // 賢さの実・努力の種：ほかの端末で売った・食べた分はサーバーの方が少ないので、端末もそれに揃える
+    // (古い端末で数が戻って何度も売れる不具合の対策、2026-11-02)。増える方向はログイン時の読み込みで反映される。
+    if (res && res.ok) {
+      var seedChanged = false;
+      if (typeof res.wisdomFruitCount === 'number' && res.wisdomFruitCount < (Number(state.wisdomFruitCount) || 0)) { state.wisdomFruitCount = res.wisdomFruitCount; seedChanged = true; }
+      if (typeof res.effortSeedCount === 'number' && res.effortSeedCount < (Number(state.effortSeedCount) || 0)) { state.effortSeedCount = res.effortSeedCount; seedChanged = true; }
+      if (seedChanged) {
+        saveGameState(state);
+        if (els.shopPanel && !els.shopPanel.hasAttribute('hidden')) renderShopList();
+      }
+    }
     if (res && res.ok && typeof res.points === 'number' && res.points !== state.points) {
       state.points = res.points;
       saveGameState(state);
