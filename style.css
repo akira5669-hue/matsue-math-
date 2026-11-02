@@ -2499,6 +2499,9 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .gacha-rank-凶 { color: #475569; }
 
 /* 図形トレーニング：平面・空間の切りかえ */
-.zukei-mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
-.zukei-mode-btn { padding: 10px 6px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; font-size: 1.05rem; font-weight: 800; color: #334155; cursor: pointer; }
-.zukei-mode-btn.is-on { border-color: #2563eb; background: #dbeafe; color: #1d4ed8; }
+.zukei-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 8px 0; }
+.zukei-type-group { border: 2px solid #cbd5e1; border-radius: 12px; padding: 8px 10px; background: #fff; }
+.zukei-type-head { display: block; font-weight: 800; font-size: 1.05rem; color: #1d4ed8; margin-bottom: 4px; cursor: pointer; }
+.zukei-type-list { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.zukei-type-item { font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
+.zukei-types input[type="checkbox"] { width: 18px; height: 18px; vertical-align: -3px; }

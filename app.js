@@ -31777,8 +31777,7 @@
   var ZUKEI_OPEN_ALL_ = false;
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 20;
-  var zukei_ = { q: null, answered: false, answeredToday: 0, mode: 'space' };
-  try { if (localStorage.getItem('zukeiMode') === 'plane') zukei_.mode = 'plane'; } catch (e) {}
+  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, sel: null };
   function zukeiVisible_() { return isAdminSession_() || (ZUKEI_OPEN_ALL_ && todayKey() >= ZUKEI_START_); }
   function zukeiIsJunior_() {
     var s = loadSession();
@@ -32631,16 +32630,79 @@
     };
   }
 
+  // 出題する問題の種類は、チェック☑️で選べる(平面図形・空間図形ごとにまとめてON/OFFもできる)。
+  // 選んだものはこの端末に覚えておく。全部外すことはできない(最後の1つは外せない)。
+  var ZK_TYPES_ = [
+    { id: 'turn', group: 'plane', label: '回転・裏返し', make: zkMakeTurnQ_ },
+    { id: 'sym', group: 'plane', label: '対称な図形', make: zkMakeSymQ_ },
+    { id: 'angle', group: 'plane', label: '角度', make: zkMakeAngleQ_ },
+    { id: 'area', group: 'plane', label: '方眼の面積', make: zkMakeAreaQ_ },
+    { id: 'count', group: 'space', label: '積み木の数', make: zkMakeCountQ_ },
+    { id: 'view', group: 'space', label: '見え方', make: zkMakeViewQ_ },
+    { id: 'net', group: 'space', label: '展開図', make: zkMakeNetQ_ },
+    { id: 'revolve', group: 'space', label: '回転体', make: zkMakeRevolveQ_ },
+    { id: 'cut', group: 'space', label: '切断面', make: zkMakeCutQ_ }
+  ];
+  var ZK_GROUPS_ = [{ id: 'plane', label: '📐 平面図形' }, { id: 'space', label: '🧊 空間図形' }];
+  var ZK_NUMS_ = ['①', '②', '③', '④', '⑤'];
+  function zkSel_() {
+    if (zukei_.sel) return zukei_.sel;
+    var sel = {};
+    try { var saved = JSON.parse(localStorage.getItem('zukeiTypes') || 'null'); if (saved && typeof saved === 'object') sel = saved; } catch (e) { sel = {}; }
+    if (!ZK_TYPES_.some(function (t) { return sel[t.id]; })) { sel = {}; ZK_TYPES_.forEach(function (t) { sel[t.id] = true; }); }
+    zukei_.sel = sel;
+    return sel;
+  }
+  function zkSaveSel_() { try { localStorage.setItem('zukeiTypes', JSON.stringify(zukei_.sel)); } catch (e) {} }
+  function renderZukeiTypes_() {
+    var box = document.getElementById('zukeiTypes');
+    if (!box) return;
+    var sel = zkSel_();
+    box.innerHTML = ZK_GROUPS_.map(function (g) {
+      var items = ZK_TYPES_.filter(function (t) { return t.group === g.id; });
+      var on = items.filter(function (t) { return sel[t.id]; }).length;
+      return '<div class="zukei-type-group"><label class="zukei-type-head"><input type="checkbox" data-zk-group="' + g.id + '"' + (on === items.length ? ' checked' : '') + '> ' + g.label + '</label><div class="zukei-type-list">'
+        + items.map(function (t, i) {
+          return '<label class="zukei-type-item"><input type="checkbox" data-zk-type="' + t.id + '"' + (sel[t.id] ? ' checked' : '') + '> ' + ZK_NUMS_[i] + ' ' + t.label + '</label>';
+        }).join('') + '</div></div>';
+    }).join('');
+    ZK_GROUPS_.forEach(function (g) {
+      var items = ZK_TYPES_.filter(function (t) { return t.group === g.id; });
+      var on = items.filter(function (t) { return sel[t.id]; }).length;
+      var cb = box.querySelector('[data-zk-group="' + g.id + '"]');
+      if (cb) cb.indeterminate = on > 0 && on < items.length;
+    });
+  }
+  function onZukeiTypeChange_(input) {
+    var sel = zkSel_();
+    var next = {};
+    Object.keys(sel).forEach(function (k) { next[k] = sel[k]; });
+    var g = input.getAttribute('data-zk-group');
+    if (g) ZK_TYPES_.forEach(function (t) { if (t.group === g) next[t.id] = input.checked; });
+    else next[input.getAttribute('data-zk-type')] = input.checked;
+    if (!ZK_TYPES_.some(function (t) { return next[t.id]; })) {
+      els.zukeiResult.innerHTML = '<div class="test-photo-hint">少なくとも1つはチェックを入れてね。</div>';
+      renderZukeiTypes_();
+      return;
+    }
+    zukei_.sel = next;
+    zkSaveSel_();
+    renderZukeiTypes_();
+    // 今の問題の種類を外したら(まだ答えていなければ)、選んだ種類の問題に入れかえる。
+    if (!next[zukei_.qType] && !zukei_.answered) { zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_(); }
+  }
   function zkNewQuestion_() {
-    var makers = zukei_.mode === 'plane' ? [zkMakeTurnQ_, zkMakeSymQ_, zkMakeAngleQ_, zkMakeAreaQ_]
-      : [zkMakeCountQ_, zkMakeViewQ_, zkMakeNetQ_, zkMakeRevolveQ_, zkMakeCutQ_];
-    zukei_.q = makers[randInt(0, makers.length - 1)]();
+    var sel = zkSel_();
+    var types = ZK_TYPES_.filter(function (t) { return sel[t.id]; });
+    if (!types.length) types = ZK_TYPES_;
+    var t = types[randInt(0, types.length - 1)];
+    zukei_.qType = t.id;
+    zukei_.q = t.make();
     zukei_.answered = false;
   }
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    Array.prototype.forEach.call(els.zukeiPanel.querySelectorAll('[data-zk-mode]'), function (b) { b.classList.toggle('is-on', b.getAttribute('data-zk-mode') === zukei_.mode); });
     els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問' + (zukei_.answeredToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.answeredToday) + '問で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
@@ -32686,6 +32748,7 @@
       if (p) p.setAttribute('hidden', '');
     });
     els.zukeiPanel.removeAttribute('hidden');
+    renderZukeiTypes_();
     els.zukeiResult.innerHTML = '';
     renderZukei_();
     var session = loadSession();
@@ -32975,14 +33038,9 @@
       var b = e.target.closest('[data-zk-choice]');
       if (b) { onZukeiChoice_(Number(b.getAttribute('data-zk-choice'))); return; }
       if (e.target.closest('#zukeiNext')) { zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_(); return; }
-      var mb = e.target.closest('[data-zk-mode]');
-      if (mb) {
-        var mode = mb.getAttribute('data-zk-mode');
-        if (mode === zukei_.mode) return;
-        zukei_.mode = mode;
-        try { localStorage.setItem('zukeiMode', mode); } catch (e2) {}
-        zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_();
-      }
+    });
+    els.zukeiPanel.addEventListener('change', function (e) {
+      if (e.target.matches('[data-zk-group], [data-zk-type]')) onZukeiTypeChange_(e.target);
     });
     // ほかのボタンで別の画面を開いたら、図形トレーニングは閉じる。
     els.zukeiToggle.parentNode.addEventListener('click', function (e) {
