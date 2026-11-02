@@ -31768,14 +31768,17 @@
   }
   /* ---------- 超絶！図形！トレーニング！！(新！図形問題！キャンペーン！ 2026-11-03〜) ----------
      平面図形・空間図形の力をきたえる問題。問題は毎回この端末で作る(図はSVGで描く)。
-     ① 積み木の数(見えない下の段も数える) ② 見え方あて(上・正面・右から見た図)
-     ③ 展開図(立方体になるか／向かい合う面) ④ 回転体(1回転させてできる立体) ⑤ 回転・裏返し(同じ形はどれ？)
+     2026-11-02から「平面図形」と「空間図形」の2つに分けた(どちらを解いても1問と数える)。
+     平面図形：① 回転・裏返し(同じ形はどれ？) ② 対称な図形(線対称・点対称・対称の軸) ③ 角度(三角形・外角・二等辺三角形・正多角形・平行線) ④ 方眼の面積
+     空間図形：① 積み木の数(見えない下の段も数える) ② 見え方あて(上・正面・右から見た図)
+     ③ 展開図(立方体になるか／平行・垂直な面／重なる辺・点) ④ 回転体(1回転させてできる立体) ⑤ 切断面(3点を通る平面で切った切り口の形)
      2026-11-02から：正解でHP+1・まちがいでHP-1(0より下にはならない)。MPは増えない。
      解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上解くとその日のサイコロガチャが引ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
   var ZUKEI_OPEN_ALL_ = false;
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 20;
-  var zukei_ = { q: null, answered: false, answeredToday: 0 };
+  var zukei_ = { q: null, answered: false, answeredToday: 0, mode: 'space' };
+  try { if (localStorage.getItem('zukeiMode') === 'plane') zukei_.mode = 'plane'; } catch (e) {}
   function zukeiVisible_() { return isAdminSession_() || (ZUKEI_OPEN_ALL_ && todayKey() >= ZUKEI_START_); }
   function zukeiIsJunior_() {
     var s = loadSession();
@@ -32228,7 +32231,7 @@
       return { html: zkCellsSvg_(o.c, { size: 18, fill: '#93c5fd', cls: 'zukei-svg zukei-choice-svg' }), ok: o.ok };
     });
     return {
-      title: '⑤ 回転・裏返し',
+      title: '① 回転・裏返し',
       text: flip ? 'この形を<b>裏返した</b>形はどれ？（裏返したあと、回してもいいよ）' : 'この形を<b>回して</b>（裏返さずに）できる形はどれ？',
       figure: zkCellsSvg_(cells, { size: 28 }),
       choices: choices,
@@ -32280,14 +32283,364 @@
     };
   }
 
+  // ===================== 平面図形バージョン =====================
+  // 小数の座標を見やすく丸める(SVG用)
+  function zkR_(v) { return Math.round(v * 10) / 10; }
+  function zkPolyAttr_(pts) { return pts.map(function (p) { return zkR_(p[0]) + ',' + zkR_(p[1]); }).join(' '); }
+  function zkRegularPts_(n, r, rotDeg, cx, cy) {
+    var pts = [];
+    for (var i = 0; i < n; i++) {
+      var a = (rotDeg * Math.PI / 180) + i * 2 * Math.PI / n;
+      pts.push([(cx || 50) + r * Math.cos(a), (cy || 50) + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+  function zkGridPts_(pts, s, ox, oy) { return pts.map(function (p) { return [ox + p[0] * s, oy + p[1] * s]; }); }
+
+  // ---- ② 対称な図形：線対称・点対称・対称の軸の本数 ----
+  var ZK_SYM_ = [
+    { name: '正三角形', pts: zkRegularPts_(3, 46, -90, 50, 58), line: 3, point: false },
+    { name: '二等辺三角形', pts: [[50, 8], [78, 90], [22, 90]], line: 1, point: false },
+    { name: '直角三角形', pts: [[18, 22], [18, 86], [90, 86]], line: 0, point: false },
+    { name: '正方形', pts: [[18, 18], [82, 18], [82, 82], [18, 82]], line: 4, point: true },
+    { name: '長方形', pts: [[8, 28], [92, 28], [92, 72], [8, 72]], line: 2, point: true },
+    { name: 'ひし形', pts: [[50, 6], [76, 50], [50, 94], [24, 50]], line: 2, point: true },
+    { name: '平行四辺形', pts: [[30, 25], [92, 25], [70, 75], [8, 75]], line: 0, point: true },
+    { name: '台形（左右が同じ形）', pts: [[30, 25], [70, 25], [92, 75], [8, 75]], line: 1, point: false },
+    { name: '台形', pts: [[16, 25], [56, 25], [92, 75], [8, 75]], line: 0, point: false },
+    { name: '正五角形', pts: zkRegularPts_(5, 46, -90, 50, 54), line: 5, point: false },
+    { name: '正六角形', pts: zkRegularPts_(6, 46, 0), line: 6, point: true },
+    { name: '正八角形', pts: zkRegularPts_(8, 46, 22.5), line: 8, point: true },
+    { name: 'たこ形', pts: [[50, 6], [78, 36], [50, 94], [22, 36]], line: 1, point: false },
+    { name: '四角形', pts: [[20, 20], [75, 12], [90, 80], [12, 70]], line: 0, point: false },
+    { name: 'S字の形', pts: zkGridPts_([[1, 0], [3, 0], [3, 1], [2, 1], [2, 2], [0, 2], [0, 1], [1, 1]], 28, 8, 22), line: 0, point: true },
+    { name: 'T字の形', pts: zkGridPts_([[0, 0], [3, 0], [3, 1], [2, 1], [2, 2], [1, 2], [1, 1], [0, 1]], 28, 8, 22), line: 1, point: false },
+    { name: 'L字の形', pts: zkGridPts_([[0, 0], [1, 0], [1, 2], [2, 2], [2, 3], [0, 3]], 28, 22, 8), line: 0, point: false },
+    { name: '十字の形', pts: zkGridPts_([[1, 0], [2, 0], [2, 1], [3, 1], [3, 2], [2, 2], [2, 3], [1, 3], [1, 2], [0, 2], [0, 1], [1, 1]], 28, 8, 8), line: 4, point: true }
+  ];
+  function zkSymSvg_(item, cls) {
+    return zkSvg_(100, 100, '<polygon points="' + zkPolyAttr_(item.pts) + '" fill="#fde68a" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>', cls || 'zukei-svg zukei-choice-svg');
+  }
+  function zkSymDesc_(it) {
+    return '「' + it.name + '」は' + (it.line > 0 ? '線対称（対称の軸' + it.line + '本）' : '線対称ではなく') + (it.point ? '、点対称でもあるよ。' : (it.line > 0 ? 'だけど、点対称ではないよ。' : '、点対称でもないよ。'));
+  }
+  function zkMakeSymQ_() {
+    var kind = randInt(0, 3);
+    var pick = function (f) { return zkShuffle_(ZK_SYM_.filter(f)); };
+    if (kind === 3) {
+      var it = pick(function (s) { return s.line > 0; })[0];
+      var nums = zkShuffle_([1, 2, 3, 4, 5, 6, 8].filter(function (n) { return n !== it.line; })).slice(0, 3).concat([it.line]);
+      return {
+        title: '② 対称な図形（対称の軸）',
+        text: 'この図形の<b>対称の軸</b>は何本？',
+        figure: zkSymSvg_(it, 'zukei-svg'),
+        choices: zkShuffle_(nums).map(function (n) { return { html: n + '本', ok: n === it.line }; }),
+        explain: zkSymDesc_(it) + ' 折り目にしてぴったり重なる直線が' + it.line + '本あるね。'
+      };
+    }
+    var defs = [
+      { q: '<b>線対称</b>な図形はどれ？', ok: function (s) { return s.line > 0; } },
+      { q: '<b>点対称</b>な図形はどれ？', ok: function (s) { return s.point; } },
+      { q: '<b>線対称でも点対称でもある</b>図形はどれ？', ok: function (s) { return s.line > 0 && s.point; } }
+    ][kind];
+    var ans = pick(defs.ok)[0];
+    var wrongs = pick(function (s) { return !defs.ok(s); }).slice(0, 3);
+    return {
+      title: '② 対称な図形',
+      text: defs.q,
+      figure: '',
+      choices: zkShuffle_([ans].concat(wrongs)).map(function (s) { return { html: zkSymSvg_(s), ok: s === ans }; }),
+      explain: zkSymDesc_(ans) + '<br>（線対称：1本の直線で折るとぴったり重なる形。点対称：1つの点のまわりに180°回すとぴったり重なる形）'
+    };
+  }
+
+  // ---- ③ 角度 ----
+  // 角のしるし(弧)と数字。cは頂点、p1・p2は2本の辺の先の点。
+  function zkAngleMark_(c, p1, p2, label, color) {
+    var a1 = Math.atan2(p1[1] - c[1], p1[0] - c[0]), a2 = Math.atan2(p2[1] - c[1], p2[0] - c[0]);
+    var d = a2 - a1;
+    while (d <= -Math.PI) d += 2 * Math.PI;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    var r = 16;
+    var s = [c[0] + r * Math.cos(a1), c[1] + r * Math.sin(a1)], e = [c[0] + r * Math.cos(a1 + d), c[1] + r * Math.sin(a1 + d)];
+    var mid = a1 + d / 2, lr = Math.abs(d) < 0.7 ? 34 : 28;
+    var col = color || '#2563eb';
+    return '<path d="M' + zkR_(s[0]) + ',' + zkR_(s[1]) + ' A' + r + ',' + r + ' 0 0 ' + (d > 0 ? 1 : 0) + ' ' + zkR_(e[0]) + ',' + zkR_(e[1]) + '" fill="none" stroke="' + col + '" stroke-width="1.8"/>'
+      + '<text x="' + zkR_(c[0] + lr * Math.cos(mid)) + '" y="' + zkR_(c[1] + lr * Math.sin(mid) + 5) + '" font-size="14" font-weight="700" fill="' + col + '" text-anchor="middle">' + label + '</text>';
+  }
+  // 底辺を左右にとり、左の角A°・右の角B°の三角形の3つの頂点(画面の座標)。
+  function zkTriByAngles_(A, B, w) {
+    var ta = Math.tan(A * Math.PI / 180), tb = Math.tan(B * Math.PI / 180);
+    var x = w * tb / (ta + tb), h = x * ta;
+    var sc = Math.min(1, 120 / h);
+    var W = w * sc;
+    return [[40, 150], [40 + W, 150], [40 + x * sc, 150 - h * sc]];
+  }
+  function zkAngleChoices_(x) {
+    var cands = zkShuffle_([x + 10, x - 10, x + 20, x - 20, 180 - x, x + 5, x - 5, 90 - x, 360 - 2 * x].filter(function (v, i, a) { return v > 0 && v < 360 && v !== x && a.indexOf(v) === i; }));
+    return zkShuffle_(cands.slice(0, 3).concat([x])).map(function (v) { return { html: v + '°', ok: v === x }; });
+  }
+  function zkMakeAngleQ_() {
+    var kind = randInt(0, 4);
+    var A, B, C, P, x, body, text, explain;
+    var line = function (p, q, extra) { return '<line x1="' + zkR_(p[0]) + '" y1="' + zkR_(p[1]) + '" x2="' + zkR_(q[0]) + '" y2="' + zkR_(q[1]) + '" stroke="#334155" stroke-width="2"' + (extra || '') + '/>'; };
+    if (kind === 0 || kind === 1) {
+      for (;;) { A = randInt(6, 20) * 5; B = randInt(6, 20) * 5; C = 180 - A - B; if (C >= 30 && A !== B) break; }
+      P = zkTriByAngles_(A, B, 160);
+      body = '<polygon points="' + zkPolyAttr_(P) + '" fill="#fef3c7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>';
+      if (kind === 0) {
+        x = C;
+        body += zkAngleMark_(P[0], P[1], P[2], A + '°') + zkAngleMark_(P[1], P[2], P[0], B + '°') + zkAngleMark_(P[2], P[0], P[1], 'x', '#dc2626');
+        text = '三角形の角 <b>x</b> は何度？';
+        explain = '三角形の3つの角をたすと180°。だから x ＝ 180 − ' + A + ' − ' + B + ' ＝ ' + C + '° だよ。';
+      } else {
+        x = A + C;
+        var ext = [P[1][0] + 60, 150];
+        body += line(P[1], ext) + zkAngleMark_(P[0], P[1], P[2], A + '°') + zkAngleMark_(P[2], P[0], P[1], C + '°') + zkAngleMark_(P[1], ext, P[2], 'x', '#dc2626');
+        text = '三角形の外側の角 <b>x</b> は何度？';
+        explain = '三角形の外角は、となりにない2つの内角の和に等しいよ。x ＝ ' + A + ' ＋ ' + C + ' ＝ ' + x + '°（180 − ' + B + ' でも求められるよ）。';
+      }
+      return { title: '③ 角度', text: text, figure: zkSvg_(260, 170, body, 'zukei-svg'), choices: zkAngleChoices_(x), explain: explain };
+    }
+    if (kind === 2) {
+      var apex = randInt(2, 14) * 10, base = (180 - apex) / 2;
+      P = zkTriByAngles_(base, base, 150);
+      var tick = function (p, q) {
+        var m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], dx = q[0] - p[0], dy = q[1] - p[1], L = Math.sqrt(dx * dx + dy * dy);
+        var nx = -dy / L * 6, ny = dx / L * 6;
+        return line([m[0] - nx, m[1] - ny], [m[0] + nx, m[1] + ny]);
+      };
+      body = '<polygon points="' + zkPolyAttr_(P) + '" fill="#fef3c7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>' + tick(P[0], P[2]) + tick(P[1], P[2]);
+      var askBase = Math.random() < 0.5;
+      x = askBase ? base : apex;
+      body += askBase ? zkAngleMark_(P[2], P[0], P[1], apex + '°') + zkAngleMark_(P[0], P[1], P[2], 'x', '#dc2626')
+        : zkAngleMark_(P[0], P[1], P[2], base + '°') + zkAngleMark_(P[2], P[0], P[1], 'x', '#dc2626');
+      return {
+        title: '③ 角度（二等辺三角形）',
+        text: '同じしるしの辺は長さが等しいよ。角 <b>x</b> は何度？',
+        figure: zkSvg_(260, 170, body, 'zukei-svg'),
+        choices: zkAngleChoices_(x),
+        explain: '二等辺三角形の2つの底角は等しいよ。' + (askBase ? 'x ＝ (180 − ' + apex + ') ÷ 2 ＝ ' + base + '°' : 'x ＝ 180 − ' + base + ' × 2 ＝ ' + apex + '°') + ' だよ。'
+      };
+    }
+    if (kind === 3) {
+      var n = [5, 6, 8, 9, 10, 12][randInt(0, 5)];
+      x = 180 * (n - 2) / n;
+      var pts = zkRegularPts_(n, 60, -90 + (n % 2 ? 0 : 180 / n), 80, 75);
+      return {
+        title: '③ 角度（正多角形）',
+        text: '<b>正' + n + '角形</b>の1つの角の大きさは何度？',
+        figure: zkSvg_(160, 150, '<polygon points="' + zkPolyAttr_(pts) + '" fill="#fef3c7" stroke="#334155" stroke-width="2"/>' + zkAngleMark_(pts[0], pts[n - 1], pts[1], 'x', '#dc2626'), 'zukei-svg'),
+        choices: zkAngleChoices_(x),
+        explain: n + '角形の角の和は 180 × (' + n + ' − 2) ＝ ' + (180 * (n - 2)) + '°。正' + n + '角形は全部の角が等しいので、' + (180 * (n - 2)) + ' ÷ ' + n + ' ＝ ' + x + '° だよ。'
+      };
+    }
+    // 平行線と角(同位角・錯角・同じ側の内角)
+    var a = randInt(8, 28) * 5;
+    if (a === 90) a = 75;
+    var rad = a * Math.PI / 180, dir = [Math.cos(rad), -Math.sin(rad)];
+    var yU = 45, yL = 125, xL = 130 - (yL - yU) / 2 / Math.tan(rad);
+    var Lp = [xL, yL], Up = [xL + dir[0] * (yL - yU) / Math.sin(rad), yU];
+    var far = function (p, d, t) { return [p[0] + d[0] * t, p[1] + d[1] * t]; };
+    body = line([10, yU], [250, yU]) + line([10, yL], [250, yL])
+      + '<text x="252" y="' + (yU + 5) + '" font-size="13" fill="#334155">ℓ</text><text x="252" y="' + (yL + 5) + '" font-size="13" fill="#334155">m</text>'
+      + line(far(Lp, dir, -40), far(Up, dir, 40));
+    var sub = randInt(0, 2);
+    var right = [1, 0], left = [-1, 0], up = dir, down = [-dir[0], -dir[1]];
+    var markU, markL, how;
+    if (sub === 0) { markU = [right, up]; markL = [right, up]; x = a; how = '同位角は等しいので、x ＝ ' + a + '°'; }
+    else if (sub === 1) { markU = [left, down]; markL = [right, up]; x = a; how = '錯角は等しいので、x ＝ ' + a + '°'; }
+    else { markU = [left, down]; markL = [left, up]; x = 180 - a; how = '平行線の同じ側の内角をたすと180°なので、x ＝ 180 − ' + a + ' ＝ ' + x + '°'; }
+    body += zkAngleMark_(Up, far(Up, markU[0], 30), far(Up, markU[1], 30), a + '°') + zkAngleMark_(Lp, far(Lp, markL[0], 30), far(Lp, markL[1], 30), 'x', '#dc2626');
+    return {
+      title: '③ 角度（平行線）',
+      text: '直線ℓとmは<b>平行</b>だよ。角 <b>x</b> は何度？',
+      figure: zkSvg_(270, 170, body, 'zukei-svg'),
+      choices: zkAngleChoices_(x),
+      explain: how + ' だよ。'
+    };
+  }
+
+  // ---- ④ 方眼の面積(1目もり1cm) ----
+  function zkFmtArea_(v) { return (Math.round(v * 2) / 2) + 'cm²'; }
+  function zkMakeAreaQ_() {
+    var COLS = 9, ROWS = 6, S = 26, PAD = 8;
+    var kind = randInt(0, zukeiIsJunior_() || Math.random() < 0.5 ? 3 : 2);
+    var pts, area, explain, name;
+    if (kind === 0) {
+      var b = randInt(3, 7), h = randInt(2, 5), x0 = randInt(0, COLS - b), y0 = randInt(0, ROWS - h), ax = randInt(0, COLS);
+      pts = [[x0, y0 + h], [x0 + b, y0 + h], [ax, y0]]; area = b * h / 2; name = '三角形';
+      explain = '底辺 ' + b + 'cm、高さ ' + h + 'cm の三角形だから、' + b + ' × ' + h + ' ÷ 2 ＝ ' + zkFmtArea_(area) + ' だよ。（高さは、頂点から底辺に垂直にはかるよ）';
+    } else if (kind === 1) {
+      var b1 = randInt(2, 5), h1 = randInt(2, 5), sh = randInt(1, 3) * (Math.random() < 0.5 ? 1 : -1);
+      var x1 = Math.max(0, -sh) + randInt(0, Math.max(0, COLS - b1 - Math.abs(sh))), y1 = randInt(0, ROWS - h1);
+      pts = [[x1, y1 + h1], [x1 + b1, y1 + h1], [x1 + b1 + sh, y1], [x1 + sh, y1]]; area = b1 * h1; name = '平行四辺形';
+      explain = '底辺 ' + b1 + 'cm、高さ ' + h1 + 'cm の平行四辺形だから、' + b1 + ' × ' + h1 + ' ＝ ' + zkFmtArea_(area) + ' だよ。';
+    } else if (kind === 2) {
+      var lo = randInt(4, 8), up = randInt(1, lo - 1), h2 = randInt(2, 5), x2 = randInt(0, COLS - lo), y2 = randInt(0, ROWS - h2), s2 = randInt(0, lo - up);
+      pts = [[x2, y2 + h2], [x2 + lo, y2 + h2], [x2 + s2 + up, y2], [x2 + s2, y2]]; area = (up + lo) * h2 / 2; name = '台形';
+      explain = '上底 ' + up + 'cm、下底 ' + lo + 'cm、高さ ' + h2 + 'cm の台形だから、(' + up + ' ＋ ' + lo + ') × ' + h2 + ' ÷ 2 ＝ ' + zkFmtArea_(area) + ' だよ。';
+    } else {
+      var W = randInt(3, 6), H = randInt(3, 5), a = randInt(1, H - 1), bb = randInt(1, W - 1), x3 = randInt(0, COLS - W), y3 = randInt(0, ROWS - H);
+      pts = [[x3, y3 + H], [x3 + W, y3 + H - a], [x3 + bb, y3]]; name = '三角形';
+      var t1 = W * a / 2, t2 = bb * H / 2, t3 = (W - bb) * (H - a) / 2;
+      area = W * H - t1 - t2 - t3;
+      explain = 'まわりの長方形（' + W + ' × ' + H + ' ＝ ' + W * H + 'cm²）から、まわりの3つの直角三角形（' + zkFmtArea_(t1) + '・' + zkFmtArea_(t2) + '・' + zkFmtArea_(t3) + '）をひくと、' + zkFmtArea_(area) + ' だよ。';
+    }
+    var grid = '';
+    for (var c = 0; c <= COLS; c++) grid += '<line x1="' + (PAD + c * S) + '" y1="' + PAD + '" x2="' + (PAD + c * S) + '" y2="' + (PAD + ROWS * S) + '" stroke="#cbd5e1" stroke-width="1"/>';
+    for (var r = 0; r <= ROWS; r++) grid += '<line x1="' + PAD + '" y1="' + (PAD + r * S) + '" x2="' + (PAD + COLS * S) + '" y2="' + (PAD + r * S) + '" stroke="#cbd5e1" stroke-width="1"/>';
+    var poly = '<polygon points="' + zkPolyAttr_(pts.map(function (p) { return [PAD + p[0] * S, PAD + p[1] * S]; })) + '" fill="rgba(251,191,36,0.55)" stroke="#b45309" stroke-width="2.2" stroke-linejoin="round"/>';
+    var cands = zkShuffle_([area * 2, area + 1, area - 1, area + 2, area - 2, area / 2, area + 0.5, area - 0.5].filter(function (v, i, a2) { return v > 0 && v !== area && a2.indexOf(v) === i && Math.round(v * 2) === v * 2; }));
+    var choices = zkShuffle_(cands.slice(0, 3).concat([area])).map(function (v) { return { html: zkFmtArea_(v), ok: v === area }; });
+    return {
+      title: '④ 方眼の面積',
+      text: '方眼の1目もりは <b>1cm</b> だよ。色をぬった' + name + 'の面積は何cm²？',
+      figure: zkSvg_(PAD * 2 + COLS * S, PAD * 2 + ROWS * S, grid + poly, 'zukei-svg'),
+      choices: choices,
+      explain: explain
+    };
+  }
+
+  // ===================== 空間図形：⑤ 切断面 =====================
+  // 1辺2の立方体(0〜2)を、3点P・Q・Rを通る平面で切ったときの切り口の形。
+  // 点は見えている頂点(7個)と、見えている辺の真ん中(9個)から選ぶ(見えない辺の上の点は使わない)。
+  var ZK_CUT_NAMES_ = ['正三角形', '二等辺三角形', '三角形', '正方形', '長方形', 'ひし形', '平行四辺形', '台形', '五角形', '正六角形', '六角形'];
+  // 答えがこれなら、選択肢に出してはいけない名前(答えもその仲間に入ってしまうもの)
+  var ZK_CUT_ALSO_ = { '正三角形': ['二等辺三角形', '三角形'], '二等辺三角形': ['三角形'], '正方形': ['長方形', 'ひし形', '平行四辺形', '台形'], '長方形': ['平行四辺形', '台形'], 'ひし形': ['平行四辺形', '台形'], '平行四辺形': ['台形'], '正六角形': ['六角形'] };
+  var zkCutTable_ = null;
+  function zkV3_(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function zkDot3_(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function zkCross3_(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function zkLen3_(a) { return Math.sqrt(zkDot3_(a, a)); }
+  function zkCubeVerts_() { var v = []; for (var i = 0; i < 8; i++) v.push([(i & 1) * 2, ((i >> 1) & 1) * 2, ((i >> 2) & 1) * 2]); return v; }
+  function zkCubeEdges_() {
+    var v = zkCubeVerts_(), e = [];
+    for (var i = 0; i < 8; i++) for (var j = i + 1; j < 8; j++) {
+      var d = zkV3_(v[i], v[j]);
+      if (Math.abs(d[0]) + Math.abs(d[1]) + Math.abs(d[2]) === 2) e.push([v[i], v[j]]);
+    }
+    return e;
+  }
+  // 切り口の多角形(頂点を順番に並べたもの)。平面が立方体の中を通らなければnull。
+  function zkCutPolygon_(P, Q, R) {
+    var n = zkCross3_(zkV3_(Q, P), zkV3_(R, P));
+    if (zkLen3_(n) < 1e-9) return null;
+    var dist = function (v) { return zkDot3_(n, zkV3_(v, P)); };
+    var vs = zkCubeVerts_(), pos = 0, neg = 0;
+    vs.forEach(function (v) { var d = dist(v); if (d > 1e-9) pos++; else if (d < -1e-9) neg++; });
+    if (!pos || !neg) return null;
+    var pts = [], seen = {};
+    var add = function (p) { var k = p.map(function (c) { return Math.round(c * 1000); }).join(','); if (!seen[k]) { seen[k] = 1; pts.push(p); } };
+    zkCubeEdges_().forEach(function (e) {
+      var da = dist(e[0]), db = dist(e[1]);
+      if (Math.abs(da) < 1e-9) add(e[0]);
+      if (Math.abs(db) < 1e-9) add(e[1]);
+      if ((da > 1e-9 && db < -1e-9) || (da < -1e-9 && db > 1e-9)) {
+        var t = da / (da - db);
+        add([e[0][0] + (e[1][0] - e[0][0]) * t, e[0][1] + (e[1][1] - e[0][1]) * t, e[0][2] + (e[1][2] - e[0][2]) * t]);
+      }
+    });
+    if (pts.length < 3) return null;
+    var c = [0, 0, 0];
+    pts.forEach(function (p) { c[0] += p[0] / pts.length; c[1] += p[1] / pts.length; c[2] += p[2] / pts.length; });
+    var u = zkV3_(pts[0], c), w = zkCross3_(n, u);
+    pts.sort(function (p, q) {
+      var dp = zkV3_(p, c), dq = zkV3_(q, c);
+      return Math.atan2(zkDot3_(dp, w), zkDot3_(dp, u)) - Math.atan2(zkDot3_(dq, w), zkDot3_(dq, u));
+    });
+    return pts;
+  }
+  function zkCutName_(pts) {
+    var n = pts.length, eps = 1e-6;
+    var E = pts.map(function (p, i) { return zkV3_(pts[(i + 1) % n], p); });
+    var L = E.map(zkLen3_);
+    var eq = function (a, b) { return Math.abs(a - b) < eps; };
+    var par = function (a, b) { return zkLen3_(zkCross3_(a, b)) < eps; };
+    if (n === 3) {
+      if (eq(L[0], L[1]) && eq(L[1], L[2])) return '正三角形';
+      if (eq(L[0], L[1]) || eq(L[1], L[2]) || eq(L[0], L[2])) return '二等辺三角形';
+      return '三角形';
+    }
+    if (n === 4) {
+      var p02 = par(E[0], E[2]), p13 = par(E[1], E[3]);
+      if (p02 && p13) {
+        var right = Math.abs(zkDot3_(E[0], E[1])) < eps, same = eq(L[0], L[1]);
+        return right && same ? '正方形' : right ? '長方形' : same ? 'ひし形' : '平行四辺形';
+      }
+      return (p02 || p13) ? '台形' : null;
+    }
+    if (n === 5) return '五角形';
+    if (n === 6) {
+      var allSide = L.every(function (l) { return eq(l, L[0]); });
+      var cos0 = zkDot3_(E[0], E[1]) / (L[0] * L[1]);
+      var allAng = E.every(function (e, i) { var f = E[(i + 1) % n]; return Math.abs(zkDot3_(e, f) / (L[i] * L[(i + 1) % n]) - cos0) < eps; });
+      return allSide && allAng ? '正六角形' : '六角形';
+    }
+    return null;
+  }
+  function zkCutBuildTable_() {
+    if (zkCutTable_) return zkCutTable_;
+    var cand = [];
+    zkCubeVerts_().forEach(function (v) { if (v[0] + v[1] + v[2] > 0) cand.push(v); });
+    zkCubeEdges_().forEach(function (e) {
+      var hidden = (e[0][0] + e[0][1] + e[0][2] === 0) || (e[1][0] + e[1][1] + e[1][2] === 0);
+      if (!hidden) cand.push([(e[0][0] + e[1][0]) / 2, (e[0][1] + e[1][1]) / 2, (e[0][2] + e[1][2]) / 2]);
+    });
+    var table = {};
+    for (var i = 0; i < cand.length; i++) for (var j = i + 1; j < cand.length; j++) for (var k = j + 1; k < cand.length; k++) {
+      var poly = zkCutPolygon_(cand[i], cand[j], cand[k]);
+      if (!poly) continue;
+      var name = zkCutName_(poly);
+      if (!name) continue;
+      (table[name] = table[name] || []).push({ pts: [cand[i], cand[j], cand[k]], poly: poly });
+    }
+    zkCutTable_ = table;
+    return table;
+  }
+  // 立方体の見取図。見えない頂点(0,0,0)につながる3本の辺は点線。
+  function zkCubeP_(p) { return [80 + p[0] * 46 - p[1] * 24, 115 + p[0] * 12 + p[1] * 20 - p[2] * 48]; }
+  function zkCutSvg_(item, showCut) {
+    var body = '';
+    if (showCut) body += '<polygon points="' + zkPolyAttr_(item.poly.map(zkCubeP_)) + '" fill="rgba(239,68,68,0.35)" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/>';
+    zkCubeEdges_().forEach(function (e) {
+      var hidden = (e[0][0] + e[0][1] + e[0][2] === 0) || (e[1][0] + e[1][1] + e[1][2] === 0);
+      var a = zkCubeP_(e[0]), b = zkCubeP_(e[1]);
+      body += '<line x1="' + zkR_(a[0]) + '" y1="' + zkR_(a[1]) + '" x2="' + zkR_(b[0]) + '" y2="' + zkR_(b[1]) + '" stroke="#334155" stroke-width="' + (hidden ? 1.4 : 2) + '"' + (hidden ? ' stroke-dasharray="5,4"' : '') + '/>';
+    });
+    ['P', 'Q', 'R'].forEach(function (lab, i) {
+      var p = zkCubeP_(item.pts[i]);
+      body += '<circle cx="' + zkR_(p[0]) + '" cy="' + zkR_(p[1]) + '" r="4.5" fill="#dc2626"/>'
+        + '<text x="' + zkR_(p[0] + 8) + '" y="' + zkR_(p[1] - 6) + '" font-size="14" font-weight="800" fill="#b91c1c">' + lab + '</text>';
+    });
+    return zkSvg_(220, 200, body, 'zukei-svg');
+  }
+  function zkMakeCutQ_() {
+    var table = zkCutBuildTable_();
+    var names = Object.keys(table);
+    var ans = names[randInt(0, names.length - 1)];
+    var list = table[ans], item = list[randInt(0, list.length - 1)];
+    var bad = [ans].concat(ZK_CUT_ALSO_[ans] || []);
+    var wrongs = zkShuffle_(ZK_CUT_NAMES_.filter(function (nm) { return bad.indexOf(nm) === -1; })).slice(0, 3);
+    return {
+      title: '⑤ 切断面',
+      text: '立方体を、3つの点 <b>P・Q・R</b> を通る平面で切るよ。切り口はどんな形？（点は頂点か、辺のちょうど真ん中だよ）',
+      figure: zkCutSvg_(item, false),
+      choices: zkShuffle_([ans].concat(wrongs)).map(function (nm) { return { html: nm, ok: nm === ans }; }),
+      explain: '切り口は「' + ans + '」になるよ。同じ面の上にある2点は直線で結べるよ。向かい合う面の切り口は平行になるよ。<br>' + zkCutSvg_(item, true)
+    };
+  }
+
   function zkNewQuestion_() {
-    var makers = [zkMakeCountQ_, zkMakeViewQ_, zkMakeNetQ_, zkMakeRevolveQ_, zkMakeTurnQ_];
+    var makers = zukei_.mode === 'plane' ? [zkMakeTurnQ_, zkMakeSymQ_, zkMakeAngleQ_, zkMakeAreaQ_]
+      : [zkMakeCountQ_, zkMakeViewQ_, zkMakeNetQ_, zkMakeRevolveQ_, zkMakeCutQ_];
     zukei_.q = makers[randInt(0, makers.length - 1)]();
     zukei_.answered = false;
   }
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
+    Array.prototype.forEach.call(els.zukeiPanel.querySelectorAll('[data-zk-mode]'), function (b) { b.classList.toggle('is-on', b.getAttribute('data-zk-mode') === zukei_.mode); });
     els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問' + (zukei_.answeredToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.answeredToday) + '問で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
@@ -32621,7 +32974,15 @@
     els.zukeiPanel.addEventListener('click', function (e) {
       var b = e.target.closest('[data-zk-choice]');
       if (b) { onZukeiChoice_(Number(b.getAttribute('data-zk-choice'))); return; }
-      if (e.target.closest('#zukeiNext')) { zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_(); }
+      if (e.target.closest('#zukeiNext')) { zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_(); return; }
+      var mb = e.target.closest('[data-zk-mode]');
+      if (mb) {
+        var mode = mb.getAttribute('data-zk-mode');
+        if (mode === zukei_.mode) return;
+        zukei_.mode = mode;
+        try { localStorage.setItem('zukeiMode', mode); } catch (e2) {}
+        zkNewQuestion_(); els.zukeiResult.innerHTML = ''; renderZukei_();
+      }
     });
     // ほかのボタンで別の画面を開いたら、図形トレーニングは閉じる。
     els.zukeiToggle.parentNode.addEventListener('click', function (e) {

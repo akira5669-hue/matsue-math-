@@ -2497,3 +2497,8 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .gacha-fortune { font-size: 2.6rem; font-weight: 900; color: #b91c1c; letter-spacing: 0.1em; }
 .gacha-rank-大吉 { color: #dc2626; text-shadow: 0 0 8px #fde047; }
 .gacha-rank-凶 { color: #475569; }
+
+/* 図形トレーニング：平面・空間の切りかえ */
+.zukei-mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.zukei-mode-btn { padding: 10px 6px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; font-size: 1.05rem; font-weight: 800; color: #334155; cursor: pointer; }
+.zukei-mode-btn.is-on { border-color: #2563eb; background: #dbeafe; color: #1d4ed8; }
