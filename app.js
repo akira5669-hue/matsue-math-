@@ -32901,7 +32901,8 @@
       var nn = randInt(4, 12);
       var terms = [];
       for (var i = 1; i <= Math.min(nn, 3); i++) terms.push(zkFrac_(1, i + '×' + (i + 1)));
-      q = terms.join(' ＋ ') + ' ＋ … ＋ ' + zkFrac_(1, nn + '×' + (nn + 1));
+      // 4つまでなら全部書く(「…」の間に何もないと分かりにくいので)。
+      q = nn <= 4 ? terms.concat(nn === 4 ? [zkFrac_(1, '4×5')] : []).join(' ＋ ') : terms.join(' ＋ ') + ' ＋ … ＋ ' + zkFrac_(1, nn + '×' + (nn + 1));
       var right = zkFrac_(nn, nn + 1);
       var opts = [right, zkFrac_(1, nn + 1), zkFrac_(nn + 1, nn + 2), zkFrac_(nn - 1, nn)];
       return {
