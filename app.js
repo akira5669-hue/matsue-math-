@@ -23551,7 +23551,9 @@
   // レベルアップで「職業」を選べるようになることの告知(全生徒に表示)。
   function renderProfessionNoticeBanner_() {
     if (!els.professionNoticeBanner) return;
-    els.professionNoticeBanner.hidden = false;
+    // 2026-11-04 掲載終了(説明は使い方マニュアルの「職業」に移した)。
+    els.professionNoticeBanner.hidden = true;
+    return;
     if (els.professionNoticeBannerText) {
       els.professionNoticeBannerText.textContent = '📢【ご案内】レベルが上がると「職業」を選べるようになります！レベル100・300・500・800・1000と上がるごとに選べる職業の種類が増えていき（一部は7日連続ログインも必要）、設定した職業はランキングの自分のニックネームの後ろに表示されます。レベルが上がれば何度でも転職できます。';
     }
