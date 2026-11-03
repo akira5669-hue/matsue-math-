@@ -31771,8 +31771,8 @@
      2026-11-02から「平面図形」と「空間図形」の2つに分けた(どちらを解いても1問と数える)。
      平面図形：① 回転・裏返し(同じ形はどれ？) ② 対称な図形(線対称・点対称・対称の軸) ③ 角度(三角形・外角・二等辺三角形・正多角形・平行線) ④ 方眼の面積
      空間図形：① 積み木の数(見えない下の段も数える) ② 見え方あて(上・正面・右から見た図)
-     ③ 展開図(立方体になるか／平行・垂直な面／重なる辺・点) ④ 回転体(1回転させてできる立体) ⑤ 切断面(3点を通る平面で切った切り口の形)
-     中学受験(2026-11-03〜)：① 角度(星形・ブーメラン形・平行線の折れ線・二等分線) ② 相似・面積比 ③ 立体の切断と体積 ④ 展開図(円すい・円柱) ⑤ 計算の技
+     ③ 展開図(立方体になるか／平行・垂直な面／重なる辺・点) ④ 回転体(1回転させてできる立体)
+     中学受験(2026-11-03〜)：① 角度(星形・ブーメラン形・平行線の折れ線・二等分線) ② 相似・面積比 ③ 立体の切断と体積 ④ 切断面(3点を通る平面で切った切り口の形) ⑤ 展開図(円すい・円柱) ⑥ 計算の技
      2026-11-02から：正解でHP+1・まちがいでHP-1(0より下にはならない)。MPは増えない。
      解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上解くとその日のサイコロガチャが引ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
   var ZUKEI_OPEN_ALL_ = false;
@@ -32589,7 +32589,7 @@
     };
   }
 
-  // ===================== 空間図形：⑤ 切断面 =====================
+  // ===================== 中学受験：④ 切断面 =====================
   // 1辺2の立方体(0〜2)を、3点P・Q・Rを通る平面で切ったときの切り口の形。
   // 点は見えている頂点(7個)と、見えている辺の真ん中(9個)から選ぶ(見えない辺の上の点は使わない)。
   var ZK_CUT_NAMES_ = ['正三角形', '二等辺三角形', '三角形', '正方形', '長方形', 'ひし形', '平行四辺形', '台形', '五角形', '正六角形', '六角形'];
@@ -32710,7 +32710,7 @@
     var bad = [ans].concat(ZK_CUT_ALSO_[ans] || []);
     var wrongs = zkShuffle_(ZK_CUT_NAMES_.filter(function (nm) { return bad.indexOf(nm) === -1; })).slice(0, 3);
     return {
-      title: '⑤ 切断面',
+      title: '🎓④ 切断面',
       text: '立方体を、3つの点 <b>P・Q・R</b> を通る平面で切るよ。切り口はどんな形？（点は頂点か、辺のちょうど真ん中だよ）',
       figure: zkCutSvg_(item, false),
       choices: zkShuffle_([ans].concat(wrongs)).map(function (nm) { return { html: nm, ok: nm === ans }; }),
@@ -32942,7 +32942,7 @@
       explain = zkEx_('円柱を開くと、側面は長方形、上と下は円になるよ。側面の横の長さは、底面の円周と同じ。', ['側面の長方形は、底面の円のまわりにぐるっと1周まきついているよ。', 'だから横の長さ ＝ 底面の円周 ＝ 直径 × 3.14。', '直径は 半径 × 2 ＝ ' + rr2 + ' × 2 ＝ ' + (rr2 * 2) + 'cm。', (rr2 * 2) + ' × 3.14 ＝ ' + zkNum_(w) + 'cm（高さ' + hh + 'cmは、長方形のたての長さだよ）'], zkNum_(w) + 'cm');
       choices = zkNumChoices_(Math.round(w * 100) / 100, [Math.round(rr2 * 3.14 * 100) / 100, Math.round(rr2 * rr2 * 3.14 * 100) / 100, Math.round(w * hh * 100) / 100, Math.round((w + 3.14) * 100) / 100], function (v) { return zkNum_(v) + 'cm'; });
     }
-    return { title: '🎓④ 展開図（円すい・円柱）', text: text, figure: zkSvg_(270, Math.round(H), body, 'zukei-svg') + ZK_NOT_EXACT_, choices: choices, explain: explain };
+    return { title: '🎓⑤ 展開図（円すい・円柱）', text: text, figure: zkSvg_(270, Math.round(H), body, 'zukei-svg') + ZK_NOT_EXACT_, choices: choices, explain: explain };
   }
 
   // ---- 🎓⑤ 計算の技(工夫して速く計算する) ----
@@ -33007,7 +33007,7 @@
       var right = zkFrac_(nn, nn + 1);
       var opts = [right, zkFrac_(1, nn + 1), zkFrac_(nn + 1, nn + 2), zkFrac_(nn - 1, nn)];
       return {
-        title: '🎓⑤ 計算の技',
+        title: '🎓⑥ 計算の技',
         text: '工夫して計算しよう。<div class="zk-calc">' + q + '</div>',
         figure: '',
         choices: zkShuffle_(opts).map(function (o) { return { html: o, ok: o === right }; }),
@@ -33015,7 +33015,7 @@
       };
     }
     return {
-      title: '🎓⑤ 計算の技',
+      title: '🎓⑥ 計算の技',
       text: '工夫して計算しよう。<div class="zk-calc">' + q + '</div>',
       figure: '',
       choices: zkNumChoices_(ans, wrongs),
@@ -33034,15 +33034,15 @@
     { id: 'view', group: 'space', label: '見え方', make: zkMakeViewQ_ },
     { id: 'net', group: 'space', label: '展開図', make: zkMakeNetQ_ },
     { id: 'revolve', group: 'space', label: '回転体', make: zkMakeRevolveQ_ },
-    { id: 'cut', group: 'space', label: '切断面', make: zkMakeCutQ_ },
     { id: 'jangle', group: 'juken', label: '角度（応用）', make: zkMakeJAngleQ_ },
     { id: 'jsim', group: 'juken', label: '相似・面積比', make: zkMakeJSimQ_ },
     { id: 'jcut', group: 'juken', label: '立体の切断と体積', make: zkMakeJCutQ_ },
+    { id: 'cut', group: 'juken', label: '切断面', make: zkMakeCutQ_ },
     { id: 'jnet', group: 'juken', label: '展開図（円すい・円柱）', make: zkMakeJNetQ_ },
     { id: 'jcalc', group: 'juken', label: '計算の技', make: zkMakeJCalcQ_ }
   ];
   var ZK_GROUPS_ = [{ id: 'plane', label: '📐 平面図形' }, { id: 'space', label: '🧊 空間図形' }, { id: 'juken', label: '🎓 中学受験' }];
-  var ZK_NUMS_ = ['①', '②', '③', '④', '⑤'];
+  var ZK_NUMS_ = ['①', '②', '③', '④', '⑤', '⑥'];
   function zkSel_() {
     if (zukei_.sel) return zukei_.sel;
     var sel = {};
