@@ -3094,12 +3094,16 @@
   ];
 
   const GRADE_RANK = { '小3': 1, '小4': 2, '小5': 3, '小6': 4, '中1': 5, '中2': 6, '中3': 7 };
-  // 通常の敵を倒す(=MPがもらえる)のに必要な連続正解数。中2・中3の単元は5問、それ以外は10問(2026-11-03〜)。
+  // 通常の敵を倒す(=MPがもらえる)のに必要な連続正解数。選んでいる算数・数学の単元が全部中2・中3なら5問、
+  // 1つでも中1以下が混ざっていれば10問(2026-11-03〜)。
   // レアキャラ・ボス・富士登山などはそれぞれの数のまま。
   const NORMAL_ENEMY_STREAK_ = 10;
   const NORMAL_ENEMY_STREAK_UPPER_ = 5;
-  function normalEnemyStreak_(catId) {
-    return (GRADE_RANK[categoryGrade[catId]] || 0) >= GRADE_RANK['中2'] ? NORMAL_ENEMY_STREAK_UPPER_ : NORMAL_ENEMY_STREAK_;
+  const MATH_CATEGORY_IDS_ = new Set(CATEGORIES.map(c => c.id));
+  function normalEnemyStreak_() {
+    const ids = state && state.enabled ? [...state.enabled].filter(id => MATH_CATEGORY_IDS_.has(id)) : [];
+    if (!ids.length) return NORMAL_ENEMY_STREAK_;
+    return ids.every(id => (GRADE_RANK[categoryGrade[id]] || 0) >= GRADE_RANK['中2']) ? NORMAL_ENEMY_STREAK_UPPER_ : NORMAL_ENEMY_STREAK_;
   }
   const categoryGrade = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map(c => {
     const m = c.label.match(/（(小[3456]|中[123])）/);
@@ -22068,7 +22072,7 @@
     const requiredStreak = isFuji ? fujiCurrentLeg_().streak
       : isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak
       : isOhachi ? OHACHI_REQUIRED_STREAK_
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_(state.current && state.current.category));
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
     const hp = isFuji ? Math.max(0, fujiCurrentLeg_().streak - (Number(state.fujiLegStreak) || 0))
       : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
       : isOhachi ? Math.max(0, OHACHI_REQUIRED_STREAK_ - (Number(state.ohachiStreak) || 0))
@@ -22793,7 +22797,7 @@
       : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
       : state.ohachiActive ? OHACHI_REQUIRED_STREAK_
       : state.ohachiEasyActive ? OHACHI_EASY_REQUIRED_CORRECT_
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_(state.current && state.current.category));
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
     if (isCorrect && state.ohachiActive && (Number(state.ohachiStreak) || 0) >= OHACHI_REQUIRED_STREAK_) {
       // お鉢巡り達成：MP/経験値の通常報酬ではなく、かかった時間に応じたHP
       // ボーナスの特別演出。
