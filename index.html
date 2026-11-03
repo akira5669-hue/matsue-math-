@@ -211,6 +211,7 @@
         <button id="zukeiToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧊超絶！図形！トレーニング！！<span class="new-badge">NEW</span></button>
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
+        <button id="manualToggle" class="ghost-btn" type="button">📘使い方マニュアル</button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
         <button id="shopToggle" class="ghost-btn" type="button">🏪なんでも屋</button>
@@ -908,6 +909,110 @@
         <div class="gacha-out"></div>
         <button type="button" class="primary-btn gacha-btn">ガチャを引く！</button>
       </div>
+      </div>
+    </section>
+
+    <section class="world-panel" id="manualPanel" hidden>
+      <div class="test-photo-card">
+        <h4 class="test-photo-card-title">📘 使い方マニュアル</h4>
+        <p class="test-photo-hint">わからないことがあったら、ここをいつでも見てね。見たい項目をタップすると開きます。</p>
+        <details class="manual-sec" open><summary>🔰 基本の遊び方</summary>
+          <ul>
+            <li>「出題範囲」で、解きたい単元にチェック☑️を入れると、その単元から問題が出ます。</li>
+            <li>問題に<b>連続で正解</b>すると敵を倒せます。ふつうは<b>10問連続正解</b>で1体です。</li>
+            <li>選んでいる算数・数学の単元が<b>全部中2・中3</b>なら、<b>5問連続正解</b>で倒せます（中1以下が1つでも混ざると10問）。</li>
+            <li>🔬理科は<b>5問連続正解</b>で1体です。</li>
+            <li>1問でも間違えると、連続正解の数は0にもどります。</li>
+            <li>敵を倒すと、MP・経験値（・単元によってはHP）がもらえます。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>💰 MP（ポイント）</summary>
+          <ul>
+            <li><b>計算問題</b>：敵を倒すと<b>5MP</b>。自分の学年より上の単元だけで連続正解すると<b>10MP</b>。</li>
+            <li><b>文章題</b>：敵を倒すと<b>50MP</b>。</li>
+            <li>🔬<b>理科</b>：5問連続正解ごとに<b>5MP</b>。</li>
+            <li>新しく追加された単元は、追加から2週間MPが2倍です。</li>
+            <li>レアキャラを倒すと、ボーナスMPがもらえます。</li>
+            <li><b>1日にもらえるMPの上限</b>：計算40＋文章題40＋理科20＝<b>合計100MP</b>（ログインでもらえるMPも上限に入ります）。</li>
+            <li>上限とは別にもらえるもの：連続学習ボーナス（7日連続で+50MP・15日で+150MP・30日で+300MP）、宝箱、ガチャ など。</li>
+            <li>MPは🏪なんでも屋で買い物に使ったり、「MP交換」でギフト券に交換したりできます（交換できるのは5/1〜3・12/30〜31・1/1だけ）。</li>
+            <li>⚠️ <b>8日以上ログインしないと、MPが100になってしまいます</b>（100より少なければそのまま）。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>⭐ 経験値とレベル</summary>
+          <ul>
+            <li>敵を倒すと経験値<b>+10</b>（5問で倒す敵は+5）。理科は5問連続正解で<b>+5</b>。</li>
+            <li>経験値が<b>10たまるごとにレベルが1上がります</b>。算数・数学と理科の経験値を合わせてレベルが決まります。</li>
+            <li><b>経験値をたくさん上げるコツ</b>：毎日続けて、できるだけ間違えずに連続正解すること！</li>
+            <li>レベル100になると🌍世界一周が始まり、レベル100・300・500…で職業も選べるようになります。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>❤️ HP（体力）</summary>
+          <ul>
+            <li>問題を間違えると<b>HPが1減ります</b>。</li>
+            <li>❤️HP UPマークのついた単元（文章題など）で敵を倒すと、<b>HP+10</b>（中学の単元は+20）。</li>
+            <li>🧊超絶！図形！トレーニング！！と🎓中学受験問題！は、正解でHP+1、間違えるとHP-1です。</li>
+            <li><b>HPが0になるとゲームオーバー</b>になり、問題に答えられなくなります。ログアウトして、もう一度ログインし、文章題に1問正解するとHPが3回復します。</li>
+            <li>🏪なんでも屋で回復アイテムが買えます：🍙おにぎり（HP+10）・🥩ステーキ（+30）・🌿薬草（+100）・爆裂薬草（+400）・超絶薬草（+1500）・命の水（+3000）。</li>
+            <li>鋼の鎧を持っていると、間違えたときのHPの減りを10回分ふせげます。</li>
+            <li>🏋️特訓部屋（期間限定）では、正解するとHPが増えます。部屋の中ではHPが0になってもゲームオーバーになりません。</li>
+            <li>⚠️ <b>5日以上ログインしないと、HPが10になってしまいます</b>（10より少なければそのまま）。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>👔 職業</summary>
+          <ul>
+            <li>レベルが上がると職業を選べます。選んだ職業は、ランキングのニックネームの後ろに表示されます。</li>
+            <li><b>レベル100</b>：会社員・フリーター</li>
+            <li><b>レベル300</b>：警察官・消防士・パティシエ・プログラマーなど17種類</li>
+            <li><b>レベル500＋7日連続学習</b>：運転士・船長・料理人・薬剤師など26種類</li>
+            <li><b>レベル800＋7日連続学習</b>：サッカー選手・医師・YouTuber・宇宙飛行士など100種類</li>
+            <li><b>レベル1000＋7日連続学習</b>：100種類に加えて、<b>好きな職業を自由に入力</b>（10文字まで）</li>
+            <li>レベルが上がれば、何度でも転職できます。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>👑 ボス（世界一周）</summary>
+          <ul>
+            <li>レベル100から🌍世界一周が始まります。<b>レベルが10上がるごとにサイコロ</b>をふって、出た目の数だけ国を進みます。</li>
+            <li>各ステージの最後の国には<b>ボス</b>がいます。ボスを倒さないと先へ進めません。</li>
+            <li>ボスに挑戦するには、<b>自分の学年以上の単元を10個以上</b>（うち文章題を1個以上）選んでおく必要があります。</li>
+            <li>正解するたびにボスにダメージ！間違えても、ボスに与えたダメージは消えません。</li>
+            <li>ただし、ボス戦で間違えると<b>HPが大きく減ります</b>。HPが0になると、ボス戦は最初からやり直しです。HPをたっぷりためてから挑戦しよう。</li>
+            <li>🏪なんでも屋の武器（氷の剣・天空の槍・雷電の斧）や防具（鉄壁の盾）、宝箱の指輪がボス戦で役に立ちます。2周目からは魔法の書も使えます。</li>
+            <li>倒したボスは仲間になり、コレクションに入ります。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>👾 レアキャラ</summary>
+          <ul>
+            <li>ときどき、ふつうの敵の代わりにレアキャラが出てきます。倒すには10問連続正解が必要です（キャラによってちがいます）。</li>
+            <li>倒すとボーナスMPや特別なアイテムがもらえることがあります。同じレアキャラを5回倒すとコレクションにゲット！</li>
+            <li>😈ボン・ミスコの呪いにかかると、間違えた問題ばかり出て、MPが5しかもらえなくなります。🏪なんでも屋の「AKRの祈り」で解いてもらえます。</li>
+            <li>🧟ゾンビ化すると、1問ごとにHPが1減ります。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>🎁 宝箱・鍵・指輪</summary>
+          <ul>
+            <li>レアキャラを倒すと、20分の1の確率で宝箱が出ます。</li>
+            <li>宝箱の種類は、解いていた単元の学年で決まります：小学生→🥉銅、中1→🥈銀、中2→🥇金、中3→🌈虹色。</li>
+            <li>開けるには、🏪なんでも屋で同じ種類の鍵を買います（銅50・銀100・金200・虹色500MP）。</li>
+            <li>開けるとMP・HPと指輪がもらえます（銅10・銀20・金30・虹色50MP）。指輪は鍵と同じ値段で売れます。</li>
+            <li>宝箱は全部で11月は50個、12月からは30個までしか持てません。</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>🧊 図形トレーニング・中学受験問題・ガチャ</summary>
+          <ul>
+            <li>🧊超絶！図形！トレーニング！！：平面図形・空間図形の問題。</li>
+            <li>🎓中学受験問題！：中学受験によく出る問題。答えたあとにくわしい解説が出ます。</li>
+            <li>この2つはMPは増えませんが、正解するとHP+1。</li>
+            <li>2つを合わせて<b>1日20問以上解くと、🎰サイコロガチャが1回引けます</b>。サイコロ2個の合計がMPに。ゾロ目なら2倍！</li>
+          </ul>
+        </details>
+        <details class="manual-sec"><summary>🗾 都道府県制覇・その他</summary>
+          <ul>
+            <li>敵を1体倒すごとに、都道府県が1つ進みます。47都道府県を回りきると2周目へ。2周目からは、1周するたびに宝箱がもらえます。</li>
+            <li>📖4コマ漫画・🧠週替わり重要ワード・💥爆裂想像力クイズ・📷テスト提出なども、ボタンから遊べます。</li>
+            <li>パスワードを忘れたときや、おかしいなと思ったときは、塾の先生に聞いてね。</li>
+          </ul>
+        </details>
       </div>
     </section>
 

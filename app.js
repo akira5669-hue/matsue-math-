@@ -31502,6 +31502,24 @@
   els.worldToggle.addEventListener('click', toggleWorld);
   if (els.fujiToggle) els.fujiToggle.addEventListener('click', toggleFuji);
   if (els.mangaToggle) els.mangaToggle.addEventListener('click', toggleManga);
+  // 使い方マニュアル(いつでも読める。ほかのボタンを押したら閉じる)。
+  (function () {
+    var mt = document.getElementById('manualToggle');
+    var mp = document.getElementById('manualPanel');
+    if (!mt || !mp) return;
+    mt.addEventListener('click', function () {
+      if (!mp.hasAttribute('hidden')) { mp.setAttribute('hidden', ''); return; }
+      ['historyPanel', 'rankingPanel', 'giftPanel', 'prefecturePanel', 'avatarPanel', 'worldPanel', 'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'teamEventPanel', 'shopPanel', 'fujiPanel', 'mangaPanel', 'halloweenPanel'].forEach(function (k) {
+        if (els[k]) els[k].setAttribute('hidden', '');
+      });
+      mp.removeAttribute('hidden');
+      mp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    mt.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== mt) mp.setAttribute('hidden', '');
+    });
+  })();
   if (els.halloweenToggle) els.halloweenToggle.addEventListener('click', toggleHalloween);
   if (els.mangaList) els.mangaList.addEventListener('click', onMangaReadClick_);
   if (els.mangaList) els.mangaList.addEventListener('click', onMangaLikeClick_);
