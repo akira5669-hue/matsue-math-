@@ -10,7 +10,7 @@ const {
   handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
-const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyOnigiri, handleBuyFestivalFood, handleBuySteak, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyRaidenAxe, handleSharpenRaidenAxe, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleSellDiamondRing, handleSellWisdomFruit, handleSellEffortSeed, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
+const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyOnigiri, handleBuyFestivalFood, handleBuySteak, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyRaidenAxe, handleSharpenRaidenAxe, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleSellDiamondRing, handleSellWisdomFruit, handleSellEffortSeed, handleSellWisdomSeed, handleBuySpellbook, handleSuperAkirametalPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
 const { handleUsaCrossingEntryFee } = require('../lib/handlers/usaCrossing');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
@@ -87,6 +87,7 @@ const ACTIONS = {
   sellDiamondRing: handleSellDiamondRing,
   sellWisdomFruit: handleSellWisdomFruit,
   sellEffortSeed: handleSellEffortSeed,
+  sellWisdomSeed: handleSellWisdomSeed,
   usaCrossingEntryFee: handleUsaCrossingEntryFee,
   openTreasureChest: handleOpenTreasureChest,
   buySpellbook: handleBuySpellbook,

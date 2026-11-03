@@ -24091,6 +24091,7 @@
       var seedChanged = false;
       if (typeof res.wisdomFruitCount === 'number' && res.wisdomFruitCount < (Number(state.wisdomFruitCount) || 0)) { state.wisdomFruitCount = res.wisdomFruitCount; seedChanged = true; }
       if (typeof res.effortSeedCount === 'number' && res.effortSeedCount < (Number(state.effortSeedCount) || 0)) { state.effortSeedCount = res.effortSeedCount; seedChanged = true; }
+      if (typeof res.wisdomSeedCount === 'number' && res.wisdomSeedCount < (Number(state.wisdomSeedCount) || 0)) { state.wisdomSeedCount = res.wisdomSeedCount; seedChanged = true; }
       if (seedChanged) {
         saveGameState(state);
         if (els.shopPanel && !els.shopPanel.hasAttribute('hidden')) renderShopList();
@@ -28390,16 +28391,30 @@
     renderShopList();
     renderItems();
   }
+  // 売却はサーバーで個数を減らしてMPを足す(端末で足すとsyncで切り捨てられるため。2026-11-03)。
+  var sellWisdomSeedBusy_ = false;
   function sellWisdomSeedClick_() {
-    if ((Number(state.wisdomSeedCount) || 0) <= 0) return;
-    state.wisdomSeedCount = (Number(state.wisdomSeedCount) || 0) - 1;
-    state.points = (Number(state.points) || 0) + WISDOM_SEED_SELL_MP_;
-    saveGameState(state);
+    if ((Number(state.wisdomSeedCount) || 0) <= 0 || sellWisdomSeedBusy_) return;
     var session = loadSession();
-    if (session && session.id) syncPointsNow_(session.id);
-    updateGameHud();
-    renderShopList();
-    renderItems();
+    if (!session || !session.id) return;
+    sellWisdomSeedBusy_ = true;
+    apiPost('sellWisdomSeed', { id: session.id }).then(function (res) {
+      sellWisdomSeedBusy_ = false;
+      if (!res.ok) {
+        if (res.error === 'no_item') { state.wisdomSeedCount = 0; saveGameState(state); renderShopList(); renderItems(); }
+        window.alert(res.error === 'no_item' ? '賢さの種を持っていません。' : '売却に失敗しました。もう一度お試しください。');
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.wisdomSeedCount = res.count;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+    }).catch(function () {
+      sellWisdomSeedBusy_ = false;
+      window.alert('通信に失敗しました。もう一度お試しください。');
+    });
   }
 
   // 賢さの実：購入不可(月間チャレンジ問題正解数ランキング上位者への配布品)。
