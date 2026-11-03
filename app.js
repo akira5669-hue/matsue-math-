@@ -23610,7 +23610,14 @@
     if (els.answer10BannerBtn) els.answer10BannerBtn.hidden = !started;
   }
 
+  // 図形トレーニング・中学受験問題・サイコロガチャの告知バナー(11月中)。
+  var ZUKEI_BANNER_END_ = '2026-11-30';
+  function renderZukeiBanner_() {
+    var b = document.getElementById('zukeiBanner');
+    if (b) b.hidden = !(zukeiVisible_() && todayKey() <= ZUKEI_BANNER_END_);
+  }
   function renderTrainingBanner_() {
+    renderZukeiBanner_();
     if (!els.trainingBanner) return;
     var today = todayKey();
     if (today > TRAINING_OPEN_ALL_END_) { els.trainingBanner.hidden = true; return; }
@@ -33396,7 +33403,7 @@
       var out = card.querySelector('.gacha-out');
       var locked = kind === 'dice' && !done && gacha_.zukeiAnswered < gacha_.diceUnlock;
       btn.disabled = !!done || gacha_.busy || locked;
-      btn.textContent = done ? '今日は引いたよ（また明日）' : locked ? '🔒 図形トレーニングをあと' + (gacha_.diceUnlock - gacha_.zukeiAnswered) + '問' : 'ガチャを引く！';
+      btn.textContent = done ? '今日は引いたよ（また明日）' : locked ? '🔒 図形・中学受験問題をあと' + (gacha_.diceUnlock - gacha_.zukeiAnswered) + '問' : 'ガチャを引く！';
       if (done && !out.getAttribute('data-anim')) out.innerHTML = gachaResultHtml_(kind, done);
     });
   }
@@ -33470,6 +33477,9 @@
 
   if (els.zukeiToggle) {
     els.zukeiToggle.addEventListener('click', function () { toggleZukei('zukei'); });
+    var zkBannerOpen_ = function (mode) { if (els.zukeiPanel.hasAttribute('hidden') || zukei_.mode !== mode) toggleZukei(mode); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    var zkbb = document.getElementById('zukeiBannerBtn'); if (zkbb) zkbb.addEventListener('click', function () { zkBannerOpen_('zukei'); });
+    var jkbb = document.getElementById('jukenBannerBtn'); if (jkbb) jkbb.addEventListener('click', function () { zkBannerOpen_('juken'); });
     if (els.jukenToggle) els.jukenToggle.addEventListener('click', function () { toggleZukei('juken'); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     els.zukeiPanel.addEventListener('click', function (e) {
       var b = e.target.closest('[data-zk-choice]');
