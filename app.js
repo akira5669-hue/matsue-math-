@@ -24417,8 +24417,37 @@
     window.location.reload();
   }
 
+  // 同じ名前がすでに登録されていたら、名前欄の下に案内を出して登録ボタンを止める(2026-11-04〜)。
+  var REGISTER_DUP_NAME_MSG_ = 'この名前は、すでに登録されています。アカウントは1人1つです。IDやパスワードを忘れた場合は、新しく作らずに塾の先生に確認してください。';
+  var registerNameDup_ = false;
+  function showRegisterNameDup_(dup) {
+    registerNameDup_ = !!dup;
+    var el = document.getElementById('registerNameError');
+    if (el) { el.textContent = dup ? REGISTER_DUP_NAME_MSG_ : ''; el.hidden = !dup; }
+    if (els.registerSubmit) els.registerSubmit.disabled = !!dup;
+  }
+  var registerNameCheckTimer_ = null;
+  var registerNameCheckSeq_ = 0;
+  function checkRegisterName_() {
+    var name = els.registerName.value.trim();
+    if (!name) { showRegisterNameDup_(false); return; }
+    var seq = ++registerNameCheckSeq_;
+    apiPost('checkName', { name: name }).then(function (res) {
+      if (seq !== registerNameCheckSeq_) return;
+      showRegisterNameDup_(!!(res && res.ok && res.exists));
+    }).catch(function () {});
+  }
+  if (els.registerName) {
+    els.registerName.addEventListener('input', function () {
+      clearTimeout(registerNameCheckTimer_);
+      registerNameCheckTimer_ = setTimeout(checkRegisterName_, 600);
+    });
+    els.registerName.addEventListener('blur', checkRegisterName_);
+  }
+
   function handleRegisterSubmit(ev) {
     ev.preventDefault();
+    if (registerNameDup_) { showRegisterNameDup_(true); return; }
     hideFieldError(els.registerError);
     var name = els.registerName.value.trim();
     var grade = els.registerGrade.value;
@@ -24435,22 +24464,7 @@
       els.registerSubmit.disabled = false;
       if (!res.ok) {
         if (res.error === 'duplicate_name') {
-          var wantsNew = window.confirm(
-            '同じ名前・学年ですでに登録があるようです。\n' +
-            '以前に登録してIDを忘れてしまった場合は、いったんキャンセルして先生に確認してください。\n\n' +
-            '（同姓同名の別の生徒などで）このまま新しく登録する場合は「OK」を押してください。'
-          );
-          if (wantsNew) {
-            els.registerSubmit.disabled = true;
-            apiPost('register', { name: name, grade: grade, guardian: guardian, password: pw, confirmDuplicate: true }).then(function (res2) {
-              els.registerSubmit.disabled = false;
-              if (!res2.ok) { showFieldError(els.registerError, '登録に失敗しました。もう一度お試しください。'); return; }
-              finishRegisterSuccess_(res2, grade);
-            }).catch(function () {
-              els.registerSubmit.disabled = false;
-              showFieldError(els.registerError, '通信に失敗しました。もう一度お試しください。');
-            });
-          }
+          showRegisterNameDup_(true);
           return;
         }
         var msg = '登録に失敗しました。もう一度お試しください。';
