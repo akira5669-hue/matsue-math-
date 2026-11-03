@@ -22861,7 +22861,9 @@
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
       let doubleGainedHtml = '';
-      state.exp += 10;
+      // 5問で倒す敵(中2・中3だけ選んでいる時)は経験値も5(1問あたり1のまま)。10にするとサーバーの
+      // 経験値上限(正解数×1.4+500)を超えてレベルが戻されるため。
+      state.exp += (!wasRareType && requiredStreak === NORMAL_ENEMY_STREAK_UPPER_) ? 5 : 10;
       // レベルは算数・数学の経験値(exp)と理科の経験値(scienceExp)を合算して決まる。
       // 経験値そのものは科目ごとに別集計だが、レベルは1つに統一する。
       const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
