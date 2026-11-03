@@ -31846,15 +31846,15 @@
      ③ 展開図(立方体になるか／平行・垂直な面／重なる辺・点) ④ 回転体(1回転させてできる立体)
      中学受験(2026-11-03〜)：① 角度(星形・ブーメラン形・平行線の折れ線・二等分線) ② 相似・面積比 ③ 立体の切断と体積 ④ 切断面(3点を通る平面で切った切り口の形) ⑤ 展開図(円すい・円柱) ⑥ 計算の技
      2026-11-02から：正解でHP+1・まちがいでHP-1(0より下にはならない)。MPは増えない。
-     解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上解くとその日のサイコロガチャが引ける。2026-11-03から全員に公開(ZUKEI_OPEN_ALL_)。ガチャがまだ公開されていない人には、ガチャの案内は出さない。 */
+     解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上正解するとその日のサイコロガチャが引ける(11-04から正解数)。2026-11-03から全員に公開(ZUKEI_OPEN_ALL_)。ガチャがまだ公開されていない人には、ガチャの案内は出さない。 */
   var ZUKEI_OPEN_ALL_ = true;
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 20;
   // mode: 'zukei'=超絶！図形！トレーニング！！(平面・空間)、'juken'=🎓中学受験問題！(別ボタン。同じパネルを使い回す)
-  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, sel: null, mode: 'zukei' };
+  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, sel: null, mode: 'zukei' };
   var ZK_MODE_TEXT_ = {
-    zukei: { heading: '🧊 超絶！図形！トレーニング！！', hint: '新！図形問題！キャンペーン！ 「平面図形」（回転と裏返し・対称な図形・角度・方眼の面積）と「空間図形」（積み木・見え方・展開図・回転体）で、図形の力をきたえよう！やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日20問以上解くと（🎓中学受験問題！とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
-    juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日20問以上解くと（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' }
+    zukei: { heading: '🧊 超絶！図形！トレーニング！！', hint: '新！図形問題！キャンペーン！ 「平面図形」（回転と裏返し・対称な図形・角度・方眼の面積）と「空間図形」（積み木・見え方・展開図・回転体）で、図形の力をきたえよう！やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日20問以上正解すると（🎓中学受験問題！とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
+    juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日20問以上正解すると（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' }
   };
   // 今のモードで出す種類(中学受験問題！はjukenグループだけ、図形トレーニングはそれ以外)。
   function zkModeTypes_() { return ZK_TYPES_.filter(function (t) { return (t.group === 'juken') === (zukei_.mode === 'juken'); }); }
@@ -33183,7 +33183,7 @@
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問' + (!gachaVisible_() ? '' : zukei_.answeredToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.answeredToday) + '問で🎲サイコロガチャ）');
+    els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問（正解 ' + zukei_.correctToday + '問）' + (!gachaVisible_() ? '' : zukei_.correctToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.correctToday) + '問正解で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
     els.zukeiFigure.innerHTML = q.figure;
@@ -33209,6 +33209,7 @@
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     zukei_.answeredToday++;
+    if (ok) zukei_.correctToday++;
     renderZukei_();
     els.zukeiResult.innerHTML = ok
       ? '<div class="win-banner">⭕ 正解！ HP+1</div><div class="test-photo-hint">' + q.explain + '</div>'
@@ -33217,6 +33218,7 @@
     apiPost('zukeiAnswer', { id: session.id, correct: ok }).then(function (res) {
       if (!res || !res.ok) return;
       zukei_.answeredToday = Number(res.answeredToday) || 0;
+      if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
       renderZukei_();
     }).catch(function () {});
   }
@@ -33240,7 +33242,7 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('zukeiStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; renderZukei_(); }
+        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; zukei_.correctToday = Number(res.correctToday) || 0; renderZukei_(); }
       }).catch(function () {});
     }
   }
@@ -33419,7 +33421,7 @@
   var GACHA_LUCKY_SUBJECT_ = ['計算', '図形', '文章題', '割合', '速さ', '方程式', '関数', '理科（生物）', '理科（化学）', '理科（物理）', '理科（地学）', '単位'];
   var GACHA_LUCKY_ITEM_ = ['消しゴム', '定規', 'コンパス', '赤ペン', '青ペン', 'ノート', 'ふせん', '分度器', '水とう', 'えんぴつ', '時計', 'ハンカチ'];
   var GACHA_LUCKY_COLOR_ = ['赤', '青', '黄色', '緑', 'オレンジ', 'むらさき', 'ピンク', '水色', '白', '金色'];
-  var gacha_ = { today: {}, busy: false, zukeiAnswered: 0, diceUnlock: 20 };
+  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20 };
   function gachaVisible_() { return isAdminSession_() || GACHA_OPEN_ALL_; }
   function gachaResultHtml_(kind, r, mp) {
     var res = (r && r.result) || {};
@@ -33449,9 +33451,9 @@
       var done = gacha_.today[kind];
       var btn = card.querySelector('.gacha-btn');
       var out = card.querySelector('.gacha-out');
-      var locked = kind === 'dice' && !done && gacha_.zukeiAnswered < gacha_.diceUnlock;
+      var locked = kind === 'dice' && !done && gacha_.zukeiCorrect < gacha_.diceUnlock;
       btn.disabled = !!done || gacha_.busy || locked;
-      btn.textContent = done ? '今日は引いたよ（また明日）' : locked ? '🔒 図形・中学受験問題をあと' + (gacha_.diceUnlock - gacha_.zukeiAnswered) + '問' : 'ガチャを引く！';
+      btn.textContent = done ? '今日は引いたよ（また明日）' : locked ? '🔒 図形・中学受験問題をあと' + (gacha_.diceUnlock - gacha_.zukeiCorrect) + '問正解' : 'ガチャを引く！';
       if (done && !out.getAttribute('data-anim')) out.innerHTML = gachaResultHtml_(kind, done);
     });
   }
@@ -33483,8 +33485,8 @@
         if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
         finish(gachaResultHtml_(kind, gacha_.today[kind]));
       } else if (res && res.error === 'dice_locked') {
-        gacha_.zukeiAnswered = Number(res.zukeiAnswered) || 0;
-        finish('<div class="test-photo-hint">🔒 超絶！図形！トレーニング！！を今日' + (Number(res.diceUnlock) || 20) + '問解くと引けるよ。</div>');
+        gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0;
+        finish('<div class="test-photo-hint">🔒 超絶！図形！トレーニング！！か中学受験問題！で今日' + (Number(res.diceUnlock) || 20) + '問正解すると引けるよ。</div>');
       } else if (res && res.error === 'already_drawn' && res.prev) {
         gacha_.today[kind] = res.prev;
         finish(gachaResultHtml_(kind, res.prev));
@@ -33506,7 +33508,7 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('gachaStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiAnswered = Number(res.zukeiAnswered) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; renderGacha_(); }
+        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; renderGacha_(); }
       }).catch(function () {});
     }
   }
