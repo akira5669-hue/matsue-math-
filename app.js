@@ -33281,8 +33281,8 @@
   /* ---------- ガチャ(サイコロ・大吉占い・豆知識・ミッション) ----------
      どれも1日1回ずつ無料。結果とMPはサーバー(lib/handlers/gacha.js)で決める(ふだんの1日100MPの上限とは別枠)。
      豆知識・ミッションの文はここに持ち、サーバーは番号だけ返す(GACHA_TRIVIA_/GACHA_MISSIONS_の数はgacha.jsと揃える)。
-     今は00001だけに表示(GACHA_OPEN_ALL_をtrueにすると全員。gacha.js側も揃えること)。 */
-  var GACHA_OPEN_ALL_ = false;
+     2026-11-03から全員に公開(GACHA_OPEN_ALL_。gacha.js側も揃えること)。 */
+  var GACHA_OPEN_ALL_ = true;
   var GACHA_DICE_FACE_ = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
   var GACHA_TRIVIA_ = [
     '円周率3.14159…は、どこまで行っても終わらず、同じ並びのくり返しにもならない数だよ。',
