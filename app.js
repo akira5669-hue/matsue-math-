@@ -22215,7 +22215,7 @@
     // ハロウィンのお化けが出なくなる不具合を直したお知らせ(10/31まで)。
     if (els.halloweenFixBanner) els.halloweenFixBanner.hidden = true; // 2026-10-31 掲載終了
     // 宝箱のMPが上限で減っていた不具合のおわびと鍵のプレゼントのお知らせ(11/5まで)。
-    if (els.chestMpFixBanner) els.chestMpFixBanner.hidden = todayKey() > '2026-11-05';
+    if (els.chestMpFixBanner) els.chestMpFixBanner.hidden = true; // 2026-11-04 掲載終了
     renderTreasureChestCapBanner_();
     renderHalloweenAvatarBanner_();
     renderSaltConcentrationBanner_();
