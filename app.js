@@ -21184,6 +21184,7 @@
     answer10BannerText: document.getElementById('answer10BannerText'),
     answer10BannerBtn: document.getElementById('answer10BannerBtn'),
     zukeiToggle: document.getElementById('zukeiToggle'),
+    jukenToggle: document.getElementById('jukenToggle'),
     gachaToggle: document.getElementById('gachaToggle'),
     gachaPanel: document.getElementById('gachaPanel'),
     surveyToggle: document.getElementById('surveyToggle'),
@@ -22047,6 +22048,7 @@
     renderAnswer10Banner_();
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
+    if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
     if (els.zukeiToggle) { els.zukeiToggle.hidden = !zukeiVisible_(); if (els.zukeiToggle.hidden && els.zukeiPanel) els.zukeiPanel.setAttribute('hidden', ''); }
     renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
@@ -31774,11 +31776,19 @@
      ③ 展開図(立方体になるか／平行・垂直な面／重なる辺・点) ④ 回転体(1回転させてできる立体)
      中学受験(2026-11-03〜)：① 角度(星形・ブーメラン形・平行線の折れ線・二等分線) ② 相似・面積比 ③ 立体の切断と体積 ④ 切断面(3点を通る平面で切った切り口の形) ⑤ 展開図(円すい・円柱) ⑥ 計算の技
      2026-11-02から：正解でHP+1・まちがいでHP-1(0より下にはならない)。MPは増えない。
-     解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上解くとその日のサイコロガチャが引ける。今は00001だけに表示(ZUKEI_OPEN_ALL_をtrueにすると全員)。 */
-  var ZUKEI_OPEN_ALL_ = false;
+     解いた数はサーバー(lib/handlers/zukei.js)で数え、1日ZUKEI_GACHA_UNLOCK_問以上解くとその日のサイコロガチャが引ける。2026-11-03から全員に公開(ZUKEI_OPEN_ALL_)。ガチャがまだ公開されていない人には、ガチャの案内は出さない。 */
+  var ZUKEI_OPEN_ALL_ = true;
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 20;
-  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, sel: null };
+  // mode: 'zukei'=超絶！図形！トレーニング！！(平面・空間)、'juken'=🎓中学受験問題！(別ボタン。同じパネルを使い回す)
+  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, sel: null, mode: 'zukei' };
+  var ZK_MODE_TEXT_ = {
+    zukei: { heading: '🧊 超絶！図形！トレーニング！！', hint: '新！図形問題！キャンペーン！ 「平面図形」（回転と裏返し・対称な図形・角度・方眼の面積）と「空間図形」（積み木・見え方・展開図・回転体）で、図形の力をきたえよう！やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日20問以上解くと（🎓中学受験問題！とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
+    juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日20問以上解くと（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' }
+  };
+  // 今のモードで出す種類(中学受験問題！はjukenグループだけ、図形トレーニングはそれ以外)。
+  function zkModeTypes_() { return ZK_TYPES_.filter(function (t) { return (t.group === 'juken') === (zukei_.mode === 'juken'); }); }
+  function zkModeGroups_() { return ZK_GROUPS_.filter(function (g) { return (g.id === 'juken') === (zukei_.mode === 'juken'); }); }
   function zukeiVisible_() { return isAdminSession_() || (ZUKEI_OPEN_ALL_ && todayKey() >= ZUKEI_START_); }
   function zukeiIsJunior_() {
     var s = loadSession();
@@ -33058,7 +33068,7 @@
     var box = document.getElementById('zukeiTypes');
     if (!box) return;
     var sel = zkSel_();
-    box.innerHTML = ZK_GROUPS_.map(function (g) {
+    box.innerHTML = zkModeGroups_().map(function (g) {
       var items = ZK_TYPES_.filter(function (t) { return t.group === g.id; });
       var on = items.filter(function (t) { return sel[t.id]; }).length;
       return '<div class="zukei-type-group"><label class="zukei-type-head"><input type="checkbox" data-zk-group="' + g.id + '"' + (on === items.length ? ' checked' : '') + '> ' + g.label + '</label><div class="zukei-type-list">'
@@ -33066,7 +33076,7 @@
           return '<label class="zukei-type-item"><input type="checkbox" data-zk-type="' + t.id + '"' + (sel[t.id] ? ' checked' : '') + '> ' + ZK_NUMS_[i] + ' ' + t.label + '</label>';
         }).join('') + '</div></div>';
     }).join('');
-    ZK_GROUPS_.forEach(function (g) {
+    zkModeGroups_().forEach(function (g) {
       var items = ZK_TYPES_.filter(function (t) { return t.group === g.id; });
       var on = items.filter(function (t) { return sel[t.id]; }).length;
       var cb = box.querySelector('[data-zk-group="' + g.id + '"]');
@@ -33080,7 +33090,7 @@
     var g = input.getAttribute('data-zk-group');
     if (g) ZK_TYPES_.forEach(function (t) { if (t.group === g) next[t.id] = input.checked; });
     else next[input.getAttribute('data-zk-type')] = input.checked;
-    if (!ZK_TYPES_.some(function (t) { return next[t.id]; })) {
+    if (!zkModeTypes_().some(function (t) { return next[t.id]; })) {
       els.zukeiResult.innerHTML = '<div class="test-photo-hint">少なくとも1つはチェックを入れてね。</div>';
       renderZukeiTypes_();
       return;
@@ -33093,8 +33103,8 @@
   }
   function zkNewQuestion_() {
     var sel = zkSel_();
-    var types = ZK_TYPES_.filter(function (t) { return sel[t.id]; });
-    if (!types.length) types = ZK_TYPES_;
+    var types = zkModeTypes_().filter(function (t) { return sel[t.id]; });
+    if (!types.length) types = zkModeTypes_();
     var t = types[randInt(0, types.length - 1)];
     zukei_.qType = t.id;
     zukei_.q = t.make();
@@ -33103,7 +33113,7 @@
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問' + (zukei_.answeredToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.answeredToday) + '問で🎲サイコロガチャ）');
+    els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問' + (!gachaVisible_() ? '' : zukei_.answeredToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.answeredToday) + '問で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
     els.zukeiFigure.innerHTML = q.figure;
@@ -33140,9 +33150,14 @@
       renderZukei_();
     }).catch(function () {});
   }
-  function toggleZukei() {
+  function toggleZukei(mode) {
+    mode = mode === 'juken' ? 'juken' : 'zukei';
     var isHidden = els.zukeiPanel.hasAttribute('hidden');
-    if (!isHidden) { els.zukeiPanel.setAttribute('hidden', ''); return; }
+    if (!isHidden && zukei_.mode === mode) { els.zukeiPanel.setAttribute('hidden', ''); return; }
+    if (zukei_.mode !== mode) { zukei_.mode = mode; zukei_.q = null; zukei_.answered = false; }
+    var mt = ZK_MODE_TEXT_[mode];
+    var hd = document.getElementById('zukeiHeading'); if (hd) hd.textContent = mt.heading;
+    var ht = document.getElementById('zukeiHint'); if (ht) ht.textContent = gachaVisible_() ? mt.hint : mt.hint.replace(/1日20問以上.*$/, '');
     ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel',
       'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
       var p = document.getElementById(pid);
@@ -33434,7 +33449,8 @@
   }
 
   if (els.zukeiToggle) {
-    els.zukeiToggle.addEventListener('click', toggleZukei);
+    els.zukeiToggle.addEventListener('click', function () { toggleZukei('zukei'); });
+    if (els.jukenToggle) els.jukenToggle.addEventListener('click', function () { toggleZukei('juken'); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     els.zukeiPanel.addEventListener('click', function (e) {
       var b = e.target.closest('[data-zk-choice]');
       if (b) { onZukeiChoice_(Number(b.getAttribute('data-zk-choice'))); return; }
@@ -33446,7 +33462,7 @@
     // ほかのボタンで別の画面を開いたら、図形トレーニングは閉じる。
     els.zukeiToggle.parentNode.addEventListener('click', function (e) {
       var b = e.target.closest('button');
-      if (b && b !== els.zukeiToggle) els.zukeiPanel.setAttribute('hidden', '');
+      if (b && b !== els.zukeiToggle && b !== els.jukenToggle) els.zukeiPanel.setAttribute('hidden', '');
     });
   }
 
