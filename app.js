@@ -23541,7 +23541,8 @@
   var ACCOUNT_MERGE_NOTICE_END_ = '2026-11-08';
   function renderAccountMergeNoticeBanner_() {
     if (!els.accountMergeNoticeBanner) return;
-    if (todayKey() > ACCOUNT_MERGE_NOTICE_END_) { els.accountMergeNoticeBanner.hidden = true; return; }
+    // 2026-11-04 掲載終了(説明は使い方マニュアルの「アカウント」に移した)。
+    els.accountMergeNoticeBanner.hidden = true; return;
     els.accountMergeNoticeBanner.hidden = false;
     if (els.accountMergeNoticeBannerText) {
       els.accountMergeNoticeBannerText.textContent = '📢【アカウントについてのお知らせ】アカウントは1人1つです。複数のアカウントを使っている場合は、アカウントを1つにまとめます。使っていないアカウントは削除します。どのIDを使えばよいか分からない人や、IDやパスワードを忘れた人は、先生に聞いてね。新しくアカウントを作り直さないでね！';
