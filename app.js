@@ -33368,9 +33368,14 @@
     if (kind === 'trivia') return '<div class="gacha-line gacha-text">💡 ' + escHtml(GACHA_TRIVIA_[Number(res.pick) % GACHA_TRIVIA_.length]) + '</div>' + mpTxt;
     return '<div class="gacha-line gacha-text">🎯 今日のミッション：<b>' + escHtml(GACHA_MISSIONS_[Number(res.pick) % GACHA_MISSIONS_.length]) + '</b></div>' + mpTxt;
   }
+  // 生徒が引けるガチャの種類(2026-11-03〜サイコロだけ。00001は全部試せる。ほかは残しておき、ここに足せば復活する)。gacha.jsのENABLED_KINDSと揃えること。
+  var GACHA_ENABLED_KINDS_ = ['dice'];
+  function gachaKindOn_(kind) { return isAdminSession_() || GACHA_ENABLED_KINDS_.indexOf(kind) !== -1; }
   function renderGacha_() {
     Array.prototype.forEach.call(els.gachaPanel.querySelectorAll('[data-gacha]'), function (card) {
       var kind = card.getAttribute('data-gacha');
+      card.hidden = !gachaKindOn_(kind);
+      if (card.hidden) return;
       var done = gacha_.today[kind];
       var btn = card.querySelector('.gacha-btn');
       var out = card.querySelector('.gacha-out');
@@ -33382,7 +33387,7 @@
   }
   function drawGacha_(kind) {
     var session = loadSession();
-    if (!session || !session.id || gacha_.busy || gacha_.today[kind]) return;
+    if (!session || !session.id || gacha_.busy || gacha_.today[kind] || !gachaKindOn_(kind)) return;
     gacha_.busy = true;
     var card = els.gachaPanel.querySelector('[data-gacha="' + kind + '"]');
     var out = card.querySelector('.gacha-out');
