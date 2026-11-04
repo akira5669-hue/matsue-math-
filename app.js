@@ -31903,25 +31903,34 @@
     cubes.sort(function (a, b) { return (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]) || a[2] - b[2]; });
     return cubes;
   }
-  // どのマスも、いちばん上の面(何もないマスは床)が見えているか。見えないマスがあると答えが決まらないので作り直す。
+  // どのマスも、いちばん上の面(何もないマスは床)がしっかり見えているか。見えないマスがあると答えが決まらないので作り直す。
+  // 2026-11-04 保護者の指摘で修正：以前は面の真ん中1点だけを、辺の近くは「見えている」扱いで調べていたため、
+  // 前の高い積み木に完全にかくれたマス(1段か2段か分からない)が出ていた。面の中の25点のうち3割以上が、実際にいちばん手前に描かれているかで調べる。
+  function zkInStrict_(pt, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var a = poly[i], b = poly[j];
+      if (((a[1] > pt[1]) !== (b[1] > pt[1])) && (pt[0] < (b[0] - a[0]) * (pt[1] - a[1]) / (b[1] - a[1]) + a[0])) inside = !inside;
+    }
+    return inside;
+  }
   function zkAllVisible_(hm) {
-    var cubes = zkCubes_(hm);
+    var cubes = zkCubes_(hm), polys = [];
+    cubes.forEach(function (c) { var f = zkCubeFaces_(c[0], c[1], c[2]); polys.push(f[0], f[1], f[2]); });
     for (var y = 0; y < hm.length; y++) for (var x = 0; x < hm[y].length; x++) {
-      var h = hm[y][x];
-      var pt = zkP_(x + 0.5, y + 0.5, h);
-      var myKey = x + y + h - 1;
-      for (var i = 0; i < cubes.length; i++) {
-        var c = cubes[i];
-        if (c[0] === x && c[1] === y) continue;
-        if (h > 0 && (c[0] + c[1] + c[2]) < myKey) continue;
-        var faces = zkCubeFaces_(c[0], c[1], c[2]);
-        for (var f = 0; f < 3; f++) if (zkInside_(pt, faces[f])) return false;
+      var h = hm[y][x], own = -1, seen = 0;
+      if (h > 0) for (var k = 0; k < cubes.length; k++) if (cubes[k][0] === x && cubes[k][1] === y && cubes[k][2] === h - 1) own = k * 3;
+      for (var a = 0; a < 5; a++) for (var b = 0; b < 5; b++) {
+        var pt = zkP_(x + 0.1 + a * 0.2, y + 0.1 + b * 0.2, h), top = -1;
+        for (var i = polys.length - 1; i >= 0; i--) if (zkInStrict_(pt, polys[i])) { top = i; break; }
+        if (top === own) seen++;
       }
+      if (seen < 8) return false;
     }
     return true;
   }
   function zkMakeHeights_(nx, ny, maxH, zeroRate) {
-    for (var t = 0; t < 400; t++) {
+    for (var t = 0; t < 3000; t++) {
       var hm = [];
       for (var y = 0; y < ny; y++) { var row = []; for (var x = 0; x < nx; x++) row.push(Math.random() < zeroRate ? 0 : randInt(1, maxH)); hm.push(row); }
       var total = hm.reduce(function (s, r) { return s + r.reduce(function (a, b) { return a + b; }, 0); }, 0);
