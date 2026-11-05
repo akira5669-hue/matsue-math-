@@ -31708,9 +31708,26 @@
     var best = kenBest_(n), isBest = !best || ken_.doneSec < best;
     if (isBest) kenSetBest_(n, ken_.doneSec);
     if (ken_.timer) { clearInterval(ken_.timer); ken_.timer = null; }
-    res.innerHTML = '<div class="win-banner">🎉 正解！ ' + kenTimeText_(ken_.doneSec) + 'でクリア！' + (isBest ? '（自己ベスト更新！）' : '') + '</div>';
+    res.innerHTML = '<div class="win-banner">🎉 正解！ ' + kenTimeText_(ken_.doneSec) + 'でクリア！' + (isBest ? '（自己ベスト更新！）' : '') + '<span id="kenMpMsg"></span></div>';
+    kenSendClear_();
     kenRender_();
     kenTick_();
+  }
+  // クリアをサーバーに送ってMPをもらう(3×3:1・4×4:3・5×5:5・6×6:10MP、1日10MPまで。1日100MPとは別)。
+  function kenSendClear_() {
+    var session = loadSession(), p = ken_.p;
+    if (!session || !session.id || !p) return;
+    apiPost('kenClear', { id: session.id, n: p.n, secs: ken_.doneSec, owner: p.owner, cages: p.cages.map(function (cg) { return { cells: cg.cells, op: cg.op, target: cg.target }; }), grid: ken_.vals.slice() }).then(function (r) {
+      var m = document.getElementById('kenMpMsg');
+      if (!r || !r.ok) return;
+      if (r.newTotalPoints != null) { state.points = r.newTotalPoints; saveGameState(state); updateGameHud(); }
+      if (m) m.textContent = r.mp > 0 ? '　+' + r.mp + 'MP' : '　（今日のパズルのMPは' + r.dailyMax + 'MPまでもらったよ）';
+      kenShowMp_(r.todayMp, r.dailyMax);
+    }).catch(function () {});
+  }
+  function kenShowMp_(todayMp, max) {
+    var el = document.getElementById('kenMpInfo');
+    if (el) el.textContent = '🪙 クリアでMP：3×3は1MP・4×4は3MP・5×5は5MP・6×6は10MP（1日' + max + 'MPまで。今日は' + todayMp + 'MPもらったよ）';
   }
   (function () {
     var kt = document.getElementById('kenToggle'), kp = document.getElementById('kenPanel');
@@ -31722,6 +31739,8 @@
         if (el) el.setAttribute('hidden', '');
       });
       kp.removeAttribute('hidden');
+      var ss = loadSession();
+      if (ss && ss.id) apiPost('kenStatus', { id: ss.id }).then(function (r) { if (r && r.ok) kenShowMp_(r.todayMp, r.dailyMax); }).catch(function () {});
       if (!ken_.p) kenStart_(4);
       else if (!ken_.done && !ken_.timer) ken_.timer = setInterval(kenTick_, 1000);
       kp.scrollIntoView({ behavior: 'smooth', block: 'start' });
