@@ -2535,3 +2535,5 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .manual-sec > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .manual-sec ul { margin: 4px 0 8px; padding-left: 1.2em; }
 .manual-sec li { margin: 4px 0; line-height: 1.6; }
+
+.survey-optional { font-weight: 400; font-size: 0.85em; color: #16a34a; }

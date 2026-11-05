@@ -33300,6 +33300,14 @@
       }).catch(function () {});
     }
   }
+  // 4.で「なし」を選んだら、ほかのチェックを外す(ほかを選んだら「なし」を外す)。2026-11-05
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || t.name !== 'surveyWorry' || !t.checked || !els.surveyPanel) return;
+    Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('input[name="surveyWorry"]'), function (el) {
+      if (el !== t && (t.value === 'なし' || el.value === 'なし')) el.checked = false;
+    });
+  });
   function submitSurvey_() {
     var session = loadSession();
     if (!session || !session.id) return;
@@ -33322,7 +33330,7 @@
     if (!body.satClass || !body.satOverall) missing.push('満足度（★）');
     if (missing.length) { els.surveyResult.innerHTML = '<div class="test-photo-hint">まだ答えていないところがあるよ：' + escHtml(missing.join('、')) + '</div>'; return; }
     var len = ['testReason', 'goalRank', 'goalAction', 'classRequest', 'worryOther', 'consult', 'effort', 'improve'].reduce(function (s, k) { return s + String(body[k]).trim().length; }, 0);
-    if (len < 5) { els.surveyResult.innerHTML = '<div class="test-photo-hint">書くところに、どこか1つでも書いてね（目標や頑張っていることなど）。</div>'; return; }
+    if (len < 5) { els.surveyResult.innerHTML = '<div class="test-photo-hint">書くところに、どこか1つでも書いてね（1の理由や頑張っていることなど。2の目標は書かなくてもOK）。</div>'; return; }
     els.surveySubmit.disabled = true;
     apiPost('surveySubmit', body).then(function (res) {
       els.surveySubmit.disabled = false;
