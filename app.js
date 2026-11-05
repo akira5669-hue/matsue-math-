@@ -33323,14 +33323,9 @@
       interview: surveyRadio_('surveyInterview'),
       satClass: surveySat_.satClass, satOverall: surveySat_.satOverall, improve: val('improve')
     };
-    var missing = [];
-    if (!body.testMark) missing.push('1. テストの進み具合');
-    if (!body.classStatus) missing.push('3. 授業について');
-    if (!body.interview) missing.push('面談の希望');
-    if (!body.satClass || !body.satOverall) missing.push('満足度（★）');
-    if (missing.length) { els.surveyResult.innerHTML = '<div class="test-photo-hint">まだ答えていないところがあるよ：' + escHtml(missing.join('、')) + '</div>'; return; }
+    // 選ぶところは、選ばなくても送れる(2026-11-05〜)。
     var len = ['testReason', 'goalRank', 'goalAction', 'classRequest', 'worryOther', 'consult', 'effort', 'improve'].reduce(function (s, k) { return s + String(body[k]).trim().length; }, 0);
-    if (len < 5) { els.surveyResult.innerHTML = '<div class="test-photo-hint">書くところに、どこか1つでも書いてね（1の理由や頑張っていることなど。2の目標は書かなくてもOK）。</div>'; return; }
+    if (len < 5) { els.surveyResult.innerHTML = '<div class="test-photo-hint">書くところに、どこか1つでも書いてね（1の理由や頑張っていることなど）。選ぶところは、選ばなくてもOKだよ。</div>'; return; }
     els.surveySubmit.disabled = true;
     apiPost('surveySubmit', body).then(function (res) {
       els.surveySubmit.disabled = false;
