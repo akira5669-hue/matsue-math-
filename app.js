@@ -430,6 +430,10 @@
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
         ohachiCompleted: s.ohachiCompleted, ohachiEasyCompleted: s.ohachiEasyCompleted, wisdomSeedCount: s.wisdomSeedCount, desiredProfession: s.desiredProfession, wisdomFruitCount: s.wisdomFruitCount, effortSeedCount: s.effortSeedCount,
+        // 県庁所在地クイズの途中経過(連続正解数・出題待ちの3問)。アプリ更新時の自動再読み込みで
+        // 消えて「10問連続正解したのに出ない」ことがあったため、アカウントごとに端末へ保存する(2026-11-05)。
+        capitalQuizStreak: s.capitalQuizStreak, capitalQuizEasyStreak: s.capitalQuizEasyStreak,
+        capitalQuizBonusQueue: ((s.current && s.current.category === 'capitalQuizBonus' && !s.answered) ? [s.current] : []).concat(s.capitalQuizBonusQueue || []),
       });
     }
   }
@@ -20684,15 +20688,15 @@
     capitalQuizEasyCorrectTotal: (savedProgress && Number(savedProgress.capitalQuizEasyCorrectTotal)) || (savedGame && Number(savedGame.capitalQuizEasyCorrectTotal)) || 0,
     // 県庁所在地クイズ(通常モード)の連続正解カウント。お鉢巡り等が挑戦中でなく
     // 学年以上の単元を10個以上(文章題含む)選んでいる間だけ加算し、不正解で0に
-    // 戻る。ohachiStreakと同じく端末セッション限定(あえて永続化しない)。
-    capitalQuizStreak: 0,
+    // 戻る。アプリ更新時の自動再読み込みで消えないよう、アカウントごとに端末へ保存する。
+    capitalQuizStreak: (savedProgress && Number(savedProgress.capitalQuizStreak)) || 0,
     // イージーモードの解答数カウント。正誤に関係なく加算され、10問ごとに
     // リセットされる(通常モードと違って連続正解は不要)。
-    capitalQuizEasyStreak: 0,
+    capitalQuizEasyStreak: (savedProgress && Number(savedProgress.capitalQuizEasyStreak)) || 0,
     // 通常モード／イージーモードは同時進行ではなく、画面のボタンでどちらか
     // 一方だけを選ぶ(端末ローカルの設定として保存)。
     capitalQuizSelectedMode: ((savedProgress && savedProgress.capitalQuizSelectedMode) || (savedGame && savedGame.capitalQuizSelectedMode)) === 'easy' ? 'easy' : 'normal',
-    capitalQuizBonusQueue: [],
+    capitalQuizBonusQueue: (savedProgress && Array.isArray(savedProgress.capitalQuizBonusQueue)) ? savedProgress.capitalQuizBonusQueue.filter(function (q) { return q && q.category === 'capitalQuizBonus' && Array.isArray(q.choices); }).slice(0, 6) : [],
     // 成功は一度trueになったら戻らない実績フラグ(fujiSummitReachedと同じ扱い)。
     ohachiCompleted: !!((savedProgress && savedProgress.ohachiCompleted) || (savedGame && savedGame.ohachiCompleted)),
     // お鉢巡りイージーモード(タイムアタック無し、00001専用プレビュー)。通常版と
