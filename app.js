@@ -33274,10 +33274,20 @@
     var out = document.getElementById('surveyAnxietyVal');
     if (r && out) out.textContent = r.value + '%';
   }
-  // 今月もう答えた人には、質問と送信ボタンをかくす(1か月に1回だけ)。
-  function surveySetFormHidden_(hide) {
-    Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('.survey-q, .answer10-actions'), function (el) { el.hidden = hide; });
+  // 生徒本人・保護者がそれぞれ月1回答えられる(2026-11-05〜。MPは生徒本人の回答だけ)。
+  // 選んでいる「答える人」が今月もう答えていたら、質問と送信ボタンをかくす。両方答えたら「答える人」もかくす。
+  var surveyDone_ = { student: false, guardian: false };
+  function surveySetFormHidden_() {
+    var who = surveyRadio_('surveyRespondent') || 'student';
+    var hide = !!surveyDone_[who], all = surveyDone_.student && surveyDone_.guardian;
+    Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('.survey-q, .answer10-actions'), function (el) { el.hidden = el.id === 'surveyRespondentQ' ? all : hide; });
+    var msg = [];
+    if (surveyDone_.student) msg.push('✅ 生徒本人は、今月のアンケートに答えてくれました。');
+    if (surveyDone_.guardian) msg.push('✅ 保護者の方は、今月のアンケートに答えてくださいました。');
+    if (msg.length) msg.push(all ? 'ありがとうございました！次は来月また答えてね。' : hide ? '（もう一方の方は、上の「答える人」を選びかえると答えられます）' : '');
+    els.surveyStatus.textContent = msg.join(' ');
   }
+  document.addEventListener('change', function (e) { if (e.target && e.target.name === 'surveyRespondent') surveySetFormHidden_(); });
   function surveyRadio_(name) { var el = els.surveyPanel.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
   function toggleSurvey() {
     var isHidden = els.surveyPanel.hasAttribute('hidden');
@@ -33294,9 +33304,11 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('surveyStatus', { id: session.id }).then(function (res) {
-        var done = !!(res && res.ok && res.answered);
-        els.surveyStatus.textContent = done ? '✅ 今月のアンケートには答えてくれました。ありがとう！次は来月また答えてね。' : '';
-        surveySetFormHidden_(done);
+        if (!res || !res.ok) return;
+        surveyDone_ = { student: !!res.answeredStudent, guardian: !!res.answeredGuardian };
+        // 生徒本人がもう答えていて保護者がまだなら、保護者を選んでおく
+        if (surveyDone_.student && !surveyDone_.guardian) { var g = els.surveyPanel.querySelector('input[name="surveyRespondent"][value="guardian"]'); if (g) g.checked = true; }
+        surveySetFormHidden_();
       }).catch(function () {});
     }
   }
@@ -33331,15 +33343,16 @@
     els.surveySubmit.disabled = true;
     apiPost('surveySubmit', body).then(function (res) {
       els.surveySubmit.disabled = false;
-      if (res && res.error === 'already_answered') { els.surveyResult.innerHTML = '<div class="test-photo-hint">今月のアンケートには、もう答えています。次は来月また答えてね。</div>'; surveySetFormHidden_(true); return; }
+      if (res && res.error === 'already_answered') { surveyDone_[body.respondent] = true; els.surveyResult.innerHTML = '<div class="test-photo-hint">' + (body.respondent === 'guardian' ? '保護者の方' : '生徒本人') + 'は、今月のアンケートにもう答えています。次は来月また答えてね。</div>'; surveySetFormHidden_(); return; }
       if (!res || !res.ok) { els.surveyResult.innerHTML = '<div class="test-photo-hint">送信できませんでした。もう一度お試しください。</div>'; return; }
-      surveySetFormHidden_(true);
+      surveyDone_[body.respondent] = true;
+      surveySetFormHidden_();
       if (res.rewarded && res.newTotalPoints != null) {
         state.points = res.newTotalPoints;
         saveGameState(state);
         updateGameHud();
       }
-      els.surveyResult.innerHTML = '<div class="win-banner">📝 アンケートを送りました。回答ありがとうございました！' + (res.rewarded ? ' +' + res.rewardMp + 'MP' : '') + '</div>';
+      els.surveyResult.innerHTML = '<div class="win-banner">📝 アンケートを送りました。回答ありがとうございました！' + (res.rewarded ? ' +' + res.rewardMp + 'MP' : body.respondent === 'guardian' ? '（保護者の方の回答ではMPは入りません）' : '') + '</div>';
       Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('[data-sv-text]'), function (el) { el.value = ''; });
       Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('input[type="radio"]:not([name="surveyRespondent"]), input[type="checkbox"]'), function (el) { el.checked = false; });
       var r = document.getElementById('surveyAnxiety'); if (r) r.value = 0;
