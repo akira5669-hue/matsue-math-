@@ -2537,3 +2537,20 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .manual-sec li { margin: 4px 0; line-height: 1.6; }
 
 .survey-optional { font-weight: 400; font-size: 0.85em; color: #16a34a; }
+
+/* 計算パズル */
+.ken-levels { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.ken-levels .is-on { background: #2563eb; color: #fff; border-color: #2563eb; }
+.ken-board { display: grid; width: min(100%, 360px); margin: 8px auto; aspect-ratio: 1 / 1; border: 2px solid #111827; background: #111827; gap: 0; }
+.ken-cell { position: relative; border: 0 solid #111827; background: #fff; padding: 0; margin: 0; border-radius: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; min-width: 0; }
+.ken-cell { border-color: #111827; border-style: solid; }
+.ken-cell.is-sel { background: #fef3c7; }
+.ken-cell.is-wrong { background: #fecaca; }
+.ken-cell.is-done { background: #dcfce7; }
+.ken-label { position: absolute; top: 2px; left: 4px; font-size: 11px; font-weight: 700; color: #1e3a8a; line-height: 1; }
+.ken-val { font-size: 1.6em; font-weight: 700; color: #111827; }
+.ken-cell.is-dup .ken-val { color: #dc2626; }
+.ken-pad { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 8px 0; }
+.ken-key { min-width: 44px; height: 44px; font-size: 1.2em; font-weight: 700; border-radius: 10px; border: 1px solid #94a3b8; background: #f8fafc; color: #111827; }
+.ken-key-clear { font-size: 0.95em; padding: 0 10px; }
+.ken-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }

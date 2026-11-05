@@ -22057,6 +22057,7 @@
     // アンサー10は今は00001(管理者)だけに表示(試験公開)。
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
+    var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
@@ -31519,6 +31520,234 @@
   els.worldToggle.addEventListener('click', toggleWorld);
   if (els.fujiToggle) els.fujiToggle.addEventListener('click', toggleFuji);
   if (els.mangaToggle) els.mangaToggle.addEventListener('click', toggleManga);
+  // ---- 計算パズル(KenKen型)の問題づくり ----
+  // n×nのマスに1〜nを、たて・よこの列で同じ数が出ないように入れる。太線の囲み(ブロック)ごとに、
+  // 左上の「12＋」などの通りになるようにする。答えが1通りに決まる問題だけを出す。
+  var KEN_LEVELS_ = {
+    3: { label: 'かんたん（3×3）', ops: ['+'] },
+    4: { label: 'ふつう（4×4）', ops: ['+', '-'] },
+    5: { label: 'むずかしい（5×5）', ops: ['+', '-', '×'] },
+    6: { label: '超むずかしい（6×6）', ops: ['+', '-', '×', '÷'] }
+  };
+  function kenRand_(n) { return Math.floor(Math.random() * n); }
+  function kenShuffle_(a) { for (var i = a.length - 1; i > 0; i--) { var j = kenRand_(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function kenLatin_(n) {
+    var rows = kenShuffle_(Array.from({ length: n }, function (_, i) { return i; }));
+    var cols = kenShuffle_(Array.from({ length: n }, function (_, i) { return i; }));
+    var sym = kenShuffle_(Array.from({ length: n }, function (_, i) { return i + 1; }));
+    return rows.map(function (r) { return cols.map(function (c) { return sym[(r + c) % n]; }); });
+  }
+  function kenCages_(n) {
+    var owner = Array(n * n).fill(-1), cages = [], order = kenShuffle_(Array.from({ length: n * n }, function (_, i) { return i; }));
+    var singles = 0;
+    order.forEach(function (start) {
+      if (owner[start] !== -1) return;
+      var r = Math.random(), want = r < 0.12 ? 1 : r < 0.62 ? 2 : r < 0.92 ? 3 : 4;
+      if (want === 1 && singles >= Math.max(1, Math.floor(n / 2))) want = 2;
+      var cells = [start]; owner[start] = cages.length;
+      while (cells.length < want) {
+        var cand = [];
+        cells.forEach(function (c) {
+          var y = Math.floor(c / n), x = c % n;
+          [[y - 1, x], [y + 1, x], [y, x - 1], [y, x + 1]].forEach(function (p) {
+            if (p[0] >= 0 && p[0] < n && p[1] >= 0 && p[1] < n && owner[p[0] * n + p[1]] === -1) cand.push(p[0] * n + p[1]);
+          });
+        });
+        if (!cand.length) break;
+        var pick = cand[kenRand_(cand.length)]; owner[pick] = cages.length; cells.push(pick);
+      }
+      if (cells.length === 1) singles++;
+      cages.push({ cells: cells });
+    });
+    return { owner: owner, cages: cages, singles: singles };
+  }
+  function kenAssignOps_(sol, cages, ops, n) {
+    cages.forEach(function (cg) {
+      var v = cg.cells.map(function (c) { return sol[Math.floor(c / n)][c % n]; });
+      if (v.length === 1) { cg.op = ''; cg.target = v[0]; return; }
+      var ok = ops.filter(function (o) {
+        if (o === '-') return v.length === 2;
+        if (o === '÷') return v.length === 2 && Math.max(v[0], v[1]) % Math.min(v[0], v[1]) === 0;
+        if (o === '×') return v.reduce(function (a, b) { return a * b; }, 1) <= 400;
+        return true;
+      });
+      // ひき算・わり算が使える2マスは、そちらを多めに出す
+      var pref = ok.filter(function (o) { return o === '-' || o === '÷'; });
+      var op = pref.length && Math.random() < 0.6 ? pref[kenRand_(pref.length)] : ok[kenRand_(ok.length)];
+      cg.op = op;
+      cg.target = op === '+' ? v.reduce(function (a, b) { return a + b; }, 0)
+        : op === '×' ? v.reduce(function (a, b) { return a * b; }, 1)
+        : op === '-' ? Math.abs(v[0] - v[1]) : Math.max(v[0], v[1]) / Math.min(v[0], v[1]);
+    });
+  }
+  // 解の数を数える(2つ見つかったら止める)
+  function kenCountSolutions_(n, owner, cages, limit) {
+    var grid = Array(n * n).fill(0), rowM = Array(n).fill(0), colM = Array(n).fill(0), count = 0;
+    var order = [];
+    cages.slice().sort(function (a, b) { return a.cells.length - b.cells.length; }).forEach(function (cg) { cg.cells.forEach(function (c) { order.push(c); }); });
+    var filled = cages.map(function () { return 0; });
+    function cageOk(ci) {
+      var cg = cages[ci], vals = [];
+      cg.cells.forEach(function (c) { if (grid[c]) vals.push(grid[c]); });
+      var full = vals.length === cg.cells.length, rest = cg.cells.length - vals.length;
+      if (cg.op === '') return !full || vals[0] === cg.target;
+      if (cg.op === '+') { var s = vals.reduce(function (a, b) { return a + b; }, 0); return full ? s === cg.target : s + rest <= cg.target && s + rest * n >= cg.target; }
+      if (cg.op === '×') { var p = vals.reduce(function (a, b) { return a * b; }, 1); return full ? p === cg.target : cg.target % p === 0; }
+      if (!full) return true;
+      if (cg.op === '-') return Math.abs(vals[0] - vals[1]) === cg.target;
+      return Math.max(vals[0], vals[1]) === cg.target * Math.min(vals[0], vals[1]);
+    }
+    function go(k) {
+      if (count >= limit) return;
+      if (k === order.length) { count++; return; }
+      var c = order[k], y = Math.floor(c / n), x = c % n, ci = owner[c];
+      for (var v = 1; v <= n; v++) {
+        var bit = 1 << v;
+        if ((rowM[y] & bit) || (colM[x] & bit)) continue;
+        grid[c] = v; rowM[y] |= bit; colM[x] |= bit;
+        if (cageOk(ci)) go(k + 1);
+        grid[c] = 0; rowM[y] &= ~bit; colM[x] &= ~bit;
+        if (count >= limit) return;
+      }
+    }
+    go(0);
+    return count;
+  }
+  function kenMakePuzzle_(n) {
+    var ops = KEN_LEVELS_[n].ops;
+    for (var t = 0; t < 300; t++) {
+      var sol = kenLatin_(n), cg = kenCages_(n);
+      if (cg.singles > Math.max(1, Math.floor(n / 2))) continue; // 1マスのブロックが多いと簡単すぎる
+      kenAssignOps_(sol, cg.cages, ops, n);
+      if (kenCountSolutions_(n, cg.owner, cg.cages, 2) === 1) return { n: n, sol: sol, owner: cg.owner, cages: cg.cages };
+    }
+    return null;
+  }
+  // ---- 計算パズルの画面(2026-11-05〜。今は00001だけ。KEN_OPEN_ALL_をtrueにすると全員) ----
+  var KEN_OPEN_ALL_ = false;
+  function kenVisible_() { return isAdminSession_() || KEN_OPEN_ALL_; }
+  var ken_ = { p: null, vals: [], sel: -1, start: 0, done: false, timer: null, wrong: {} };
+  function kenBest_(n) { try { return Number(localStorage.getItem('kenBest_' + n)) || 0; } catch (e) { return 0; } }
+  function kenSetBest_(n, sec) { try { localStorage.setItem('kenBest_' + n, String(sec)); } catch (e) {} }
+  function kenTimeText_(sec) { return Math.floor(sec / 60) + '分' + ('0' + (sec % 60)).slice(-2) + '秒'; }
+  function kenElapsed_() { return Math.floor((Date.now() - ken_.start) / 1000); }
+  function kenStart_(n) {
+    var p = kenMakePuzzle_(n);
+    if (!p) return;
+    ken_.p = p; ken_.vals = Array(n * n).fill(0); ken_.sel = -1; ken_.start = Date.now(); ken_.done = false; ken_.wrong = {};
+    document.getElementById('kenResult').innerHTML = '';
+    Array.prototype.forEach.call(document.querySelectorAll('#kenLevels button'), function (b) { b.classList.toggle('is-on', Number(b.getAttribute('data-n')) === n); });
+    kenRender_();
+    kenTick_();
+    if (ken_.timer) clearInterval(ken_.timer);
+    ken_.timer = setInterval(kenTick_, 1000);
+  }
+  function kenTick_() {
+    var info = document.getElementById('kenInfo');
+    var panel = document.getElementById('kenPanel');
+    if (!info || !ken_.p) return;
+    if (panel && panel.hasAttribute('hidden') && ken_.timer) { clearInterval(ken_.timer); ken_.timer = null; }
+    var best = kenBest_(ken_.p.n);
+    info.textContent = (ken_.done ? '🎉 クリア！' : '⏱ ') + kenTimeText_(ken_.done ? ken_.doneSec : kenElapsed_()) + (best ? '　（自己ベスト ' + kenTimeText_(best) + '）' : '');
+  }
+  function kenRender_() {
+    var p = ken_.p, n = p.n, board = document.getElementById('kenBoard'), pad = document.getElementById('kenPad');
+    // 列・行で同じ数が2つ以上あるマス(赤字にする)
+    var dup = {};
+    for (var i = 0; i < n * n; i++) {
+      var v = ken_.vals[i]; if (!v) continue;
+      var y = Math.floor(i / n), x = i % n;
+      for (var k = 0; k < n; k++) {
+        if (k !== x && ken_.vals[y * n + k] === v) dup[i] = true;
+        if (k !== y && ken_.vals[k * n + x] === v) dup[i] = true;
+      }
+    }
+    var label = {};
+    p.cages.forEach(function (cg) { var first = Math.min.apply(null, cg.cells); label[first] = cg.target + (cg.op === '' ? '' : cg.op === '-' ? '−' : cg.op === '+' ? '＋' : cg.op); });
+    var html = '';
+    for (var c = 0; c < n * n; c++) {
+      var cy = Math.floor(c / n), cx = c % n, o = p.owner[c];
+      var bt = cy === 0 || p.owner[c - n] !== o, bb = cy === n - 1 || p.owner[c + n] !== o;
+      var bl = cx === 0 || p.owner[c - 1] !== o, br = cx === n - 1 || p.owner[c + 1] !== o;
+      var style = 'border-top-width:' + (bt ? 3 : 1) + 'px;border-bottom-width:' + (bb ? 3 : 1) + 'px;border-left-width:' + (bl ? 3 : 1) + 'px;border-right-width:' + (br ? 3 : 1) + 'px;';
+      var cls = 'ken-cell' + (c === ken_.sel ? ' is-sel' : '') + (dup[c] ? ' is-dup' : '') + (ken_.wrong[c] ? ' is-wrong' : '') + (ken_.done ? ' is-done' : '');
+      html += '<button type="button" class="' + cls + '" data-i="' + c + '" style="' + style + '">'
+        + (label[c] ? '<span class="ken-label">' + label[c] + '</span>' : '')
+        + '<span class="ken-val">' + (ken_.vals[c] || '') + '</span></button>';
+    }
+    board.style.gridTemplateColumns = 'repeat(' + n + ', 1fr)';
+    board.style.gridTemplateRows = 'repeat(' + n + ', 1fr)';
+    board.innerHTML = html;
+    var ph = '';
+    for (var d = 1; d <= n; d++) ph += '<button type="button" class="ken-key" data-v="' + d + '">' + d + '</button>';
+    ph += '<button type="button" class="ken-key ken-key-clear" data-v="0">消す</button>';
+    pad.innerHTML = ph;
+  }
+  function kenInput_(v) {
+    if (!ken_.p || ken_.done || ken_.sel < 0) return;
+    ken_.vals[ken_.sel] = v;
+    delete ken_.wrong[ken_.sel];
+    document.getElementById('kenResult').innerHTML = '';
+    kenRender_();
+    if (ken_.vals.every(function (x) { return x > 0; })) kenCheck_(true);
+  }
+  function kenCheck_(auto) {
+    if (!ken_.p || ken_.done) return;
+    var p = ken_.p, n = p.n, res = document.getElementById('kenResult');
+    if (!ken_.vals.every(function (x) { return x > 0; })) { res.innerHTML = '<div class="test-photo-hint">まだ空いているマスがあるよ。</div>'; return; }
+    ken_.wrong = {};
+    var bad = 0;
+    for (var i = 0; i < n * n; i++) if (ken_.vals[i] !== p.sol[Math.floor(i / n)][i % n]) { ken_.wrong[i] = true; bad++; }
+    if (bad) {
+      if (auto) { ken_.wrong = {}; res.innerHTML = '<div class="test-photo-hint">全部うまったけど、どこかちがうみたい。「答え合わせ」を押すと、ちがうマスが赤くなるよ。</div>'; }
+      else res.innerHTML = '<div class="test-photo-hint">赤いマスがちがうよ（' + bad + 'マス）。もう一度考えてみよう！</div>';
+      kenRender_();
+      return;
+    }
+    ken_.done = true; ken_.doneSec = kenElapsed_(); ken_.sel = -1;
+    var best = kenBest_(n), isBest = !best || ken_.doneSec < best;
+    if (isBest) kenSetBest_(n, ken_.doneSec);
+    if (ken_.timer) { clearInterval(ken_.timer); ken_.timer = null; }
+    res.innerHTML = '<div class="win-banner">🎉 正解！ ' + kenTimeText_(ken_.doneSec) + 'でクリア！' + (isBest ? '（自己ベスト更新！）' : '') + '</div>';
+    kenRender_();
+    kenTick_();
+  }
+  (function () {
+    var kt = document.getElementById('kenToggle'), kp = document.getElementById('kenPanel');
+    if (!kt || !kp) return;
+    kt.addEventListener('click', function () {
+      if (!kp.hasAttribute('hidden')) { kp.setAttribute('hidden', ''); return; }
+      ['historyPanel', 'rankingPanel', 'giftPanel', 'prefecturePanel', 'avatarPanel', 'worldPanel', 'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'teamEventPanel', 'shopPanel', 'fujiPanel', 'mangaPanel', 'halloweenPanel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'answer10Panel'].forEach(function (k) {
+        var el = els[k] || document.getElementById(k);
+        if (el) el.setAttribute('hidden', '');
+      });
+      kp.removeAttribute('hidden');
+      if (!ken_.p) kenStart_(4);
+      else if (!ken_.done && !ken_.timer) ken_.timer = setInterval(kenTick_, 1000);
+      kp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    kt.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== kt) kp.setAttribute('hidden', '');
+    });
+    kp.addEventListener('click', function (e) {
+      var lv = e.target.closest('#kenLevels button');
+      if (lv) { kenStart_(Number(lv.getAttribute('data-n'))); return; }
+      var cell = e.target.closest('.ken-cell');
+      if (cell) { if (!ken_.done) { ken_.sel = Number(cell.getAttribute('data-i')); kenRender_(); } return; }
+      var key = e.target.closest('.ken-key');
+      if (key) { kenInput_(Number(key.getAttribute('data-v'))); return; }
+      if (e.target.closest('#kenCheck')) { kenCheck_(false); return; }
+      if (e.target.closest('#kenNew') && ken_.p) kenStart_(ken_.p.n);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (kp.hasAttribute('hidden') || !ken_.p) return;
+      var t = e.target && e.target.tagName;
+      if (t === 'INPUT' || t === 'TEXTAREA') return;
+      if (/^[1-9]$/.test(e.key) && Number(e.key) <= ken_.p.n) { kenInput_(Number(e.key)); e.preventDefault(); }
+      else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') { kenInput_(0); e.preventDefault(); }
+    });
+  })();
   // 使い方マニュアル(いつでも読める。ほかのボタンを押したら閉じる)。
   (function () {
     var mt = document.getElementById('manualToggle');
