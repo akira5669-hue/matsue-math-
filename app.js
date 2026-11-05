@@ -33325,7 +33325,9 @@
     };
     // 選ぶところは、選ばなくても送れる(2026-11-05〜)。
     var len = ['testReason', 'goalRank', 'goalAction', 'classRequest', 'worryOther', 'consult', 'effort', 'improve'].reduce(function (s, k) { return s + String(body[k]).trim().length; }, 0);
-    if (len < 5) { els.surveyResult.innerHTML = '<div class="test-photo-hint">書くところに、どこか1つでも書いてね（1の理由や頑張っていることなど）。選ぶところは、選ばなくてもOKだよ。</div>'; return; }
+    // 書くところも書かなくてよい(2026-11-05〜)。ただし、全部空っぽ(何も選ばず何も書かない)では送れない。
+    var anyPick = body.testMark || body.classStatus || body.interview || body.satClass || body.satOverall || body.worries.length || body.anxiety > 0;
+    if (len < 1 && !anyPick) { els.surveyResult.innerHTML = '<div class="test-photo-hint">どこか1つだけでも答えてね（選ぶだけでもOK）。</div>'; return; }
     els.surveySubmit.disabled = true;
     apiPost('surveySubmit', body).then(function (res) {
       els.surveySubmit.disabled = false;
