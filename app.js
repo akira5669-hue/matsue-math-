@@ -31713,7 +31713,7 @@
     kenRender_();
     kenTick_();
   }
-  // クリアをサーバーに送ってMPをもらう(3×3:1・4×4:3・5×5:5・6×6:10MP、1日10MPまで。1日100MPとは別)。
+  // クリアをサーバーに送ってMPをもらう(3×3:1・4×4:2・5×5:4・6×6:8MP、1日20MPまで。1日100MPとは別)。
   function kenSendClear_() {
     var session = loadSession(), p = ken_.p;
     if (!session || !session.id || !p) return;
@@ -31727,7 +31727,7 @@
   }
   function kenShowMp_(todayMp, max) {
     var el = document.getElementById('kenMpInfo');
-    if (el) el.textContent = '🪙 クリアでMP：3×3は1MP・4×4は3MP・5×5は5MP・6×6は10MP（1日' + max + 'MPまで。今日は' + todayMp + 'MPもらったよ）';
+    if (el) el.textContent = '🪙 クリアでMP：3×3は1MP・4×4は2MP・5×5は4MP・6×6は8MP（1日' + max + 'MPまで。今日は' + todayMp + 'MPもらったよ）';
   }
   (function () {
     var kt = document.getElementById('kenToggle'), kp = document.getElementById('kenPanel');
