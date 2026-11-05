@@ -31748,6 +31748,25 @@
       else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') { kenInput_(0); e.preventDefault(); }
     });
   })();
+  // 上のボタン(なんでも屋・学習記録など)でパネルを開いたら、そのパネルまでスクロールする(2026-11-05)。
+  // バナーが増えてパネルが画面のずっと下に開くようになり、「押しても出てこない」と見えていたため。
+  (function () {
+    var bar = document.querySelector('.user-bar-actions');
+    if (!bar) return;
+    var before = null;
+    var openPanels = function () { return Array.prototype.filter.call(document.querySelectorAll('section[id$="Panel"]'), function (p) { return !p.hasAttribute('hidden') && !p.hidden; }); };
+    bar.addEventListener('click', function (e) { if (e.target.closest('button')) before = openPanels(); }, true);
+    bar.addEventListener('click', function (e) {
+      if (!e.target.closest('button') || !before) return;
+      var prev = before; before = null;
+      setTimeout(function () {
+        var opened = openPanels().filter(function (p) { return prev.indexOf(p) === -1; });
+        if (!opened.length) return;
+        var r = opened[0].getBoundingClientRect();
+        if (r.top > window.innerHeight * 0.6 || r.top < 0) opened[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    });
+  })();
   // 使い方マニュアル(いつでも読める。ほかのボタンを押したら閉じる)。
   (function () {
     var mt = document.getElementById('manualToggle');
