@@ -2591,3 +2591,40 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .pk-lose { color: #64748b; }
 .pk-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .pk-btn { min-width: 80px; }
+
+/* 野球ガチャ */
+.bb-scene { max-width: 340px; width: 100%; margin: 6px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+.bb-scene svg { display: block; width: 100%; height: auto; }
+.bb-scene .bb-ball, .bb-scene .bb-bat, .bb-scene .bb-pitcher, .bb-scene .bb-runners { transform-box: fill-box; transform-origin: 50% 50%; }
+.bb-scene .bb-bat { transform-origin: 100% 100%; transition: transform 0.16s ease-in; }
+.bb-scene .bb-ball { transition: transform 0.5s cubic-bezier(0.5, 0, 0.9, 0.6); }
+.bb-ready .bb-bat { animation: bbWaggle 0.7s ease-in-out infinite alternate; }
+@keyframes bbWaggle { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+.bb-ready .bb-pitcher { animation: bbSet 1s ease-in-out infinite alternate; }
+@keyframes bbSet { to { transform: translateY(-2px); } }
+/* 投球：ボールがホームベースへ(内角はバッター寄り) */
+.bb-p-in .bb-ball { transform: translate(-8px, 60px) scale(2.3); }
+.bb-p-mid .bb-ball { transform: translate(0, 60px) scale(2.3); }
+.bb-p-out .bb-ball { transform: translate(8px, 60px) scale(2.3); }
+.bb-swing .bb-bat { transform: rotate(125deg); }
+/* 打球(ホームベースから飛んでいく) */
+.bb-scene[class*="bb-r-"] .bb-ball { transition: transform 0.95s cubic-bezier(0.1, 0.6, 0.3, 1); }
+.bb-scene.bb-r-single .bb-ball { transform: translate(-52px, -56px) scale(1.8); }
+.bb-scene.bb-r-double .bb-ball { transform: translate(-108px, -72px) scale(1.6); }
+.bb-scene.bb-r-triple .bb-ball { transform: translate(110px, -72px) scale(1.6); }
+.bb-scene.bb-r-hr .bb-ball { transform: translate(56px, -126px) scale(1.5); }
+.bb-scene.bb-r-ofly .bb-ball { transform: translate(0, -78px) scale(1.8); }
+.bb-scene.bb-r-ifly .bb-ball { transform: translate(18px, -40px) scale(2.2); }
+.bb-scene.bb-r-iliner .bb-ball { transform: translate(-32px, -18px) scale(1.8); }
+.bb-scene.bb-r-grounder .bb-ball { transform: translate(34px, -16px) scale(1.6); }
+.bb-scene.bb-r-k .bb-ball { transition: transform 0.15s linear; }
+.bb-scene.bb-r-k.bb-p-in .bb-ball { transform: translate(-2px, 74px) scale(2.5); }
+.bb-scene.bb-r-k.bb-p-mid .bb-ball { transform: translate(3px, 74px) scale(2.5); }
+.bb-scene.bb-r-k.bb-p-out .bb-ball { transform: translate(9px, 74px) scale(2.5); }
+/* サヨナラ：ランナーがはねて喜ぶ */
+.bb-win .bb-runners { animation: bbJump 0.3s ease-in-out 1.1s 4 alternate; }
+@keyframes bbJump { to { transform: translateY(-5px); } }
+.bb-hrtext { font-size: 22px; font-weight: 900; fill: #fde047; stroke: #b91c1c; stroke-width: 4px; paint-order: stroke; opacity: 0; transition: opacity 0.3s ease 1s; }
+.bb-r-hr .bb-hrtext { opacity: 1; }
+.bb-noanim .bb-hrtext { transition: none; }
+.bb-noanim .bb-ball, .bb-noanim .bb-bat, .bb-noanim .bb-pitcher, .bb-noanim .bb-runners { transition: none !important; animation: none !important; }

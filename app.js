@@ -33918,12 +33918,134 @@
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
+  // ---- 野球ガチャ(9回裏・ノーアウト満塁・3ボール2ストライクの1球勝負。生徒はバッター) ----
+  // 内角・真ん中・外角からコースを読んで振る。投げたコースと結果はサーバーで決める。
+  // 場面はキャッチャーの後ろから見た球場のSVG。投球→スイング→打球の動きはCSSのtransitionで付ける。
+  var BB_COURSE_LABEL_ = { in: '内角', mid: '真ん中', out: '外角' };
+  var BB_RES_ = {
+    single: { t: '⚾ サヨナラヒット！！', s: '三塁ランナーがホームイン！チームの勝ち！', win: true },
+    double: { t: '⚾ サヨナラ二塁打（ツーベース）！！', s: 'ランナーが次々ホームイン！', win: true },
+    triple: { t: '⚾ サヨナラ三塁打（スリーベース）！！！', s: '走者一掃！大逆転…いや、大勝利！', win: true },
+    hr: { t: '🎆 サヨナラ満塁ホームラン！！！', s: 'ボールはスタンドへ！球場が大歓声！', win: true },
+    ofly: { t: '⚾ 外野フライ！でも…', s: '三塁ランナーがタッチアップでホームイン！サヨナラ犠牲フライ！', win: true },
+    ifly: { t: '😣 内野フライでアウト…', s: '高く上がったけど、内野手にとられてしまった。', win: false },
+    iliner: { t: '😣 内野ライナーでアウト…', s: '鋭い当たりだったけど、内野手の正面だった。', win: false },
+    grounder: { t: '⚾ 内野ゴロ！全力疾走！', s: 'そのすきに三塁ランナーがホームイン！サヨナラ！', win: true },
+    k: { t: '😣 空振り三振…', s: 'バッターアウト。読みが外れた！', win: false }
+  };
+  var bbBusy_ = false;
+  function bbPerson_(x, y, col, s) {
+    // 小さな選手(頭・体・足)。x,yは足もと。sは大きさ。
+    return '<g><line x1="' + (x - 2 * s) + '" y1="' + (y - 6 * s) + '" x2="' + (x - 3 * s) + '" y2="' + y + '" stroke="#1f2937" stroke-width="' + (2 * s) + '" stroke-linecap="round"/>'
+      + '<line x1="' + (x + 2 * s) + '" y1="' + (y - 6 * s) + '" x2="' + (x + 3 * s) + '" y2="' + y + '" stroke="#1f2937" stroke-width="' + (2 * s) + '" stroke-linecap="round"/>'
+      + '<rect x="' + (x - 4 * s) + '" y="' + (y - 14 * s) + '" width="' + (8 * s) + '" height="' + (9 * s) + '" rx="' + (2 * s) + '" fill="' + col + '"/>'
+      + '<circle cx="' + x + '" cy="' + (y - 17 * s) + '" r="' + (3.2 * s) + '" fill="#f1c27d"/>'
+      + '<path d="M' + (x - 3.4 * s) + ' ' + (y - 17.5 * s) + 'a' + (3.4 * s) + ' ' + (3.4 * s) + ' 0 0 1 ' + (6.8 * s) + ' 0z" fill="' + col + '"/></g>';
+  }
+  function bbSceneHtml_(r, still) {
+    var cls = 'bb-scene' + (still ? ' bb-noanim' : '') + (r ? ' ' + bbSceneClass_(r) : ' bb-ready');
+    var crowd = '', cc = ['#f87171', '#60a5fa', '#fbbf24', '#f9fafb', '#a78bfa', '#34d399', '#fb923c'];
+    for (var i = 0; i < 46; i++) crowd += '<circle cx="' + (4 + i * 6.5) + '" cy="' + (6 + (i % 3) * 7) + '" r="2.8" fill="' + cc[(i * 3) % cc.length] + '"/>';
+    var home = '#2563eb', away = '#dc2626';
+    return '<div class="' + cls + '"><svg viewBox="0 0 300 220" role="img" aria-label="野球の場面">'
+      + '<rect width="300" height="40" fill="#334155"/>' + crowd
+      + '<path d="M0 44 Q150 8 300 44 L300 220 L0 220Z" fill="#15803d"/>'
+      + '<path d="M0 44 Q150 8 300 44" fill="none" stroke="#1e3a8a" stroke-width="5"/>'
+      + '<path d="M0 70 Q150 40 300 70" fill="none" stroke="#16a34a" stroke-width="16" opacity="0.6"/>'
+      + '<polygon points="150,214 238,150 150,90 62,150" fill="#c2884e"/>'
+      + '<polygon points="150,192 214,150 150,110 86,150" fill="#16a34a"/>'
+      + '<line x1="150" y1="200" x2="0" y2="80" stroke="#fff" stroke-width="1.5"/><line x1="150" y1="200" x2="300" y2="80" stroke="#fff" stroke-width="1.5"/>'
+      + '<ellipse cx="150" cy="148" rx="13" ry="5" fill="#b4763f"/>'
+      + '<rect x="218" y="146" width="7" height="7" fill="#fff" transform="rotate(45 221.5 149.5)"/><rect x="146.5" y="101" width="7" height="7" fill="#fff" transform="rotate(45 150 104.5)"/><rect x="75" y="146" width="7" height="7" fill="#fff" transform="rotate(45 78.5 149.5)"/>'
+      + '<polygon points="144,198 156,198 156,203 150,207 144,203" fill="#fff"/>'
+      // 守備(赤)
+      + bbPerson_(80, 74, away, 0.8) + bbPerson_(150, 60, away, 0.8) + bbPerson_(220, 74, away, 0.8)
+      + bbPerson_(118, 120, away, 0.9) + bbPerson_(184, 120, away, 0.9) + bbPerson_(209, 146, away, 0.9) + bbPerson_(92, 146, away, 0.9)
+      // 満塁のランナー(青)
+      + '<g class="bb-runners">' + bbPerson_(230, 158, home, 0.9) + bbPerson_(158, 108, home, 0.9) + bbPerson_(70, 158, home, 0.9) + '</g>'
+      // ピッチャー
+      + '<g class="bb-pitcher">' + bbPerson_(150, 146, away, 1.1) + '</g>'
+      // キャッチャー
+      + '<g><ellipse cx="152" cy="219" rx="15" ry="9" fill="' + away + '"/><circle cx="152" cy="206" r="7" fill="#111827"/><circle cx="163" cy="210" r="5" fill="#92400e"/></g>'
+      // ボール
+      + '<g class="bb-ball"><circle cx="150" cy="134" r="4" fill="#fff" stroke="#e11d48" stroke-width="0.9"/></g>'
+      // バッター(あなた・右打ち)
+      + '<g class="bb-batter">'
+      + '<line x1="120" y1="190" x2="113" y2="214" stroke="#f8fafc" stroke-width="6" stroke-linecap="round"/><line x1="130" y1="190" x2="136" y2="214" stroke="#f8fafc" stroke-width="6" stroke-linecap="round"/>'
+      + '<rect x="114" y="164" width="22" height="28" rx="6" fill="' + home + '"/>'
+      + '<text x="125" y="184" font-size="10" font-weight="900" fill="#fff" text-anchor="middle">1</text>'
+      + '<circle cx="125" cy="156" r="8" fill="#f1c27d"/><path d="M116.5 155a8.5 8.5 0 0 1 17 0h3v2h-20z" fill="' + home + '"/>'
+      + '<line x1="133" y1="168" x2="139" y2="176" stroke="' + home + '" stroke-width="5" stroke-linecap="round"/>'
+      + '<g class="bb-bat"><line x1="139" y1="176" x2="121" y2="146" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/></g>'
+      + '</g>'
+      // スコアボード
+      + '<g><rect x="4" y="4" width="112" height="34" rx="4" fill="#0f172a" opacity="0.92"/>'
+      + '<text x="10" y="17" font-size="10" font-weight="800" fill="#fde047">9回裏 3−3 満塁</text>'
+      + '<text x="10" y="31" font-size="9.5" font-weight="800" fill="#fff">B<tspan fill="#22c55e">●●●</tspan> S<tspan fill="#facc15">●●</tspan> O<tspan fill="#64748b">○○</tspan></text></g>'
+      + '<text x="80" y="172" class="pk-tag">あなた</text>'
+      + '<text x="150" y="72" class="bb-hrtext" text-anchor="middle">HOME RUN!!</text>'
+      + '</svg></div>';
+  }
+  function bbSceneClass_(r) { return 'bb-go bb-p-' + r.pitch + ' bb-swing' + (r.contact ? ' bb-r-' + r.res : ' bb-r-k') + (r.contact && BB_RES_[r.res] && BB_RES_[r.res].win ? ' bb-win' : ''); }
+  function bbResultHtml_(t) {
+    var r = t.result, info = BB_RES_[r.contact ? r.res : 'k'] || BB_RES_.k;
+    return '<div class="gacha-line">あなたは<b>' + BB_COURSE_LABEL_[r.swing] + '</b>を読んでフルスイング！ピッチャーの球は<b>' + BB_COURSE_LABEL_[r.pitch] + '</b>' + (r.contact ? '…カキーン！' : '…ブンッ！') + '</div>'
+      + bbSceneHtml_(r, true)
+      + '<div class="pk-big ' + (info.win ? 'pk-win' : 'pk-lose') + '">' + info.t + '</div>'
+      + '<div class="gacha-line">' + info.s + '</div>'
+      + '<div class="gacha-mp">' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
+      + '<div class="test-photo-hint">今日の1球勝負は終わり（また明日）</div>';
+  }
+  function bbRender_(card) {
+    var out = card.querySelector('.gacha-out'), ch = card.querySelector('.bb-choices');
+    var t = gacha_.today.baseball;
+    if (out.getAttribute('data-anim')) { ch.innerHTML = ''; return; }
+    if (t && t.result) { out.innerHTML = bbResultHtml_(t); ch.innerHTML = ''; return; }
+    out.innerHTML = bbSceneHtml_(null, false);
+    ch.innerHTML = '<div class="gacha-line"><b>ピッチャーはどこに投げてくる？</b>コースを読んで振ろう！</div><div class="pk-btns">'
+      + ['in', 'mid', 'out'].map(function (c) { return '<button type="button" class="ghost-btn pk-btn" data-bb="' + c + '"' + (bbBusy_ ? ' disabled' : '') + '>' + BB_COURSE_LABEL_[c] + '</button>'; }).join('') + '</div>';
+  }
+  function bbPlay_(swing) {
+    var session = loadSession();
+    if (!session || !session.id || bbBusy_ || gacha_.today.baseball || !gachaKindOn_('baseball')) return;
+    bbBusy_ = true;
+    var card = els.gachaPanel.querySelector('[data-gacha="baseball"]');
+    var out = card.querySelector('.gacha-out');
+    out.setAttribute('data-anim', '1');
+    out.innerHTML = '<div class="pk-big">⚾ ' + BB_COURSE_LABEL_[swing] + 'を読んで…かまえて…</div>' + bbSceneHtml_(null, false);
+    card.querySelector('.bb-choices').innerHTML = '';
+    var started = Date.now();
+    var done = function (msg) { out.removeAttribute('data-anim'); bbBusy_ = false; renderGacha_(); if (msg) card.querySelector('.bb-choices').insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
+    // 投球(ボールが近づく)→スイング→打球が飛ぶ、の順にクラスを足していく
+    var play = function (r) {
+      setTimeout(function () {
+        var sc = out.querySelector('.bb-scene');
+        if (!sc) { done(''); return; }
+        sc.classList.remove('bb-ready');
+        void sc.offsetWidth;
+        sc.classList.add('bb-go', 'bb-p-' + r.pitch);
+        setTimeout(function () { sc.classList.add('bb-swing'); }, 430);
+        setTimeout(function () {
+          sc.classList.add(r.contact ? 'bb-r-' + r.res : 'bb-r-k');
+          if (r.contact && BB_RES_[r.res] && BB_RES_[r.res].win) sc.classList.add('bb-win');
+        }, 600);
+        setTimeout(function () { done(''); }, 2300);
+      }, Math.max(0, 800 - (Date.now() - started)));
+    };
+    apiPost('gachaDraw', { id: session.id, kind: 'baseball', swing: swing }).then(function (res) {
+      var t = res && (res.ok ? { result: res.result, mp: res.mp } : res.prev);
+      if (res && res.ok && res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+      if (t && t.result && t.result.pitch) { gacha_.today.baseball = t; play(t.result); }
+      else done('できませんでした。もう一度お試しください。');
+    }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
+  }
   function renderGacha_() {
     Array.prototype.forEach.call(els.gachaPanel.querySelectorAll('[data-gacha]'), function (card) {
       var kind = card.getAttribute('data-gacha');
       card.hidden = !gachaKindOn_(kind);
       if (card.hidden) return;
       if (kind === 'pk') { pkRender_(card); return; }
+      if (kind === 'baseball') { bbRender_(card); return; }
       var done = gacha_.today[kind];
       var btn = card.querySelector('.gacha-btn');
       var out = card.querySelector('.gacha-out');
@@ -33994,6 +34116,8 @@
       var card = e.target.closest('[data-gacha]');
       var pkb = e.target.closest('[data-pk]');
       if (pkb) { pkPlay_(pkb.getAttribute('data-pk'), pkb.getAttribute('data-dir')); return; }
+      var bbb = e.target.closest('[data-bb]');
+      if (bbb) { bbPlay_(bbb.getAttribute('data-bb')); return; }
       if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));
     });
     // ほかのボタンで別の画面を開いたら、ガチャは閉じる。
