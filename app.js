@@ -34606,14 +34606,16 @@
       + '<g><rect x="4" y="4" width="112" height="34" rx="4" fill="#0f172a" opacity="0.92"/>'
       + '<text x="10" y="17" font-size="10" font-weight="800" fill="#fde047">9回裏 3−3 満塁</text>'
       + '<text x="10" y="31" font-size="9.5" font-weight="800" fill="#fff">B<tspan fill="#64748b">○○○</tspan> S<tspan fill="#facc15">' + '●●'.slice(0, sc) + '</tspan><tspan fill="#64748b">' + '○○'.slice(0, 2 - sc) + '</tspan> O<tspan fill="#64748b">○○</tspan></text></g>'
-      + '<text x="80" y="172" class="pk-tag">あなた</text>'
+      // バッターは大谷笑平(あなた)、ピッチャーは松江太郎(2026-11-07先生の指示)
+      + '<text x="66" y="172" class="pk-tag">大谷笑平</text>'
+      + '<text x="163" y="132" class="pk-tag bb-ptag">松江太郎</text>'
       + '<text x="150" y="72" class="bb-hrtext" text-anchor="middle">HOME RUN!!</text>'
       + '</svg></div>';
   }
   function bbSceneClass_(r) { return 'bb-go bb-p-' + r.pitch + ' bb-swing' + (r.contact ? ' bb-r-' + r.res : ' bb-r-k') + (r.contact && BB_RES_[r.res] && BB_RES_[r.res].win ? ' bb-win' : ''); }
   function bbResultHtml_(t) {
     var r = t.result, info = BB_RES_[r.contact ? r.res : 'k'] || BB_RES_.k;
-    var hist = Array.isArray(r.pitches) ? bbHistHtml_(r.pitches) : '<div class="gacha-line">あなたは<b>' + BB_COURSE_LABEL_[r.swing] + '</b>を読んでフルスイング！ピッチャーの球は<b>' + BB_COURSE_LABEL_[r.pitch] + '</b>' + (r.contact ? '…カキーン！' : '…ブンッ！') + '</div>';
+    var hist = Array.isArray(r.pitches) ? bbHistHtml_(r.pitches) : '<div class="gacha-line">大谷笑平は<b>' + BB_COURSE_LABEL_[r.swing] + '</b>を読んでフルスイング！松江太郎の球は<b>' + BB_COURSE_LABEL_[r.pitch] + '</b>' + (r.contact ? '…カキーン！' : '…ブンッ！') + '</div>';
     return hist
       + bbSceneHtml_(r, true, bbStrikes_(r) - (r.contact ? 0 : 1))
       + '<div class="pk-big ' + (info.win ? 'pk-win' : 'pk-lose') + '">' + info.t + '</div>'
@@ -34628,7 +34630,7 @@
     if (t && t.result && bbDone_(t.result)) { out.innerHTML = bbResultHtml_(t); ch.innerHTML = ''; return; }
     var sc = bbStrikes_(t && t.result);
     out.innerHTML = bbHistHtml_(t && t.result && t.result.pitches) + bbSceneHtml_(null, false, sc);
-    ch.innerHTML = '<div class="gacha-line"><b>' + (sc + 1) + '球目（' + sc + 'ストライク）。ピッチャーはどこに投げてくる？</b>コースを読んで振ろう！</div><div class="pk-btns">'
+    ch.innerHTML = '<div class="gacha-line"><b>' + (sc + 1) + '球目（' + sc + 'ストライク）。ピッチャー松江太郎はどこに投げてくる？</b>バッター大谷笑平になって、コースを読んで振ろう！</div><div class="pk-btns">'
       + ['in', 'mid', 'out'].map(function (c) { return '<button type="button" class="ghost-btn pk-btn" data-bb="' + c + '"' + (bbBusy_ ? ' disabled' : '') + '>' + BB_COURSE_LABEL_[c] + '</button>'; }).join('') + '</div>';
   }
   function bbPlay_(swing) {
@@ -34640,7 +34642,7 @@
     var card = els.gachaPanel.querySelector('[data-gacha="baseball"]');
     var out = card.querySelector('.gacha-out');
     out.setAttribute('data-anim', '1');
-    out.innerHTML = '<div class="pk-big">⚾ ' + (sc0 + 1) + '球目、' + BB_COURSE_LABEL_[swing] + 'を読んで…かまえて…</div>' + bbSceneHtml_(null, false, sc0);
+    out.innerHTML = '<div class="pk-big">⚾ ' + (sc0 + 1) + '球目、大谷笑平は' + BB_COURSE_LABEL_[swing] + 'を読んで…かまえて…</div>' + bbSceneHtml_(null, false, sc0);
     card.querySelector('.bb-choices').innerHTML = '';
     var started = Date.now();
     var done = function (msg) { out.removeAttribute('data-anim'); bbBusy_ = false; renderGacha_(); if (msg) card.querySelector('.bb-choices').insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
