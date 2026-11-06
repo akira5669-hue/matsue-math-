@@ -2630,3 +2630,10 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .bb-r-hr .bb-hrtext { opacity: 1; }
 .bb-noanim .bb-hrtext { transition: none; }
 .bb-noanim .bb-ball, .bb-noanim .bb-bat, .bb-noanim .bb-pitcher, .bb-noanim .bb-runners { transition: none !important; animation: none !important; }
+/* 左バッター：内角・外角とボール球の向きが逆 */
+.bb-lefty.bb-p-in .bb-ball { transform: translate(8px, 60px) scale(2.3); }
+.bb-lefty.bb-p-out .bb-ball { transform: translate(-8px, 60px) scale(2.3); }
+.bb-scene.bb-lefty.bb-r-k.bb-p-in .bb-ball { transform: translate(8px, 74px) scale(2.5); }
+.bb-scene.bb-lefty.bb-r-k.bb-p-mid .bb-ball { transform: translate(1px, 74px) scale(2.5); }
+.bb-scene.bb-lefty.bb-r-k.bb-p-out .bb-ball { transform: translate(-5px, 74px) scale(2.5); }
+.bb-lefty.bb-p-ball .bb-ball, .bb-scene.bb-lefty.bb-r-ball .bb-ball { transform: translate(-30px, 62px) scale(2.3); }

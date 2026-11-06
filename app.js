@@ -34542,6 +34542,8 @@
   // バッターは打席ごとに 大谷笑平 → イテロー → 玉貞治 → 長嶋茂男 → 大谷笑平 …、ピッチャーは松江太郎(先生の指示)。
   var BB_BATTERS_ = ['大谷笑平', 'イテロー', '玉貞治', '長嶋茂男'];
   var BB_PITCHER_ = '松江太郎';
+  // 左バッター(2026-11-07先生の指示)。左打席(ホームベースの右側)に立ち、内角・外角の向きも逆になる。
+  var BB_LEFTY_ = { 'イテロー': true, '玉貞治': true };
   function bbBatter_(ab) { return BB_BATTERS_[((Number(ab) || 1) - 1) % BB_BATTERS_.length]; }
   var BB_RES_ = {
     single: { t: 'ヒット！', out: false },
@@ -34603,7 +34605,8 @@
     var runnerPos = [[230, 158], [158, 108], [70, 158]], runners = '', baseTxt = [];
     for (var j = 0; j < 3; j++) if (b[j]) runners += bbPerson_(runnerPos[j][0], runnerPos[j][1], home, 0.9);
     var full = b[0] && b[1] && b[2];
-    return '<div class="bb-scene' + (still ? ' bb-noanim' : '') + ' ' + (cls || 'bb-ready') + '"><svg viewBox="0 0 300 220" role="img" aria-label="野球の場面">'
+    var lefty = !!BB_LEFTY_[bbBatter_(st.ab)];
+    return '<div class="bb-scene' + (still ? ' bb-noanim' : '') + (lefty ? ' bb-lefty' : '') + ' ' + (cls || 'bb-ready') + '"><svg viewBox="0 0 300 220" role="img" aria-label="野球の場面">'
       + '<rect width="300" height="40" fill="#334155"/>' + crowd
       + '<path d="M0 44 Q150 8 300 44 L300 220 L0 220Z" fill="#15803d"/>'
       + '<path d="M0 44 Q150 8 300 44" fill="none" stroke="#1e3a8a" stroke-width="5"/>'
@@ -34626,10 +34629,9 @@
       // ボール
       + '<g class="bb-ball"><circle cx="150" cy="134" r="4" fill="#fff" stroke="#e11d48" stroke-width="0.9"/></g>'
       // バッター(あなた・右打ち)
-      + '<g class="bb-batter">'
+      + '<g class="bb-batter"' + (lefty ? ' transform="translate(300 0) scale(-1 1)"' : '') + '>'
       + '<line x1="120" y1="190" x2="113" y2="214" stroke="#f8fafc" stroke-width="6" stroke-linecap="round"/><line x1="130" y1="190" x2="136" y2="214" stroke="#f8fafc" stroke-width="6" stroke-linecap="round"/>'
       + '<rect x="114" y="164" width="22" height="28" rx="6" fill="' + home + '"/>'
-      + '<text x="125" y="184" font-size="10" font-weight="900" fill="#fff" text-anchor="middle">1</text>'
       + '<circle cx="125" cy="156" r="8" fill="#f1c27d"/><path d="M116.5 155a8.5 8.5 0 0 1 17 0h3v2h-20z" fill="' + home + '"/>'
       + '<line x1="133" y1="168" x2="139" y2="176" stroke="' + home + '" stroke-width="5" stroke-linecap="round"/>'
       + '<g class="bb-bat"><line x1="139" y1="176" x2="121" y2="146" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/></g>'
@@ -34638,7 +34640,8 @@
       + '<g><rect x="4" y="4" width="118" height="34" rx="4" fill="#0f172a" opacity="0.92"/>'
       + '<text x="10" y="17" font-size="10" font-weight="800" fill="#fde047">9回裏 ' + (Number(st.home) || 0) + '−' + (Number(st.away) || 3) + ' 2アウト' + (full ? '満塁' : '') + '</text>'
       + '<text x="10" y="31" font-size="9.5" font-weight="800" fill="#fff">B' + bbLamps_(st.balls, 3, '#22c55e') + ' S' + bbLamps_(st.strikes, 2, '#facc15') + ' O' + bbLamps_(2, 2, '#ef4444') + '</text></g>'
-      + '<text x="66" y="172" class="pk-tag">' + bbBatter_(st.ab) + '</text>'
+      + '<text x="' + (lefty ? 175 : 125) + '" y="184" font-size="10" font-weight="900" fill="#fff" text-anchor="middle">1</text>'
+      + '<text x="' + (lefty ? 190 : 66) + '" y="172" class="pk-tag">' + bbBatter_(st.ab) + '</text>'
       + '<text x="163" y="132" class="pk-tag bb-ptag">' + BB_PITCHER_ + '</text>'
       + '<text x="150" y="72" class="bb-hrtext" text-anchor="middle">HOME RUN!!</text>'
       + '</svg></div>';
