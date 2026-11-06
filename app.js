@@ -34542,6 +34542,8 @@
   // バッターは打席ごとに 大谷笑平 → イテロー → 玉貞治 → 長嶋茂男 → 大谷笑平 …、ピッチャーは松江太郎(先生の指示)。
   var BB_BATTERS_ = ['大谷笑平', 'イテロー', '玉貞治', '長嶋茂男'];
   var BB_PITCHER_ = '松江太郎';
+  // チーム名(2026-11-07先生の指示)：あなたのチーム(青・後攻)と相手(赤・先攻)
+  var BB_HOME_TEAM_ = 'ブルーソックス', BB_AWAY_TEAM_ = '川越レッドヤンキース';
   // 左バッター(2026-11-07先生の指示)。左打席(ホームベースの右側)に立ち、内角・外角の向きも逆になる。
   var BB_LEFTY_ = { 'イテロー': true, '玉貞治': true };
   function bbBatter_(ab) { return BB_BATTERS_[((Number(ab) || 1) - 1) % BB_BATTERS_.length]; }
@@ -34637,9 +34639,10 @@
       + '<g class="bb-bat"><line x1="139" y1="176" x2="121" y2="146" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/></g>'
       + '</g>'
       // スコアボード
-      + '<g><rect x="4" y="4" width="118" height="34" rx="4" fill="#0f172a" opacity="0.92"/>'
-      + '<text x="10" y="17" font-size="10" font-weight="800" fill="#fde047">9回裏 ' + (Number(st.home) || 0) + '−' + (Number(st.away) || 3) + ' 2アウト' + (full ? '満塁' : '') + '</text>'
-      + '<text x="10" y="31" font-size="9.5" font-weight="800" fill="#fff">B' + bbLamps_(st.balls, 3, '#22c55e') + ' S' + bbLamps_(st.strikes, 2, '#facc15') + ' O' + bbLamps_(2, 2, '#ef4444') + '</text></g>'
+      + '<g><rect x="4" y="4" width="142" height="46" rx="4" fill="#0f172a" opacity="0.92"/>'
+      + '<text x="10" y="15" font-size="8.5" font-weight="800" fill="#fca5a5">' + BB_AWAY_TEAM_ + '</text><text x="140" y="15" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.away) || 3) + '</text>'
+      + '<text x="10" y="27" font-size="8.5" font-weight="800" fill="#93c5fd">' + BB_HOME_TEAM_ + '</text><text x="140" y="27" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.home) || 0) + '</text>'
+      + '<text x="10" y="44" font-size="8.5" font-weight="800" fill="#fde047">9回裏' + (full ? ' 満塁' : '') + ' <tspan fill="#fff">B' + bbLamps_(st.balls, 3, '#22c55e') + ' S' + bbLamps_(st.strikes, 2, '#facc15') + ' O' + bbLamps_(2, 2, '#ef4444') + '</tspan></text></g>'
       + '<text x="' + (lefty ? 175 : 125) + '" y="184" font-size="10" font-weight="900" fill="#fff" text-anchor="middle">1</text>'
       + '<text x="' + (lefty ? 190 : 66) + '" y="172" class="pk-tag">' + bbBatter_(st.ab) + '</text>'
       + '<text x="163" y="132" class="pk-tag bb-ptag">' + BB_PITCHER_ + '</text>'
@@ -34658,7 +34661,7 @@
     (r.pitches || []).slice(0, -1).forEach(function (p) { if (last && p.ab === last.ab) { if (p.res === 'ball') before.balls++; if (p.res === 'strike') before.strikes++; } });
     return bbHistHtml_(r.pitches)
       + bbSceneHtml_(before, last ? bbPitchCls_(last) + ' ' + bbHitCls_(last, r) : '', true)
-      + '<div class="pk-big ' + (r.win ? 'pk-win' : 'pk-lose') + '">' + (r.win ? '🎆 サヨナラ勝ち！！ ' + r.home + '−' + r.away : '😣 ゲームセット… ' + r.home + '−' + r.away) + '</div>'
+      + '<div class="pk-big ' + (r.win ? 'pk-win' : 'pk-lose') + '">' + (r.win ? '🎆 ' + BB_HOME_TEAM_ + 'のサヨナラ勝ち！！ ' + r.home + '−' + r.away : '😣 ゲームセット… ' + BB_AWAY_TEAM_ + 'の勝ち ' + r.home + '−' + r.away) + '</div>'
       + (last ? '<div class="gacha-line">' + bbEvText_(last, r) + '</div>' : '')
       + '<div class="gacha-mp">合計 ' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
       + '<div class="test-photo-hint">今日の試合は終わり（また明日）</div>' + again;
