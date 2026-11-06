@@ -33800,27 +33800,69 @@
   var GACHA_ENABLED_KINDS_ = ['dice', 'trivia'];
   function gachaKindOn_(kind) { return isAdminSession_() || GACHA_ENABLED_KINDS_.indexOf(kind) !== -1; }
   // ---- サッカーPKガチャ(2回勝負：①キック ②キーパー。相手の動きはサーバーで決める) ----
+  // 場面はSVGで描く(観客席・ゴール・ネット・キーパー・キッカー・ボール)。蹴った瞬間に
+  // キッカーが踏み込み、ボールが飛び、キーパーが横っ飛びする動きはCSSのtransitionで付ける。
   var PK_LABEL_ = { L: '左', C: '真ん中', R: '右' };
   var pkBusy_ = false;
-  // ゴールの絵：3つのわく(左・真ん中・右)に、ボール⚽とキーパー🧤を置く
-  function pkGoalHtml_(ball, keeper, anim) {
-    var h = '<div class="pk-goal' + (anim ? ' pk-anim' : '') + '">';
-    ['L', 'C', 'R'].forEach(function (d) {
-      var hit = ball === d && keeper === d;
-      h += '<div class="pk-zone' + (ball === d ? ' pk-ball-here' : '') + '">'
-        + (keeper === d ? '<span class="pk-keeper">🧤</span>' : '')
-        + (ball === d ? '<span class="pk-ball' + (hit ? ' pk-ball-stopped' : '') + '">⚽</span>' : '') + '</div>';
-    });
-    return h + '</div>';
+  // you: 'kicker'(①あなたが蹴る) / 'keeper'(②あなたが守る)。fin: 結果(nullなら蹴る前)
+  function pkSceneHtml_(you, fin, still) {
+    var myCol = '#2563eb', rivalCol = '#dc2626';
+    var keeperCol = you === 'keeper' ? '#16a34a' : '#f59e0b';
+    var kickerCol = you === 'kicker' ? myCol : rivalCol;
+    var cls = 'pk-scene' + (still ? ' pk-noanim' : '') + (fin ? ' ' + pkSceneClass_(fin) : ' pk-ready');
+    var crowd = '';
+    var cc = ['#f87171', '#60a5fa', '#fbbf24', '#f9fafb', '#a78bfa', '#34d399', '#fb923c'];
+    for (var i = 0; i < 46; i++) crowd += '<circle cx="' + (4 + i * 6.5) + '" cy="' + (8 + (i % 3) * 9) + '" r="3.2" fill="' + cc[(i * 5) % cc.length] + '"/>';
+    var tag = you === 'kicker'
+      ? '<text x="112" y="140" class="pk-tag">あなた</text>'
+      : '<text x="150" y="33" class="pk-tag" text-anchor="middle">あなた（キーパー）</text>';
+    return '<div class="' + cls + '"><svg viewBox="0 0 300 210" role="img" aria-label="PKの場面">'
+      + '<defs><pattern id="pkNet" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 0L7 7M7 0L0 7" stroke="#fff" stroke-width="0.6" opacity="0.75"/></pattern>'
+      + '<linearGradient id="pkSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#334155"/><stop offset="1" stop-color="#64748b"/></linearGradient></defs>'
+      + '<rect width="300" height="46" fill="url(#pkSky)"/>' + crowd
+      + '<rect y="44" width="300" height="166" fill="#15803d"/>'
+      + '<rect y="60" width="300" height="22" fill="#16a34a"/><rect y="104" width="300" height="24" fill="#16a34a"/><rect y="152" width="300" height="28" fill="#16a34a"/>'
+      + '<line x1="0" y1="125" x2="300" y2="125" stroke="#fff" stroke-width="1.5"/>'
+      + '<polyline points="72,125 58,148 242,148 228,125" fill="none" stroke="#fff" stroke-width="1.5"/>'
+      + '<circle cx="150" cy="182" r="2" fill="#fff"/>'
+      // ゴール(ネット・ポスト・バー)
+      + '<g class="pk-net"><rect x="56" y="40" width="188" height="85" fill="#0f172a" opacity="0.25"/><rect x="56" y="40" width="188" height="85" fill="url(#pkNet)"/></g>'
+      + '<rect x="52" y="36" width="5" height="90" fill="#fff"/><rect x="243" y="36" width="5" height="90" fill="#fff"/><rect x="52" y="36" width="196" height="5" fill="#fff"/>'
+      // キーパー
+      + '<g class="pk-keeper">'
+      + '<line x1="145" y1="104" x2="141" y2="122" stroke="#111827" stroke-width="5" stroke-linecap="round"/><line x1="155" y1="104" x2="159" y2="122" stroke="#111827" stroke-width="5" stroke-linecap="round"/>'
+      + '<rect x="140" y="98" width="20" height="9" rx="2" fill="#111827"/>'
+      + '<rect x="139" y="80" width="22" height="22" rx="5" fill="' + keeperCol + '"/>'
+      + '<line x1="141" y1="84" x2="127" y2="70" stroke="' + keeperCol + '" stroke-width="5" stroke-linecap="round"/><line x1="159" y1="84" x2="173" y2="70" stroke="' + keeperCol + '" stroke-width="5" stroke-linecap="round"/>'
+      + '<circle cx="125" cy="68" r="4.5" fill="#f8fafc" stroke="#94a3b8"/><circle cx="175" cy="68" r="4.5" fill="#f8fafc" stroke="#94a3b8"/>'
+      + '<circle cx="150" cy="72" r="7.5" fill="#f1c27d"/><path d="M142.5 70a7.5 7.5 0 0 1 15 0z" fill="#3f2a1d"/>'
+      + '</g>'
+      // ボール
+      + '<g class="pk-ballg"><circle cx="150" cy="177" r="9" fill="#fff" stroke="#111827" stroke-width="1.2"/><polygon points="150,172.5 154.3,175.6 152.6,180.6 147.4,180.6 145.7,175.6" fill="#111827"/></g>'
+      // キッカー(後ろ姿)
+      + '<g class="pk-kicker">'
+      + '<line x1="113" y1="188" x2="109" y2="208" stroke="#f1c27d" stroke-width="6" stroke-linecap="round"/><line x1="125" y1="188" x2="131" y2="207" stroke="#f1c27d" stroke-width="6" stroke-linecap="round"/>'
+      + '<rect x="106" y="180" width="26" height="11" rx="3" fill="#f8fafc"/>'
+      + '<rect x="104" y="156" width="30" height="28" rx="7" fill="' + kickerCol + '"/>'
+      + '<text x="119" y="177" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">10</text>'
+      + '<line x1="105" y1="161" x2="96" y2="180" stroke="' + kickerCol + '" stroke-width="6" stroke-linecap="round"/><line x1="133" y1="161" x2="142" y2="180" stroke="' + kickerCol + '" stroke-width="6" stroke-linecap="round"/>'
+      + '<circle cx="119" cy="147" r="10" fill="#3f2a1d"/>'
+      + '</g>'
+      + tag
+      + '</svg></div>';
   }
+  // 結果のクラス：ボールの行き先・キーパーの飛んだ方向・止めたかどうか
+  function pkSceneClass_(f) { return 'pk-go pk-ball-' + f.ball + ' pk-keep-' + f.keeper + (f.stopped ? ' pk-saved' : ' pk-goalin'); }
+  function pkKickFin_(r) { return { ball: r.kick, keeper: r.dive, stopped: !r.goal }; }
+  function pkKeepFin_(r) { return { ball: r.shot, keeper: r.keep, stopped: !!r.saved }; }
   function pkKickResultHtml_(r) {
-    return '<div class="gacha-line"><b>①キック</b>：あなたは<b>' + PK_LABEL_[r.kick] + '</b>へシュート！キーパーは' + PK_LABEL_[r.dive] + 'へ。</div>'
-      + pkGoalHtml_(r.kick, r.dive)
-      + (r.goal ? '<div class="pk-big pk-win">⚽ ゴール！！ +5MP</div>' : '<div class="pk-big pk-lose">🧤 止められた…</div>');
+    return '<div class="gacha-line"><b>①キック</b>：あなたは<b>' + PK_LABEL_[r.kick] + '</b>へシュート！キーパーは' + PK_LABEL_[r.dive] + 'へ飛んだ！</div>'
+      + pkSceneHtml_('kicker', pkKickFin_(r), true)
+      + (r.goal ? '<div class="pk-big pk-win">⚽ ゴーーール！！ +5MP</div>' : '<div class="pk-big pk-lose">🧤 キーパーに止められた…</div>');
   }
   function pkKeepResultHtml_(r) {
-    return '<div class="gacha-line"><b>②キーパー</b>：あなたは<b>' + PK_LABEL_[r.keep] + '</b>を守った！相手は' + PK_LABEL_[r.shot] + 'へシュート。</div>'
-      + pkGoalHtml_(r.shot, r.keep)
+    return '<div class="gacha-line"><b>②キーパー</b>：あなたは<b>' + PK_LABEL_[r.keep] + '</b>へ飛んだ！相手のシュートは' + PK_LABEL_[r.shot] + '！</div>'
+      + pkSceneHtml_('keeper', pkKeepFin_(r), true)
       + (r.saved ? '<div class="pk-big pk-win">🧤 ナイスセーブ！！ +5MP</div>' : '<div class="pk-big pk-lose">⚽ 決められた…</div>');
   }
   function pkRender_(card) {
@@ -33831,9 +33873,9 @@
       return '<div class="gacha-line">' + label + '</div><div class="pk-btns">'
         + ['L', 'C', 'R'].map(function (d) { return '<button type="button" class="ghost-btn pk-btn" data-pk="' + kind + '" data-dir="' + d + '"' + (pkBusy_ ? ' disabled' : '') + '>' + (d === 'L' ? '⬅️ ' : d === 'C' ? '⬆️ ' : '➡️ ') + PK_LABEL_[d] + '</button>'; }).join('') + '</div>';
     };
-    if (!r) { out.innerHTML = pkGoalHtml_(null, 'C'); ch.innerHTML = btns('kick', '<b>①キッカー</b>：どこにシュートする？'); return; }
-    if (!r.keep) { out.innerHTML = pkKickResultHtml_(r); ch.innerHTML = btns('keep', '<b>②キーパー</b>：相手はどこに蹴ってくる？守る場所を選んでね'); return; }
-    out.innerHTML = pkKickResultHtml_(r) + pkKeepResultHtml_(r)
+    if (!r) { out.innerHTML = pkSceneHtml_('kicker', null, false); ch.innerHTML = btns('kick', '<b>①キッカー</b>：どこにシュートする？'); return; }
+    if (!r.keep) { out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkSceneHtml_('keeper', null, false); ch.innerHTML = btns('keep', '<b>②キーパー</b>：相手はどこに蹴ってくる？飛ぶ方向を選んでね'); return; }
+    out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkKeepResultHtml_(r)
       + '<div class="gacha-mp">合計 +' + (Number(t.mp) || 0) + 'MP</div><div class="test-photo-hint">今日のPKは終わり（また明日）</div>';
     ch.innerHTML = '';
   }
@@ -33847,27 +33889,34 @@
     var card = els.gachaPanel.querySelector('[data-gacha="pk"]');
     var out = card.querySelector('.gacha-out');
     out.setAttribute('data-anim', '1');
-    var prevHtml = step === 'keep' ? pkKickResultHtml_(t.result) : '';
-    out.innerHTML = prevHtml + '<div class="pk-big">' + (step === 'kick' ? '⚽ ' + PK_LABEL_[dir] + 'へシュート…！' : '🧤 ' + PK_LABEL_[dir] + 'を守る…！') + '</div>' + pkGoalHtml_(null, step === 'kick' ? 'C' : dir, true);
+    out.innerHTML = (step === 'keep' ? pkKickResultHtml_(t.result) + '<div class="pk-sep"></div>' : '')
+      + '<div class="pk-big">' + (step === 'kick' ? '⚽ ' + PK_LABEL_[dir] + 'をねらって…' : '🧤 ' + PK_LABEL_[dir] + 'に飛ぶぞ…！') + '</div>'
+      + pkSceneHtml_(step === 'kick' ? 'kicker' : 'keeper', null, false);
     card.querySelector('.pk-choices').innerHTML = '';
     var started = Date.now();
-    var finish = function (msg) {
+    var done = function (msg) { out.removeAttribute('data-anim'); pkBusy_ = false; renderGacha_(); if (msg) card.querySelector('.pk-choices').insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
+    // 結果が来たら、蹴る→ボールが飛ぶ→キーパーが飛ぶ動きを見せてから結果を出す
+    var play = function (fin) {
       setTimeout(function () {
-        out.removeAttribute('data-anim');
-        pkBusy_ = false;
-        renderGacha_();
-        if (msg) card.querySelector('.pk-choices').insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>');
-      }, Math.max(0, 1300 - (Date.now() - started)));
+        var scenes = out.querySelectorAll('.pk-scene'), sc = scenes[scenes.length - 1];
+        if (sc) {
+          sc.classList.remove('pk-ready');
+          void sc.offsetWidth;
+          pkSceneClass_(fin).split(' ').forEach(function (c) { sc.classList.add(c); });
+        }
+        setTimeout(function () { done(''); }, 1900);
+      }, Math.max(0, 700 - (Date.now() - started)));
     };
     var req = step === 'kick' ? apiPost('gachaDraw', { id: session.id, kind: 'pk', kick: dir }) : apiPost('gachaPkKeep', { id: session.id, keep: dir });
     req.then(function (res) {
+      var r2 = res && (res.ok ? res.result : res.prev && res.prev.result);
       if (res && res.ok) {
         gacha_.today.pk = { result: res.result, mp: res.mp };
         if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
-        finish('');
-      } else if (res && res.prev) { gacha_.today.pk = res.prev; finish(''); }
-      else finish('できませんでした。もう一度お試しください。');
-    }).catch(function () { finish('通信に失敗しました。もう一度お試しください。'); });
+      } else if (res && res.prev) gacha_.today.pk = res.prev;
+      if (r2 && (step === 'kick' ? r2.kick : r2.keep)) play(step === 'kick' ? pkKickFin_(r2) : pkKeepFin_(r2));
+      else done('できませんでした。もう一度お試しください。');
+    }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
   function renderGacha_() {
     Array.prototype.forEach.call(els.gachaPanel.querySelectorAll('[data-gacha]'), function (card) {

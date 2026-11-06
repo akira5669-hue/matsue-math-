@@ -2556,13 +2556,36 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .ken-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
 /* サッカーPKガチャ */
-.pk-goal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 6px auto; max-width: 260px; border: 4px solid #fff; border-bottom: none; outline: 2px solid #94a3b8; background: repeating-linear-gradient(45deg, #e2e8f0 0 6px, #f8fafc 6px 12px); border-radius: 4px 4px 0 0; }
-.pk-zone { height: 64px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 1.8rem; border-right: 1px dashed #cbd5e1; }
-.pk-zone:last-child { border-right: none; }
-.pk-keeper { font-size: 2rem; }
-.pk-ball { position: absolute; font-size: 1.5rem; }
-.pk-ball-stopped { opacity: 0.7; transform: translateY(14px); }
-.pk-anim .pk-keeper { animation: gachaShake 0.24s ease-in-out infinite; }
+.pk-scene { max-width: 340px; width: 100%; margin: 6px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+.pk-scene svg { display: block; width: 100%; height: auto; }
+.pk-scene .pk-keeper, .pk-scene .pk-ballg, .pk-scene .pk-kicker, .pk-scene .pk-net { transform-box: fill-box; }
+.pk-scene .pk-keeper { transform-origin: 50% 50%; transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) 0.35s; }
+.pk-scene .pk-ballg { transform-origin: 50% 50%; transition: transform 0.75s cubic-bezier(0.15, 0.7, 0.35, 1) 0.28s; }
+.pk-scene .pk-kicker { transition: transform 0.3s ease-out; }
+.pk-scene .pk-net { transform-origin: 50% 0; }
+.pk-tag { font-size: 11px; font-weight: 900; fill: #fde047; stroke: #1e293b; stroke-width: 3px; paint-order: stroke; }
+/* 蹴る前：キーパーは左右にゆれて構える */
+.pk-ready .pk-keeper { animation: pkSway 0.9s ease-in-out infinite alternate; }
+@keyframes pkSway { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
+/* 蹴った：キッカーが踏み込む */
+.pk-go .pk-kicker { transform: translate(16px, -10px) scale(0.94); }
+/* キーパーが飛ぶ方向 */
+.pk-keep-L .pk-keeper { transform: translate(-58px, -6px) rotate(-62deg); }
+.pk-keep-R .pk-keeper { transform: translate(58px, -6px) rotate(62deg); }
+.pk-keep-C .pk-keeper { transform: translateY(-14px); }
+/* ボールの行き先(ゴールに入る) */
+.pk-ball-L .pk-ballg { transform: translate(-72px, -104px) scale(0.85); }
+.pk-ball-C .pk-ballg { transform: translate(0, -112px) scale(0.85); }
+.pk-ball-R .pk-ballg { transform: translate(72px, -104px) scale(0.85); }
+/* 止めた：ボールはキーパーの手前で止まる */
+.pk-saved.pk-ball-L .pk-ballg { transform: translate(-58px, -88px) scale(0.9); }
+.pk-saved.pk-ball-C .pk-ballg { transform: translate(0, -96px) scale(0.9); }
+.pk-saved.pk-ball-R .pk-ballg { transform: translate(58px, -88px) scale(0.9); }
+/* ゴール：ネットがゆれる */
+.pk-goalin .pk-net { animation: pkNet 0.35s ease-in-out 1s 3; }
+@keyframes pkNet { 50% { transform: scale(1.03, 1.06); } }
+.pk-noanim .pk-keeper, .pk-noanim .pk-ballg, .pk-noanim .pk-kicker, .pk-noanim .pk-net { transition: none !important; animation: none !important; }
+.pk-sep { border-top: 1px dashed #fcd34d; margin: 8px 0; }
 .pk-big { font-weight: 800; font-size: 1.1rem; }
 .pk-win { color: #16a34a; }
 .pk-lose { color: #64748b; }
