@@ -33799,11 +33799,82 @@
   // 生徒が引けるガチャの種類(2026-11-03〜サイコロ、11-04〜豆知識も。00001は全部試せる。ほかは残しておき、ここに足せば復活する)。gacha.jsのENABLED_KINDSと揃えること。
   var GACHA_ENABLED_KINDS_ = ['dice', 'trivia'];
   function gachaKindOn_(kind) { return isAdminSession_() || GACHA_ENABLED_KINDS_.indexOf(kind) !== -1; }
+  // ---- サッカーPKガチャ(2回勝負：①キック ②キーパー。相手の動きはサーバーで決める) ----
+  var PK_LABEL_ = { L: '左', C: '真ん中', R: '右' };
+  var pkBusy_ = false;
+  // ゴールの絵：3つのわく(左・真ん中・右)に、ボール⚽とキーパー🧤を置く
+  function pkGoalHtml_(ball, keeper, anim) {
+    var h = '<div class="pk-goal' + (anim ? ' pk-anim' : '') + '">';
+    ['L', 'C', 'R'].forEach(function (d) {
+      var hit = ball === d && keeper === d;
+      h += '<div class="pk-zone' + (ball === d ? ' pk-ball-here' : '') + '">'
+        + (keeper === d ? '<span class="pk-keeper">🧤</span>' : '')
+        + (ball === d ? '<span class="pk-ball' + (hit ? ' pk-ball-stopped' : '') + '">⚽</span>' : '') + '</div>';
+    });
+    return h + '</div>';
+  }
+  function pkKickResultHtml_(r) {
+    return '<div class="gacha-line"><b>①キック</b>：あなたは<b>' + PK_LABEL_[r.kick] + '</b>へシュート！キーパーは' + PK_LABEL_[r.dive] + 'へ。</div>'
+      + pkGoalHtml_(r.kick, r.dive)
+      + (r.goal ? '<div class="pk-big pk-win">⚽ ゴール！！ +5MP</div>' : '<div class="pk-big pk-lose">🧤 止められた…</div>');
+  }
+  function pkKeepResultHtml_(r) {
+    return '<div class="gacha-line"><b>②キーパー</b>：あなたは<b>' + PK_LABEL_[r.keep] + '</b>を守った！相手は' + PK_LABEL_[r.shot] + 'へシュート。</div>'
+      + pkGoalHtml_(r.shot, r.keep)
+      + (r.saved ? '<div class="pk-big pk-win">🧤 ナイスセーブ！！ +5MP</div>' : '<div class="pk-big pk-lose">⚽ 決められた…</div>');
+  }
+  function pkRender_(card) {
+    var out = card.querySelector('.gacha-out'), ch = card.querySelector('.pk-choices');
+    var t = gacha_.today.pk, r = t && t.result;
+    if (out.getAttribute('data-anim')) { ch.innerHTML = ''; return; }
+    var btns = function (kind, label) {
+      return '<div class="gacha-line">' + label + '</div><div class="pk-btns">'
+        + ['L', 'C', 'R'].map(function (d) { return '<button type="button" class="ghost-btn pk-btn" data-pk="' + kind + '" data-dir="' + d + '"' + (pkBusy_ ? ' disabled' : '') + '>' + (d === 'L' ? '⬅️ ' : d === 'C' ? '⬆️ ' : '➡️ ') + PK_LABEL_[d] + '</button>'; }).join('') + '</div>';
+    };
+    if (!r) { out.innerHTML = pkGoalHtml_(null, 'C'); ch.innerHTML = btns('kick', '<b>①キッカー</b>：どこにシュートする？'); return; }
+    if (!r.keep) { out.innerHTML = pkKickResultHtml_(r); ch.innerHTML = btns('keep', '<b>②キーパー</b>：相手はどこに蹴ってくる？守る場所を選んでね'); return; }
+    out.innerHTML = pkKickResultHtml_(r) + pkKeepResultHtml_(r)
+      + '<div class="gacha-mp">合計 +' + (Number(t.mp) || 0) + 'MP</div><div class="test-photo-hint">今日のPKは終わり（また明日）</div>';
+    ch.innerHTML = '';
+  }
+  function pkPlay_(step, dir) {
+    var session = loadSession();
+    if (!session || !session.id || pkBusy_ || !gachaKindOn_('pk')) return;
+    var t = gacha_.today.pk;
+    if (step === 'kick' && t) return;
+    if (step === 'keep' && (!t || !t.result || t.result.keep)) return;
+    pkBusy_ = true;
+    var card = els.gachaPanel.querySelector('[data-gacha="pk"]');
+    var out = card.querySelector('.gacha-out');
+    out.setAttribute('data-anim', '1');
+    var prevHtml = step === 'keep' ? pkKickResultHtml_(t.result) : '';
+    out.innerHTML = prevHtml + '<div class="pk-big">' + (step === 'kick' ? '⚽ ' + PK_LABEL_[dir] + 'へシュート…！' : '🧤 ' + PK_LABEL_[dir] + 'を守る…！') + '</div>' + pkGoalHtml_(null, step === 'kick' ? 'C' : dir, true);
+    card.querySelector('.pk-choices').innerHTML = '';
+    var started = Date.now();
+    var finish = function (msg) {
+      setTimeout(function () {
+        out.removeAttribute('data-anim');
+        pkBusy_ = false;
+        renderGacha_();
+        if (msg) card.querySelector('.pk-choices').insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>');
+      }, Math.max(0, 1300 - (Date.now() - started)));
+    };
+    var req = step === 'kick' ? apiPost('gachaDraw', { id: session.id, kind: 'pk', kick: dir }) : apiPost('gachaPkKeep', { id: session.id, keep: dir });
+    req.then(function (res) {
+      if (res && res.ok) {
+        gacha_.today.pk = { result: res.result, mp: res.mp };
+        if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+        finish('');
+      } else if (res && res.prev) { gacha_.today.pk = res.prev; finish(''); }
+      else finish('できませんでした。もう一度お試しください。');
+    }).catch(function () { finish('通信に失敗しました。もう一度お試しください。'); });
+  }
   function renderGacha_() {
     Array.prototype.forEach.call(els.gachaPanel.querySelectorAll('[data-gacha]'), function (card) {
       var kind = card.getAttribute('data-gacha');
       card.hidden = !gachaKindOn_(kind);
       if (card.hidden) return;
+      if (kind === 'pk') { pkRender_(card); return; }
       var done = gacha_.today[kind];
       var btn = card.querySelector('.gacha-btn');
       var out = card.querySelector('.gacha-out');
@@ -33872,6 +33943,8 @@
     els.gachaToggle.addEventListener('click', toggleGacha);
     els.gachaPanel.addEventListener('click', function (e) {
       var card = e.target.closest('[data-gacha]');
+      var pkb = e.target.closest('[data-pk]');
+      if (pkb) { pkPlay_(pkb.getAttribute('data-pk'), pkb.getAttribute('data-dir')); return; }
       if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));
     });
     // ほかのボタンで別の画面を開いたら、ガチャは閉じる。
