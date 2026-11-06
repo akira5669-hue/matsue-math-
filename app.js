@@ -22065,6 +22065,7 @@
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
+    var kokoTg = document.getElementById('kokoToggle'); if (kokoTg) kokoTg.hidden = !kokoVisible_();
     if (els.zukeiToggle) { els.zukeiToggle.hidden = !zukeiVisible_(); if (els.zukeiToggle.hidden && els.zukeiPanel) els.zukeiPanel.setAttribute('hidden', ''); }
     renderTrainingUi_();
     const isBossFight = !!state.worldBossActiveStage;
@@ -32185,11 +32186,13 @@
   var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, sel: null, mode: 'zukei' };
   var ZK_MODE_TEXT_ = {
     zukei: { heading: '🧊 超絶！図形！トレーニング！！', hint: '新！図形問題！キャンペーン！ 「平面図形」（回転と裏返し・対称な図形・角度・方眼の面積）と「空間図形」（積み木・見え方・展開図・回転体）で、図形の力をきたえよう！やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（🎓中学受験問題！とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
-    juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' }
+    juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
+    koko: { heading: '🏫 高校受験問題！数学', hint: '高校入試によく出る問題（計算・方程式・関数・円周角・三平方の定理・確率）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（図形トレーニング・中学受験問題とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' }
   };
-  // 今のモードで出す種類(中学受験問題！はjukenグループだけ、図形トレーニングはそれ以外)。
-  function zkModeTypes_() { return ZK_TYPES_.filter(function (t) { return (t.group === 'juken') === (zukei_.mode === 'juken'); }); }
-  function zkModeGroups_() { return ZK_GROUPS_.filter(function (g) { return (g.id === 'juken') === (zukei_.mode === 'juken'); }); }
+  // 今のモードで出す種類(中学受験問題！はjukenグループだけ、高校受験問題！はkokoグループだけ、図形トレーニングはそれ以外)。
+  function zkGroupMode_(g) { return g === 'juken' || g === 'koko' ? g : 'zukei'; }
+  function zkModeTypes_() { return ZK_TYPES_.filter(function (t) { return zkGroupMode_(t.group) === zukei_.mode; }); }
+  function zkModeGroups_() { return ZK_GROUPS_.filter(function (g) { return zkGroupMode_(g.id) === zukei_.mode; }); }
   function zukeiVisible_() { return isAdminSession_() || (ZUKEI_OPEN_ALL_ && todayKey() >= ZUKEI_START_); }
   function zukeiIsJunior_() {
     var s = loadSession();
@@ -33443,6 +33446,318 @@
     };
   }
 
+  // ===== 🏫 高校受験問題！数学(2026-11-06〜、今は00001だけ) =====
+  // 公立高校入試でよく出る形：①計算(平方根・正負の数・因数分解) ②方程式(連立・2次) ③関数(y=ax²・1次関数)
+  // ④円周角 ⑤三平方の定理 ⑥確率。数字は毎回ランダム。答えたあとに解説。
+  var KOKO_OPEN_ALL_ = false;
+  function kokoVisible_() { return isAdminSession_() || KOKO_OPEN_ALL_; }
+  function kkSqrtSplit_(n) { var k = 1, m = n; for (var i = 2; i * i <= m; i++) while (m % (i * i) === 0) { m /= i * i; k *= i; } return [k, m]; }
+  // k√m の形の文字(m=1なら整数)。kは負でもよい。
+  function kkRootStr_(k, m) {
+    if (k === 0) return '0';
+    var s = k < 0 ? '−' : '', a = Math.abs(k);
+    return m === 1 ? s + a : s + (a === 1 ? '' : a) + '√' + m;
+  }
+  function kkSqrtOf_(n) { var r = kkSqrtSplit_(n); return kkRootStr_(r[0], r[1]); }
+  function kkNeg_(v) { return v < 0 ? '−' + (-v) : String(v); }
+  function kkPar_(v) { return v < 0 ? '(−' + (-v) + ')' : String(v); }
+  // 式の中の項：「＋ 3x」「− x」など。firstなら先頭(＋を書かない)。
+  function kkTerm_(c, v, first) {
+    if (c === 0) return '';
+    var a = Math.abs(c), body = (v && a === 1 ? '' : a) + (v || '');
+    return first ? (c < 0 ? '−' : '') + body : (c < 0 ? ' − ' : ' ＋ ') + body;
+  }
+  // 分数(約分ずみ)。dは正。整数になれば整数。
+  function kkFrac_(n, d) {
+    var g = zkGcd_(n, d) || 1; n /= g; d /= g;
+    if (d < 0) { n = -n; d = -d; }
+    if (d === 1) return kkNeg_(n);
+    return (n < 0 ? '−' : '') + zkFrac_(Math.abs(n), d);
+  }
+  function kkChoices_(right, wrongs, extra) {
+    var opts = [right];
+    zkShuffle_(wrongs).forEach(function (w) { if (opts.length < 4 && w && opts.indexOf(w) === -1) opts.push(w); });
+    for (var i = 1; opts.length < 4 && extra && i < 40; i++) { var w = extra(i); if (w && opts.indexOf(w) === -1) opts.push(w); }
+    return zkShuffle_(opts).map(function (o) { return { html: o, ok: o === right }; });
+  }
+  function kkNz_(lo, hi) { var v = 0; while (v === 0) v = randInt(lo, hi); return v; }
+
+  // ---- 🏫① 計算 ----
+  function kkMakeCalcQ_() {
+    var kind = randInt(0, 2), text, right, wrongs, explain, extra;
+    if (kind === 0) {
+      // 平方根のたし算・ひき算：√(p²m) ± √(q²m)
+      var m = [2, 3, 5, 6, 7][randInt(0, 4)], p = randInt(2, 5), q = randInt(1, 4);
+      while (q === p) q = randInt(1, 4);
+      var plus = Math.random() < 0.5, r = plus ? p + q : p - q;
+      var A = p * p * m, B = q * q * m;
+      text = '次の計算をしよう。<div class="zk-calc">√' + A + (plus ? ' ＋ ' : ' − ') + '√' + B + '</div>';
+      right = kkRootStr_(r, m);
+      wrongs = [kkSqrtOf_(plus ? A + B : Math.abs(A - B)) + '', kkRootStr_(plus ? p - q : p + q, m), kkRootStr_(r, m * 2), kkRootStr_(-r, m), String(r * m)];
+      extra = function (i) { return kkRootStr_(r + i, m); };
+      explain = zkEx_('√の中を「2乗の数 × ほかの数」に分けて、a√b の形にしてから計算するよ。√の中どうしをたしたりひいたりはできない！',
+        ['√' + A + ' ＝ √(' + (p * p) + '×' + m + ') ＝ ' + kkRootStr_(p, m), '√' + B + ' ＝ ' + (q === 1 ? '√' + m : '√(' + (q * q) + '×' + m + ') ＝ ' + kkRootStr_(q, m)),
+          kkRootStr_(p, m) + (plus ? ' ＋ ' : ' − ') + kkRootStr_(q, m).replace(/^1√/, '√') + ' ＝ (' + p + (plus ? '＋' : '−') + q + ')√' + m + ' ＝ ' + right], right);
+    } else if (kind === 1) {
+      // 正負の数：−a² ＋ b × (−c)  (−a² と (−a)² のちがいがポイント)
+      var a = randInt(2, 5), b = randInt(2, 6), c = randInt(2, 6), sq = Math.random() < 0.5;
+      var first = sq ? -a * a : a * a, ans = first - b * c;
+      text = '次の計算をしよう。<div class="zk-calc">' + (sq ? '−' + a + '<sup>2</sup>' : '(−' + a + ')<sup>2</sup>') + ' ＋ ' + b + ' × (−' + c + ')</div>';
+      right = kkNeg_(ans);
+      wrongs = [kkNeg_(-first - b * c), kkNeg_(first + b * c), kkNeg_((first + b) * -c), kkNeg_(-ans), kkNeg_(first - b - c)];
+      extra = function (i) { return kkNeg_(ans + i); };
+      explain = zkEx_('かけ算・累乗(2乗)を先に計算してから、たし算をするよ。' + (sq ? '−' + a + '<sup>2</sup> は「' + a + 'の2乗にマイナス」で −(' + a + '×' + a + ')。' : '(−' + a + ')<sup>2</sup> は「−' + a + 'を2回かける」ので ＋になる。'),
+        [(sq ? '−' + a + '<sup>2</sup> ＝ −(' + a + '×' + a + ') ＝ ' : '(−' + a + ')<sup>2</sup> ＝ (−' + a + ')×(−' + a + ') ＝ ') + kkNeg_(first), b + ' × (−' + c + ') ＝ −' + (b * c), kkNeg_(first) + ' ＋ (−' + (b * c) + ') ＝ ' + right], right);
+    } else {
+      // 因数分解：x² ＋ (a＋b)x ＋ ab
+      var u, v;
+      do { u = kkNz_(-7, 7); v = kkNz_(-7, 7); } while (u === v || u + v === 0);
+      if (u < v) { var t = u; u = v; v = t; }
+      var S = u + v, P = u * v;
+      var bin = function (z) { return '(x' + (z < 0 ? ' − ' + (-z) : ' ＋ ' + z) + ')'; };
+      var fac = function (z, w) { return z > w ? bin(z) + bin(w) : bin(w) + bin(z); };
+      text = '次の式を因数分解しよう。<div class="zk-calc">x<sup>2</sup>' + kkTerm_(S, 'x') + kkTerm_(P, '') + '</div>';
+      right = fac(u, v);
+      wrongs = [fac(-u, -v), fac(u, -v), fac(-u, v)];
+      // 積が同じでたすと違う組
+      for (var d = 1; d <= Math.abs(P); d++) if (P % d === 0) { var e = P / d; [[d, e], [-d, -e]].forEach(function (pr) { if (pr[0] + pr[1] !== S && pr[0] !== pr[1]) wrongs.push(fac(pr[0], pr[1])); }); }
+      explain = zkEx_('x<sup>2</sup> ＋ (a＋b)x ＋ ab ＝ (x＋a)(x＋b)。「かけて ' + kkNeg_(P) + '、たして ' + kkNeg_(S) + '」になる2つの数をさがすよ。',
+        ['かけて ' + kkNeg_(P) + ' になる2つの数の組を考える。', 'その中で、たして ' + kkNeg_(S) + ' になるのは ' + kkNeg_(u) + ' と ' + kkNeg_(v) + '。', 'だから ' + right], right);
+    }
+    return { title: '🏫① 計算', text: text, figure: '', choices: kkChoices_(right, wrongs, extra), explain: explain };
+  }
+
+  // ---- 🏫② 方程式 ----
+  function kkMakeEqQ_() {
+    var kind = randInt(0, 2), text, right, wrongs, explain, extra;
+    if (kind === 0) {
+      // 連立方程式(答えは整数)
+      var X, Y, a1, b1, a2, b2;
+      do {
+        X = kkNz_(-5, 6); Y = kkNz_(-5, 6);
+        a1 = randInt(1, 5); b1 = kkNz_(-4, 5); a2 = kkNz_(-3, 5); b2 = kkNz_(-4, 5);
+      } while (X === Y || X === -Y || a1 * b2 - a2 * b1 === 0 || Math.abs(b1) === Math.abs(b2));
+      var c1 = a1 * X + b1 * Y, c2 = a2 * X + b2 * Y;
+      var eq = function (a, b, c) { return kkTerm_(a, 'x', true) + kkTerm_(b, 'y') + ' ＝ ' + kkNeg_(c); };
+      var ans = function (x, y) { return 'x ＝ ' + kkNeg_(x) + '、y ＝ ' + kkNeg_(y); };
+      text = '次の連立方程式を解こう。<div class="zk-calc">' + eq(a1, b1, c1) + '<br>' + eq(a2, b2, c2) + '</div>';
+      right = ans(X, Y);
+      wrongs = [ans(Y, X), ans(-X, Y), ans(X, -Y), ans(-X, -Y), ans(X + 1, Y), ans(X, Y - 1)];
+      var D = a1 * b2 - a2 * b1;
+      explain = zkEx_('加減法：yの係数をそろえて、2つの式をひくとyが消えるよ。',
+        ['上の式を ' + kkPar_(b2) + ' 倍、下の式を ' + kkPar_(b1) + ' 倍すると、yの係数がどちらも ' + kkNeg_(b1 * b2) + ' になる。',
+          '上 − 下 で y が消えて、' + kkNeg_(D) + 'x ＝ ' + kkNeg_(c1 * b2 - c2 * b1) + '　だから x ＝ ' + kkNeg_(X),
+          'x ＝ ' + kkNeg_(X) + ' を上の式に入れて、' + kkNeg_(a1 * X) + kkTerm_(b1, 'y') + ' ＝ ' + kkNeg_(c1) + '　だから y ＝ ' + kkNeg_(Y),
+          '確かめ：下の式にも入れると ' + kkNeg_(a2 * X) + ' ＋ ' + kkPar_(b2 * Y) + ' ＝ ' + kkNeg_(c2) + ' で合っている。'], right);
+    } else if (kind === 1) {
+      // 2次方程式(因数分解で解ける)
+      var r1, r2;
+      do { r1 = kkNz_(-7, 7); r2 = kkNz_(-7, 7); } while (r1 === r2 || r1 + r2 === 0);
+      var lo = Math.min(r1, r2), hi = Math.max(r1, r2), S2 = -(r1 + r2), P2 = r1 * r2;
+      var sol = function (p, q) { return 'x ＝ ' + kkNeg_(Math.min(p, q)) + '、' + kkNeg_(Math.max(p, q)); };
+      var bin2 = function (z) { return '(x' + (z < 0 ? ' ＋ ' + (-z) : ' − ' + z) + ')'; };
+      text = '次の2次方程式を解こう。<div class="zk-calc">x<sup>2</sup>' + kkTerm_(S2, 'x') + kkTerm_(P2, '') + ' ＝ 0</div>';
+      right = sol(lo, hi);
+      wrongs = [sol(-lo, -hi), sol(lo, -hi), sol(-lo, hi), sol(lo + 1, hi), sol(lo, hi - 1)];
+      explain = zkEx_('左の式を因数分解して「(x − ○)(x − △) ＝ 0」の形にすると、x ＝ ○ か x ＝ △。',
+        ['かけて ' + kkNeg_(P2) + '、たして ' + kkNeg_(S2) + ' になる2つの数は ' + kkNeg_(-r1) + ' と ' + kkNeg_(-r2) + '。',
+          'だから ' + bin2(lo) + bin2(hi) + ' ＝ 0', 'どちらかのかっこが0になればよいので、' + right, '注意：かっこの中の符号と、答えの符号は逆になるよ。'], right);
+    } else {
+      // 2次方程式(解の公式)
+      var b, c, Dd;
+      do { b = [1, 3, 5][randInt(0, 2)] * (Math.random() < 0.5 ? 1 : -1); c = kkNz_(-4, 3); Dd = b * b - 4 * c; } while (Dd <= 0 || kkSqrtSplit_(Dd)[1] === 1);
+      var sp = kkSqrtSplit_(Dd), rt = kkRootStr_(sp[0], sp[1]);
+      var form = function (top, den) { return 'x ＝ ' + zkFrac_(top, den); };
+      text = '次の2次方程式を、解の公式を使って解こう。<div class="zk-calc">x<sup>2</sup>' + kkTerm_(b, 'x') + kkTerm_(c, '') + ' ＝ 0</div>';
+      right = form(kkNeg_(-b) + ' ± ' + rt, 2);
+      var D2 = b * b + 4 * c;
+      wrongs = [form(kkNeg_(b) + ' ± ' + rt, 2), D2 > 0 ? form(kkNeg_(-b) + ' ± ' + kkSqrtOf_(D2), 2) : '', form(kkNeg_(-b) + ' ± ' + rt, 4), form(kkNeg_(-b) + ' ± ' + kkSqrtOf_(b * b + 4), 2)];
+      extra = function (i) { return form(kkNeg_(-b) + ' ± ' + kkSqrtOf_(Dd + 4 * i), 2); };
+      explain = zkEx_('ax<sup>2</sup> ＋ bx ＋ c ＝ 0 の解は x ＝ ' + zkFrac_('−b ± √(b<sup>2</sup> − 4ac)', '2a') + '（解の公式）',
+        ['a ＝ 1、b ＝ ' + kkNeg_(b) + '、c ＝ ' + kkNeg_(c) + ' を入れる。', '√の中：b<sup>2</sup> − 4ac ＝ ' + kkPar_(b) + '<sup>2</sup> − 4×1×' + kkPar_(c) + ' ＝ ' + Dd,
+          sp[0] > 1 ? '√' + Dd + ' ＝ ' + rt : '', '分母は 2a ＝ 2。だから ' + right], right);
+    }
+    return { title: '🏫② 方程式', text: text, figure: '', choices: kkChoices_(right, wrongs, extra), explain: explain };
+  }
+
+  // ---- 🏫③ 関数 ----
+  function kkMakeFuncQ_() {
+    var kind = randInt(0, 2), text, right, wrongs, explain, extra;
+    if (kind === 0) {
+      // y ＝ ax² が点(p, q)を通る → a
+      var dn = [1, 2, 3][randInt(0, 2)], nn = kkNz_(-3, 3);
+      while (zkGcd_(nn, dn) !== 1) nn = kkNz_(-3, 3);
+      var p = dn * kkNz_(-2, 2) * (dn === 1 ? randInt(1, 2) : 1), q = nn * p * p / dn;
+      text = '関数 y ＝ ax<sup>2</sup> のグラフが、点 (' + kkNeg_(p) + ', ' + kkNeg_(q) + ') を通るよ。a の値は？';
+      right = kkFrac_(nn, dn);
+      wrongs = [kkFrac_(-nn, dn), kkFrac_(q, p), kkFrac_(dn, nn), kkFrac_(q, 2 * p), kkFrac_(nn * 2, dn)];
+      extra = function (i) { return kkFrac_(nn + i * dn, dn); };
+      explain = zkEx_('グラフが点を通る ＝ その点の x、y を式に入れると成り立つ。',
+        ['y ＝ ax<sup>2</sup> に x ＝ ' + kkNeg_(p) + '、y ＝ ' + kkNeg_(q) + ' を入れる。', kkNeg_(q) + ' ＝ a × ' + kkPar_(p) + '<sup>2</sup> ＝ ' + (p * p) + 'a', 'a ＝ ' + kkNeg_(q) + ' ÷ ' + (p * p) + ' ＝ ' + right], right);
+    } else if (kind === 1) {
+      // y ＝ ax² の変化の割合
+      var a = kkNz_(-3, 3), x1 = randInt(-4, 3), x2 = randInt(x1 + 1, 6);
+      while (x1 + x2 === 0) x2 = randInt(x1 + 1, 6);
+      var ans = a * (x1 + x2), y1 = a * x1 * x1, y2 = a * x2 * x2;
+      var fn = 'y ＝ ' + (a === 1 ? '' : a === -1 ? '−' : kkNeg_(a)) + 'x<sup>2</sup>';
+      text = '関数 ' + fn + ' で、x の値が ' + kkNeg_(x1) + ' から ' + kkNeg_(x2) + ' まで増えるときの<b>変化の割合</b>は？';
+      right = kkNeg_(ans);
+      wrongs = [kkNeg_(a * (x2 - x1)), kkNeg_(y2 - y1), kkNeg_(-ans), kkNeg_(2 * a * x2), kkNeg_(a * x2)];
+      extra = function (i) { return kkNeg_(ans + i); };
+      explain = zkEx_('変化の割合 ＝ （yの増え方）÷（xの増え方）。',
+        ['x ＝ ' + kkNeg_(x1) + ' のとき y ＝ ' + kkNeg_(y1) + '、x ＝ ' + kkNeg_(x2) + ' のとき y ＝ ' + kkNeg_(y2),
+          'yの増え方：' + kkNeg_(y2) + ' − ' + kkPar_(y1) + ' ＝ ' + kkNeg_(y2 - y1) + '、xの増え方：' + kkNeg_(x2) + ' − ' + kkPar_(x1) + ' ＝ ' + (x2 - x1),
+          kkNeg_(y2 - y1) + ' ÷ ' + (x2 - x1) + ' ＝ ' + right,
+          '💡 y ＝ ax<sup>2</sup> では「a ×（はじめのx ＋ おわりのx）」でも求められるよ：' + kkNeg_(a) + ' × (' + kkNeg_(x1) + ' ＋ ' + kkPar_(x2) + ') ＝ ' + right], right);
+    } else {
+      // 2点を通る直線の式
+      var m = kkNz_(-4, 4), bb = randInt(-6, 6), xa = randInt(-4, 2), xb = randInt(xa + 1, 5);
+      var ya = m * xa + bb, yb = m * xb + bb;
+      var lin = function (s, t) { return 'y ＝ ' + kkTerm_(s, 'x', true) + (t === 0 ? '' : kkTerm_(t, '')); };
+      text = '2点 (' + kkNeg_(xa) + ', ' + kkNeg_(ya) + ')、(' + kkNeg_(xb) + ', ' + kkNeg_(yb) + ') を通る直線の式は？';
+      right = lin(m, bb);
+      wrongs = [lin(-m, bb), lin(m, -bb), lin(m, ya + m * xa), lin(-m, ya + m * xa), lin(m, bb + 1)];
+      extra = function (i) { return lin(m, bb + i + 1); };
+      explain = zkEx_('直線の式は y ＝ ax ＋ b。まず傾き a、次に切片 b を求めるよ。',
+        ['傾き a ＝ （yの増え方）÷（xの増え方）＝ (' + kkNeg_(yb) + ' − ' + kkPar_(ya) + ') ÷ (' + kkNeg_(xb) + ' − ' + kkPar_(xa) + ') ＝ ' + kkNeg_(yb - ya) + ' ÷ ' + (xb - xa) + ' ＝ ' + kkNeg_(m),
+          'y ＝ ' + kkTerm_(m, 'x', true) + ' ＋ b に (' + kkNeg_(xa) + ', ' + kkNeg_(ya) + ') を入れる：' + kkNeg_(ya) + ' ＝ ' + kkNeg_(m * xa) + ' ＋ b　だから b ＝ ' + kkNeg_(bb), 'だから ' + right], right);
+    }
+    return { title: '🏫③ 関数', text: text, figure: '', choices: kkChoices_(right, wrongs, extra), explain: explain };
+  }
+
+  // ---- 🏫④ 円周角 ----
+  function kkMakeCircleQ_() {
+    var kind = randInt(0, 2), cx = 135, cy = 100, R = 78, body, text, ans, wrongs, explain;
+    var pt = function (deg) { var r = deg * Math.PI / 180; return [cx + R * Math.cos(r), cy + R * Math.sin(r)]; };
+    var circ = '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="#f8fafc" stroke="#334155" stroke-width="2"/>';
+    var dot = function (p) { return '<circle cx="' + zkR_(p[0]) + '" cy="' + zkR_(p[1]) + '" r="3" fill="#0f172a"/>'; };
+    var lab = function (p, t, col) { var dx = p[0] - cx, dy = p[1] - cy, l = Math.sqrt(dx * dx + dy * dy) || 1; return zkLabel_([p[0] + dx / l * 14, p[1] + dy / l * 14 + 5], t, 0, 0, col); };
+    var near = function (v, p, t, col) { return zkLabel_([v[0] + (p[0] - v[0]) * 0.32, v[1] + (p[1] - v[1]) * 0.32 + 5], t, 0, 0, col || '#dc2626'); };
+    var O = [cx, cy];
+    if (kind === 0) {
+      // 中心角と円周角
+      var th = randInt(4, 8) * 20 + (Math.random() < 0.5 ? 0 : 10); // 80〜170(偶数)
+      if (th % 2) th += 1;
+      var A = pt(90 + th / 2), B = pt(90 - th / 2), P = pt(-90 + randInt(-25, 25));
+      var askIns = Math.random() < 0.5;
+      ans = askIns ? th / 2 : th;
+      var mid = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+      body = circ + zkLine_(P, A) + zkLine_(P, B) + zkLine_(O, A, ' stroke="#2563eb"') + zkLine_(O, B, ' stroke="#2563eb"') + dot(O) + dot(A) + dot(B) + dot(P)
+        + zkLabel_(O, 'O', 0, -8) + lab(A, 'A') + lab(B, 'B') + lab(P, 'P')
+        + zkLabel_([cx, cy + 26], askIns ? th + '°' : 'x', 0, 0, '#2563eb') + zkLabel_([P[0], P[1] + 30], askIns ? 'x' : (th / 2) + '°', 0, 0, '#dc2626');
+      text = '点Oは円の中心だよ。' + (askIns ? '∠AOB ＝ ' + th + '° のとき、∠APB ＝ x は何度？' : '∠APB ＝ ' + (th / 2) + '° のとき、∠AOB ＝ x は何度？');
+      wrongs = askIns ? [th, 180 - th / 2, 180 - th, th / 2 + 10] : [th / 2, 360 - th, 180 - th / 2, th + 20];
+      explain = zkEx_('同じ弧に対する円周角は、中心角の半分（円周角の定理）。', ['弧ABに対する中心角が∠AOB、円周角が∠APB。', askIns ? '∠APB ＝ ' + th + '° ÷ 2 ＝ ' + ans + '°' : '∠AOB ＝ ' + (th / 2) + '° × 2 ＝ ' + ans + '°'], ans + '°');
+    } else if (kind === 1) {
+      // 直径に対する円周角は90°
+      var a = randInt(4, 13) * 5;
+      var A2 = pt(180), B2 = pt(0), C2 = pt(-2 * a);
+      ans = 90 - a;
+      body = circ + zkLine_(A2, B2) + zkLine_(A2, C2) + zkLine_(B2, C2) + dot(O) + dot(A2) + dot(B2) + dot(C2)
+        + zkLabel_(O, 'O', 0, 18) + lab(A2, 'A') + lab(B2, 'B') + lab(C2, 'C') + near(A2, C2, a + '°') + near(B2, C2, 'x', '#2563eb');
+      text = 'ABは円Oの<b>直径</b>だよ。∠CAB ＝ ' + a + '° のとき、∠ABC ＝ x は何度？';
+      wrongs = [a, 180 - a, 2 * a, 90 - a / 1 + 10, 90 + a];
+      explain = zkEx_('直径に対する円周角は 90°（半円の弧に対する中心角は180°、その半分）。', ['ABが直径なので ∠ACB ＝ 90°。', '三角形ABCの角の和は180°なので、x ＝ 180° − 90° − ' + a + '° ＝ ' + ans + '°'], ans + '°');
+    } else {
+      // 同じ弧に対する円周角は等しい
+      var th3 = randInt(5, 12) * 10, A3 = pt(90 + th3 / 2), B3 = pt(90 - th3 / 2), C3 = pt(-90 - randInt(30, 45)), D3 = pt(-90 + randInt(30, 45));
+      var a3 = th3 / 2;
+      ans = a3;
+      body = circ + zkLine_(C3, A3) + zkLine_(C3, B3) + zkLine_(D3, A3) + zkLine_(D3, B3) + dot(A3) + dot(B3) + dot(C3) + dot(D3)
+        + lab(A3, 'A') + lab(B3, 'B') + lab(C3, 'C') + lab(D3, 'D') + zkLabel_([C3[0] + 6, C3[1] + 30], a3 + '°', 0, 0, '#dc2626') + zkLabel_([D3[0] - 6, D3[1] + 30], 'x', 0, 0, '#2563eb');
+      text = '4点A、B、C、Dは同じ円の上にあるよ。∠ACB ＝ ' + a3 + '° のとき、∠ADB ＝ x は何度？';
+      wrongs = [2 * a3, 180 - a3, 90 - a3, a3 / 2, a3 + 10];
+      explain = zkEx_('同じ弧に対する円周角は、どこにあっても大きさが等しい。', ['∠ACBと∠ADBは、どちらも弧ABに対する円周角。', 'だから x ＝ ∠ACB ＝ ' + a3 + '°'], ans + '°');
+    }
+    var choices = zkNumChoices_(ans, wrongs.filter(function (w) { return w > 0 && w < 360 && w !== ans && w % 1 === 0; }), function (v) { return zkNum_(v) + '°'; });
+    return { title: '🏫④ 円周角', text: text, figure: zkSvg_(270, 200, body, 'zukei-svg') + ZK_NOT_EXACT_, choices: choices, explain: explain };
+  }
+
+  // ---- 🏫⑤ 三平方の定理 ----
+  function kkMakePythQ_() {
+    var kind = randInt(0, 2), body = '', text, right, wrongs, explain, extra, figure = '';
+    if (kind === 0 || kind === 1) {
+      var a = randInt(2, 8), b = randInt(2, 9);
+      while (a === b) b = randInt(2, 9);
+      var c2 = a * a + b * b, findHyp = kind === 0;
+      var Bp = [40, 165], Cp = [40 + Math.min(200, b * 24), 165], Ap = [40, 165 - Math.min(140, a * 17)];
+      var mark = '<polyline points="40,153 52,153 52,165" fill="none" stroke="#334155" stroke-width="1.5"/>';
+      body = '<polygon points="' + zkPolyAttr_([Ap, Bp, Cp]) + '" fill="#fef3c7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>' + mark
+        + zkLabel_(Ap, 'A', -10, 0) + zkLabel_(Bp, 'B', -10, 12) + zkLabel_(Cp, 'C', 10, 12)
+        + zkLabel_([28, (Ap[1] + 165) / 2 + 5], a + 'cm', -4, 0, '#2563eb');
+      if (findHyp) {
+        body += zkLabel_([(40 + Cp[0]) / 2, 184], b + 'cm', 0, 0, '#2563eb') + zkLabel_([(Ap[0] + Cp[0]) / 2 + 12, (Ap[1] + Cp[1]) / 2 - 6], 'x', 0, 0, '#dc2626');
+        text = '∠B ＝ 90° の直角三角形だよ。斜辺 AC ＝ x は何cm？';
+        right = kkSqrtOf_(c2) + 'cm';
+        wrongs = [(a + b) + 'cm', kkSqrtOf_(Math.abs(b * b - a * a)) + 'cm', kkSqrtOf_(a + b) + 'cm', kkSqrtOf_(c2 + 1) + 'cm', kkSqrtOf_(2 * c2) + 'cm'];
+        extra = function (i) { return kkSqrtOf_(c2 + i * 2) + 'cm'; };
+        var s = kkSqrtSplit_(c2);
+        explain = zkEx_('直角三角形では「(斜辺)<sup>2</sup> ＝ (ほかの辺)<sup>2</sup> ＋ (ほかの辺)<sup>2</sup>」（三平方の定理）。斜辺は直角の向かいの辺。',
+          ['x<sup>2</sup> ＝ ' + a + '<sup>2</sup> ＋ ' + b + '<sup>2</sup> ＝ ' + (a * a) + ' ＋ ' + (b * b) + ' ＝ ' + c2, 'x ＞ 0 なので x ＝ √' + c2 + (s[1] === 1 || s[0] > 1 ? ' ＝ ' + kkSqrtOf_(c2) : '')], right);
+      } else {
+        // 斜辺と1辺から残りの辺
+        var hyp2 = c2;
+        body += zkLabel_([(40 + Cp[0]) / 2, 184], 'x', 0, 0, '#dc2626') + zkLabel_([(Ap[0] + Cp[0]) / 2 + 14, (Ap[1] + Cp[1]) / 2 - 6], kkSqrtOf_(hyp2) + 'cm', 0, 0, '#2563eb');
+        text = '∠B ＝ 90° の直角三角形で、AB ＝ ' + a + 'cm、斜辺 AC ＝ ' + kkSqrtOf_(hyp2) + 'cm だよ。BC ＝ x は何cm？';
+        right = b + 'cm';
+        wrongs = [kkSqrtOf_(hyp2 + a * a) + 'cm', (b + 1) + 'cm', kkSqrtOf_(Math.abs(hyp2 - a)) + 'cm', (b - 1 > 0 ? b - 1 : b + 2) + 'cm', kkSqrtOf_(b) + 'cm'];
+        extra = function (i) { return (b + i + 1) + 'cm'; };
+        explain = zkEx_('三平方の定理：(斜辺)<sup>2</sup> ＝ (ほかの辺)<sup>2</sup> ＋ (ほかの辺)<sup>2</sup>。残りの辺は「斜辺<sup>2</sup> − 分かっている辺<sup>2</sup>」。',
+          ['AC<sup>2</sup> ＝ ' + hyp2 + '、AB<sup>2</sup> ＝ ' + (a * a), 'x<sup>2</sup> ＝ ' + hyp2 + ' − ' + (a * a) + ' ＝ ' + (b * b), 'x ＞ 0 なので x ＝ ' + b], right);
+      }
+      figure = zkSvg_(270, 192, body, 'zukei-svg') + ZK_NOT_EXACT_;
+    } else {
+      // 座標平面上の2点の距離
+      var x1 = randInt(-4, 2), y1 = randInt(-4, 2), dx = randInt(1, 6), dy = randInt(1, 6);
+      if (Math.random() < 0.5) dy = -dy;
+      var x2 = x1 + dx, y2 = y1 + dy, d2 = dx * dx + dy * dy;
+      text = '座標平面上の2点 A(' + kkNeg_(x1) + ', ' + kkNeg_(y1) + ')、B(' + kkNeg_(x2) + ', ' + kkNeg_(y2) + ') の間の距離は？';
+      right = kkSqrtOf_(d2);
+      wrongs = [String(dx + Math.abs(dy)), kkSqrtOf_(Math.abs(dx * dx - dy * dy) || 2), kkSqrtOf_(dx + Math.abs(dy)), kkSqrtOf_(d2 + 2), kkSqrtOf_((x2 + x1) * (x2 + x1) + (y2 + y1) * (y2 + y1) || 3)];
+      extra = function (i) { return kkSqrtOf_(d2 + i); };
+      explain = zkEx_('2点を結ぶ線を斜辺とする直角三角形を考えて、三平方の定理を使うよ。',
+        ['横の長さ：' + kkNeg_(x2) + ' − ' + kkPar_(x1) + ' ＝ ' + dx + '、たての長さ：' + kkNeg_(Math.max(y1, y2)) + ' − ' + kkPar_(Math.min(y1, y2)) + ' ＝ ' + Math.abs(dy),
+          'AB<sup>2</sup> ＝ ' + dx + '<sup>2</sup> ＋ ' + Math.abs(dy) + '<sup>2</sup> ＝ ' + d2, 'AB ＝ √' + d2 + (kkSqrtOf_(d2) !== '√' + d2 ? ' ＝ ' + right : '')], right);
+    }
+    return { title: '🏫⑤ 三平方の定理', text: text, figure: figure, choices: kkChoices_(right, wrongs, extra), explain: explain };
+  }
+
+  // ---- 🏫⑥ 確率 ----
+  function kkMakeProbQ_() {
+    var kind = randInt(0, 3), text, n, d, explain, steps;
+    if (kind === 0) {
+      // さいころ2個の和
+      var s = randInt(3, 11), list = [];
+      for (var i = 1; i <= 6; i++) for (var j = 1; j <= 6; j++) if (i + j === s) list.push('(' + i + ', ' + j + ')');
+      n = list.length; d = 36;
+      text = '大小2つのさいころを同時に投げるよ。出た目の<b>和が ' + s + '</b> になる確率は？';
+      steps = ['目の出方は全部で 6 × 6 ＝ 36 通り（どれも同じように起こる）。', '和が ' + s + ' になるのは ' + list.join('、') + ' の ' + n + ' 通り。', '確率は ' + zkFrac_(n, 36) + (zkGcd_(n, 36) > 1 ? ' ＝ ' + kkFrac_(n, 36) : '')];
+    } else if (kind === 1) {
+      // さいころ2個の積が奇数／偶数
+      var odd = Math.random() < 0.5;
+      n = odd ? 9 : 27; d = 36;
+      text = '大小2つのさいころを同時に投げるよ。出た目の<b>積が' + (odd ? '奇数' : '偶数') + '</b>になる確率は？';
+      steps = ['目の出方は全部で 36 通り。', '積が奇数になるのは、2つとも奇数(1・3・5)のときだけ：3 × 3 ＝ 9 通り。', odd ? '確率は ' + zkFrac_(9, 36) + ' ＝ ' + kkFrac_(9, 36) : '偶数は「奇数でない」とき：36 − 9 ＝ 27 通り。確率は ' + zkFrac_(27, 36) + ' ＝ ' + kkFrac_(27, 36)];
+    } else if (kind === 2) {
+      // 袋から2個同時に取り出す
+      var r = randInt(2, 4), w = randInt(1, 3), tot = r + w, all = tot * (tot - 1) / 2, both = Math.random() < 0.5;
+      n = both ? r * (r - 1) / 2 : r * w; d = all;
+      text = '袋の中に<b>赤玉 ' + r + ' 個</b>と<b>白玉 ' + w + ' 個</b>が入っているよ。同時に2個取り出すとき、' + (both ? '<b>2個とも赤玉</b>' : '<b>赤玉と白玉が1個ずつ</b>') + 'になる確率は？';
+      steps = ['玉に番号をつけて区別する（赤1〜赤' + r + '、白1〜白' + w + '）。', '全部で ' + tot + ' 個から2個を選ぶ組み合わせは ' + tot + ' × ' + (tot - 1) + ' ÷ 2 ＝ ' + all + ' 通り（同時に取り出すので順番は考えない）。',
+        both ? '赤 ' + r + ' 個から2個を選ぶのは ' + r + ' × ' + (r - 1) + ' ÷ 2 ＝ ' + n + ' 通り。' : '赤の選び方 ' + r + ' 通り × 白の選び方 ' + w + ' 通り ＝ ' + n + ' 通り。', '確率は ' + zkFrac_(n, all) + (zkGcd_(n, all) > 1 ? ' ＝ ' + kkFrac_(n, all) : '')];
+    } else {
+      // 硬貨3枚
+      var atLeast = Math.random() < 0.5;
+      n = atLeast ? 7 : 3; d = 8;
+      text = '3枚の硬貨を同時に投げるよ。' + (atLeast ? '<b>少なくとも1枚は表</b>' : '<b>ちょうど2枚が表</b>') + 'になる確率は？';
+      steps = ['表・裏の出方は 2 × 2 × 2 ＝ 8 通り。', atLeast ? '「少なくとも1枚は表」は「3枚とも裏」以外。3枚とも裏は1通りなので、8 − 1 ＝ 7 通り。' : '2枚が表になるのは（表表裏）（表裏表）（裏表表）の3通り。', '確率は ' + zkFrac_(n, 8)];
+    }
+    var right = kkFrac_(n, d);
+    var wrongs = [kkFrac_(d - n, d), kkFrac_(n + 1, d), n > 1 ? kkFrac_(n - 1, d) : '', kkFrac_(n, d * 2), kkFrac_(1, n + 1)];
+    explain = zkEx_('確率 ＝ （そうなる場合の数）÷（全部の場合の数）。', steps, right);
+    return { title: '🏫⑥ 確率', text: text, figure: '', choices: kkChoices_(right, wrongs.filter(function (w) { return w !== '1' && w !== '0'; }), function (i) { return kkFrac_(n, d + i); }), explain: explain };
+  }
+
   // 出題する問題の種類は、チェック☑️で選べる(平面図形・空間図形ごとにまとめてON/OFFもできる)。
   // 選んだものはこの端末に覚えておく。全部外すことはできない(最後の1つは外せない)。
   var ZK_TYPES_ = [
@@ -33459,9 +33774,15 @@
     { id: 'jcut', group: 'juken', label: '立体の切断と体積', make: zkMakeJCutQ_ },
     { id: 'cut', group: 'juken', label: '切断面', make: zkMakeCutQ_ },
     { id: 'jnet', group: 'juken', label: '展開図（円すい・円柱）', make: zkMakeJNetQ_ },
-    { id: 'jcalc', group: 'juken', label: '計算の技', make: zkMakeJCalcQ_ }
+    { id: 'jcalc', group: 'juken', label: '計算の技', make: zkMakeJCalcQ_ },
+    { id: 'kcalc', group: 'koko', label: '計算（平方根・正負の数・因数分解）', make: kkMakeCalcQ_ },
+    { id: 'keq', group: 'koko', label: '方程式（連立・2次）', make: kkMakeEqQ_ },
+    { id: 'kfunc', group: 'koko', label: '関数（y＝ax²・1次関数）', make: kkMakeFuncQ_ },
+    { id: 'kcircle', group: 'koko', label: '円周角', make: kkMakeCircleQ_ },
+    { id: 'kpyth', group: 'koko', label: '三平方の定理', make: kkMakePythQ_ },
+    { id: 'kprob', group: 'koko', label: '確率', make: kkMakeProbQ_ }
   ];
-  var ZK_GROUPS_ = [{ id: 'plane', label: '📐 平面図形' }, { id: 'space', label: '🧊 空間図形' }, { id: 'juken', label: '🎓 中学受験' }];
+  var ZK_GROUPS_ = [{ id: 'plane', label: '📐 平面図形' }, { id: 'space', label: '🧊 空間図形' }, { id: 'juken', label: '🎓 中学受験' }, { id: 'koko', label: '🏫 高校受験（数学）' }];
   var ZK_NUMS_ = ['①', '②', '③', '④', '⑤', '⑥'];
   function zkSel_() {
     if (zukei_.sel) return zukei_.sel;
@@ -33563,7 +33884,7 @@
     }).catch(function () {});
   }
   function toggleZukei(mode) {
-    mode = mode === 'juken' ? 'juken' : 'zukei';
+    mode = mode === 'juken' || mode === 'koko' ? mode : 'zukei';
     var isHidden = els.zukeiPanel.hasAttribute('hidden');
     if (!isHidden && zukei_.mode === mode) { els.zukeiPanel.setAttribute('hidden', ''); return; }
     if (zukei_.mode !== mode) { zukei_.mode = mode; zukei_.q = null; zukei_.answered = false; }
@@ -34151,6 +34472,7 @@
     var zkbb = document.getElementById('zukeiBannerBtn'); if (zkbb) zkbb.addEventListener('click', function () { zkBannerOpen_('zukei'); });
     var jkbb = document.getElementById('jukenBannerBtn'); if (jkbb) jkbb.addEventListener('click', function () { zkBannerOpen_('juken'); });
     if (els.jukenToggle) els.jukenToggle.addEventListener('click', function () { toggleZukei('juken'); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    var kokoTgl = document.getElementById('kokoToggle'); if (kokoTgl) kokoTgl.addEventListener('click', function () { toggleZukei('koko'); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     els.zukeiPanel.addEventListener('click', function (e) {
       var b = e.target.closest('[data-zk-choice]');
       if (b) { onZukeiChoice_(Number(b.getAttribute('data-zk-choice'))); return; }
@@ -34162,7 +34484,7 @@
     // ほかのボタンで別の画面を開いたら、図形トレーニングは閉じる。
     els.zukeiToggle.parentNode.addEventListener('click', function (e) {
       var b = e.target.closest('button');
-      if (b && b !== els.zukeiToggle && b !== els.jukenToggle) els.zukeiPanel.setAttribute('hidden', '');
+      if (b && b !== els.zukeiToggle && b !== els.jukenToggle && b.id !== 'kokoToggle') els.zukeiPanel.setAttribute('hidden', '');
     });
   }
 
