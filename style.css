@@ -2618,6 +2618,8 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .bb-scene.bb-r-iliner .bb-ball { transform: translate(-32px, -18px) scale(1.8); }
 .bb-scene.bb-r-grounder .bb-ball { transform: translate(34px, -16px) scale(1.6); }
 .bb-scene.bb-r-k .bb-ball { transition: transform 0.15s linear; }
+/* ボール球：外へそれてキャッチャーへ */
+.bb-p-ball .bb-ball, .bb-scene.bb-r-ball .bb-ball { transform: translate(30px, 62px) scale(2.3); }
 .bb-scene.bb-r-k.bb-p-in .bb-ball { transform: translate(-2px, 74px) scale(2.5); }
 .bb-scene.bb-r-k.bb-p-mid .bb-ball { transform: translate(3px, 74px) scale(2.5); }
 .bb-scene.bb-r-k.bb-p-out .bb-ball { transform: translate(9px, 74px) scale(2.5); }

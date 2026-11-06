@@ -34538,24 +34538,52 @@
   // 内角・真ん中・外角からコースを読んで振る。投げたコースと結果はサーバーで決める。
   // 場面はキャッチャーの後ろから見た球場のSVG。投球→スイング→打球の動きはCSSのtransitionで付ける。
   var BB_COURSE_LABEL_ = { in: '内角', mid: '真ん中', out: '外角' };
+  // 2026-11-07〜：9回裏・2アウト満塁・0対3からの1試合。ヒット・四球なら次の打席へ、ホームランか逆転でサヨナラ勝ち、アウトでゲームセット。
+  // バッターは打席ごとに 大谷笑平 → イテロー → 大谷笑平 …、ピッチャーは松江太郎(先生の指示)。
+  var BB_BATTERS_ = ['大谷笑平', 'イテロー'];
+  var BB_PITCHER_ = '松江太郎';
+  function bbBatter_(ab) { return BB_BATTERS_[((Number(ab) || 1) - 1) % BB_BATTERS_.length]; }
   var BB_RES_ = {
-    single: { t: '⚾ サヨナラヒット！！', s: '三塁ランナーがホームイン！チームの勝ち！', win: true },
-    double: { t: '⚾ サヨナラ二塁打（ツーベース）！！', s: 'ランナーが次々ホームイン！', win: true },
-    triple: { t: '⚾ サヨナラ三塁打（スリーベース）！！！', s: '走者一掃！大逆転…いや、大勝利！', win: true },
-    hr: { t: '🎆 サヨナラ満塁ホームラン！！！', s: 'ボールはスタンドへ！球場が大歓声！', win: true },
-    ofly: { t: '⚾ 外野フライ！でも…', s: '三塁ランナーがタッチアップでホームイン！サヨナラ犠牲フライ！', win: true },
-    ifly: { t: '😣 内野フライでアウト…', s: '高く上がったけど、内野手にとられてしまった。', win: false },
-    iliner: { t: '😣 内野ライナーでアウト…', s: '鋭い当たりだったけど、内野手の正面だった。', win: false },
-    grounder: { t: '⚾ 内野ゴロ！全力疾走！', s: 'そのすきに三塁ランナーがホームイン！サヨナラ！', win: true },
-    k: { t: '😣 空振り三振…', s: 'バッターアウト。3球とも読みが外れた！', win: false }
+    single: { t: 'ヒット！', out: false },
+    double: { t: '二塁打（ツーベース）！！', out: false },
+    triple: { t: '三塁打（スリーベース）！！！', out: false },
+    hr: { t: 'ホームラン！！！', out: false },
+    ofly: { t: '外野フライでアウト…', out: true },
+    ifly: { t: '内野フライでアウト…', out: true },
+    iliner: { t: '内野ライナーでアウト…', out: true },
+    grounder: { t: '内野ゴロでアウト…', out: true },
+    k: { t: '空振り三振…', out: true },
+    strike: { t: '空振りストライク！', out: false },
+    ball: { t: 'ボール！', out: false },
+    walk: { t: 'フォアボール！', out: false }
   };
   var bbBusy_ = false;
-  // 3球勝負(2026-11-06〜)。前の形(1球勝負)の記録はpitchesがないので終わったものとして扱う
-  function bbDone_(r) { return !r || !Array.isArray(r.pitches) || !!r.done; }
-  function bbStrikes_(r) { return r && Array.isArray(r.pitches) ? r.pitches.filter(function (p) { return !p.contact; }).length : 0; }
-  function bbHistHtml_(list) {
-    if (!list || !list.length) return '';
-    return '<div class="gacha-line">' + list.map(function (p, i) { return (i + 1) + '球目：' + BB_COURSE_LABEL_[p.swing] + 'を読む→' + BB_COURSE_LABEL_[p.pitch] + (p.contact ? '…カキーン！' : '…空振りストライク'); }).join('<br>') + '</div>';
+  function bbDone_(r) { return !r || !r.ab || !!r.done; }
+  function bbNewGame_() { return { ab: 1, n: 0, balls: 0, strikes: 0, bases: [1, 1, 1], home: 0, away: 3, pitches: [], done: false, win: false }; }
+  // 1球の結果の文。stは投げたあとの試合のようす。
+  function bbEvText_(ev, st) {
+    var info = BB_RES_[ev.res] || BB_RES_.strike, who = bbBatter_(ev.ab), t;
+    if (ev.res === 'ball') t = 'ボール！（' + st.balls + 'ボール）';
+    else if (ev.res === 'walk') t = 'フォアボール！' + (ev.runs ? '押し出しで' + ev.runs + '点！' : '');
+    else if (ev.res === 'strike') t = '空振りストライク！（' + st.strikes + 'ストライク）';
+    else if (ev.res === 'hr') t = who + 'の' + (ev.runs >= 4 ? '満塁' : '') + 'ホームラン！！！';
+    else t = (ev.contact ? who + 'の' : '') + info.t + (ev.runs ? ev.runs + '点入った！' : '');
+    if (st.win) t += ' サヨナラ勝ち！！';
+    else if (st.done) t += ' ゲームセット';
+    else if (ev.res === 'walk' || (ev.contact && !info.out)) t += ' 次のバッター ' + bbBatter_(st.ab) + ' がバッターボックスへ！';
+    return t;
+  }
+  function bbHistHtml_(list, onlyAb) {
+    var out = [], ab = 0, k = 0;
+    (list || []).forEach(function (p) {
+      if (onlyAb && p.ab !== onlyAb) return;
+      if (p.ab !== ab) { ab = p.ab; k = 0; out.push('<b>第' + ab + '打席 ' + bbBatter_(ab) + '</b>'); }
+      k++;
+      var info = BB_RES_[p.res] || BB_RES_.strike;
+      out.push(k + '球目：' + BB_COURSE_LABEL_[p.swing] + 'を読む→' + (p.pitch === 'ball' ? 'ボール球' : BB_COURSE_LABEL_[p.pitch]) + '…'
+        + (p.contact ? 'カキーン！' + info.t + (p.runs ? '（' + p.runs + '点）' : '') : p.res === 'walk' ? 'フォアボール' + (p.runs ? '（押し出し' + p.runs + '点）' : '') : p.res === 'ball' ? 'ボール' : p.res === 'k' ? '空振り三振' : '空振りストライク'));
+    });
+    return out.length ? '<div class="gacha-line">' + out.join('<br>') + '</div>' : '';
   }
   function bbPerson_(x, y, col, s) {
     // 小さな選手(頭・体・足)。x,yは足もと。sは大きさ。
@@ -34565,13 +34593,17 @@
       + '<circle cx="' + x + '" cy="' + (y - 17 * s) + '" r="' + (3.2 * s) + '" fill="#f1c27d"/>'
       + '<path d="M' + (x - 3.4 * s) + ' ' + (y - 17.5 * s) + 'a' + (3.4 * s) + ' ' + (3.4 * s) + ' 0 0 1 ' + (6.8 * s) + ' 0z" fill="' + col + '"/></g>';
   }
-  function bbSceneHtml_(r, still, sc) {
-    sc = Math.max(0, Math.min(2, Number(sc) || 0));
-    var cls = 'bb-scene' + (still ? ' bb-noanim' : '') + (r ? ' ' + bbSceneClass_(r) : ' bb-ready');
+  function bbLamps_(n, max, col) { var s = ''; for (var i = 0; i < max; i++) s += '<tspan fill="' + (i < n ? col : '#64748b') + '">' + (i < n ? '●' : '○') + '</tspan>'; return s; }
+  // st：表示する試合のようす(カウント・ランナー・点)。cls：場面のクラス(動き)。
+  function bbSceneHtml_(st, cls, still) {
+    st = st || bbNewGame_();
     var crowd = '', cc = ['#f87171', '#60a5fa', '#fbbf24', '#f9fafb', '#a78bfa', '#34d399', '#fb923c'];
     for (var i = 0; i < 46; i++) crowd += '<circle cx="' + (4 + i * 6.5) + '" cy="' + (6 + (i % 3) * 7) + '" r="2.8" fill="' + cc[(i * 3) % cc.length] + '"/>';
-    var home = '#2563eb', away = '#dc2626';
-    return '<div class="' + cls + '"><svg viewBox="0 0 300 220" role="img" aria-label="野球の場面">'
+    var home = '#2563eb', away = '#dc2626', b = st.bases || [0, 0, 0];
+    var runnerPos = [[230, 158], [158, 108], [70, 158]], runners = '', baseTxt = [];
+    for (var j = 0; j < 3; j++) if (b[j]) runners += bbPerson_(runnerPos[j][0], runnerPos[j][1], home, 0.9);
+    var full = b[0] && b[1] && b[2];
+    return '<div class="bb-scene' + (still ? ' bb-noanim' : '') + ' ' + (cls || 'bb-ready') + '"><svg viewBox="0 0 300 220" role="img" aria-label="野球の場面">'
       + '<rect width="300" height="40" fill="#334155"/>' + crowd
       + '<path d="M0 44 Q150 8 300 44 L300 220 L0 220Z" fill="#15803d"/>'
       + '<path d="M0 44 Q150 8 300 44" fill="none" stroke="#1e3a8a" stroke-width="5"/>'
@@ -34585,8 +34617,8 @@
       // 守備(赤)
       + bbPerson_(80, 74, away, 0.8) + bbPerson_(150, 60, away, 0.8) + bbPerson_(220, 74, away, 0.8)
       + bbPerson_(118, 120, away, 0.9) + bbPerson_(184, 120, away, 0.9) + bbPerson_(209, 146, away, 0.9) + bbPerson_(92, 146, away, 0.9)
-      // 満塁のランナー(青)
-      + '<g class="bb-runners">' + bbPerson_(230, 158, home, 0.9) + bbPerson_(158, 108, home, 0.9) + bbPerson_(70, 158, home, 0.9) + '</g>'
+      // ランナー(青)
+      + '<g class="bb-runners">' + runners + '</g>'
       // ピッチャー
       + '<g class="bb-pitcher">' + bbPerson_(150, 146, away, 1.1) + '</g>'
       // キャッチャー
@@ -34603,71 +34635,76 @@
       + '<g class="bb-bat"><line x1="139" y1="176" x2="121" y2="146" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/></g>'
       + '</g>'
       // スコアボード
-      + '<g><rect x="4" y="4" width="112" height="34" rx="4" fill="#0f172a" opacity="0.92"/>'
-      + '<text x="10" y="17" font-size="10" font-weight="800" fill="#fde047">9回裏 3−3 満塁</text>'
-      + '<text x="10" y="31" font-size="9.5" font-weight="800" fill="#fff">B<tspan fill="#64748b">○○○</tspan> S<tspan fill="#facc15">' + '●●'.slice(0, sc) + '</tspan><tspan fill="#64748b">' + '○○'.slice(0, 2 - sc) + '</tspan> O<tspan fill="#64748b">○○</tspan></text></g>'
-      // バッターは大谷笑平(あなた)、ピッチャーは松江太郎(2026-11-07先生の指示)
-      + '<text x="66" y="172" class="pk-tag">大谷笑平</text>'
-      + '<text x="163" y="132" class="pk-tag bb-ptag">松江太郎</text>'
+      + '<g><rect x="4" y="4" width="118" height="34" rx="4" fill="#0f172a" opacity="0.92"/>'
+      + '<text x="10" y="17" font-size="10" font-weight="800" fill="#fde047">9回裏 ' + (Number(st.home) || 0) + '−' + (Number(st.away) || 3) + ' 2アウト' + (full ? '満塁' : '') + '</text>'
+      + '<text x="10" y="31" font-size="9.5" font-weight="800" fill="#fff">B' + bbLamps_(st.balls, 3, '#22c55e') + ' S' + bbLamps_(st.strikes, 2, '#facc15') + ' O' + bbLamps_(2, 2, '#ef4444') + '</text></g>'
+      + '<text x="66" y="172" class="pk-tag">' + bbBatter_(st.ab) + '</text>'
+      + '<text x="163" y="132" class="pk-tag bb-ptag">' + BB_PITCHER_ + '</text>'
       + '<text x="150" y="72" class="bb-hrtext" text-anchor="middle">HOME RUN!!</text>'
       + '</svg></div>';
   }
-  function bbSceneClass_(r) { return 'bb-go bb-p-' + r.pitch + ' bb-swing' + (r.contact ? ' bb-r-' + r.res : ' bb-r-k') + (r.contact && BB_RES_[r.res] && BB_RES_[r.res].win ? ' bb-win' : ''); }
+  // 1球の動き：投球 → (振る) → 打球。
+  function bbPitchCls_(ev) { return 'bb-go bb-p-' + (ev.pitch === 'ball' ? 'ball' : ev.pitch) + (ev.pitch === 'ball' ? '' : ' bb-swing'); }
+  function bbHitCls_(ev, st) { return (ev.contact ? 'bb-r-' + ev.res : ev.pitch === 'ball' ? 'bb-r-ball' : 'bb-r-k') + (st && st.win ? ' bb-win' : ''); }
   function bbResultHtml_(t) {
-    var r = t.result, info = BB_RES_[r.contact ? r.res : 'k'] || BB_RES_.k;
-    var hist = Array.isArray(r.pitches) ? bbHistHtml_(r.pitches) : '<div class="gacha-line">大谷笑平は<b>' + BB_COURSE_LABEL_[r.swing] + '</b>を読んでフルスイング！松江太郎の球は<b>' + BB_COURSE_LABEL_[r.pitch] + '</b>' + (r.contact ? '…カキーン！' : '…ブンッ！') + '</div>';
-    return hist
-      + bbSceneHtml_(r, true, bbStrikes_(r) - (r.contact ? 0 : 1))
-      + '<div class="pk-big ' + (info.win ? 'pk-win' : 'pk-lose') + '">' + info.t + '</div>'
-      + '<div class="gacha-line">' + info.s + '</div>'
-      + '<div class="gacha-mp">' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
-      + '<div class="test-photo-hint">今日の3球勝負は終わり（また明日）</div>' + (isAdminSession_() ? '<button type="button" class="ghost-btn" data-gacha-again="baseball">🔁 もう一度（先生だけ）</button>' : '');
+    var r = t.result, again = isAdminSession_() ? '<button type="button" class="ghost-btn" data-gacha-again="baseball">🔁 もう一度（先生だけ）</button>' : '';
+    if (!r || !r.ab) return '<div class="test-photo-hint">今日の野球ガチャは終わり（また明日）</div>' + again;
+    var last = r.pitches && r.pitches[r.pitches.length - 1];
+    // 最後の球を投げる前のようす(同じ打席のカウント)を作って、最後の場面を出す
+    var before = { ab: last ? last.ab : r.ab, balls: 0, strikes: 0, bases: r.bases, home: r.home, away: r.away };
+    (r.pitches || []).slice(0, -1).forEach(function (p) { if (last && p.ab === last.ab) { if (p.res === 'ball') before.balls++; if (p.res === 'strike') before.strikes++; } });
+    return bbHistHtml_(r.pitches)
+      + bbSceneHtml_(before, last ? bbPitchCls_(last) + ' ' + bbHitCls_(last, r) : '', true)
+      + '<div class="pk-big ' + (r.win ? 'pk-win' : 'pk-lose') + '">' + (r.win ? '🎆 サヨナラ勝ち！！ ' + r.home + '−' + r.away : '😣 ゲームセット… ' + r.home + '−' + r.away) + '</div>'
+      + (last ? '<div class="gacha-line">' + bbEvText_(last, r) + '</div>' : '')
+      + '<div class="gacha-mp">合計 ' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
+      + '<div class="test-photo-hint">今日の試合は終わり（また明日）</div>' + again;
   }
   function bbRender_(card) {
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.bb-choices');
     var t = gacha_.today.baseball;
     if (out.getAttribute('data-anim')) { ch.innerHTML = ''; return; }
     if (t && t.result && bbDone_(t.result)) { out.innerHTML = bbResultHtml_(t); ch.innerHTML = ''; return; }
-    var sc = bbStrikes_(t && t.result);
-    out.innerHTML = bbHistHtml_(t && t.result && t.result.pitches) + bbSceneHtml_(null, false, sc);
-    ch.innerHTML = '<div class="gacha-line"><b>' + (sc + 1) + '球目（' + sc + 'ストライク）。ピッチャー松江太郎はどこに投げてくる？</b>バッター大谷笑平になって、コースを読んで振ろう！</div><div class="pk-btns">'
+    var st = t && t.result ? t.result : bbNewGame_();
+    var last = st.pitches && st.pitches[st.pitches.length - 1];
+    out.innerHTML = (last ? '<div class="gacha-line">' + bbEvText_(last, st) + '</div>' : '') + bbHistHtml_(st.pitches) + bbSceneHtml_(st, 'bb-ready', false)
+      + ((Number(t && t.mp) || 0) > 0 ? '<div class="gacha-mp">ここまで +' + t.mp + 'MP</div>' : '');
+    ch.innerHTML = '<div class="gacha-line"><b>第' + st.ab + '打席 ' + bbBatter_(st.ab) + '（' + st.balls + 'ボール ' + st.strikes + 'ストライク）。ピッチャー' + BB_PITCHER_ + 'はどこに投げてくる？</b>コースを読んで振ろう！</div><div class="pk-btns">'
       + ['in', 'mid', 'out'].map(function (c) { return '<button type="button" class="ghost-btn pk-btn" data-bb="' + c + '"' + (bbBusy_ ? ' disabled' : '') + '>' + BB_COURSE_LABEL_[c] + '</button>'; }).join('') + '</div>';
   }
   function bbPlay_(swing) {
     var session = loadSession();
     var cur = gacha_.today.baseball;
     if (!session || !session.id || bbBusy_ || (cur && bbDone_(cur.result)) || !gachaKindOn_('baseball')) return;
-    var sc0 = bbStrikes_(cur && cur.result);
     bbBusy_ = true;
+    var before = cur && cur.result ? cur.result : bbNewGame_();
     var card = els.gachaPanel.querySelector('[data-gacha="baseball"]');
     var out = card.querySelector('.gacha-out');
     out.setAttribute('data-anim', '1');
-    out.innerHTML = '<div class="pk-big">⚾ ' + (sc0 + 1) + '球目、大谷笑平は' + BB_COURSE_LABEL_[swing] + 'を読んで…かまえて…</div>' + bbSceneHtml_(null, false, sc0);
+    out.innerHTML = '<div class="pk-big">⚾ ' + bbBatter_(before.ab) + 'は' + BB_COURSE_LABEL_[swing] + 'を読んで…かまえて…</div>' + bbSceneHtml_(before, 'bb-ready', false);
     card.querySelector('.bb-choices').innerHTML = '';
     var started = Date.now();
     var done = function (msg) { out.removeAttribute('data-anim'); bbBusy_ = false; renderGacha_(); if (msg) card.querySelector('.bb-choices').insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
     // 投球(ボールが近づく)→スイング→打球が飛ぶ、の順にクラスを足していく
-    var play = function (r) {
+    var play = function (ev, st) {
       setTimeout(function () {
         var sc = out.querySelector('.bb-scene');
         if (!sc) { done(''); return; }
         sc.classList.remove('bb-ready');
         void sc.offsetWidth;
-        sc.classList.add('bb-go', 'bb-p-' + r.pitch);
-        setTimeout(function () { sc.classList.add('bb-swing'); }, 430);
+        bbPitchCls_(ev).split(' ').forEach(function (c) { if (c !== 'bb-swing') sc.classList.add(c); });
+        if (ev.pitch !== 'ball') setTimeout(function () { sc.classList.add('bb-swing'); }, 430);
         setTimeout(function () {
-          sc.classList.add(r.contact ? 'bb-r-' + r.res : 'bb-r-k');
-          if (!r.done && !r.contact) out.insertAdjacentHTML('beforeend', '<div class="pk-big pk-lose">ブンッ！空振りストライク！</div>');
-          if (r.contact && BB_RES_[r.res] && BB_RES_[r.res].win) sc.classList.add('bb-win');
+          bbHitCls_(ev, st).split(' ').forEach(function (c) { sc.classList.add(c); });
+          out.insertAdjacentHTML('beforeend', '<div class="pk-big ' + (st.win ? 'pk-win' : (st.done || ev.res === 'strike') ? 'pk-lose' : '') + '">' + bbEvText_(ev, st) + '</div>');
         }, 600);
-        setTimeout(function () { done(''); }, r.done ? 2300 : 1600);
+        setTimeout(function () { done(''); }, st.done ? 2600 : ev.contact ? 2400 : 1500);
       }, Math.max(0, 800 - (Date.now() - started)));
     };
     apiPost('gachaDraw', { id: session.id, kind: 'baseball', swing: swing }).then(function (res) {
-      var t = res && (res.ok ? { result: res.result, mp: res.mp } : res.prev);
       if (res && res.ok && res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
-      if (res && res.ok && t && t.result && t.result.pitch) { gacha_.today.baseball = t; play(t.result); }
-      else if (t && t.result) { gacha_.today.baseball = t; done(''); }
+      if (res && res.ok && res.result && res.last) { gacha_.today.baseball = { result: res.result, mp: res.mp }; play(res.last, res.result); }
+      else if (res && res.prev && res.prev.result) { gacha_.today.baseball = res.prev; done(''); }
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
