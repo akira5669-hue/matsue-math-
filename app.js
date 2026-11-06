@@ -25362,7 +25362,7 @@
   }
 
   // 計算パズルのタイムランキング(レベルごとに上位30位、2026-11-06〜)
-  var kenRankData_ = null, kenRankN_ = 3;
+  var kenRankData_ = null, kenRankN_ = 3, kenRankMonth_ = '';
   var KEN_RANK_LABEL_ = { 3: 'かんたん（3×3）', 4: 'ふつう（4×4）', 5: 'むずかしい（5×5）', 6: '超むずかしい（6×6）' };
   function kenRankRowHtml_(r) {
     var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
@@ -25374,16 +25374,17 @@
     els.rankingChallengeMiddle.hidden = true;
     els.rankingList.hidden = false;
     Array.prototype.forEach.call(document.querySelectorAll('#rankingKenTabs button'), function (b) { b.classList.toggle('is-on', Number(b.getAttribute('data-n')) === kenRankN_); });
-    els.rankingTitle.textContent = '計算パズル タイムランキング（上位30位）';
+    var mLabel = kenRankMonth_ ? Number(kenRankMonth_.slice(5, 7)) + '月' : '今月';
+    els.rankingTitle.textContent = '計算パズル タイムランキング（' + mLabel + '・上位30位）';
     var d = kenRankData_ && kenRankData_[kenRankN_];
     if (!d) return;
     if (!d.top.length) {
-      els.rankingSummary.textContent = KEN_RANK_LABEL_[kenRankN_] + '：まだ記録がないよ。一番乗りをめざそう！';
+      els.rankingSummary.textContent = KEN_RANK_LABEL_[kenRankN_] + '：' + mLabel + 'はまだ記録がないよ。一番乗りをめざそう！';
       els.rankingList.innerHTML = '';
       els.rankingNearby.hidden = true;
       return;
     }
-    els.rankingSummary.textContent = KEN_RANK_LABEL_[kenRankN_] + '：一人一人の一番速いクリアタイム（速い順・' + d.total + '人）';
+    els.rankingSummary.textContent = KEN_RANK_LABEL_[kenRankN_] + '：' + mLabel + 'の一人一人の一番速いクリアタイム（速い順・' + d.total + '人）。1か月ごとの勝負で、毎月1日に新しくなるよ。';
     els.rankingList.innerHTML = d.top.map(kenRankRowHtml_).join('');
     if (d.nearby && d.nearby.length && !d.top.some(function (r) { return r.isYou; })) {
       els.rankingNearby.hidden = false;
@@ -25452,6 +25453,7 @@
       apiPost('kenRanking', { id: session.id }).then(function (res) {
         if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
         kenRankData_ = res.ranking;
+        kenRankMonth_ = res.month || '';
         if (currentRankingMode_ !== 'ken') return; // 読み込み中に別のタブへ切り替えた
         renderKenRanking_();
       }).catch(function () {
