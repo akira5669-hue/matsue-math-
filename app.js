@@ -33878,7 +33878,7 @@
     if (!r) { out.innerHTML = pkSceneHtml_('kicker', null, false); ch.innerHTML = btns('kick', '<b>①キッカー</b>：どこにシュートする？'); return; }
     if (!r.keep) { out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkSceneHtml_('keeper', null, false); ch.innerHTML = btns('keep', '<b>②キーパー</b>：相手はどこに蹴ってくる？飛ぶ方向を選んでね'); return; }
     out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkKeepResultHtml_(r)
-      + '<div class="gacha-mp">合計 +' + (Number(t.mp) || 0) + 'MP</div><div class="test-photo-hint">今日のPKは終わり（また明日）</div>';
+      + '<div class="gacha-mp">合計 +' + (Number(t.mp) || 0) + 'MP</div><div class="test-photo-hint">今日のPKは終わり（また明日）</div>' + (isAdminSession_() ? '<button type="button" class="ghost-btn" data-gacha-again="pk">🔁 もう一度（先生だけ）</button>' : '');
     ch.innerHTML = '';
   }
   function pkPlay_(step, dir) {
@@ -33996,7 +33996,7 @@
       + '<div class="pk-big ' + (info.win ? 'pk-win' : 'pk-lose') + '">' + info.t + '</div>'
       + '<div class="gacha-line">' + info.s + '</div>'
       + '<div class="gacha-mp">' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
-      + '<div class="test-photo-hint">今日の1球勝負は終わり（また明日）</div>';
+      + '<div class="test-photo-hint">今日の1球勝負は終わり（また明日）</div>' + (isAdminSession_() ? '<button type="button" class="ghost-btn" data-gacha-again="baseball">🔁 もう一度（先生だけ）</button>' : '');
   }
   function bbRender_(card) {
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.bb-choices');
@@ -34118,6 +34118,8 @@
       var card = e.target.closest('[data-gacha]');
       var pkb = e.target.closest('[data-pk]');
       if (pkb) { pkPlay_(pkb.getAttribute('data-pk'), pkb.getAttribute('data-dir')); return; }
+      var ag = e.target.closest('[data-gacha-again]');
+      if (ag && isAdminSession_()) { delete gacha_.today[ag.getAttribute('data-gacha-again')]; renderGacha_(); return; }
       var bbb = e.target.closest('[data-bb]');
       if (bbb) { bbPlay_(bbb.getAttribute('data-bb')); return; }
       if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));
