@@ -25361,7 +25361,53 @@
     }
   }
 
+  // 計算パズルのタイムランキング(レベルごとに上位30位、2026-11-06〜)
+  var kenRankData_ = null, kenRankN_ = 3;
+  var KEN_RANK_LABEL_ = { 3: 'かんたん（3×3）', 4: 'ふつう（4×4）', 5: 'むずかしい（5×5）', 6: '超むずかしい（6×6）' };
+  function kenRankRowHtml_(r) {
+    var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
+    var gradeTag = r.grade ? '<span class="ranking-grade">' + escHtml(r.grade) + '</span>' : '';
+    return '<div class="ranking-row' + (r.isYou ? ' ranking-you' : '') + '"><span class="ranking-rank">' + r.rank + '</span><span class="ranking-name">' + gradeTag + escHtml(r.nickname) + youTag + '</span><span class="ranking-points">' + kenTimeText_(r.secs) + '</span></div>';
+  }
+  function renderKenRanking_() {
+    els.rankingChallengeElementary.hidden = true;
+    els.rankingChallengeMiddle.hidden = true;
+    els.rankingList.hidden = false;
+    Array.prototype.forEach.call(document.querySelectorAll('#rankingKenTabs button'), function (b) { b.classList.toggle('is-on', Number(b.getAttribute('data-n')) === kenRankN_); });
+    els.rankingTitle.textContent = '計算パズル タイムランキング（上位30位）';
+    var d = kenRankData_ && kenRankData_[kenRankN_];
+    if (!d) return;
+    if (!d.top.length) {
+      els.rankingSummary.textContent = KEN_RANK_LABEL_[kenRankN_] + '：まだ記録がないよ。一番乗りをめざそう！';
+      els.rankingList.innerHTML = '';
+      els.rankingNearby.hidden = true;
+      return;
+    }
+    els.rankingSummary.textContent = KEN_RANK_LABEL_[kenRankN_] + '：一人一人の一番速いクリアタイム（速い順・' + d.total + '人）';
+    els.rankingList.innerHTML = d.top.map(kenRankRowHtml_).join('');
+    if (d.nearby && d.nearby.length && !d.top.some(function (r) { return r.isYou; })) {
+      els.rankingNearby.hidden = false;
+      els.rankingNearbyList.innerHTML = d.nearby.map(kenRankRowHtml_).join('');
+    } else {
+      els.rankingNearby.hidden = true;
+      els.rankingNearbyList.innerHTML = '';
+    }
+  }
+  (function () {
+    var tabs = document.getElementById('rankingKenTabs');
+    if (!tabs) return;
+    tabs.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      kenRankN_ = Number(b.getAttribute('data-n'));
+      if (currentRankingMode_ === 'ken') renderKenRanking_();
+    });
+  })();
+
   function setRankingTabActive(mode) {
+    var kenTab = document.getElementById('rankingTabKen'), kenTabs = document.getElementById('rankingKenTabs');
+    if (kenTab) { kenTab.classList.toggle('is-active', mode === 'ken'); kenTab.setAttribute('aria-selected', String(mode === 'ken')); }
+    if (kenTabs) kenTabs.hidden = mode !== 'ken';
     els.rankingTabExp.classList.toggle('is-active', mode === 'exp');
     els.rankingTabExp.setAttribute('aria-selected', String(mode === 'exp'));
     els.rankingTabToday.classList.toggle('is-active', mode === 'today');
@@ -25397,6 +25443,17 @@
       apiPost('challengeRanking', { id: session.id }).then(function (res) {
         if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
         renderChallengeRanking(res);
+      }).catch(function () {
+        els.rankingSummary.textContent = '読み込みに失敗しました。';
+      });
+      return;
+    }
+    if (mode === 'ken') {
+      apiPost('kenRanking', { id: session.id }).then(function (res) {
+        if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
+        kenRankData_ = res.ranking;
+        if (currentRankingMode_ !== 'ken') return; // 読み込み中に別のタブへ切り替えた
+        renderKenRanking_();
       }).catch(function () {
         els.rankingSummary.textContent = '読み込みに失敗しました。';
       });
@@ -31495,6 +31552,7 @@
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
   els.rankingTabHyakuMasu.addEventListener('click', function () { selectRankingMode('hyakuMasu'); });
+  if (document.getElementById('rankingTabKen')) document.getElementById('rankingTabKen').addEventListener('click', function () { selectRankingMode('ken'); });
   els.rankingTabStudyReport.addEventListener('click', function () { selectRankingMode('studyReportToday'); });
   els.rankingTabStudyReportMonth.addEventListener('click', function () { selectRankingMode('studyReportMonth'); });
   els.rankingTabReading.addEventListener('click', function () { selectRankingMode('reading'); });
@@ -31627,8 +31685,8 @@
     }
     return null;
   }
-  // ---- 計算パズルの画面(2026-11-05〜。今は00001だけ。KEN_OPEN_ALL_をtrueにすると全員) ----
-  var KEN_OPEN_ALL_ = false;
+  // ---- 計算パズルの画面(2026-11-05〜。2026-11-06から全員に公開) ----
+  var KEN_OPEN_ALL_ = true;
   function kenVisible_() { return isAdminSession_() || KEN_OPEN_ALL_; }
   var ken_ = { p: null, vals: [], sel: -1, start: 0, done: false, timer: null, wrong: {} };
   function kenBest_(n) { try { return Number(localStorage.getItem('kenBest_' + n)) || 0; } catch (e) { return 0; } }

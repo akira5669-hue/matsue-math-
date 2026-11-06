@@ -26,7 +26,7 @@ const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmis
 const { handleHalloweenStatus, handleHalloweenBuyCandy, handleHalloweenGhost } = require('../lib/handlers/halloween');
 const { handleZukeiStatus, handleZukeiAnswer } = require('../lib/handlers/zukei');
 const { handleGachaStatus, handleGachaDraw } = require('../lib/handlers/gacha');
-const { handleKenStatus, handleKenClear } = require('../lib/handlers/kenken');
+const { handleKenStatus, handleKenClear, handleKenRanking } = require('../lib/handlers/kenken');
 const { handleSurveyStatus, handleSurveySubmit } = require('../lib/handlers/survey');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
 const { handleDistributeDailyEffortSeed, handleDistributeMonthlyEffortSeed } = require('../lib/handlers/effortSeedReward');
@@ -119,6 +119,7 @@ const ACTIONS = {
   gachaDraw: handleGachaDraw,
   kenStatus: handleKenStatus,
   kenClear: handleKenClear,
+  kenRanking: handleKenRanking,
   surveyStatus: handleSurveyStatus,
   surveySubmit: handleSurveySubmit,
   distributeChallengeFruits: handleDistributeChallengeFruits,
