@@ -33446,10 +33446,10 @@
     };
   }
 
-  // ===== 🏫 高校受験問題！数学(2026-11-06〜、今は00001だけ) =====
+  // ===== 🏫 高校受験問題！数学(2026-11-06〜、2026-11-07から全員に公開) =====
   // 公立高校入試でよく出る形：①計算(平方根・正負の数・因数分解) ②方程式(連立・2次) ③関数(y=ax²・1次関数)
   // ④円周角 ⑤三平方の定理 ⑥確率。数字は毎回ランダム。答えたあとに解説。
-  var KOKO_OPEN_ALL_ = false;
+  var KOKO_OPEN_ALL_ = true;
   function kokoVisible_() { return isAdminSession_() || KOKO_OPEN_ALL_; }
   function kkSqrtSplit_(n) { var k = 1, m = n; for (var i = 2; i * i <= m; i++) while (m % (i * i) === 0) { m /= i * i; k *= i; } return [k, m]; }
   // k√m の形の文字(m=1なら整数)。kは負でもよい。
