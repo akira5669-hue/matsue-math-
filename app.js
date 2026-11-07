@@ -23519,6 +23519,8 @@
   var TREASURE_CHEST_CAP_NOTICE_END_ = '2026-12-31';
   function renderTreasureChestCapBanner_() {
     if (!els.treasureChestCapBanner) return;
+    // 2026-11-07 掲載終了(説明は使い方マニュアルの「宝箱・鍵・指輪」に移した)。
+    els.treasureChestCapBanner.hidden = true; return;
     if (todayKey() > TREASURE_CHEST_CAP_NOTICE_END_) { els.treasureChestCapBanner.hidden = true; return; }
     els.treasureChestCapBanner.hidden = false;
     if (els.treasureChestCapBannerText) {
@@ -23637,6 +23639,9 @@
   function renderZukeiBanner_() {
     var b = document.getElementById('zukeiBanner');
     if (b) b.hidden = !(zukeiVisible_() && todayKey() <= ZUKEI_BANNER_END_);
+    // 高校受験問題とサッカーPKガチャの告知(2026-11-07〜11月中、一番上に出す)
+    var kb = document.getElementById('kokoBanner');
+    if (kb) kb.hidden = !(kokoVisible_() && todayKey() <= ZUKEI_BANNER_END_);
   }
   function renderTrainingBanner_() {
     renderZukeiBanner_();
@@ -34864,6 +34869,7 @@
     var zkBannerOpen_ = function (mode) { if (els.zukeiPanel.hasAttribute('hidden') || zukei_.mode !== mode) toggleZukei(mode); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     var zkbb = document.getElementById('zukeiBannerBtn'); if (zkbb) zkbb.addEventListener('click', function () { zkBannerOpen_('zukei'); });
     var jkbb = document.getElementById('jukenBannerBtn'); if (jkbb) jkbb.addEventListener('click', function () { zkBannerOpen_('juken'); });
+    var kkbb = document.getElementById('kokoBannerBtn'); if (kkbb) kkbb.addEventListener('click', function () { zkBannerOpen_('koko'); });
     if (els.jukenToggle) els.jukenToggle.addEventListener('click', function () { toggleZukei('juken'); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     var kokoTgl = document.getElementById('kokoToggle'); if (kokoTgl) kokoTgl.addEventListener('click', function () { toggleZukei('koko'); els.zukeiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     els.zukeiPanel.addEventListener('click', function (e) {
