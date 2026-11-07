@@ -34317,6 +34317,8 @@
   // 4.で「なし」を選んだら、ほかのチェックを外す(ほかを選んだら「なし」を外す)。2026-11-05
   document.addEventListener('change', function (e) {
     var t = e.target;
+    // 面談を希望するときだけ、希望のコース(二者・三者面談)を選ぶ欄を出す(2026-11-07〜)
+    if (t && t.name === 'surveyInterview') { var cb = document.getElementById('surveyInterviewCourseBox'); if (cb) cb.hidden = t.value !== 'want'; }
     if (!t || t.name !== 'surveyWorry' || !t.checked || !els.surveyPanel) return;
     Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('input[name="surveyWorry"]'), function (el) {
       if (el !== t && (t.value === 'なし' || el.value === 'なし')) el.checked = false;
@@ -34335,6 +34337,7 @@
       worryOther: val('worryOther'), consult: val('consult'), effort: val('effort'),
       anxiety: Number((document.getElementById('surveyAnxiety') || {}).value) || 0,
       interview: surveyRadio_('surveyInterview'),
+      interviewCourse: surveyRadio_('surveyInterview') === 'want' ? surveyRadio_('surveyInterviewCourse') : '',
       satClass: surveySat_.satClass, satOverall: surveySat_.satOverall, improve: val('improve')
     };
     // 選ぶところは、選ばなくても送れる(2026-11-05〜)。
@@ -34357,6 +34360,7 @@
       els.surveyResult.innerHTML = '<div class="win-banner">📝 アンケートを送りました。回答ありがとうございました！' + (res.rewarded ? ' +' + res.rewardMp + 'MP' : body.respondent === 'guardian' ? '（保護者の方の回答ではMPは入りません）' : '') + '</div>';
       Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('[data-sv-text]'), function (el) { el.value = ''; });
       Array.prototype.forEach.call(els.surveyPanel.querySelectorAll('input[type="radio"]:not([name="surveyRespondent"]), input[type="checkbox"]'), function (el) { el.checked = false; });
+      var icb = document.getElementById('surveyInterviewCourseBox'); if (icb) icb.hidden = true;
       var r = document.getElementById('surveyAnxiety'); if (r) r.value = 0;
       surveySat_ = { satClass: 0, satOverall: 0 };
       renderSurveyStars_();
