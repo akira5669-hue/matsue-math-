@@ -32183,11 +32183,13 @@
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 10;
   // mode: 'zukei'=超絶！図形！トレーニング！！(平面・空間)、'juken'=🎓中学受験問題！(別ボタン。同じパネルを使い回す)
-  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, sel: null, mode: 'zukei' };
+  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, kokoCorrectToday: 0, sel: null, mode: 'zukei' };
+  // 🏫高校受験問題！の正解は別に数え、1日KOKO_PK_UNLOCK_問正解でその日の⚽サッカーPKガチャができる(2026-11-07〜、サーバーのzukei.jsと揃える)。
+  var KOKO_PK_UNLOCK_ = 10;
   var ZK_MODE_TEXT_ = {
     zukei: { heading: '🧊 超絶！図形！トレーニング！！', hint: '新！図形問題！キャンペーン！ 「平面図形」（回転と裏返し・対称な図形・角度・方眼の面積）と「空間図形」（積み木・見え方・展開図・回転体）で、図形の力をきたえよう！やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（🎓中学受験問題！とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
     juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
-    koko: { heading: '🏫 高校受験問題！数学', hint: '高校入試によく出る問題にチャレンジ！基礎編（計算・方程式・関数・円周角・三平方の定理・確率）と、標準編（関数と図形・文章題・空間図形・相似・円・確率の応用）があるよ。答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（図形トレーニング・中学受験問題とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' }
+    koko: { heading: '🏫 高校受験問題！数学', hint: '高校入試によく出る問題にチャレンジ！基礎編（計算・方程式・関数・円周角・三平方の定理・確率）と、標準編（関数と図形・文章題・空間図形・相似・円・確率の応用）があるよ。答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると、その日の⚽サッカーPKガチャが1回できるよ！' }
   };
   // 今のモードで出す種類(中学受験問題！はjukenグループだけ、高校受験問題！はkokoグループだけ、図形トレーニングはそれ以外)。
   function zkGroupMode_(g) { return g === 'koko2' ? 'koko' : g === 'juken' || g === 'koko' ? g : 'zukei'; }
@@ -34132,12 +34134,14 @@
     var t = types[randInt(0, types.length - 1)];
     zukei_.qType = t.id;
     zukei_.q = t.make();
+    zkMemoClear_();
     zukei_.answered = false;
   }
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問（正解 ' + zukei_.correctToday + '問）' + (!gachaVisible_() ? '' : zukei_.correctToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.correctToday) + '問正解で🎲サイコロガチャ）');
+    if (zukei_.mode === 'koko') els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日の高校受験問題の正解 ' + zukei_.kokoCorrectToday + '問' + (!gachaVisible_() ? '' : zukei_.kokoCorrectToday >= KOKO_PK_UNLOCK_ ? '（⚽サッカーPKガチャができるよ！）' : '（あと' + (KOKO_PK_UNLOCK_ - zukei_.kokoCorrectToday) + '問正解で⚽サッカーPKガチャ）');
+    else els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問（正解 ' + zukei_.correctToday + '問）' + (!gachaVisible_() ? '' : zukei_.correctToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.correctToday) + '問正解で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
     els.zukeiFigure.innerHTML = q.figure;
@@ -34163,19 +34167,66 @@
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     zukei_.answeredToday++;
-    if (ok) zukei_.correctToday++;
+    if (ok) { if (zukei_.mode === 'koko') zukei_.kokoCorrectToday++; else zukei_.correctToday++; }
     renderZukei_();
     els.zukeiResult.innerHTML = ok
       ? '<div class="win-banner">⭕ 正解！ HP+1</div><div class="test-photo-hint">' + q.explain + '</div>'
       : '<div class="test-photo-hint">❌ ざんねん！' + (hpChange < 0 ? ' HP-1。' : '') + '緑の答えが正解だよ。<br>' + q.explain + '</div>';
     if (!session || !session.id) return;
-    apiPost('zukeiAnswer', { id: session.id, correct: ok }).then(function (res) {
+    apiPost('zukeiAnswer', { id: session.id, correct: ok, mode: zukei_.mode }).then(function (res) {
       if (!res || !res.ok) return;
       zukei_.answeredToday = Number(res.answeredToday) || 0;
       if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
+      if (typeof res.kokoCorrectToday === 'number') zukei_.kokoCorrectToday = res.kokoCorrectToday;
       renderZukei_();
     }).catch(function () {});
   }
+  // ✏️計算メモ(🏫高校受験問題！だけ、2026-11-07〜)。ふだんの問題の計算メモと同じ使い方で、次の問題に進むと消える。
+  var zkMemo_ = { tool: 'pen', drawing: false, x: 0, y: 0, sized: false };
+  function zkMemoEl_(id) { return document.getElementById(id); }
+  function zkMemoCtx_() { var c = zkMemoEl_('zukeiMemoCanvas'); return c && c.getContext && c.getContext('2d'); }
+  function zkMemoSize_() {
+    var c = zkMemoEl_('zukeiMemoCanvas');
+    if (!c || zkMemo_.sized || !c.clientWidth || !c.clientHeight) return;
+    c.width = c.clientWidth; c.height = c.clientHeight; zkMemo_.sized = true;
+  }
+  function zkMemoClear_() { var ctx = zkMemoCtx_(), c = zkMemoEl_('zukeiMemoCanvas'); if (ctx) ctx.clearRect(0, 0, c.width, c.height); }
+  function zkMemoShow_(on) {
+    var tg = zkMemoEl_('zukeiMemoToggle'), p = zkMemoEl_('zukeiMemoPanel');
+    if (tg) tg.hidden = !on;
+    if (p && !on) p.hidden = true;
+  }
+  function zkMemoTool_(tool) {
+    zkMemo_.tool = tool;
+    zkMemoEl_('zukeiMemoPen').classList.toggle('is-active', tool === 'pen');
+    zkMemoEl_('zukeiMemoEraser').classList.toggle('is-active', tool === 'eraser');
+  }
+  (function () {
+    var c = zkMemoEl_('zukeiMemoCanvas');
+    if (!c) return;
+    var pt = function (ev) { var r = c.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
+    zkMemoEl_('zukeiMemoToggle').addEventListener('click', function () {
+      var p = zkMemoEl_('zukeiMemoPanel');
+      p.hidden = !p.hidden;
+      if (!p.hidden) zkMemoSize_();
+    });
+    zkMemoEl_('zukeiMemoPen').addEventListener('click', function () { zkMemoTool_('pen'); });
+    zkMemoEl_('zukeiMemoEraser').addEventListener('click', function () { zkMemoTool_('eraser'); });
+    zkMemoEl_('zukeiMemoClear').addEventListener('click', zkMemoClear_);
+    c.addEventListener('pointerdown', function (ev) { zkMemoSize_(); zkMemo_.drawing = true; var p = pt(ev); zkMemo_.x = p.x; zkMemo_.y = p.y; });
+    c.addEventListener('pointermove', function (ev) {
+      if (!zkMemo_.drawing) return;
+      var ctx = zkMemoCtx_();
+      if (!ctx) return;
+      var p = pt(ev);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (zkMemo_.tool === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = 20; }
+      else { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; }
+      ctx.beginPath(); ctx.moveTo(zkMemo_.x, zkMemo_.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      zkMemo_.x = p.x; zkMemo_.y = p.y;
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { c.addEventListener(n, function () { zkMemo_.drawing = false; }); });
+  })();
   function toggleZukei(mode) {
     mode = mode === 'juken' || mode === 'koko' ? mode : 'zukei';
     var isHidden = els.zukeiPanel.hasAttribute('hidden');
@@ -34190,13 +34241,14 @@
       if (p) p.setAttribute('hidden', '');
     });
     els.zukeiPanel.removeAttribute('hidden');
+    zkMemoShow_(mode === 'koko');
     renderZukeiTypes_();
     els.zukeiResult.innerHTML = '';
     renderZukei_();
     var session = loadSession();
     if (session && session.id) {
       apiPost('zukeiStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; zukei_.correctToday = Number(res.correctToday) || 0; renderZukei_(); }
+        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; zukei_.correctToday = Number(res.correctToday) || 0; zukei_.kokoCorrectToday = Number(res.kokoCorrectToday) || 0; renderZukei_(); }
       }).catch(function () {});
     }
   }
@@ -34393,7 +34445,7 @@
   var GACHA_LUCKY_SUBJECT_ = ['計算', '図形', '文章題', '割合', '速さ', '方程式', '関数', '理科（生物）', '理科（化学）', '理科（物理）', '理科（地学）', '単位'];
   var GACHA_LUCKY_ITEM_ = ['消しゴム', '定規', 'コンパス', '赤ペン', '青ペン', 'ノート', 'ふせん', '分度器', '水とう', 'えんぴつ', '時計', 'ハンカチ'];
   var GACHA_LUCKY_COLOR_ = ['赤', '青', '黄色', '緑', 'オレンジ', 'むらさき', 'ピンク', '水色', '白', '金色'];
-  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20 };
+  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20, kokoCorrect: 0, pkUnlock: 10 };
   function gachaVisible_() { return isAdminSession_() || GACHA_OPEN_ALL_; }
   function gachaResultHtml_(kind, r, mp) {
     var res = (r && r.result) || {};
@@ -34413,7 +34465,7 @@
     return '<div class="gacha-line gacha-text">🎯 今日のミッション：<b>' + escHtml(GACHA_MISSIONS_[Number(res.pick) % GACHA_MISSIONS_.length]) + '</b></div>' + mpTxt;
   }
   // 生徒が引けるガチャの種類(2026-11-03〜サイコロ、11-04〜豆知識も。00001は全部試せる。ほかは残しておき、ここに足せば復活する)。gacha.jsのENABLED_KINDSと揃えること。
-  var GACHA_ENABLED_KINDS_ = ['dice', 'trivia'];
+  var GACHA_ENABLED_KINDS_ = ['dice', 'trivia', 'pk'];
   function gachaKindOn_(kind) { return isAdminSession_() || GACHA_ENABLED_KINDS_.indexOf(kind) !== -1; }
   // ---- サッカーPKガチャ(2回勝負：①キック ②キーパー。相手の動きはサーバーで決める) ----
   // 場面はSVGで描く(観客席・ゴール・ネット・キーパー・キッカー・ボール)。蹴った瞬間に
@@ -34433,7 +34485,7 @@
       ? '<text x="112" y="140" class="pk-tag">あなた</text>'
       : '<text x="150" y="33" class="pk-tag" text-anchor="middle">あなた（キーパー）</text>';
     return '<div class="' + cls + '"><svg viewBox="0 0 300 210" role="img" aria-label="PKの場面">'
-      + '<defs><pattern id="pkNet" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 0L7 7M7 0L0 7" stroke="#fff" stroke-width="0.6" opacity="0.75"/></pattern>'
+      + '<defs><radialGradient id="pkBallShade" cx="0.35" cy="0.3" r="0.75"><stop offset="0.55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#1e293b" stop-opacity="0.5"/></radialGradient><clipPath id="pkBallClip"><circle cx="150" cy="177" r="9.5"/></clipPath><pattern id="pkNet" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 0L7 7M7 0L0 7" stroke="#fff" stroke-width="0.6" opacity="0.75"/></pattern>'
       + '<linearGradient id="pkSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#334155"/><stop offset="1" stop-color="#64748b"/></linearGradient></defs>'
       + '<rect width="300" height="46" fill="url(#pkSky)"/>' + crowd
       + '<rect y="44" width="300" height="166" fill="#15803d"/>'
@@ -34454,7 +34506,7 @@
       + '<circle cx="150" cy="72" r="7.5" fill="#f1c27d"/><path d="M142.5 70a7.5 7.5 0 0 1 15 0z" fill="#3f2a1d"/>'
       + '</g>'
       // ボール
-      + '<g class="pk-ballg"><circle cx="150" cy="177" r="9" fill="#fff" stroke="#111827" stroke-width="1.2"/><polygon points="150,172.5 154.3,175.6 152.6,180.6 147.4,180.6 145.7,175.6" fill="#111827"/></g>'
+      + '<g class="pk-ballg"><circle cx="150" cy="177" r="9.5" fill="#fff"/><g clip-path="url(#pkBallClip)" fill="#111827" stroke="#334155" stroke-width="0.5" stroke-linejoin="round"><polygon points="150,173.2 153.2,175.5 152,179.4 148,179.4 146.8,175.5"/><polygon points="150,170.3 146.9,168 148.1,164.3 151.9,164.3 153.1,168"/><polygon points="156,174.6 157.2,170.9 161,170.9 162.2,174.6 159.1,176.9"/><polygon points="153.7,181.7 157.5,181.7 158.7,185.4 155.6,187.7 152.5,185.4"/><polygon points="146.3,181.7 147.5,185.4 144.4,187.7 141.3,185.4 142.5,181.7"/><polygon points="144,174.6 140.9,176.9 137.8,174.6 139,170.9 142.8,170.9"/><path d="M150 173.2L150 170.3M153.2 175.5L156 174.7M152 179.4L153.7 181.7M148 179.4L146.3 181.7M146.8 175.5L144 174.7" fill="none" stroke="#475569" stroke-width="0.6"/></g><circle cx="150" cy="177" r="9.5" fill="url(#pkBallShade)" stroke="#1f2937" stroke-width="0.8"/><ellipse cx="146.6" cy="173" rx="2.4" ry="1.5" fill="#fff" opacity="0.75" transform="rotate(-35 146.6 173)"/></g>'
       // キッカー(後ろ姿)
       + '<g class="pk-kicker">'
       + '<line x1="113" y1="188" x2="109" y2="208" stroke="#f1c27d" stroke-width="6" stroke-linecap="round"/><line x1="125" y1="188" x2="131" y2="207" stroke="#f1c27d" stroke-width="6" stroke-linecap="round"/>'
@@ -34489,6 +34541,8 @@
       return '<div class="gacha-line">' + label + '</div><div class="pk-btns">'
         + ['L', 'C', 'R'].map(function (d) { return '<button type="button" class="ghost-btn pk-btn" data-pk="' + kind + '" data-dir="' + d + '"' + (pkBusy_ ? ' disabled' : '') + '>' + (d === 'L' ? '⬅️ ' : d === 'C' ? '⬆️ ' : '➡️ ') + PK_LABEL_[d] + '</button>'; }).join('') + '</div>';
     };
+    // 🏫高校受験問題！で今日10問正解するまではできない(先生は条件なし、2026-11-07〜)
+    if (!r && !isAdminSession_() && gacha_.kokoCorrect < gacha_.pkUnlock) { out.innerHTML = pkSceneHtml_('kicker', null, false); ch.innerHTML = '<button type="button" class="primary-btn gacha-btn" disabled>🔒 高校受験問題をあと' + (gacha_.pkUnlock - gacha_.kokoCorrect) + '問正解</button>'; return; }
     if (!r) { out.innerHTML = pkSceneHtml_('kicker', null, false); ch.innerHTML = btns('kick', '<b>①キッカー</b>：どこにシュートする？'); return; }
     if (!r.keep) { out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkSceneHtml_('keeper', null, false); ch.innerHTML = btns('keep', '<b>②キーパー</b>：相手はどこに蹴ってくる？飛ぶ方向を選んでね'); return; }
     out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkKeepResultHtml_(r)
@@ -34530,6 +34584,7 @@
         gacha_.today.pk = { result: res.result, mp: res.mp };
         if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
       } else if (res && res.prev) gacha_.today.pk = res.prev;
+      if (res && res.error === 'pk_locked') { gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; done('🔒 🏫高校受験問題！で今日' + (Number(res.pkUnlock) || 10) + '問正解するとできるよ。'); return; }
       if (r2 && (step === 'kick' ? r2.kick : r2.keep)) play(step === 'kick' ? pkKickFin_(r2) : pkKeepFin_(r2));
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
@@ -34781,7 +34836,7 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('gachaStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; renderGacha_(); }
+        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; renderGacha_(); }
       }).catch(function () {});
     }
   }

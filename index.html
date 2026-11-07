@@ -910,7 +910,7 @@
       </div>
       <div class="gacha-card" data-gacha="pk">
         <div class="gacha-title">⚽ サッカーPKガチャ</div>
-        <div class="gacha-desc">2回勝負！①キッカー：左・真ん中・右から選んでシュート。ゴールが決まれば<b>+5MP</b>。②キーパー：相手のシュートを左・真ん中・右で守って、止めれば<b>+5MP</b>。（1日1回・最大10MP）</div>
+        <div class="gacha-desc">2回勝負！①キッカー：左・真ん中・右から選んでシュート。ゴールが決まれば<b>+5MP</b>。②キーパー：相手のシュートを左・真ん中・右で守って、止めれば<b>+5MP</b>。（1日1回・最大10MP）<br>🔒 <b>🏫高校受験問題！で今日10問正解</b>するとできるよ。</div>
         <div class="gacha-out"></div>
         <div class="pk-choices"></div>
         <button type="button" class="primary-btn gacha-btn" hidden>ガチャを引く！</button>
@@ -1068,6 +1068,15 @@
       <p class="zukei-q-title" id="zukeiQTitle"></p>
       <p class="zukei-q-text" id="zukeiQText"></p>
       <div class="zukei-figure" id="zukeiFigure"></div>
+      <button id="zukeiMemoToggle" class="ghost-btn memo-toggle-btn" type="button" hidden>✏️ 計算メモ</button>
+      <div class="memo-panel" id="zukeiMemoPanel" hidden>
+        <canvas id="zukeiMemoCanvas" class="memo-canvas"></canvas>
+        <div class="memo-toolbar">
+          <button type="button" class="memo-tool-btn is-active" id="zukeiMemoPen">✏️ ペン</button>
+          <button type="button" class="memo-tool-btn" id="zukeiMemoEraser">🧹 消しゴム</button>
+          <button type="button" class="memo-tool-btn" id="zukeiMemoClear">🗑️ クリア</button>
+        </div>
+      </div>
       <div class="zukei-choices" id="zukeiChoices"></div>
       <div id="zukeiResult"></div>
       <div class="answer10-actions">
