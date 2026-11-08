@@ -34481,6 +34481,10 @@
   // キッカーが踏み込み、ボールが飛び、キーパーが横っ飛びする動きはCSSのtransitionで付ける。
   var PK_LABEL_ = { L: '左', C: '真ん中', R: '右' };
   var pkBusy_ = false;
+  // 方向を選んだあと、シュートの種類(ふつう・🌀無回転・↪️カーブ)を選ぶまでの間、選んだ方向をおぼえておく(2026-11-08〜)
+  var pkPending_ = '';
+  var PK_SHOT_LABEL_ = { knuckle: '🌀無回転シュート', curve: '↪️カーブシュート' };
+  var PK_SPECIAL_HP_ = 5;
   // you: 'kicker'(①あなたが蹴る) / 'keeper'(②あなたが守る)。fin: 結果(nullなら蹴る前)
   function pkSceneHtml_(you, fin, still) {
     var myCol = '#2563eb', rivalCol = '#dc2626';
@@ -34529,18 +34533,23 @@
       + '</svg></div>';
   }
   // 結果のクラス：ボールの行き先・キーパーの飛んだ方向・止めたかどうか
-  function pkSceneClass_(f) { return 'pk-go pk-ball-' + f.ball + ' pk-keep-' + f.keeper + (f.stopped ? ' pk-saved' : ' pk-goalin'); }
-  function pkKickFin_(r) { return { ball: r.kick, keeper: r.dive, stopped: !r.goal }; }
-  function pkKeepFin_(r) { return { ball: r.shot, keeper: r.keep, stopped: !!r.saved }; }
+  function pkSceneClass_(f) {
+    return 'pk-go pk-ball-' + f.ball + ' pk-keep-' + f.keeper + (f.stopped ? ' pk-saved' : f.out ? ' pk-out' : ' pk-goalin')
+      + (f.shot ? ' pk-sp pk-sp-' + f.shot + ' pk-aim-' + f.aim : '');
+  }
+  function pkKickFin_(r) { return { ball: r.bend || r.kick, aim: r.kick, keeper: r.dive, stopped: !r.goal && !r.out, out: !!r.out, shot: r.sp || '' }; }
+  function pkKeepFin_(r) { return { ball: r.shot, keeper: r.keep, stopped: !!r.saved, out: !!r.wide }; }
   function pkKickResultHtml_(r) {
-    return '<div class="gacha-line"><b>①キック</b>：あなたは<b>' + PK_LABEL_[r.kick] + '</b>へシュート！キーパーは' + PK_LABEL_[r.dive] + 'へ飛んだ！</div>'
+    return '<div class="gacha-line"><b>①キック</b>：あなたは<b>' + PK_LABEL_[r.kick] + '</b>へ' + (r.sp ? '<b>' + PK_SHOT_LABEL_[r.sp] + '</b>（HP-' + PK_SPECIAL_HP_ + '）' : 'シュート') + '！キーパーは' + PK_LABEL_[r.dive] + 'へ飛んだ！</div>'
       + pkSceneHtml_('kicker', pkKickFin_(r), true)
-      + (r.goal ? '<div class="pk-big pk-win">⚽ ゴーーール！！ +5MP</div>' : '<div class="pk-big pk-lose">🧤 キーパーに止められた…</div>');
+      + (r.out ? '<div class="pk-big pk-lose">😱 ボールは枠の外へ…！ ゴールならず</div>'
+        : r.goal ? '<div class="pk-big pk-win">' + (r.bend ? (r.sp === 'knuckle' ? '🌀 ボールがゆれて' : '↪️ ボールが曲がって') + 'キーパーをかわした！ ' : '') + '⚽ ゴーーール！！ +5MP</div>'
+        : '<div class="pk-big pk-lose">🧤 キーパーに止められた…</div>');
   }
   function pkKeepResultHtml_(r) {
     return '<div class="gacha-line"><b>②キーパー</b>：あなたは<b>' + PK_LABEL_[r.keep] + '</b>へ飛んだ！相手のシュートは' + PK_LABEL_[r.shot] + '！</div>'
       + pkSceneHtml_('keeper', pkKeepFin_(r), true)
-      + (r.saved ? '<div class="pk-big pk-win">🧤 ナイスセーブ！！ +5MP</div>' : '<div class="pk-big pk-lose">⚽ 決められた…</div>');
+      + (r.wide ? '<div class="pk-big pk-win">😮 相手のシュートは枠の外！ +5MP</div>' : r.saved ? '<div class="pk-big pk-win">🧤 ナイスセーブ！！ +5MP</div>' : '<div class="pk-big pk-lose">⚽ 決められた…</div>');
   }
   function pkRender_(card) {
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.pk-choices');
@@ -34552,13 +34561,23 @@
     };
     // 🏫高校受験問題！で今日10問正解するまではできない(先生は条件なし、2026-11-07〜)
     if (!r && !isAdminSession_() && gacha_.kokoCorrect < gacha_.pkUnlock) { out.innerHTML = pkSceneHtml_('kicker', null, false); ch.innerHTML = '<button type="button" class="primary-btn gacha-btn" disabled>🔒 高校受験問題をあと' + (gacha_.pkUnlock - gacha_.kokoCorrect) + '問正解</button>'; return; }
+    if (!r && pkPending_) {
+      var hpNow = Number(state.hp) || 0, canSp = hpNow > PK_SPECIAL_HP_ && !pkBusy_;
+      out.innerHTML = pkSceneHtml_('kicker', null, false);
+      ch.innerHTML = '<div class="gacha-line"><b>' + PK_LABEL_[pkPending_] + '</b>にシュート！どのシュートを打つ？</div><div class="pk-btns pk-shot-btns">'
+        + '<button type="button" class="ghost-btn pk-btn" data-pk="kick" data-dir="' + pkPending_ + '" data-shot=""' + (pkBusy_ ? ' disabled' : '') + '>⚽ ふつうのシュート</button>'
+        + ['knuckle', 'curve'].map(function (s) { return '<button type="button" class="ghost-btn pk-btn pk-btn-sp" data-pk="kick" data-dir="' + pkPending_ + '" data-shot="' + s + '"' + (canSp ? '' : ' disabled') + '>' + PK_SHOT_LABEL_[s] + '<br><small>HP5を使う</small></button>'; }).join('')
+        + '</div><div class="test-photo-hint">🌀無回転・↪️カーブは、キーパーが同じ方向に飛んでも、そこからさらに曲がってゴールをねらえる！ただし10回に1回は枠の外へ…。' + (hpNow > PK_SPECIAL_HP_ ? '（今のHP ' + hpNow + '）' : '（HPが' + (PK_SPECIAL_HP_ + 1) + '以上あると打てるよ。今のHP ' + hpNow + '）') + '</div>'
+        + '<div class="pk-btns"><button type="button" class="ghost-btn" data-pk-back="1"' + (pkBusy_ ? ' disabled' : '') + '>↩️ 方向を選びなおす</button></div>';
+      return;
+    }
     if (!r) { out.innerHTML = pkSceneHtml_('kicker', null, false); ch.innerHTML = btns('kick', '<b>①キッカー</b>：どこにシュートする？'); return; }
     if (!r.keep) { out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkSceneHtml_('keeper', null, false); ch.innerHTML = btns('keep', '<b>②キーパー</b>：相手はどこに蹴ってくる？飛ぶ方向を選んでね'); return; }
     out.innerHTML = pkKickResultHtml_(r) + '<div class="pk-sep"></div>' + pkKeepResultHtml_(r)
       + '<div class="gacha-mp">合計 +' + (Number(t.mp) || 0) + 'MP</div><div class="test-photo-hint">今日のPKは終わり（また明日）</div>' + (isAdminSession_() ? '<button type="button" class="ghost-btn" data-gacha-again="pk">🔁 もう一度（先生だけ）</button>' : '');
     ch.innerHTML = '';
   }
-  function pkPlay_(step, dir) {
+  function pkPlay_(step, dir, shot) {
     var session = loadSession();
     if (!session || !session.id || pkBusy_ || !gachaKindOn_('pk')) return;
     var t = gacha_.today.pk;
@@ -34569,7 +34588,7 @@
     var out = card.querySelector('.gacha-out');
     out.setAttribute('data-anim', '1');
     out.innerHTML = (step === 'keep' ? pkKickResultHtml_(t.result) + '<div class="pk-sep"></div>' : '')
-      + '<div class="pk-big">' + (step === 'kick' ? '⚽ ' + PK_LABEL_[dir] + 'をねらって…' : '🧤 ' + PK_LABEL_[dir] + 'に飛ぶぞ…！') + '</div>'
+      + '<div class="pk-big">' + (step === 'kick' ? (shot ? PK_SHOT_LABEL_[shot] + 'で' : '⚽ ') + PK_LABEL_[dir] + 'をねらって…' : '🧤 ' + PK_LABEL_[dir] + 'に飛ぶぞ…！') + '</div>'
       + pkSceneHtml_(step === 'kick' ? 'kicker' : 'keeper', null, false);
     card.querySelector('.pk-choices').innerHTML = '';
     var started = Date.now();
@@ -34586,13 +34605,16 @@
         setTimeout(function () { done(''); }, 1900);
       }, Math.max(0, 700 - (Date.now() - started)));
     };
-    var req = step === 'kick' ? apiPost('gachaDraw', { id: session.id, kind: 'pk', kick: dir }) : apiPost('gachaPkKeep', { id: session.id, keep: dir });
+    pkPending_ = '';
+    var req = step === 'kick' ? apiPost('gachaDraw', { id: session.id, kind: 'pk', kick: dir, shot: shot || '' }) : apiPost('gachaPkKeep', { id: session.id, keep: dir });
     req.then(function (res) {
       var r2 = res && (res.ok ? res.result : res.prev && res.prev.result);
       if (res && res.ok) {
         gacha_.today.pk = { result: res.result, mp: res.mp };
         if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+        if (typeof res.hp === 'number') { state.hp = res.hp; saveGameState(state); updateGameHud(); }
       } else if (res && res.prev) gacha_.today.pk = res.prev;
+      if (res && res.error === 'insufficient_hp') { if (typeof res.hp === 'number') { state.hp = res.hp; saveGameState(state); updateGameHud(); } pkPending_ = dir; done('HPが足りません（HP' + (PK_SPECIAL_HP_ + 1) + '以上で打てるよ）。'); return; }
       if (res && res.error === 'pk_locked') { gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; done('🔒 🏫高校受験問題！で今日' + (Number(res.pkUnlock) || 10) + '問正解するとできるよ。'); return; }
       if (r2 && (step === 'kick' ? r2.kick : r2.keep)) play(step === 'kick' ? pkKickFin_(r2) : pkKeepFin_(r2));
       else done('できませんでした。もう一度お試しください。');
@@ -34854,7 +34876,14 @@
     els.gachaPanel.addEventListener('click', function (e) {
       var card = e.target.closest('[data-gacha]');
       var pkb = e.target.closest('[data-pk]');
-      if (pkb) { pkPlay_(pkb.getAttribute('data-pk'), pkb.getAttribute('data-dir')); return; }
+      var pkback = e.target.closest('[data-pk-back]');
+      if (pkback) { if (!pkBusy_) { pkPending_ = ''; renderGacha_(); } return; }
+      if (pkb) {
+        // キックは、方向を選んだあとにシュートの種類を選ぶ(2026-11-08〜)
+        if (pkb.getAttribute('data-pk') === 'kick' && !pkb.hasAttribute('data-shot')) { if (!pkBusy_ && !gacha_.today.pk) { pkPending_ = pkb.getAttribute('data-dir'); renderGacha_(); } return; }
+        pkPlay_(pkb.getAttribute('data-pk'), pkb.getAttribute('data-dir'), pkb.getAttribute('data-shot') || '');
+        return;
+      }
       var ag = e.target.closest('[data-gacha-again]');
       if (ag && isAdminSession_()) { delete gacha_.today[ag.getAttribute('data-gacha-again')]; renderGacha_(); return; }
       var bbb = e.target.closest('[data-bb]');

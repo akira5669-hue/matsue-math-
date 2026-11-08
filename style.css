@@ -2586,6 +2586,29 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 /* ゴール：ネットがゆれる */
 .pk-goalin .pk-net { animation: pkNet 0.35s ease-in-out 1s 3; }
 @keyframes pkNet { 50% { transform: scale(1.03, 1.06); } }
+/* 🌀無回転・↪️カーブシュート(2026-11-08〜)：ねらった方向(aim)へ飛んでから、最後の位置(ball)へ曲がる。枠の外(out)もある */
+.pk-aim-L { --kx: -60px; --ky: -84px; } .pk-aim-C { --kx: 0px; --ky: -92px; } .pk-aim-R { --kx: 60px; --ky: -84px; }
+.pk-ball-L { --bx: -72px; --by: -104px; } .pk-ball-C { --bx: 0px; --by: -112px; } .pk-ball-R { --bx: 72px; --by: -104px; }
+.pk-out.pk-ball-L { --bx: -108px; --by: -98px; } .pk-out.pk-ball-C { --bx: 0px; --by: -146px; } .pk-out.pk-ball-R { --bx: 108px; --by: -98px; }
+.pk-sp .pk-ballg, .pk-out .pk-ballg { transform: translate(var(--bx), var(--by)) scale(0.85); }
+.pk-go.pk-sp-curve .pk-ballg { transition: none; animation: pkCurve 1s cubic-bezier(0.2, 0.6, 0.4, 1) 0.28s both; }
+.pk-go.pk-sp-knuckle .pk-ballg { transition: none; animation: pkKnuckle 1s linear 0.28s both; }
+@keyframes pkCurve {
+  0% { transform: none; }
+  35% { transform: translate(calc(var(--kx) * 0.35 - 16px), calc(var(--ky) * 0.4)) scale(0.95) rotate(-240deg); }
+  70% { transform: translate(var(--kx), var(--ky)) scale(0.9) rotate(-520deg); }
+  100% { transform: translate(var(--bx), var(--by)) scale(0.85) rotate(-720deg); }
+}
+@keyframes pkKnuckle {
+  0% { transform: none; }
+  20% { transform: translate(calc(var(--kx) * 0.22 + 8px), calc(var(--ky) * 0.25)) scale(0.97); }
+  40% { transform: translate(calc(var(--kx) * 0.45 - 8px), calc(var(--ky) * 0.5)) scale(0.94); }
+  60% { transform: translate(calc(var(--kx) * 0.7 + 7px), calc(var(--ky) * 0.72)) scale(0.92); }
+  78% { transform: translate(calc(var(--kx) - 5px), var(--ky)) scale(0.9); }
+  100% { transform: translate(var(--bx), var(--by)) scale(0.85); }
+}
+.pk-btn-sp { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #f59e0b; font-weight: 700; }
+.pk-btn-sp small { font-weight: 400; font-size: 0.75em; }
 .pk-noanim .pk-keeper, .pk-noanim .pk-ballg, .pk-noanim .pk-kicker, .pk-noanim .pk-net { transition: none !important; animation: none !important; }
 .pk-sep { border-top: 1px dashed #fcd34d; margin: 8px 0; }
 .pk-big { font-weight: 800; font-size: 1.1rem; }
