@@ -32228,7 +32228,7 @@
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 10;
   // mode: 'zukei'=超絶！図形！トレーニング！！(平面・空間)、'juken'=🎓中学受験問題！(別ボタン。同じパネルを使い回す)
-  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, kokoCorrectToday: 0, sel: null, mode: 'zukei' };
+  var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, kokoCorrectToday: 0, kokoAnsweredToday: 0, sel: null, mode: 'zukei' };
   // 🏫高校受験問題！の正解は別に数え、1日KOKO_PK_UNLOCK_問正解でその日の⚽サッカーPKガチャができる(2026-11-07〜、サーバーのzukei.jsと揃える)。
   var KOKO_PK_UNLOCK_ = 10;
   var ZK_MODE_TEXT_ = {
@@ -34185,7 +34185,7 @@
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    if (zukei_.mode === 'koko') els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日の高校受験問題の正解 ' + zukei_.kokoCorrectToday + '問' + (!gachaVisible_() ? '' : zukei_.kokoCorrectToday >= KOKO_PK_UNLOCK_ ? '（⚽サッカーPKガチャができるよ！）' : '（あと' + (KOKO_PK_UNLOCK_ - zukei_.kokoCorrectToday) + '問正解で⚽サッカーPKガチャ）');
+    if (zukei_.mode === 'koko') els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた高校受験問題 ' + zukei_.kokoAnsweredToday + '問（正解 ' + zukei_.kokoCorrectToday + '問）' + (!gachaVisible_() ? '' : zukei_.kokoCorrectToday >= KOKO_PK_UNLOCK_ ? '（⚽サッカーPKガチャができるよ！）' : '（あと' + (KOKO_PK_UNLOCK_ - zukei_.kokoCorrectToday) + '問正解で⚽サッカーPKガチャ）');
     else els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問（正解 ' + zukei_.correctToday + '問）' + (!gachaVisible_() ? '' : zukei_.correctToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.correctToday) + '問正解で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
@@ -34211,7 +34211,8 @@
     updateGameHud();
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
-    zukei_.answeredToday++;
+    // 解いた数も、高校受験問題は図形・中学受験問題と別に数える(2026-11-09〜)
+    if (zukei_.mode === 'koko') zukei_.kokoAnsweredToday++; else zukei_.answeredToday++;
     if (ok) { if (zukei_.mode === 'koko') zukei_.kokoCorrectToday++; else zukei_.correctToday++; }
     renderZukei_();
     els.zukeiResult.innerHTML = ok
@@ -34226,6 +34227,7 @@
         zukei_.answeredToday = Number(res.answeredToday) || 0;
         if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
         if (typeof res.kokoCorrectToday === 'number') zukei_.kokoCorrectToday = res.kokoCorrectToday;
+        if (typeof res.kokoAnsweredToday === 'number') zukei_.kokoAnsweredToday = res.kokoAnsweredToday;
         renderZukei_();
         // 前の答えから2秒たたずに答えた分は、サーバーで数えない(連打対策)。正解したのに数が増えない理由を見せる。
         if (res.counted === false && ok && zukei_.q === q) els.zukeiResult.insertAdjacentHTML('beforeend', '<div class="test-photo-hint">⏱️ 前の問題に答えてから2秒たっていなかったので、今の正解は数に入らなかったよ。問題をよく読んでから答えよう！</div>');
@@ -34300,7 +34302,7 @@
     var session = loadSession();
     if (session && session.id) {
       apiPost('zukeiStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; zukei_.correctToday = Number(res.correctToday) || 0; zukei_.kokoCorrectToday = Number(res.kokoCorrectToday) || 0; renderZukei_(); }
+        if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; zukei_.correctToday = Number(res.correctToday) || 0; zukei_.kokoCorrectToday = Number(res.kokoCorrectToday) || 0; zukei_.kokoAnsweredToday = Number(res.kokoAnsweredToday) || 0; renderZukei_(); }
       }).catch(function () {});
     }
   }
