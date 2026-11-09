@@ -21798,6 +21798,33 @@
       updateScienceHud();
       return;
     }
+    // 県庁所在地クイズ(イージーモードで理科を10問解いた後の3問)は、理科モードでもそのまま出す。
+    // 答えは算数・数学と同じhandleAnswerで処理する(MP・HP・地図の進み方も同じ)。
+    if (state.capitalQuizBonusQueue && state.capitalQuizBonusQueue.length > 0) {
+      const cq = state.capitalQuizBonusQueue.shift();
+      state.current = cq;
+      state.answered = false;
+      if (els.scienceCharBanner) { els.scienceCharBanner.hidden = true; els.scienceCharBanner.innerHTML = ''; }
+      els.categoryTag.textContent = categoryLabel[cq.category] || '県庁所在地クイズ';
+      if (cq.questionHtml) { els.questionText.innerHTML = cq.questionHtml; }
+      else { els.questionText.innerHTML = ''; els.questionText.appendChild(document.createTextNode(cq.question)); }
+      els.feedback.innerHTML = '';
+      els.feedback.className = 'feedback';
+      els.nextBtn.disabled = true;
+      els.choices.innerHTML = '';
+      cq.choices.forEach(choiceRaw => {
+        const choiceStr = String(choiceRaw);
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.type = 'button';
+        btn.dataset.value = choiceStr;
+        btn.innerHTML = stepToHtml(choiceStr);
+        btn.addEventListener('click', () => { handleAnswer(btn, choiceStr); updateScienceHud(); });
+        els.choices.appendChild(btn);
+      });
+      updateScienceHud();
+      return;
+    }
     const mistakeQ = (!hanamarukoLastShown_ && Math.random() < HANAMARUKO_APPEAR_CHANCE_) ? pickScienceMistakeQuestion() : null;
     hanamarukoLastShown_ = !!mistakeQ;
     const q = mistakeQ || pickScienceGenerator().gen();
@@ -21857,6 +21884,15 @@
 
     const session = loadSession();
     if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect });
+    // 都道府県制覇（県庁所在地クイズ）イージーモードは、理科を解いても数える(2026-11-10〜)。
+    // 10問解くたびに、次の3問(理科モードのまま)が県庁所在地クイズになる。
+    if (!state.usaCrossingActive && capitalQuizEasyEligible_()) {
+      state.capitalQuizEasyStreak = (Number(state.capitalQuizEasyStreak) || 0) + 1;
+      if (state.capitalQuizEasyStreak >= CAPITAL_QUIZ_STREAK_FOR_BONUS_) {
+        state.capitalQuizEasyStreak = 0;
+        state.capitalQuizBonusQueue = (state.capitalQuizBonusQueue || []).concat(buildCapitalQuizSet_('easy'));
+      }
+    }
 
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
@@ -22336,7 +22372,7 @@
 
   function handleAnswer(btn, choiceStr) {
     if (state.trainingActive) { handleTrainingAnswer_(btn, choiceStr); return; }
-    if (state.subject === 'science') { handleScienceAnswer(btn, choiceStr); return; }
+    if (state.subject === 'science' && !(state.current && state.current.category === 'capitalQuizBonus')) { handleScienceAnswer(btn, choiceStr); return; }
     if (state.answered) return;
     state.answered = true;
     state.total++;
