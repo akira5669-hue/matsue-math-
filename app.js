@@ -205,8 +205,8 @@
     }
     if (batch.length === 0) return;
     logQueueFlushing = true;
-    var entries = batch.map(function (e) { return { category: e.category, correct: e.correct }; });
-    apiPost('logBatch', { id: targetId, entries: entries }).then(function (res) {
+    var entries = batch.map(function (e) { var o = { category: e.category, correct: e.correct }; if (e.sci) o.sci = true; return o; });
+    return apiPost('logBatch', { id: targetId, entries: entries }).then(function (res) {
       logQueueFlushing = false;
       // 成功した分に加え、再送しても絶対に成功しないエラー(該当IDなし・利用禁止・
       // 送信内容の不備)の分もキューから取り除く。以前はこれらがキューに残り続け、
@@ -21883,7 +21883,8 @@
     });
 
     const session = loadSession();
-    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect });
+    // sci:true … 理科の正解数を数える(野球ガチャの条件、2026-11-10〜)
+    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: true });
     // 都道府県制覇（県庁所在地クイズ）イージーモードは、理科を解いても数える(2026-11-10〜)。
     // 10問解くたびに、次の3問(理科モードのまま)が県庁所在地クイズになる。
     if (!state.usaCrossingActive && capitalQuizEasyEligible_()) {
@@ -34656,7 +34657,7 @@
   var GACHA_LUCKY_SUBJECT_ = ['計算', '図形', '文章題', '割合', '速さ', '方程式', '関数', '理科（生物）', '理科（化学）', '理科（物理）', '理科（地学）', '単位'];
   var GACHA_LUCKY_ITEM_ = ['消しゴム', '定規', 'コンパス', '赤ペン', '青ペン', 'ノート', 'ふせん', '分度器', '水とう', 'えんぴつ', '時計', 'ハンカチ'];
   var GACHA_LUCKY_COLOR_ = ['赤', '青', '黄色', '緑', 'オレンジ', 'むらさき', 'ピンク', '水色', '白', '金色'];
-  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20, kokoCorrect: 0, pkUnlock: 10 };
+  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20, kokoCorrect: 0, pkUnlock: 10, sciCorrect: 0, bbUnlock: 10 };
   function gachaVisible_() { return isAdminSession_() || GACHA_OPEN_ALL_; }
   function gachaResultHtml_(kind, r, mp) {
     var res = (r && r.result) || {};
@@ -34757,7 +34758,7 @@
     }).catch(function () { dqBusy_ = false; out.innerHTML = gachaResultHtml_('dice', gacha_.today.dice); });
   }
   // 生徒が引けるガチャの種類(2026-11-03〜サイコロ、11-04〜豆知識も。00001は全部試せる。ほかは残しておき、ここに足せば復活する)。gacha.jsのENABLED_KINDSと揃えること。
-  var GACHA_ENABLED_KINDS_ = ['dice', 'trivia', 'pk'];
+  var GACHA_ENABLED_KINDS_ = ['dice', 'trivia', 'pk', 'baseball'];
   function gachaKindOn_(kind) { return isAdminSession_() || GACHA_ENABLED_KINDS_.indexOf(kind) !== -1; }
   // ---- サッカーPKガチャ(2回勝負：①キック ②キーパー。相手の動きはサーバーで決める) ----
   // 場面はSVGで描く(観客席・ゴール・ネット・キーパー・キッカー・ボール)。蹴った瞬間に
@@ -35040,6 +35041,12 @@
     var t = gacha_.today.baseball;
     if (out.getAttribute('data-anim')) { ch.innerHTML = ''; return; }
     if (t && t.result && bbDone_(t.result)) { out.innerHTML = bbResultHtml_(t); ch.innerHTML = ''; return; }
+    // 野球ガチャは、今日🔬理科をbbUnlock問正解するとできる(2026-11-10〜、先生は条件なし)
+    if (!(t && t.result) && !isAdminSession_() && gacha_.sciCorrect < gacha_.bbUnlock) {
+      out.innerHTML = bbSceneHtml_(bbNewGame_(), 'bb-ready', true);
+      ch.innerHTML = '<button type="button" class="primary-btn gacha-btn" disabled>🔒 理科をあと' + (gacha_.bbUnlock - gacha_.sciCorrect) + '問正解</button>';
+      return;
+    }
     var st = t && t.result ? t.result : bbNewGame_();
     var last = st.pitches && st.pitches[st.pitches.length - 1];
     out.innerHTML = (last ? '<div class="gacha-line">' + bbEvText_(last, st) + '</div>' : '') + bbHistHtml_(st.pitches) + bbSceneHtml_(st, 'bb-ready', false)
@@ -35080,6 +35087,7 @@
       if (res && res.ok && res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
       if (res && res.ok && res.result && res.last) { gacha_.today.baseball = { result: res.result, mp: res.mp }; play(res.last, res.result); }
       else if (res && res.prev && res.prev.result) { gacha_.today.baseball = res.prev; done(''); }
+      else if (res && res.error === 'bb_locked') { gacha_.sciCorrect = Number(res.sciCorrect) || 0; done('🔒 🔬理科を今日' + (Number(res.bbUnlock) || 10) + '問正解するとできるよ。'); }
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
@@ -35149,8 +35157,9 @@
     renderGacha_();
     var session = loadSession();
     if (session && session.id) {
-      apiPost('gachaStatus', { id: session.id }).then(function (res) {
-        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; renderGacha_(); }
+      // 解いたばかりの答え(理科の正解数など)を先に送ってから、ガチャの条件を確かめる
+      Promise.resolve(flushLogQueue_()).catch(function () {}).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
+        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.bbUnlock = Number(res.bbUnlock) || 10; renderGacha_(); }
       }).catch(function () {});
     }
   }
