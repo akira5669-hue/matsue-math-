@@ -214,6 +214,7 @@
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="kenToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧩計算パズル<span class="new-badge">NEW</span></button>
+        <button id="bugToggle" class="ghost-btn is-new" type="button">🐞バグ報告<span class="new-badge">NEW</span></button>
         <button id="manualToggle" class="ghost-btn" type="button">📘使い方マニュアル</button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
         <button id="giftToggle" class="ghost-btn" type="button">MP交換</button>
@@ -892,6 +893,28 @@
       <div class="survey-q"><p class="survey-label">不満・改善してほしいこと</p><textarea class="survey-text" data-sv-text="improve" maxlength="2000" rows="3" placeholder="授業・アプリ・塾のことなど、こうしてほしいこと"></textarea></div>
       <div class="answer10-actions"><button type="button" class="primary-btn" id="surveySubmit">送信する</button></div>
       <div id="surveyResult"></div>
+    </section>
+
+    <section class="weekly-quiz-panel" id="bugPanel" hidden>
+      <h3 class="history-title">🐞 バグ報告</h3>
+      <p class="test-photo-hint">アプリのまちがい（正しい答えなのに不正解になる・数がおかしい・ボタンが動かない など）を見つけたら、先生に教えてね！<br>報告できるのは<b>レベル500以上</b>の人だけです（1日3件まで）。先生が確かめて、本当にまちがいだったら直します。</p>
+      <p class="test-photo-hint" id="bugStatus"></p>
+      <div id="bugForm" hidden>
+        <div class="survey-q"><p class="survey-label">1. どこで起きた？</p><select id="bugPlace" class="survey-text"></select></div>
+        <div class="survey-q"><p class="survey-label">2. 何が起きた？ <span class="survey-optional">（必ず書いてね）</span></p>
+          <textarea class="survey-text" id="bugWhat" maxlength="1000" rows="3" placeholder="例：(x-1)(x-2) を選んだら不正解になった。正解は (x-2)(x-1) と出た。"></textarea></div>
+        <div class="survey-q"><p class="survey-label">3. 問題文や、選んだ答え・正解と出た答え <span class="survey-optional">（書けたら書いてね）</span></p>
+          <textarea class="survey-text" id="bugDetail" maxlength="1000" rows="3" placeholder="問題文をそのまま写してくれると、先生が直しやすいよ"></textarea></div>
+        <div class="survey-q"><p class="survey-label">4. 画面の写真（スクリーンショット） <span class="survey-optional">（あれば1枚）</span></p>
+          <input type="file" id="bugFile" accept="image/*"></div>
+        <div class="answer10-actions"><button type="button" class="primary-btn" id="bugSubmit">先生に報告する</button></div>
+      </div>
+      <div id="bugResult"></div>
+      <div id="bugAdmin" hidden>
+        <h4 class="history-title">👩‍🏫 先生用：届いた報告</h4>
+        <div class="answer10-actions"><button type="button" class="ghost-btn" id="bugAdminReload">一覧を読みこむ</button></div>
+        <div id="bugAdminList"></div>
+      </div>
     </section>
 
     <section class="weekly-quiz-panel" id="gachaPanel" hidden>

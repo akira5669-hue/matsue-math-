@@ -34442,6 +34442,112 @@
     });
   }
 
+  /* ---------- 🐞バグ報告(2026-11-09〜、lib/handlers/bugReport.js) ----------
+     送れるのはレベル500以上の生徒だけ(サーバーでも確かめる)。先生(00001)には届いた報告の一覧も出す。 */
+  (function () {
+    var tg = document.getElementById('bugToggle'), panel = document.getElementById('bugPanel');
+    if (!tg || !panel) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var busy = false;
+    function setStatus_(res) {
+      var form = $('bugForm'), st = $('bugStatus');
+      if (!res || !res.ok) { st.textContent = '読みこめませんでした。もう一度ひらいてね。'; form.hidden = true; return; }
+      if (!res.allowed) {
+        st.innerHTML = '🔒 バグ報告は<b>レベル' + res.minLevel + '以上</b>になるとできるよ（今のレベル：' + res.level + '）。それまでに見つけたことは、塾で先生に直接教えてね！';
+        form.hidden = true; return;
+      }
+      var left = res.perDay - res.todayCount;
+      st.textContent = left > 0 ? '今日はあと' + left + '件報告できるよ。' : '今日はもう' + res.perDay + '件報告しました。また明日報告できるよ。';
+      form.hidden = left <= 0;
+      var sel = $('bugPlace');
+      if (!sel.options.length) sel.innerHTML = (res.places || []).map(function (p) { return '<option value="' + escHtml(p) + '">' + escHtml(p) + '</option>'; }).join('');
+    }
+    function open_() {
+      if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel',
+        'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+        var p = document.getElementById(pid);
+        if (p) p.setAttribute('hidden', '');
+      });
+      panel.removeAttribute('hidden');
+      $('bugResult').innerHTML = '';
+      $('bugStatus').textContent = '読みこみ中…';
+      $('bugAdmin').hidden = !isAdminSession_();
+      var s = loadSession();
+      if (!s || !s.id) return;
+      apiPost('bugReportStatus', { id: s.id }).then(setStatus_).catch(function () { setStatus_(null); });
+    }
+    function submit_() {
+      var s = loadSession();
+      if (!s || !s.id || busy) return;
+      var what = $('bugWhat').value.trim();
+      if (what.length < 5) { $('bugResult').innerHTML = '<div class="test-photo-hint">「何が起きた？」をくわしく書いてね（5文字以上）。</div>'; return; }
+      busy = true;
+      $('bugSubmit').disabled = true;
+      $('bugResult').innerHTML = '<div class="test-photo-hint">送信中…</div>';
+      var file = $('bugFile').files && $('bugFile').files[0];
+      (file ? compressImageFileToBase64(file, 1600, 0.8) : Promise.resolve('')).then(function (b64) {
+        return apiPost('bugReportSubmit', { id: s.id, place: $('bugPlace').value, what: what, detail: $('bugDetail').value.trim(), imageBase64: b64 });
+      }).then(function (res) {
+        busy = false;
+        $('bugSubmit').disabled = false;
+        if (!res || !res.ok) {
+          var msg = '送信できませんでした。もう一度お試しください。';
+          if (res && res.error === 'level_low') msg = '🔒 バグ報告はレベル' + res.minLevel + '以上になるとできるよ。';
+          else if (res && res.error === 'limit') msg = '今日はもう' + res.perDay + '件報告しました。また明日報告できるよ。';
+          else if (res && res.error === 'too_large') msg = '写真が大きすぎます。別の写真にしてね。';
+          $('bugResult').innerHTML = '<div class="test-photo-hint">' + msg + '</div>';
+          return;
+        }
+        $('bugWhat').value = ''; $('bugDetail').value = ''; $('bugFile').value = '';
+        $('bugResult').innerHTML = '<div class="win-banner">🐞 先生に報告しました！ありがとう！（報告番号 ' + res.reportId + '）</div>';
+        setStatus_({ ok: true, allowed: true, perDay: res.perDay, todayCount: res.todayCount, places: [] });
+      }).catch(function () { busy = false; $('bugSubmit').disabled = false; $('bugResult').innerHTML = '<div class="test-photo-hint">通信に失敗しました。もう一度お試しください。</div>'; });
+    }
+    function loadAdmin_() {
+      var s = loadSession();
+      if (!s || !s.id) return;
+      var list = $('bugAdminList');
+      list.innerHTML = '<p class="test-photo-hint">読みこみ中…</p>';
+      apiPost('bugReportList', { id: s.id }).then(function (res) {
+        if (!res || !res.ok) { list.innerHTML = '<p class="test-photo-hint">読みこめませんでした。</p>'; return; }
+        if (!res.reports.length) { list.innerHTML = '<p class="test-photo-hint">まだ報告はありません。</p>'; return; }
+        list.innerHTML = res.reports.map(function (r) {
+          var d = new Date(r.ts);
+          var when = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
+          var done = r.status === 'done';
+          return '<div class="bug-item' + (done ? ' is-done' : '') + '"><div class="bug-item-head">#' + r.id + '　' + escHtml(when) + '　' + escHtml(r.name || '') + '（' + escHtml(r.grade || '') + '・ID ' + escHtml(r.studentId) + '・Lv.' + r.level + '）　<b>' + escHtml(r.place || '') + '</b></div>'
+            + '<div class="bug-item-body">' + escHtml(r.what || '') + '</div>'
+            + (r.detail ? '<div class="bug-item-body bug-item-detail">' + escHtml(r.detail) + '</div>' : '')
+            + '<div class="bug-item-actions">' + (r.hasImage ? '<button type="button" class="ghost-btn" data-bug-img="' + r.id + '">画面の写真を見る</button>' : '')
+            + '<button type="button" class="' + (done ? 'ghost-btn' : 'primary-btn') + '" data-bug-done="' + r.id + '" data-done="' + (done ? '0' : '1') + '">' + (done ? '✅ 対応済み（もどす）' : '対応済みにする') + '</button></div>'
+            + '<div id="bugImg' + r.id + '"></div></div>';
+        }).join('');
+      }).catch(function () { list.innerHTML = '<p class="test-photo-hint">読みこめませんでした。</p>'; });
+    }
+    tg.addEventListener('click', open_);
+    panel.addEventListener('click', function (e) {
+      if (e.target.closest('#bugSubmit')) { submit_(); return; }
+      if (e.target.closest('#bugAdminReload')) { loadAdmin_(); return; }
+      var s = loadSession();
+      var ib = e.target.closest('[data-bug-img]');
+      if (ib && s) {
+        var rid = ib.getAttribute('data-bug-img'), box = $('bugImg' + rid);
+        box.textContent = '読みこみ中…';
+        apiPost('bugReportImage', { id: s.id, reportId: rid }).then(function (res) {
+          box.innerHTML = res && res.ok ? '<img class="bug-img" src="data:' + res.mimeType + ';base64,' + res.imageBase64 + '" alt="画面の写真">' : '読みこめませんでした。';
+        }).catch(function () { box.textContent = '読みこめませんでした。'; });
+        return;
+      }
+      var db = e.target.closest('[data-bug-done]');
+      if (db && s) apiPost('bugReportDone', { id: s.id, reportId: db.getAttribute('data-bug-done'), done: db.getAttribute('data-done') === '1' }).then(loadAdmin_).catch(function () {});
+    });
+    tg.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== tg) panel.setAttribute('hidden', '');
+    });
+  })();
+
   /* ---------- ガチャ(サイコロ・大吉占い・豆知識・ミッション) ----------
      どれも1日1回ずつ無料。結果とMPはサーバー(lib/handlers/gacha.js)で決める(ふだんの1日100MPの上限とは別枠)。
      豆知識・ミッションの文はここに持ち、サーバーは番号だけ返す(GACHA_TRIVIA_/GACHA_MISSIONS_の数はgacha.jsと揃える)。

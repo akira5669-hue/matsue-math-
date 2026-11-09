@@ -2690,3 +2690,13 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .bb-scene.bb-lefty.bb-r-k.bb-p-mid .bb-ball { transform: translate(1px, 74px) scale(2.5); }
 .bb-scene.bb-lefty.bb-r-k.bb-p-out .bb-ball { transform: translate(-5px, 74px) scale(2.5); }
 .bb-lefty.bb-p-ball .bb-ball, .bb-scene.bb-lefty.bb-r-ball .bb-ball { transform: translate(-30px, 62px) scale(2.3); }
+
+/* 🐞バグ報告(2026-11-09〜) */
+#bugPlace { max-width: 100%; }
+.bug-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-top: 8px; background: #fff; }
+.bug-item.is-done { opacity: 0.6; }
+.bug-item-head { font-size: 0.85rem; color: #334155; }
+.bug-item-body { margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+.bug-item-detail { color: #475569; font-size: 0.9rem; border-left: 3px solid #cbd5e1; padding-left: 8px; }
+.bug-item-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bug-img { max-width: 100%; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 8px; }
