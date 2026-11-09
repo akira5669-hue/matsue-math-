@@ -2496,6 +2496,34 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .gacha-text { text-align: left; }
 .gacha-lucky { font-size: 0.85rem; color: #334155; }
 .gacha-mp { font-weight: 800; color: #16a34a; font-size: 1.2rem; }
+.dq-box { margin-top: 8px; padding: 10px; border: 2px dashed #f59e0b; border-radius: 12px; background: #fff; text-align: center; }
+.dq-q { font-size: 0.95rem; margin-bottom: 8px; }
+.dq-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.dq-btn { padding: 6px 0; border: 2px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #0f172a; font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+.dq-btn:disabled { cursor: default; opacity: 0.75; }
+.dq-btn.dq-ok { border-color: #16a34a; background: #dcfce7; opacity: 1; }
+.dq-btn.dq-ng { border-color: #dc2626; background: #fee2e2; opacity: 1; }
+.dq-frac { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; vertical-align: middle; }
+.dq-frac > span:first-child { border-bottom: 2px solid currentColor; padding: 0 4px; }
+.dq-res { margin-top: 8px; font-weight: 800; }
+.dq-table-wrap { margin-top: 8px; overflow-x: auto; }
+.dq-table { border-collapse: collapse; margin: 0 auto; background: #fff; }
+.dq-table th, .dq-table td { border: 2px solid #334155; width: 34px; height: 34px; text-align: center; padding: 2px; font-size: 1rem; font-weight: 700; color: #1e293b; }
+.dq-table th { background: #f8fafc; }
+.dq-table .dq-corner { position: relative; background: linear-gradient(to top right, #f8fafc calc(50% - 1px), #334155 50%, #f8fafc calc(50% + 1px)); font-size: 0.6rem; }
+.dq-corner span:first-child { position: absolute; right: 3px; top: 1px; color: #e11d48; }
+.dq-corner span:last-child { position: absolute; left: 3px; bottom: 1px; color: #4f46e5; }
+.dq-table td.dq-hit { background: #fde68a; color: #b45309; }
+.dq-table td.dq-mine { position: relative; }
+.dq-table td.dq-mine::after { content: '◎'; position: absolute; right: 1px; top: -2px; font-size: 0.6rem; color: #dc2626; }
+.dq-die { display: inline-grid; grid-template-columns: repeat(3, 6px); grid-template-rows: repeat(3, 6px); gap: 1px; padding: 3px; border: 1.5px solid #1e293b; border-radius: 5px; vertical-align: middle; }
+.dq-die-r { background: #fda4af; }
+.dq-die-b { background: #a5b4fc; }
+.dq-die i { width: 6px; height: 6px; border-radius: 50%; }
+.dq-die i.on { background: #111827; }
+.dq-die i.on.one { background: #dc2626; }
+.dq-table-cap { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+.dq-ex { margin-top: 6px; font-size: 0.85rem; color: #334155; text-align: left; line-height: 1.6; }
 .gacha-fortune { font-size: 2.6rem; font-weight: 900; color: #b91c1c; letter-spacing: 0.1em; }
 .gacha-rank-大吉 { color: #dc2626; text-shadow: 0 0 8px #fde047; }
 .gacha-rank-凶 { color: #475569; }

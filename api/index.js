@@ -25,7 +25,7 @@ const { handleSaveProfession } = require('../lib/handlers/profession');
 const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmissions, handleMangaSubmissionImage, handleMangaReview, handleMangaLike } = require('../lib/handlers/manga');
 const { handleHalloweenStatus, handleHalloweenBuyCandy, handleHalloweenGhost } = require('../lib/handlers/halloween');
 const { handleZukeiStatus, handleZukeiAnswer } = require('../lib/handlers/zukei');
-const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep } = require('../lib/handlers/gacha');
+const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep, handleGachaDiceQuiz } = require('../lib/handlers/gacha');
 const { handleKenStatus, handleKenClear, handleKenRanking } = require('../lib/handlers/kenken');
 const { handleSurveyStatus, handleSurveySubmit } = require('../lib/handlers/survey');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
@@ -118,6 +118,7 @@ const ACTIONS = {
   gachaStatus: handleGachaStatus,
   gachaDraw: handleGachaDraw,
   gachaPkKeep: handleGachaPkKeep,
+  gachaDiceQuiz: handleGachaDiceQuiz,
   kenStatus: handleKenStatus,
   kenClear: handleKenClear,
   kenRanking: handleKenRanking,

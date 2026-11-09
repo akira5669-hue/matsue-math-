@@ -34464,8 +34464,11 @@
     var mpTxt = '<div class="gacha-mp">+' + (mp != null ? mp : r.mp) + 'MP</div>';
     if (kind === 'dice') {
       var d = res.dice || [1, 1];
+      // 確率クイズの+1MPは、サイコロのMPとは分けて見せる
+      var diceMp = (mp != null ? mp : r.mp) - (res.qa && res.qa.ok ? 1 : 0);
       return '<div class="gacha-dice">' + GACHA_DICE_FACE_[d[0]] + GACHA_DICE_FACE_[d[1]] + '</div>'
-        + '<div class="gacha-line">' + d[0] + ' ＋ ' + d[1] + ' ＝ ' + (d[0] + d[1]) + (res.zorome ? '　<b>ゾロ目で2倍！🎉</b>' : '') + '</div>' + mpTxt;
+        + '<div class="gacha-line">' + d[0] + ' ＋ ' + d[1] + ' ＝ ' + (d[0] + d[1]) + (res.zorome ? '　<b>ゾロ目で2倍！🎉</b>' : '') + '</div>'
+        + '<div class="gacha-mp">+' + diceMp + 'MP</div>' + diceQuizHtml_(d, res.qa);
     }
     if (kind === 'omikuji') {
       var s = Number(res.seed) || 0;
@@ -34475,6 +34478,84 @@
     }
     if (kind === 'trivia') return '<div class="gacha-line gacha-text">💡 ' + escHtml(GACHA_TRIVIA_[Number(res.pick) % GACHA_TRIVIA_.length]) + '</div>' + mpTxt;
     return '<div class="gacha-line gacha-text">🎯 今日のミッション：<b>' + escHtml(GACHA_MISSIONS_[Number(res.pick) % GACHA_MISSIONS_.length]) + '</b></div>' + mpTxt;
+  }
+  // サイコロガチャのあとの確率クイズ(2026-11-09〜、gacha.jsのhandleGachaDiceQuizと揃える)。
+  // ゾロ目→ゾロ目が出る確率、それ以外→和がその数になる確率。4択、正解で+1MP、まちがえても減らない。
+  var DQ_LIST_ = ['1/36', '1/18', '1/12', '1/9', '5/36', '1/6'];
+  function dqGcd_(a, b) { return b ? dqGcd_(b, a % b) : a; }
+  function dqFracHtml_(f) { var p = f.split('/'); return '<span class="dq-frac"><span>' + p[0] + '</span><span>' + p[1] + '</span></span>'; }
+  function dqVal_(f) { var p = f.split('/'); return p[0] / p[1]; }
+  function diceQuizInfo_(d) {
+    var zoro = d[0] === d[1], s = d[0] + d[1];
+    var ways = zoro ? 6 : 6 - Math.abs(s - 7), g = dqGcd_(ways, 36);
+    var ans = (ways / g) + '/' + (36 / g);
+    var choices;
+    if (zoro) choices = ['1/36', '1/12', '1/6', '1/3'];
+    else {
+      // まちがえやすい「和は11通りだから11分の1」と、となりの確率を混ぜる
+      var i = DQ_LIST_.indexOf(ans);
+      var near = i === 0 ? [1, 2] : i === DQ_LIST_.length - 1 ? [i - 1, i - 2] : [i - 1, i + 1];
+      choices = [ans, '1/11', DQ_LIST_[near[0]], DQ_LIST_[near[1]]];
+    }
+    choices.sort(function (a, b) { return dqVal_(a) - dqVal_(b); });
+    var pairs = [];
+    for (var a = 1; a <= 6; a++) for (var b = 1; b <= 6; b++) if (zoro ? a === b : a + b === s) pairs.push('(' + a + ',' + b + ')');
+    var q = zoro ? '2つのサイコロをふって、<b>ゾロ目が出る確率</b>は？' : '2つのサイコロをふって、<b>出た目の和が' + s + 'になる確率</b>は？';
+    var ex = '目の出方は全部で 6×6＝<b>36通り</b>。' + (zoro ? 'ゾロ目' : '和が' + s) + 'になるのは ' + pairs.join(' ') + ' の<b>' + ways + '通り</b>。'
+      + 'だから 36分の' + ways + (g > 1 ? '＝<b>' + (36 / g) + '分の' + (ways / g) + '</b>' : '') + '。';
+    return { q: q, ans: ans, choices: choices, ex: ex };
+  }
+  function diceQuizHtml_(d, qa) {
+    var info = diceQuizInfo_(d);
+    var h = '<div class="dq-box"><div class="dq-q">🧠 確率クイズ（正解で+1MP）<br>' + info.q + '</div><div class="dq-choices">';
+    info.choices.forEach(function (c) {
+      var cls = 'dq-btn' + (qa ? (c === info.ans ? ' dq-ok' : c === qa.a ? ' dq-ng' : '') : '');
+      h += '<button type="button" class="' + cls + '" data-dq="' + c + '"' + (qa ? ' disabled' : '') + '>' + dqFracHtml_(c) + '</button>';
+    });
+    h += '</div>';
+    if (qa) h += '<div class="dq-res ' + (qa.ok ? 'pk-win' : '') + '">' + (qa.ok ? '⭕ 正解！ +1MP' : '❌ ざんねん！ 正解は' + dqFracHtml_(info.ans) + '（MPは減らないよ）') + '</div><div class="dq-ex">' + info.ex + '</div>' + dqTableHtml_(d);
+    return h + '</div>';
+  }
+  // サイコロの目(点の位置は3×3のマスで表す)
+  var DQ_PIPS_ = { 1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  function dqDie_(n, col) {
+    var h = '<span class="dq-die dq-die-' + col + '">';
+    for (var i = 0; i < 9; i++) h += '<i' + (DQ_PIPS_[n].indexOf(i) >= 0 ? ' class="on' + (n === 1 ? ' one' : '') + '"' : '') + '></i>';
+    return h + '</span>';
+  }
+  // 解説の表：上が赤のサイコロ、左が青のサイコロ。マスは2つの目の和。当てはまるマスに色をつける。
+  function dqTableHtml_(d) {
+    var zoro = d[0] === d[1], s = d[0] + d[1];
+    var h = '<div class="dq-table-wrap"><table class="dq-table"><tr><th class="dq-corner"><span>赤</span><span>青</span></th>';
+    for (var a = 1; a <= 6; a++) h += '<th>' + dqDie_(a, 'r') + '</th>';
+    h += '</tr>';
+    for (var b = 1; b <= 6; b++) {
+      h += '<tr><th>' + dqDie_(b, 'b') + '</th>';
+      for (a = 1; a <= 6; a++) {
+        var hit = zoro ? a === b : a + b === s;
+        var mine = (a === d[0] && b === d[1]);
+        h += '<td class="' + (hit ? 'dq-hit' : '') + (mine ? ' dq-mine' : '') + '">' + (a + b) + '</td>';
+      }
+      h += '</tr>';
+    }
+    return h + '</table><div class="dq-table-cap">表は2つのサイコロの目の和（全部で36マス）。色のついたマスが' + (zoro ? 'ゾロ目' : '和が' + s) + 'の場合。◎が今回出た目。</div></div>';
+  }
+  var dqBusy_ = false;
+  function diceQuizAnswer_(a) {
+    var session = loadSession();
+    var cur = gacha_.today.dice;
+    if (!session || !session.id || dqBusy_ || !cur || (cur.result && cur.result.qa)) return;
+    dqBusy_ = true;
+    var out = els.gachaPanel.querySelector('[data-gacha="dice"] .gacha-out');
+    Array.prototype.forEach.call(out.querySelectorAll('[data-dq]'), function (b) { b.disabled = true; });
+    apiPost('gachaDiceQuiz', { id: session.id, answer: a }).then(function (res) {
+      dqBusy_ = false;
+      if (res && res.ok) {
+        gacha_.today.dice = { result: res.result, mp: res.mp };
+        if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+      } else if (res && res.prev) gacha_.today.dice = res.prev;
+      out.innerHTML = gachaResultHtml_('dice', gacha_.today.dice);
+    }).catch(function () { dqBusy_ = false; out.innerHTML = gachaResultHtml_('dice', gacha_.today.dice); });
   }
   // 生徒が引けるガチャの種類(2026-11-03〜サイコロ、11-04〜豆知識も。00001は全部試せる。ほかは残しておき、ここに足せば復活する)。gacha.jsのENABLED_KINDSと揃えること。
   var GACHA_ENABLED_KINDS_ = ['dice', 'trivia', 'pk'];
@@ -34889,6 +34970,8 @@
       }
       var ag = e.target.closest('[data-gacha-again]');
       if (ag && isAdminSession_()) { delete gacha_.today[ag.getAttribute('data-gacha-again')]; renderGacha_(); return; }
+      var dqb = e.target.closest('[data-dq]');
+      if (dqb) { diceQuizAnswer_(dqb.getAttribute('data-dq')); return; }
       var bbb = e.target.closest('[data-bb]');
       if (bbb) { bbPlay_(bbb.getAttribute('data-bb')); return; }
       if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));
