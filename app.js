@@ -34218,13 +34218,20 @@
       ? '<div class="win-banner">⭕ 正解！ HP+1</div><div class="test-photo-hint">' + q.explain + '</div>'
       : '<div class="test-photo-hint">❌ ざんねん！' + (hpChange < 0 ? ' HP-1。' : '') + '緑の答えが正解だよ。<br>' + q.explain + '</div>';
     if (!session || !session.id) return;
-    apiPost('zukeiAnswer', { id: session.id, correct: ok, mode: zukei_.mode }).then(function (res) {
-      if (!res || !res.ok) return;
-      zukei_.answeredToday = Number(res.answeredToday) || 0;
-      if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
-      if (typeof res.kokoCorrectToday === 'number') zukei_.kokoCorrectToday = res.kokoCorrectToday;
-      renderZukei_();
-    }).catch(function () {});
+    // 通信に失敗したときは、少し待ってもう一度だけ送る(数え漏れを防ぐ、2026-11-09)。
+    var body = { id: session.id, correct: ok, mode: zukei_.mode };
+    var send = function (retry) {
+      apiPost('zukeiAnswer', body).then(function (res) {
+        if (!res || !res.ok) { if (retry) setTimeout(function () { send(false); }, 2500); return; }
+        zukei_.answeredToday = Number(res.answeredToday) || 0;
+        if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
+        if (typeof res.kokoCorrectToday === 'number') zukei_.kokoCorrectToday = res.kokoCorrectToday;
+        renderZukei_();
+        // 前の答えから2秒たたずに答えた分は、サーバーで数えない(連打対策)。正解したのに数が増えない理由を見せる。
+        if (res.counted === false && ok && zukei_.q === q) els.zukeiResult.insertAdjacentHTML('beforeend', '<div class="test-photo-hint">⏱️ 前の問題に答えてから2秒たっていなかったので、今の正解は数に入らなかったよ。問題をよく読んでから答えよう！</div>');
+      }).catch(function () { if (retry) setTimeout(function () { send(false); }, 2500); });
+    };
+    send(true);
   }
   // ✏️計算メモ(🏫高校受験問題！だけ、2026-11-07〜)。ふだんの問題の計算メモと同じ使い方で、次の問題に進むと消える。
   var zkMemo_ = { tool: 'pen', drawing: false, x: 0, y: 0, sized: false };
