@@ -1626,7 +1626,8 @@
     } else if (pat === 5) {
       // 置き換え型：(x+k)² + p(x+k) + q の形
       const k = randNonZero(-6, 6);
-      let r1, r2; do { r1 = randNonZero(-7, 7); r2 = randNonZero(-7, 7); } while (r1 === r2);
+      // k-r1・k-r2が0だと「(x+0)」になるので除く(2026-11-09)
+      let r1, r2; do { r1 = randNonZero(-7, 7); r2 = randNonZero(-7, 7); } while (r1 === r2 || r1 === -r2 || r1 === k || r2 === k);
       const coefMid = -(r1 + r2), coefConst = r1 * r2;
       const kStr = k >= 0 ? `+${k}` : `${k}`;
       const midSign = coefMid >= 0 ? '+' : '−';
@@ -1636,9 +1637,18 @@
       question = `(x${kStr})² ${midSign} ${midTermStr} ${constTermStr} を因数分解せよ。`;
       const f1 = k - r1, f2 = k - r2;
       answer = `${ff(f1)}${ff(f2)}`;
-      steps = [`x${kStr} をXとおくと、X² ${midSign} ${midAbs}X ${constTermStr} の形`, `X = ${r1}、${r2} で因数分解できる`, `Xをx${kStr}にもどす`, `= ${answer}`];
-      choices = shuffle([answer, `${ff(-f1)}${ff(f2)}`, `${ff(f1)}${ff(-f2)}`, `${ff(r1)}${ff(r2)}`].filter((v, i, arr) => arr.indexOf(v) === i));
-      if (choices.length < 4) choices.push(`${ff(f1 + 1)}${ff(f2)}`);
+      const fX = (n) => (n >= 0 ? `(X+${n})` : `(X${n})`);
+      steps = [`x${kStr} をXとおくと、X² ${midSign} ${midAbs === 1 ? "" : midAbs}X ${constTermStr}`, `= ${fX(-r1)}${fX(-r2)}`, `Xをx${kStr}にもどす`, `= ${answer}`];
+      // 選択肢は「かっこの順番を入れかえただけ」で正解と同じになるもの(例：(x-1)(x-2)と(x-2)(x-1))を除く(2026-11-09)
+      const pairKey = (a, b) => [a, b].sort((p, q) => p - q).join(',');
+      const used = [pairKey(f1, f2)];
+      const cands = [[-f1, f2], [f1, -f2], [-r1, -r2], [-f1, -f2], [f1 + 1, f2], [f1, f2 - 1], [f1 - 1, f2 + 1], [f1 + 2, f2]];
+      choices = [answer];
+      cands.forEach(([a, b]) => {
+        if (choices.length >= 4 || a === 0 || b === 0 || used.includes(pairKey(a, b))) return;
+        used.push(pairKey(a, b)); choices.push(`${ff(a)}${ff(b)}`);
+      });
+      choices = shuffle(choices);
     } else if (pat === 6) {
       // (x+y)² − n² の形
       const n = randInt(2, 9);
