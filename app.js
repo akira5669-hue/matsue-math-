@@ -34515,10 +34515,11 @@
         list.innerHTML = res.reports.map(function (r) {
           var d = new Date(r.ts);
           var when = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
-          var done = r.status === 'done';
+          var done = r.status !== 'new';
+          var claude = r.status === 'fixed' ? '<div class="bug-item-claude">🤖 Claudeが修正済み：' + escHtml(r.fixNote) + '</div>' : r.status === 'not_bug' ? '<div class="bug-item-claude">🤖 Claudeが確認：バグではありませんでした。' + escHtml(r.fixNote) + '</div>' : '';
           return '<div class="bug-item' + (done ? ' is-done' : '') + '"><div class="bug-item-head">#' + r.id + '　' + escHtml(when) + '　' + escHtml(r.name || '') + '（' + escHtml(r.grade || '') + '・ID ' + escHtml(r.studentId) + '・Lv.' + r.level + '）　<b>' + escHtml(r.place || '') + '</b></div>'
             + '<div class="bug-item-body">' + escHtml(r.what || '') + '</div>'
-            + (r.detail ? '<div class="bug-item-body bug-item-detail">' + escHtml(r.detail) + '</div>' : '')
+            + (r.detail ? '<div class="bug-item-body bug-item-detail">' + escHtml(r.detail) + '</div>' : '') + claude
             + '<div class="bug-item-actions">' + (r.hasImage ? '<button type="button" class="ghost-btn" data-bug-img="' + r.id + '">画面の写真を見る</button>' : '')
             + '<button type="button" class="' + (done ? 'ghost-btn' : 'primary-btn') + '" data-bug-done="' + r.id + '" data-done="' + (done ? '0' : '1') + '">' + (done ? '✅ 対応済み（もどす）' : '対応済みにする') + '</button></div>'
             + '<div id="bugImg' + r.id + '"></div></div>';
