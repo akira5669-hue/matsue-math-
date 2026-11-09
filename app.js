@@ -34443,7 +34443,7 @@
   }
 
   /* ---------- 🐞バグ報告(2026-11-09〜、lib/handlers/bugReport.js) ----------
-     送れるのはレベル500以上の生徒だけ(サーバーでも確かめる)。先生(00001)には届いた報告の一覧も出す。 */
+     送れるのはレベル300以上の生徒だけ(サーバーでも確かめる)。先生(00001)には届いた報告の一覧も出す。 */
   (function () {
     var tg = document.getElementById('bugToggle'), panel = document.getElementById('bugPanel');
     if (!tg || !panel) return;
