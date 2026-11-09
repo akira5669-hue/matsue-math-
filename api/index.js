@@ -22,7 +22,7 @@ const { handleStudyReport, handleStudyReportRankingToday, handleStudyReportRanki
 const { handleSubmitReading, handleReadingRanking, handleLikeReading, handleEditReading, handleDistributeWisdomSeeds, handleReadingHallOfFame } = require('../lib/handlers/reading');
 const { handleFujiHallOfFame, handleFujiClimbSuccess, handleFujiDistributePool, handleOhachiEntryFee, handleOhachiEasyEntryFee, handleUseYushaSword } = require('../lib/handlers/fuji');
 const { handleSaveProfession } = require('../lib/handlers/profession');
-const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmissions, handleMangaSubmissionImage, handleMangaReview, handleMangaLike } = require('../lib/handlers/manga');
+const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmissions, handleMangaSubmissionImage, handleMangaReview, handleMangaLike, handleMangaFreeView } = require('../lib/handlers/manga');
 const { handleHalloweenStatus, handleHalloweenBuyCandy, handleHalloweenGhost } = require('../lib/handlers/halloween');
 const { handleZukeiStatus, handleZukeiAnswer } = require('../lib/handlers/zukei');
 const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep, handleGachaDiceQuiz } = require('../lib/handlers/gacha');
@@ -105,6 +105,7 @@ const ACTIONS = {
   saveProfession: handleSaveProfession,
   mangaStatus: handleMangaStatus,
   mangaView: handleMangaView,
+  mangaFreeView: handleMangaFreeView,
   mangaSubmit: handleMangaSubmit,
   mangaSubmissions: handleMangaSubmissions,
   mangaSubmissionImage: handleMangaSubmissionImage,

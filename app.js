@@ -29816,6 +29816,11 @@
   function mangaFreeRead_(mangaId) {
     try { return localStorage.getItem(mangaFreeReadKey_(mangaId)) === '1'; } catch (e) { return false; }
   }
+  // 無料公開の作品を読めるか：先生、サーバーに読んだ記録がある、またはこの端末で前に読んだ(2026-11-09より前の記録)。
+  function mangaFreeUnlocked_(mangaId) {
+    var st = mangaStatusCache_ || {};
+    return isAdminSession_() || (st.freeRead || []).indexOf(mangaId) !== -1 || mangaFreeRead_(mangaId);
+  }
 
   // いいねボタン(読んだ作品だけ押せる)。❤️はいいね済み、🤍はまだ。数字はみんなのいいねの数。
   function mangaLikeBtnHtml_(m, unlocked) {
@@ -29902,11 +29907,16 @@
       els.mangaPriceHint.innerHTML = st.sale
         ? '<span class="manga-sale">🎉 期間限定（' + Number(endParts[1]) + '/' + Number(endParts[2]) + 'まで）半額セール中！</span><br>1日1作品、<s>' + MANGA_VIEW_COST_MP_ + 'MP</s> <b>' + st.costMp + 'MP</b>か<s>' + MANGA_VIEW_COST_HP_ + 'HP</s> <b>' + st.costHp + 'HP</b>のどちらかを払って読めます（その日に' + (st.bonusAnswers || 100) + '問以上解いたら、特別にもう1作品を無料で）。一度読んだ作品は、次の日からも無料で読み直せます。'
         : '1日1作品、<b>' + st.costMp + 'MP</b>か<b>' + st.costHp + 'HP</b>のどちらかを払って読めます（その日に' + (st.bonusAnswers || 100) + '問以上解いたら、特別にもう1作品を無料で）。一度読んだ作品は、次の日からも無料で読み直せます。';
+      els.mangaPriceHint.innerHTML += '<br>🆓 無料公開（理科）の作品も、<b>新しく読めるのは1日1作品</b>です（上の作品とは別に数えます。一度読んだ作品はいつでも読み直せます）。';
     }
     els.mangaList.innerHTML = MANGA_LIST_.map(function (m) {
       // 00001(先生)は全作品を無料で、1日何作品でも読める(確認用)。
-      var unlocked = !!m.free || isAdminSession_() || st.unlocked.indexOf(m.id) !== -1;
-      var actions = unlocked
+      // 無料公開(理科)の作品も、新しく読めるのは1日1作品(2026-11-09〜)。読んだことがある作品はいつでも。
+      var unlocked = m.free ? mangaFreeUnlocked_(m.id) : isAdminSession_() || st.unlocked.indexOf(m.id) !== -1;
+      var actions = m.free && !unlocked
+        ? (st.freeTodayId ? '<span class="manga-locked">🔒 理科は今日1作品読んだよ（また明日）</span>'
+          : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="freeNew">📖 今日の1作品として読む</button>')
+        : unlocked
         ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="free">📖 読む</button>'
         : limitReached
           ? '<span class="manga-locked">' + (viewCount >= 2 ? '🔒 また明日' : '🔒 ' + bonusN + '問解くと読める') + '</span>'
@@ -29914,8 +29924,8 @@
             ? '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="bonus">🎁 特別に無料で読む</button>'
           : '<button type="button" class="primary-btn manga-read-btn" data-manga="' + m.id + '" data-pay="mp">' + mangaCostMp_() + 'MPで読む</button>' +
             '<button type="button" class="ghost-btn manga-read-btn" data-manga="' + m.id + '" data-pay="hp">' + mangaCostHp_() + 'HPで読む</button>';
-      actions += mangaLikeBtnHtml_(m, m.free ? (mangaFreeRead_(m.id) || (mangaStatusCache_.myLikes || []).indexOf(m.id) !== -1) : unlocked);
-      return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開　' : unlocked ? '✅ ' : '') + escHtml(m.title) + (m.free ? '<span class="manga-free-like-hint">（読んでいいねを押すと+3MP・1回だけ）</span>' : '') + '</div><div class="manga-item-actions">' + actions + '</div></div>';
+      actions += mangaLikeBtnHtml_(m, unlocked);
+      return '<div class="manga-item"><div class="manga-item-title">' + (m.free ? '🆓 無料公開' + (unlocked ? '✅' : '') + '　' : unlocked ? '✅ ' : '') + escHtml(m.title) + (m.free ? '<span class="manga-free-like-hint">（読んでいいねを押すと+3MP・1回だけ）</span>' : '') + '</div><div class="manga-item-actions">' + actions + '</div></div>';
     }).join('');
     var open = st.buybackOpen;
     els.mangaSubmitCard.hidden = !open;
@@ -29949,7 +29959,34 @@
     var m = MANGA_LIST_.filter(function (x) { return x.id === btn.getAttribute('data-manga'); })[0];
     if (!m) return;
     var pay = btn.getAttribute('data-pay');
-    if (pay === 'free') { openMangaViewer_(m); return; }
+    if (pay === 'free') {
+      // 端末にだけ記録がある(前に読んだ)作品は、サーバーにも読んだ作品として残しておく
+      var s0 = loadSession(), st0 = mangaStatusCache_ || {};
+      if (m.free && s0 && s0.id && !isAdminSession_() && (st0.freeRead || []).indexOf(m.id) === -1) {
+        apiPost('mangaFreeView', { id: s0.id, mangaId: m.id, prior: true }).then(function (r) { if (r && r.ok && mangaStatusCache_) (mangaStatusCache_.freeRead = mangaStatusCache_.freeRead || []).push(m.id); }).catch(function () {});
+      }
+      openMangaViewer_(m); return;
+    }
+    if (pay === 'freeNew') {
+      if (!window.confirm('理科の漫画で新しく読めるのは1日1作品です。今日は「' + m.title + '」を読みますか？')) return;
+      var s1 = loadSession();
+      if (!s1 || !s1.id) return;
+      btn.disabled = true;
+      apiPost('mangaFreeView', { id: s1.id, mangaId: m.id }).then(function (res) {
+        btn.disabled = false;
+        if (!res || !res.ok) {
+          window.alert(res && res.error === 'free_viewed_today' ? '理科の漫画は今日もう1作品読みました。また明日読めます。' : '読めませんでした。もう一度お試しください。');
+          fetchMangaStatus_();
+          return;
+        }
+        if (mangaStatusCache_) {
+          (mangaStatusCache_.freeRead = mangaStatusCache_.freeRead || []).push(m.id);
+          mangaStatusCache_.freeTodayId = m.id;
+        }
+        openMangaViewer_(m);
+      }).catch(function () { btn.disabled = false; window.alert('通信に失敗しました。もう一度お試しください。'); });
+      return;
+    }
     var label = pay === 'hp' ? mangaCostHp_() + 'HP' : mangaCostMp_() + 'MP';
     if (pay === 'bonus') {
       if (!window.confirm('🎁 今日は' + ((mangaStatusCache_ && mangaStatusCache_.bonusAnswers) || 100) + '問以上解いたので、「' + m.title + '」を特別に無料で読めます。この作品にしますか？')) return;
