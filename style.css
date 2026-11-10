@@ -2729,3 +2729,23 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .ns-fb-head { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
 .ns-expl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; line-height: 1.8; margin-bottom: 10px; }
 .ns-expl > div { flex: 1 1 200px; }
+.ns-choice, .ns-theme { margin-left: 0; }
+.ns-choice { border-radius: 14px; }
+.ns-note { font-size: 0.8rem; color: #8d6e63; text-align: center; }
+.ns-track { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 8px; }
+.ns-track-row { display: flex; align-items: center; gap: 6px; }
+.ns-track-who { font-size: 1.5rem; width: 2rem; text-align: center; }
+.ns-track-bar { flex: 1; height: 16px; background: #eee; border-radius: 8px; overflow: hidden; }
+.ns-track-bar > div { height: 100%; background: #42a5f5; border-radius: 8px; }
+.ns-track-v { min-width: 3.5rem; font-weight: 700; text-align: right; }
+.ns-blocks { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+.ns-blocks > span { background: #bbdefb; border: 1px solid #1e88e5; padding: 4px 8px; font-size: 0.85rem; font-weight: 700; }
+.ns-coins { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.ns-coin-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 320px; }
+.ns-coin { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.6rem; font-weight: 700; border: 2px solid; }
+.ns-c100 { width: 30px; height: 30px; background: #eceff1; border-color: #90a4ae; color: #455a64; }
+.ns-c10 { width: 28px; height: 28px; background: #ffcc80; border-color: #bf6a1f; color: #6d3a0a; }
+.ns-c1 { width: 24px; height: 24px; background: #fafafa; border-color: #bdbdbd; color: #757575; }
+.ns-bill-row { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.ns-bill { display: inline-block; width: 80px; height: 36px; line-height: 36px; text-align: center; background: #e3f2fd; border: 2px solid #5c8fbf; border-radius: 4px; font-weight: 700; color: #1a4f7a; }
+.ns-bigprice { font-size: 2rem; font-weight: 700; color: #e65100; }

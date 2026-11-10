@@ -22111,8 +22111,8 @@
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
-    // 🍊かずのかんかく(2026-11-10〜、今は00001だけ)
-    var nsTg = document.getElementById('numSenseToggle'); if (nsTg) { nsTg.hidden = !isAdminSession_(); if (nsTg.hidden) { var nsPn = document.getElementById('numSensePanel'); if (nsPn) nsPn.setAttribute('hidden', ''); } }
+    // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
+    var nsSs = loadSession(); var nsTg = document.getElementById('numSenseToggle'); if (nsTg) { nsTg.hidden = !(isAdminSession_() || (nsSs && String(nsSs.grade || '').charAt(0) === '小')); if (nsTg.hidden) { var nsPn = document.getElementById('numSensePanel'); if (nsPn) nsPn.setAttribute('hidden', ''); } }
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
@@ -34506,20 +34506,26 @@
   /* ---------- 🍊かずのかんかく(2026-11-10〜、今は00001だけのプレビュー) ----------
      分数・小数・速さ・図形などを学校で習う前に、本来は家庭で身につくような「数の感覚」を、絵を見ながら身につける。
      先生の指示：計算だけでなく、数の概念まで身につけられるように(例：みかんを分けて分数の考え)。
-     1つ目のテーマは「🍊分数（みかんを分ける）」。問題は端末で作り、答え合わせも端末だけ(MPはまだ付けない)。
+     テーマ：🍊分数(みかん)・📏小数(1Lます・ものさし)・🚶速さ・📐図形(折り紙)・💴大きな数(お金)。問題は端末で作り、答え合わせも端末。
+     解けるのは小学生だけ(と00001)。MP：1問正解で1MP、1日NS_MP_DAILY_(10)MPまで。計算のMP(pointsTodayCalc、1日POINTS_DAILY_CAP_CALC)に含める(2026-11-10 先生の指示)。
+     「今日何MPもらったか」はこの端末のlocalStorage(nsMp_<id>)で数える。計算の1日上限はサーバー(sync.js)でも守られる。
      テーマを増やすときは NS_THEMES_ に足して、gens に問題を作る関数を入れる。 */
   (function () {
     var tg = document.getElementById('numSenseToggle'), panel = document.getElementById('numSensePanel');
     if (!tg || !panel) return;
     var $ = function (id) { return document.getElementById(id); };
+    var NS_MP_DAILY_ = 10;
+    // 解けるのは小学生だけ(2026-11-10 先生の指示)。先生(00001)は確認用に使える。
+    function nsAllowed_() { var s = loadSession(); return !!(s && (s.id === '00001' || String(s.grade || '').charAt(0) === '小')); }
     var ns = { theme: 'frac', q: null, answered: false, ok: 0, total: 0 };
     function ri_(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
     function pick_(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
     function shuffle_(arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
     function range_(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
+    function gcd_(a, b) { return b ? gcd_(b, a % b) : a; }
     // 分数の表示(上が分子、下が分母)と、その下に読み方(「3分の1」)
     function frac_(n, d) { return '<span class="ns-frac-wrap"><span class="dq-frac"><span>' + n + '</span><span>' + d + '</span></span><span class="ns-yomi">' + d + '分の' + n + '</span></span>'; }
-    // みかん1個の絵：n個に同じように分けて、colored(何番目のきれか)をオレンジにぬる。eaten(食べたきれ)は点線のうすい色。
+    // みかん1個の絵：n個に同じように分けて、colored(何番目のきれか)をオレンジにぬる。eaten(食べたきれ)は、いつも点線のうすい色。
     function mikan_(n, colored, eaten, size) {
       var cx = 50, cy = 56, r = 42, s = '', on = {}, gone = {};
       size = size || 120;
@@ -34530,7 +34536,6 @@
         var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
         s += '<path d="M' + cx + ' ' + cy + ' L' + x1.toFixed(2) + ' ' + y1.toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + ((a2 - a1) > Math.PI ? 1 : 0) + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) + ' Z" class="' + (gone[i] ? 'ns-seg-gone' : on[i] ? 'ns-seg-on' : 'ns-seg') + '"/>';
       }
-      // へたと葉っぱ
       s += '<rect x="48" y="10" width="4" height="7" rx="1" fill="#6b4f2a"/><path d="M52 13 C60 4 70 6 72 10 C64 14 58 15 52 13 Z" fill="#4caf50"/>';
       return '<svg class="ns-mikan" viewBox="0 0 100 104" width="' + size + '" height="' + Math.round(size * 1.04) + '" role="img" aria-label="みかん">' + s + '</svg>';
     }
@@ -34543,6 +34548,15 @@
       return shuffle_(out);
     }
     function fc_(n, d) { return { key: n + '/' + d, html: frac_(n, d) }; }
+    function ch_(key, html) { return { key: String(key), html: html }; }
+    // 約分できる分数なら「〇分の〇と同じ大きさ」をそえる(2/4＝1/2 の感覚)
+    function sameAs_(n, d) {
+      var g = gcd_(n, d);
+      if (g <= 1 || n === d) return '';
+      return '<br>💡 ' + frac_(n, d) + ' は ' + frac_(n / g, d / g) + ' と <b>同じ大きさ</b> だよ。' + (n / g === 1 && d / g === 2 ? '（ちょうど半分！）' : '');
+    }
+    // 2つをくらべる問題の選択肢(左・右・同じ)
+    function lrs_(la, ra) { return [ch_('L', '⬅️ ' + la), ch_('R', ra + ' ➡️'), ch_('S', '同じ')]; }
 
     // ---- 🍊分数（みかんを分ける） ----
     var FRAC_GENS_ = [
@@ -34558,26 +34572,29 @@
           expl: mikan_(n, [0], null, 90) + '<div>みかん1個を <b>' + n + 'つ</b> に同じように分けた <b>1つ分</b> だから、' + frac_(1, n) + '。<br>下の数（分母）は「いくつに分けたか」、上の数（分子）は「そのうちのいくつ分か」だよ。</div>'
         };
       },
-      // ② 何きれか食べた → 何分のいくつ
+      // ② 何きれか食べた → 何分のいくつ(食べたところは、どの問題でも点線)
       function () {
         var n = pick_([3, 4, 5, 6, 8]), k = ri_(2, n - 1);
+        var eaten = range_(k), left = range_(n).slice(k);
         return {
-          q: 'みかん1個を <b>' + n + 'きれ</b> に同じように分けて、<b>' + k + 'きれ</b> 食べたよ（色のついたところ）。<br>食べたのは、みかん1個の何分のいくつ？',
-          pics: mikan_(n, range_(k)),
+          q: 'みかん1個を <b>' + n + 'きれ</b> に同じように分けて、<b>' + k + 'きれ</b> 食べたよ（点線のところ）。<br>食べたのは、みかん1個の何分のいくつ？',
+          pics: mikan_(n, left, eaten),
           choices: choices_(fc_(k, n), [fc_(n - k, n), fc_(1, n), fc_(n, k), fc_(k, n + 1)]),
           ans: k + '/' + n,
-          expl: mikan_(n, range_(k), null, 90) + '<div><b>' + n + 'つ</b> に分けたうちの <b>' + k + 'つ分</b> だから、' + frac_(k, n) + '。<br>' + frac_(1, n) + ' が ' + k + 'こ分、とも言えるね。</div>'
+          expl: mikan_(n, left, eaten, 90) + '<div><b>' + n + 'つ</b> に分けたうちの <b>' + k + 'つ分</b> だから、' + frac_(k, n) + '。<br>' + frac_(1, n) + ' が ' + k + 'こ分、とも言えるね。' + sameAs_(k, n) + '</div>'
         };
       },
-      // ③ どっちの1人分が大きい？(分ける人数が多いほど1人分は小さい)
+      // ③ どっちの1人分が大きい？(分ける人数が多いほど1人分は小さい。ときどき同じ人数)
       function () {
-        var pair = shuffle_([2, 3, 4, 5, 6, 8]).slice(0, 2), a = pair[0], b = pair[1];
+        var pair = shuffle_([2, 3, 4, 5, 6, 8]).slice(0, 2), a = pair[0], b = Math.random() < 0.2 ? pair[0] : pair[1];
         return {
           q: '左は <b>' + a + '人</b>、右は <b>' + b + '人</b> で、みかん1個を同じように分けたよ。<br>1人分が大きいのはどっち？',
           pics: '<div class="ns-cmp"><div>' + mikan_(a, [0], null, 100) + '<div>' + a + '人で分けた1人分</div></div><div>' + mikan_(b, [0], null, 100) + '<div>' + b + '人で分けた1人分</div></div></div>',
-          choices: [{ key: 'L', html: '⬅️ 左（' + a + '人）' }, { key: 'R', html: '右（' + b + '人）➡️' }, { key: 'S', html: '同じ' }],
-          ans: a < b ? 'L' : 'R',
-          expl: '<div>分ける人数が <b>多いほど</b>、1人分は <b>小さく</b> なるよ。だから ' + frac_(1, Math.min(a, b)) + ' のほうが ' + frac_(1, Math.max(a, b)) + ' より大きい。<br>下の数（分母）が大きいほど、1つ分は小さいんだね。</div>'
+          choices: lrs_('左（' + a + '人）', '右（' + b + '人）'),
+          ans: a === b ? 'S' : a < b ? 'L' : 'R',
+          expl: a === b
+            ? '<div>どちらも <b>' + a + '人</b> で分けたから、1人分は ' + frac_(1, a) + ' で <b>同じ</b>！</div>'
+            : '<div>分ける人数が <b>多いほど</b>、1人分は <b>小さく</b> なるよ。だから ' + frac_(1, Math.min(a, b)) + ' のほうが ' + frac_(1, Math.max(a, b)) + ' より大きい。<br>下の数（分母）が大きいほど、1つ分は小さいんだね。</div>'
         };
       },
       // ④ のこりは？
@@ -34585,11 +34602,11 @@
         var n = pick_([4, 5, 6, 8]), k = ri_(1, n - 2), rest = n - k;
         var eaten = range_(k), left = range_(n).slice(k);
         return {
-          q: 'みかん1個を <b>' + n + 'きれ</b> に分けて、<b>' + k + 'きれ</b> 食べたよ（点線のところ）。<br>のこりは、みかん1個の何分のいくつ？',
+          q: 'みかん1個を <b>' + n + 'きれ</b> に分けて、<b>' + k + 'きれ</b> 食べたよ（点線のところ）。<br>のこり（色のついたところ）は、みかん1個の何分のいくつ？',
           pics: mikan_(n, left, eaten),
           choices: choices_(fc_(rest, n), [fc_(k, n), fc_(rest, k), fc_(1, n), fc_(rest, n + 1)]),
           ans: rest + '/' + n,
-          expl: mikan_(n, left, eaten, 90) + '<div>全部で <b>' + n + 'きれ</b>。' + k + 'きれ食べたので、のこりは ' + n + '−' + k + '＝<b>' + rest + 'きれ</b>。<br>だから ' + frac_(rest, n) + '。</div>'
+          expl: mikan_(n, left, eaten, 90) + '<div>全部で <b>' + n + 'きれ</b>。' + k + 'きれ食べたので、のこりは ' + n + '−' + k + '＝<b>' + rest + 'きれ</b>。<br>だから ' + frac_(rest, n) + '。' + sameAs_(rest, n) + '</div>'
         };
       },
       // ⑤ 全部食べたら？(n分のnは1個)
@@ -34598,27 +34615,316 @@
         return {
           q: 'みかん1個を <b>' + n + 'きれ</b> に分けて、<b>' + n + 'きれ全部</b> 食べたよ。<br>食べたのは、みかん何個分？',
           pics: mikan_(n, range_(n)),
-          choices: shuffle_([{ key: 'one', html: 'みかん <b>1個</b> 分' }, { key: 'n', html: 'みかん <b>' + n + '個</b> 分' }, { key: 'frac1', html: frac_(1, n) + ' 個分' }]),
+          choices: shuffle_([ch_('one', 'みかん <b>1個</b> 分'), ch_('n', 'みかん <b>' + n + '個</b> 分'), ch_('frac1', frac_(1, n) + ' 個分')]),
           ans: 'one',
           expl: '<div>' + frac_(n, n) + ' は、' + n + 'つに分けたのを全部あつめたもの。だから <b>みかん1個</b> と同じ！<br>' + frac_(n, n) + '＝1 だよ。</div>'
         };
       },
     ];
-    // テーマ一覧。ready:false は「じゅんび中」として表示だけする。
+
+    // ---- 📏小数（1Lます・ものさし） ----
+    // 1Lます：10こに分けた目もりと、k目もり分の水
+    function masu_(k, size) {
+      var w = 60, h = 120, x = 20, y = 10, s = '';
+      var wh = h * k / 10;
+      s += '<rect x="' + x + '" y="' + (y + h - wh) + '" width="' + w + '" height="' + wh + '" fill="#64b5f6"/>';
+      s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="none" stroke="#455a64" stroke-width="2"/>';
+      for (var i = 1; i < 10; i++) { var ty = y + h * i / 10; s += '<line x1="' + x + '" y1="' + ty + '" x2="' + (x + (i === 5 ? 24 : 14)) + '" y2="' + ty + '" stroke="#455a64" stroke-width="1.5"/>'; }
+      s += '<text x="' + (x + w + 6) + '" y="' + (y + 10) + '" font-size="12" fill="#455a64">1L</text>';
+      size = size || 110;
+      return '<svg viewBox="0 0 100 140" width="' + size + '" height="' + Math.round(size * 1.4) + '" role="img" aria-label="1Lます">' + s + '</svg>';
+    }
+    // ものさし(0〜6cm、1mmずつの目もり)と、mm(ミリ)の長さのテープ
+    function ruler_(mm) {
+      var u = 5, x0 = 12, s = '';
+      s += '<rect x="' + x0 + '" y="8" width="' + (mm * u) + '" height="16" rx="2" fill="#ffb74d" stroke="#e65100"/>';
+      s += '<rect x="4" y="30" width="' + (60 * u + 16) + '" height="36" fill="#fffde7" stroke="#8d6e63"/>';
+      for (var i = 0; i <= 60; i++) {
+        var len = i % 10 === 0 ? 16 : i % 5 === 0 ? 11 : 7, xx = x0 + i * u;
+        s += '<line x1="' + xx + '" y1="30" x2="' + xx + '" y2="' + (30 + len) + '" stroke="#5d4037" stroke-width="' + (i % 10 === 0 ? 1.5 : 0.8) + '"/>';
+        if (i % 10 === 0) s += '<text x="' + xx + '" y="62" font-size="10" text-anchor="middle" fill="#5d4037">' + (i / 10) + '</text>';
+      }
+      s += '<line x1="' + (x0 + mm * u) + '" y1="8" x2="' + (x0 + mm * u) + '" y2="46" stroke="#e53935" stroke-dasharray="2 2"/>';
+      return '<svg viewBox="0 0 ' + (60 * u + 24) + ' 70" width="100%" style="max-width:340px" role="img" aria-label="ものさし">' + s + '</svg>';
+    }
+    var DEC_GENS_ = [
+      // ① 1Lますの水 → 0.kL
+      function () {
+        var k = pick_([1, 2, 3, 4, 6, 7, 8, 9]);
+        return {
+          q: '1Lますに水を入れたよ。1Lを <b>10こ</b> に同じように分けた目もりがあるよ。<br>水は何L？',
+          pics: masu_(k),
+          choices: choices_(ch_('0.' + k, '0.' + k + ' L'), [ch_(k, k + ' L'), ch_('0.' + (10 - k), '0.' + (10 - k) + ' L'), ch_('1.' + k, '1.' + k + ' L'), ch_('0.0' + k, '0.0' + k + ' L')]),
+          ans: '0.' + k,
+          expl: masu_(k, 80) + '<div>1Lを10こに分けた <b>1目もり</b> が <b>0.1L</b>（' + frac_(1, 10) + 'L）。<br>それが <b>' + k + 'こ分</b> だから <b>0.' + k + 'L</b>。<br>0.1 が ' + k + 'こで 0.' + k + ' だよ。</div>'
+        };
+      },
+      // ② ちょうど半分 → 0.5L
+      function () {
+        return {
+          q: '1Lますに、<b>ちょうど半分</b> まで水が入っているよ。<br>水は何L？',
+          pics: masu_(5),
+          choices: shuffle_([ch_('0.5', '0.5 L'), ch_('5', '5 L'), ch_('0.2', '0.2 L'), ch_('0.05', '0.05 L')]),
+          ans: '0.5',
+          expl: masu_(5, 80) + '<div>10目もりのうち <b>5目もり</b> だから <b>0.5L</b>。<br>半分は ' + frac_(1, 2) + 'L とも書けるね。0.5 と ' + frac_(1, 2) + ' は同じ大きさ！</div>'
+        };
+      },
+      // ③ ものさしでテープの長さ → c.m cm
+      function () {
+        var c = ri_(1, 5), m = ri_(1, 9), mm = c * 10 + m, v = c + '.' + m;
+        return {
+          q: 'オレンジのテープの長さは何cm？<br>ものさしの <b>1cm</b> は、小さい目もりで <b>10こ</b> に分けてあるよ（小さい1目もり＝1mm）。',
+          pics: ruler_(mm),
+          choices: choices_(ch_(v, v + ' cm'), [ch_(c + '' + m, c + '' + m + ' cm'), ch_(m + '.' + c, m + '.' + c + ' cm'), ch_((c + 1) + '.' + m, (c + 1) + '.' + m + ' cm'), ch_(c + '.' + (10 - m), c + '.' + (10 - m) + ' cm')]),
+          ans: v,
+          expl: '<div>大きい目もりが <b>' + c + '</b> で ' + c + 'cm、そこから小さい目もりが <b>' + m + 'こ</b>。<br>小さい1目もり（1mm）は <b>0.1cm</b> だから、' + m + 'こで 0.' + m + 'cm。<br>あわせて <b>' + v + 'cm</b>（' + c + 'cm' + m + 'mm）だよ。</div>'
+        };
+      },
+      // ④ どっちが多い？
+      function () {
+        var a = ri_(1, 9), b = Math.random() < 0.15 ? a : pick_(range_(9).map(function (i) { return i + 1; }).filter(function (x) { return x !== a; }));
+        return {
+          q: '左のますと右のますの水、多いのはどっち？',
+          pics: '<div class="ns-cmp"><div>' + masu_(a, 80) + '<div>0.' + a + 'L</div></div><div>' + masu_(b, 80) + '<div>0.' + b + 'L</div></div></div>',
+          choices: lrs_('左（0.' + a + 'L）', '右（0.' + b + 'L）'),
+          ans: a === b ? 'S' : a > b ? 'L' : 'R',
+          expl: a === b ? '<div>どちらも 0.1L が <b>' + a + 'こ</b> 分で、<b>同じ</b>！</div>'
+            : '<div>0.' + a + 'L は 0.1L が ' + a + 'こ、0.' + b + 'L は 0.1L が ' + b + 'こ。<br>0.1 がたくさんあるほうが多いから、<b>0.' + Math.max(a, b) + 'L</b> のほうが多いよ。</div>'
+        };
+      },
+      // ⑤ 0.1Lのコップで何ばいで1L？
+      function () {
+        return {
+          q: '0.1L 入るコップがあるよ。<br>1Lますをいっぱいにするには、コップで何ばい入れればいい？',
+          pics: masu_(1) + '<div class="ns-people">🥛</div>',
+          choices: shuffle_([ch_('10', '10ぱい'), ch_('1', '1ぱい'), ch_('100', '100ぱい'), ch_('5', '5はい')]),
+          ans: '10',
+          expl: masu_(10, 80) + '<div>1Lを10こに分けた1つ分が 0.1L。<br>だから <b>0.1L が 10こ</b> で、ちょうど <b>1L</b> になるよ。</div>'
+        };
+      },
+    ];
+
+    // ---- 🚶速さ ----
+    var RUNNERS_ = [{ e: '🐢', n: 'カメ' }, { e: '🐇', n: 'ウサギ' }, { e: '🚶', n: 'あるく人' }, { e: '🏃', n: 'はしる人' }, { e: '🚲', n: '自転車' }, { e: '🐕', n: 'イヌ' }];
+    // 進んだ道のりの棒グラフ(rows: [{e, label, v}], max)
+    function track_(rows, max) {
+      return '<div class="ns-track">' + rows.map(function (r) {
+        return '<div class="ns-track-row"><span class="ns-track-who">' + r.e + '</span><div class="ns-track-bar"><div style="width:' + Math.round(100 * r.v / max) + '%"></div></div><span class="ns-track-v">' + r.label + '</span></div>';
+      }).join('') + '</div>';
+    }
+    var SPEED_GENS_ = [
+      // ① 同じ時間 → 長く進んだほうが速い
+      function () {
+        var p = shuffle_(RUNNERS_.slice()).slice(0, 2), d1 = ri_(3, 12) * 10, d2 = ri_(3, 12) * 10;
+        if (d2 === d1) d2 = d1 + 20;
+        return {
+          q: '同じ <b>1分間</b> で、' + p[0].e + p[0].n + ' は <b>' + d1 + 'm</b>、' + p[1].e + p[1].n + ' は <b>' + d2 + 'm</b> 進んだよ。<br>速いのはどっち？',
+          pics: track_([{ e: p[0].e, label: d1 + 'm', v: d1 }, { e: p[1].e, label: d2 + 'm', v: d2 }], 140),
+          choices: shuffle_([ch_('A', p[0].e + ' ' + p[0].n), ch_('B', p[1].e + ' ' + p[1].n), ch_('S', '同じ')]),
+          ans: d1 > d2 ? 'A' : 'B',
+          expl: '<div><b>同じ時間</b> なら、<b>長い道のり</b> を進んだほうが速い。<br>' + Math.max(d1, d2) + 'm ＞ ' + Math.min(d1, d2) + 'm だから、' + (d1 > d2 ? p[0].e + p[0].n : p[1].e + p[1].n) + ' が速いよ。</div>'
+        };
+      },
+      // ② 同じ道のり → かかった時間が短いほうが速い
+      function () {
+        var p = shuffle_(RUNNERS_.slice()).slice(0, 2), t1 = ri_(12, 30), t2 = ri_(12, 30);
+        if (t2 === t1) t2 = t1 + 4;
+        return {
+          q: '<b>100m</b> を、' + p[0].e + p[0].n + ' は <b>' + t1 + '秒</b>、' + p[1].e + p[1].n + ' は <b>' + t2 + '秒</b> で進んだよ。<br>速いのはどっち？',
+          pics: track_([{ e: p[0].e, label: t1 + '秒', v: t1 }, { e: p[1].e, label: t2 + '秒', v: t2 }], 34) + '<div class="ns-note">（棒は かかった時間 の長さ）</div>',
+          choices: shuffle_([ch_('A', p[0].e + ' ' + p[0].n), ch_('B', p[1].e + ' ' + p[1].n), ch_('S', '同じ')]),
+          ans: t1 < t2 ? 'A' : 'B',
+          expl: '<div><b>同じ道のり</b> なら、<b>かかった時間が短い</b> ほうが速い。<br>' + Math.min(t1, t2) + '秒 ＜ ' + Math.max(t1, t2) + '秒 だから、' + (t1 < t2 ? p[0].e + p[0].n : p[1].e + p[1].n) + ' が速いよ。<br>時間の数が大きいほうが速い、ではないから気をつけてね。</div>'
+        };
+      },
+      // ③ 同じ速さで歩き続ける → v×t
+      function () {
+        var v = pick_([40, 50, 60, 70, 80]), t = ri_(2, 5), d = v * t;
+        var blocks = range_(t).map(function () { return '<span>' + v + 'm</span>'; }).join('');
+        return {
+          q: '1分間に <b>' + v + 'm</b> 歩く人が、同じ速さで <b>' + t + '分間</b> 歩いたよ。<br>何m進んだ？',
+          pics: '<div class="ns-blocks">' + blocks + '</div><div class="ns-note">🚶 1分ごとに ' + v + 'm ずつ</div>',
+          choices: choices_(ch_(d, d + 'm'), [ch_(v + t, (v + t) + 'm'), ch_(v * (t + 1), v * (t + 1) + 'm'), ch_(v * (t - 1), v * (t - 1) + 'm'), ch_(d * 10, d * 10 + 'm')]),
+          ans: String(d),
+          expl: '<div>1分ごとに ' + v + 'm ずつ進むから、' + t + '分間では ' + v + 'm が <b>' + t + 'こ分</b>。<br>' + v + '×' + t + '＝<b>' + d + 'm</b>。同じ速さなら、時間が2倍・3倍になると、道のりも2倍・3倍になるよ。</div>'
+        };
+      },
+      // ④ 何倍の速さ？
+      function () {
+        var w = pick_([3, 4, 5]), m = pick_([2, 3, 4]), b = w * m;
+        return {
+          q: '1時間で、🚶歩くと <b>' + w + 'km</b>、🚲自転車だと <b>' + b + 'km</b> 進むよ。<br>自転車は、歩くときの何倍の速さ？',
+          pics: track_([{ e: '🚶', label: w + 'km', v: w }, { e: '🚲', label: b + 'km', v: b }], b),
+          choices: choices_(ch_(m, m + '倍'), [ch_(b - w, (b - w) + '倍'), ch_(b + w, (b + w) + '倍'), ch_(m + 1, (m + 1) + '倍'), ch_(b, b + '倍')]),
+          ans: String(m),
+          expl: '<div>' + b + 'km は ' + w + 'km の <b>' + m + 'こ分</b>（' + w + '×' + m + '＝' + b + '）。<br>同じ1時間で ' + m + '倍 の道のりを進むから、<b>' + m + '倍の速さ</b> だよ。</div>'
+        };
+      },
+    ];
+
+    // ---- 📐図形（折り紙） ----
+    // 正方形の折り紙。lines: 折り目(点線) [[x1,y1,x2,y2],…](0〜100)、fill: ぬる多角形の点
+    function paper_(lines, fill, size) {
+      var s = '<rect x="5" y="5" width="100" height="100" fill="#f8bbd0" stroke="#c2185b" stroke-width="1.5"/>';
+      if (fill) s += '<polygon points="' + fill.map(function (p) { return (p[0] + 5) + ',' + (p[1] + 5); }).join(' ') + '" fill="#ec407a"/>';
+      (lines || []).forEach(function (l) { s += '<line x1="' + (l[0] + 5) + '" y1="' + (l[1] + 5) + '" x2="' + (l[2] + 5) + '" y2="' + (l[3] + 5) + '" stroke="#880e4f" stroke-width="1.5" stroke-dasharray="4 3"/>'; });
+      size = size || 120;
+      return '<svg viewBox="0 0 110 110" width="' + size + '" height="' + size + '" role="img" aria-label="折り紙">' + s + '</svg>';
+    }
+    function poly_(n, size) {
+      var pts = range_(n).map(function (i) { var a = -Math.PI / 2 + 2 * Math.PI * i / n; return (50 + 42 * Math.cos(a)).toFixed(1) + ',' + (54 + 42 * Math.sin(a)).toFixed(1); }).join(' ');
+      size = size || 120;
+      return '<svg viewBox="0 0 100 104" width="' + size + '" height="' + size + '" role="img" aria-label="図形"><polygon points="' + pts + '" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2.5"/></svg>';
+    }
+    var POLY_NAME_ = { 3: '三角形', 4: '四角形', 5: '五角形', 6: '六角形' };
+    var SHAPE_GENS_ = [
+      // ① 半分に折るとどんな形？(角と角 → 三角形、辺と辺 → 長方形)
+      function () {
+        var diag = Math.random() < 0.5;
+        var ansName = diag ? '三角形' : '長方形';
+        return {
+          q: '正方形の折り紙を、' + (diag ? '<b>かどとかど</b> を合わせて' : '<b>へんとへん</b> を合わせて') + '、点線で半分に折ったよ。<br>どんな形になる？',
+          pics: paper_(diag ? [[0, 100, 100, 0]] : [[0, 50, 100, 50]]),
+          choices: shuffle_([ch_('三角形', '△ 三角形'), ch_('長方形', '▭ 長方形'), ch_('正方形', '□ 正方形'), ch_('円', '○ まる')]),
+          ans: ansName,
+          expl: paper_(diag ? [[0, 100, 100, 0]] : [[0, 50, 100, 50]], diag ? [[0, 0], [100, 0], [0, 100]] : [[0, 0], [100, 0], [100, 50], [0, 50]], 80)
+            + '<div>' + (diag ? 'ななめの点線で折ると、かどが3つの <b>三角形</b> になるよ。' : 'まん中の点線で折ると、細長い <b>長方形</b> になるよ。') + '<br>どちらも、もとの正方形の ' + frac_(1, 2) + ' の大きさだね。</div>'
+        };
+      },
+      // ② かどはいくつ？
+      function () {
+        var n = pick_([3, 4, 5, 6]);
+        return {
+          q: 'この形の <b>かど</b> は いくつ？',
+          pics: poly_(n),
+          choices: choices_(ch_(n, n + 'こ'), [ch_(n - 1, (n - 1) + 'こ'), ch_(n + 1, (n + 1) + 'こ'), ch_(n + 2, (n + 2) + 'こ')]),
+          ans: String(n),
+          expl: poly_(n, 80) + '<div>かどは <b>' + n + 'こ</b>。まっすぐな線（へん）も ' + n + '本 で、かどの数と同じだよ。<br>かどが' + n + 'こだから「<b>' + POLY_NAME_[n] + '</b>」という名前なんだ。</div>'
+        };
+      },
+      // ③ 折って広げると、何分の1？(1回→2つ、2回→4つ、3回→8つ)
+      function () {
+        var t = pick_([1, 2, 3]), parts = Math.pow(2, t);
+        var lines = t === 1 ? [[50, 0, 50, 100]] : t === 2 ? [[50, 0, 50, 100], [0, 50, 100, 50]] : [[50, 0, 50, 100], [0, 50, 100, 50], [25, 0, 25, 100], [75, 0, 75, 100]];
+        var fill = t === 1 ? [[0, 0], [50, 0], [50, 100], [0, 100]] : t === 2 ? [[0, 0], [50, 0], [50, 50], [0, 50]] : [[0, 0], [25, 0], [25, 50], [0, 50]];
+        return {
+          q: '正方形の折り紙を、半分に折って、' + (t === 1 ? '' : t === 2 ? 'もう1回半分に折って、' : 'もう1回、さらにもう1回半分に折って、') + '広げたよ（半分に <b>' + t + '回</b>）。<br>折り目で分けられた1つ分（こい色）は、もとの何分の1？',
+          pics: paper_(lines, fill),
+          choices: choices_(fc_(1, parts), [fc_(1, t * 2 === parts ? parts * 2 : t * 2), fc_(1, t), fc_(1, parts * 2), fc_(1, 3)]),
+          ans: '1/' + parts,
+          expl: paper_(lines, fill, 80) + '<div>半分に折るたびに、分かれる数は <b>2倍</b> になるよ。<br>' + (t === 1 ? '1回で2つ' : t === 2 ? '1回で2つ → 2回で4つ' : '1回で2つ → 2回で4つ → 3回で8つ') + '。だから1つ分は ' + frac_(1, parts) + '。</div>'
+        };
+      },
+      // ④ ななめに切ると三角形はいくつ？
+      function () {
+        var two = Math.random() < 0.5;
+        return {
+          q: '正方形の紙を、点線のところで ' + (two ? '<b>2本</b>' : '<b>1本</b>') + ' ななめに切ったよ。<br>三角形はいくつできる？',
+          pics: paper_(two ? [[0, 0, 100, 100], [0, 100, 100, 0]] : [[0, 0, 100, 100]]),
+          choices: choices_(ch_(two ? 4 : 2, (two ? 4 : 2) + 'こ'), [ch_(two ? 2 : 1, (two ? 2 : 1) + 'こ'), ch_(3, '3こ'), ch_(two ? 8 : 4, (two ? 8 : 4) + 'こ')]),
+          ans: two ? '4' : '2',
+          expl: '<div>' + (two ? 'ななめの線を2本ひくと、まん中で交わって、<b>4こ</b> の三角形に分かれるよ。4つとも同じ形・同じ大きさ（' + frac_(1, 4) + '）だね。' : 'ななめの線1本で、<b>2こ</b> の三角形に分かれるよ。2つとも同じ形・同じ大きさ（' + frac_(1, 2) + '）だね。') + '</div>'
+        };
+      },
+    ];
+
+    // ---- 💴大きな数（お金） ----
+    function coins_(h, t, o) {
+      var s = '';
+      function row(n, cls, label) { var r = ''; for (var i = 0; i < n; i++) r += '<span class="ns-coin ' + cls + '">' + label + '</span>'; return r ? '<div class="ns-coin-row">' + r + '</div>' : ''; }
+      s += row(h, 'ns-c100', '100') + row(t, 'ns-c10', '10') + row(o, 'ns-c1', '1');
+      return '<div class="ns-coins">' + s + '</div>';
+    }
+    var BIG_GENS_ = [
+      // ① 何円ある？(位取り)
+      function () {
+        var h = ri_(1, 4), t = ri_(0, 9), o = ri_(0, 9), v = h * 100 + t * 10 + o;
+        return {
+          q: 'お金はぜんぶで何円？<br>（100円玉・10円玉・1円玉）',
+          pics: coins_(h, t, o),
+          choices: choices_(ch_(v, v + '円'), [ch_(h + t + o, (h + t + o) + '円'), ch_(h * 100 + o * 10 + t, (h * 100 + o * 10 + t) + '円'), ch_(v + 100, (v + 100) + '円'), ch_(v + 10, (v + 10) + '円')]),
+          ans: String(v),
+          expl: '<div>100円玉 ' + h + 'まいで <b>' + h * 100 + '円</b>、10円玉 ' + t + 'まいで <b>' + t * 10 + '円</b>、1円玉 ' + o + 'まいで <b>' + o + '円</b>。<br>あわせて <b>' + v + '円</b>。<br>百の位が ' + h + '、十の位が ' + t + '、一の位が ' + o + ' だね。</div>'
+        };
+      },
+      // ② 何まい集まると1つ上？(10こで次の位)
+      function () {
+        var c = pick_([[1, 10, '1円玉', '10円'], [10, 100, '10円玉', '100円'], [100, 1000, '100円玉', '1000円']]);
+        return {
+          q: '<b>' + c[2] + '</b> を何まい集めると、<b>' + c[3] + '</b> になる？',
+          pics: coins_(c[0] === 100 ? 4 : 0, c[0] === 10 ? 4 : 0, c[0] === 1 ? 4 : 0) + '<div class="ns-note">…</div>',
+          choices: shuffle_([ch_('10', '10まい'), ch_('100', '100まい'), ch_('5', '5まい'), ch_('20', '20まい')]),
+          ans: '10',
+          expl: '<div>' + c[0] + '×10＝' + c[1] + ' だから <b>10まい</b>。<br>お金も数も、<b>10こ集まると1つ上の位</b> になるよ（1→10→100→1000）。</div>'
+        };
+      },
+      // ③ いちばん少ないまい数で払うと、〇円玉は何まい？
+      function () {
+        var h = ri_(1, 9), t = ri_(1, 9), o = ri_(1, 9), v = h * 100 + t * 10 + o;
+        var which = pick_([['100円玉', h], ['10円玉', t], ['1円玉', o]]);
+        var d = which[1], others = [h, t, o].filter(function (x) { return x !== d; });
+        return {
+          q: '<b>' + v + '円</b> を、100円玉・10円玉・1円玉で、<b>まい数がいちばん少なくなるように</b> 払うよ。<br><b>' + which[0] + '</b> は何まい？',
+          pics: '<div class="ns-bigprice">' + v + '円</div>',
+          choices: choices_(ch_(d, d + 'まい'), others.concat([d + 1, d + 10, d + 2]).map(function (x) { return ch_(x, x + 'まい'); })),
+          ans: String(d),
+          expl: '<div>' + v + '円 ＝ 100円が <b>' + h + '</b>こ ＋ 10円が <b>' + t + '</b>こ ＋ 1円が <b>' + o + '</b>こ。<br>数字の <b>位</b> を見れば、それぞれ何まいかすぐ分かるね。' + which[0] + 'は <b>' + d + 'まい</b>。</div>'
+        };
+      },
+      // ④ どっちが多い？(1000円さつ と 100円玉)
+      function () {
+        var a = ri_(1, 3), b = Math.random() < 0.2 ? a * 10 : ri_(5, 29);
+        var L = a * 1000, R = b * 100;
+        return {
+          q: '左は <b>1000円さつ ' + a + 'まい</b>、右は <b>100円玉 ' + b + 'まい</b>。<br>お金が多いのはどっち？',
+          pics: '<div class="ns-cmp"><div><div class="ns-bill-row">' + range_(a).map(function () { return '<span class="ns-bill">1000</span>'; }).join('') + '</div></div><div>' + coins_(Math.min(b, 30), 0, 0) + '</div></div>',
+          choices: lrs_('左（1000円さつ）', '右（100円玉）'),
+          ans: L === R ? 'S' : L > R ? 'L' : 'R',
+          expl: '<div>左は 1000×' + a + '＝<b>' + L + '円</b>、右は 100×' + b + '＝<b>' + R + '円</b>。<br>' + (L === R ? 'だから <b>同じ</b>！' : (L > R ? '左' : '右') + 'のほうが多いよ。') + '<br>100円玉は <b>10まいで1000円</b>。まい数が多くても、金がくが多いとはかぎらないね。</div>'
+        };
+      },
+    ];
+    // テーマ一覧
     var NS_THEMES_ = [
-      { id: 'frac', label: '🍊 分数（みかんを分ける）', ready: true, gens: FRAC_GENS_ },
-      { id: 'dec', label: '📏 小数', ready: false },
-      { id: 'speed', label: '🚶 速さ', ready: false },
-      { id: 'shape', label: '📐 図形', ready: false },
-      { id: 'big', label: '💴 大きな数', ready: false },
+      { id: 'frac', label: '🍊 分数', gens: FRAC_GENS_ },
+      { id: 'dec', label: '📏 小数', gens: DEC_GENS_ },
+      { id: 'speed', label: '🚶 速さ', gens: SPEED_GENS_ },
+      { id: 'shape', label: '📐 図形', gens: SHAPE_GENS_ },
+      { id: 'big', label: '💴 大きな数', gens: BIG_GENS_ },
     ];
     function theme_() { return NS_THEMES_.filter(function (t) { return t.id === ns.theme; })[0] || NS_THEMES_[0]; }
     function renderThemes_() {
       $('nsThemes').innerHTML = NS_THEMES_.map(function (t) {
-        return '<button type="button" class="ghost-btn ns-theme' + (t.id === ns.theme ? ' is-on' : '') + '" data-ns-theme="' + t.id + '"' + (t.ready ? '' : ' disabled') + '>' + t.label + (t.ready ? '' : ' <small>じゅんび中</small>') + '</button>';
+        return '<button type="button" class="ghost-btn ns-theme' + (t.id === ns.theme ? ' is-on' : '') + '" data-ns-theme="' + t.id + '">' + t.label + '</button>';
       }).join('');
     }
-    function renderScore_() { $('nsScore').textContent = ns.total ? '今回 ' + ns.total + '問中 ' + ns.ok + '問正解' : ''; }
+    // 今日この端末でもらったMP(1日NS_MP_DAILY_まで)
+    function mpKey_() { var s = loadSession(); return s && s.id ? 'nsMp_' + s.id : ''; }
+    function mpToday_() {
+      var k = mpKey_(); if (!k) return 0;
+      try { var o = JSON.parse(localStorage.getItem(k) || 'null'); return o && o.d === todayKey() ? Number(o.n) || 0 : 0; } catch (e) { return 0; }
+    }
+    function mpSet_(n) { var k = mpKey_(); if (!k) return; try { localStorage.setItem(k, JSON.stringify({ d: todayKey(), n: n })); } catch (e) { } }
+    function giveMp_() {
+      var session = loadSession();
+      if (!session || !session.id) return 0;
+      var today = todayKey();
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+      var got = mpToday_();
+      var add = Math.max(0, Math.min(1, NS_MP_DAILY_ - got, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
+      if (add <= 0) return 0;
+      state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + add;
+      state.points += add;
+      state.pointsToday += add;
+      mpSet_(got + add);
+      saveGameState(state);
+      updateGameHud();
+      syncPointsNow_(session.id);
+      return add;
+    }
+    function renderScore_() {
+      $('nsScore').textContent = (ns.total ? '今回 ' + ns.total + '問中 ' + ns.ok + '問正解　' : '') + '今日のMP ' + mpToday_() + '/' + NS_MP_DAILY_ + '（1問正解で1MP）';
+    }
     function next_() {
       ns.q = pick_(theme_().gens)();
       ns.answered = false;
@@ -34628,18 +34934,20 @@
       renderScore_();
     }
     function answer_(key, btn) {
-      if (!ns.q || ns.answered) return;
+      if (!ns.q || ns.answered || !nsAllowed_()) return;
       ns.answered = true;
       var ok = key === ns.q.ans;
       ns.total++; if (ok) ns.ok++;
+      var add = ok ? giveMp_() : 0;
       Array.prototype.forEach.call(panel.querySelectorAll('.ns-choice'), function (b) {
         b.disabled = true;
         if (b.getAttribute('data-ns-ans') === ns.q.ans) b.classList.add('is-correct');
         else if (b === btn) b.classList.add('is-incorrect');
       });
+      var mpLine = !ok ? '' : add > 0 ? '　+' + add + 'MP' : mpToday_() >= NS_MP_DAILY_ ? '（今日のMPは' + NS_MP_DAILY_ + 'MPまでもらったよ）' : '（今日の計算のMP上限のためMPなし）';
       var fb = $('nsFb');
       fb.className = 'ns-fb ' + (ok ? 'ns-ok' : 'ns-ng');
-      fb.innerHTML = '<div class="ns-fb-head">' + (ok ? '⭕ 正解！' : '❌ ざんねん！') + '</div><div class="ns-expl">' + ns.q.expl + '</div>'
+      fb.innerHTML = '<div class="ns-fb-head">' + (ok ? '⭕ 正解！' + mpLine : '❌ ざんねん！') + '</div><div class="ns-expl">' + ns.q.expl + '</div>'
         + '<button type="button" class="primary-btn" data-ns-next="1">つぎの問題 ▶</button>';
       renderScore_();
     }
@@ -34652,11 +34960,11 @@
       });
       panel.removeAttribute('hidden');
       renderThemes_();
-      if (!ns.q || ns.answered) next_();
+      if (!ns.q || ns.answered) next_(); else renderScore_();
     });
     panel.addEventListener('click', function (e) {
       var th = e.target.closest('[data-ns-theme]');
-      if (th && !th.disabled) { ns.theme = th.getAttribute('data-ns-theme'); renderThemes_(); next_(); return; }
+      if (th) { ns.theme = th.getAttribute('data-ns-theme'); renderThemes_(); next_(); return; }
       var a = e.target.closest('[data-ns-ans]');
       if (a) { answer_(a.getAttribute('data-ns-ans'), a); return; }
       if (e.target.closest('[data-ns-next]')) next_();
