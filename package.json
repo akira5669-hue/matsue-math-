@@ -4,8 +4,11 @@
   "private": true,
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
-    "@vercel/blob": "^2.7.0",
+    "@vercel/blob": "^2.8.2",
     "pg": "^8.13.1",
     "resend": "^6.18.1"
+  },
+  "overrides": {
+    "zod": "^4.6.6"
   }
 }
