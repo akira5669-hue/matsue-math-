@@ -22111,6 +22111,8 @@
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
+    // 🍊かずのかんかく(2026-11-10〜、今は00001だけ)
+    var nsTg = document.getElementById('numSenseToggle'); if (nsTg) { nsTg.hidden = !isAdminSession_(); if (nsTg.hidden) { var nsPn = document.getElementById('numSensePanel'); if (nsPn) nsPn.setAttribute('hidden', ''); } }
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
@@ -34500,6 +34502,171 @@
       if (b && b !== els.surveyToggle) els.surveyPanel.setAttribute('hidden', '');
     });
   }
+
+  /* ---------- 🍊かずのかんかく(2026-11-10〜、今は00001だけのプレビュー) ----------
+     分数・小数・速さ・図形などを学校で習う前に、本来は家庭で身につくような「数の感覚」を、絵を見ながら身につける。
+     先生の指示：計算だけでなく、数の概念まで身につけられるように(例：みかんを分けて分数の考え)。
+     1つ目のテーマは「🍊分数（みかんを分ける）」。問題は端末で作り、答え合わせも端末だけ(MPはまだ付けない)。
+     テーマを増やすときは NS_THEMES_ に足して、gens に問題を作る関数を入れる。 */
+  (function () {
+    var tg = document.getElementById('numSenseToggle'), panel = document.getElementById('numSensePanel');
+    if (!tg || !panel) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var ns = { theme: 'frac', q: null, answered: false, ok: 0, total: 0 };
+    function ri_(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+    function pick_(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function shuffle_(arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
+    function range_(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
+    // 分数の表示(上が分子、下が分母)と、その下に読み方(「3分の1」)
+    function frac_(n, d) { return '<span class="ns-frac-wrap"><span class="dq-frac"><span>' + n + '</span><span>' + d + '</span></span><span class="ns-yomi">' + d + '分の' + n + '</span></span>'; }
+    // みかん1個の絵：n個に同じように分けて、colored(何番目のきれか)をオレンジにぬる。eaten(食べたきれ)は点線のうすい色。
+    function mikan_(n, colored, eaten, size) {
+      var cx = 50, cy = 56, r = 42, s = '', on = {}, gone = {};
+      size = size || 120;
+      (colored || []).forEach(function (i) { on[i] = 1; });
+      (eaten || []).forEach(function (i) { gone[i] = 1; });
+      for (var i = 0; i < n; i++) {
+        var a1 = -Math.PI / 2 + 2 * Math.PI * i / n, a2 = -Math.PI / 2 + 2 * Math.PI * (i + 1) / n;
+        var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+        s += '<path d="M' + cx + ' ' + cy + ' L' + x1.toFixed(2) + ' ' + y1.toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + ((a2 - a1) > Math.PI ? 1 : 0) + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) + ' Z" class="' + (gone[i] ? 'ns-seg-gone' : on[i] ? 'ns-seg-on' : 'ns-seg') + '"/>';
+      }
+      // へたと葉っぱ
+      s += '<rect x="48" y="10" width="4" height="7" rx="1" fill="#6b4f2a"/><path d="M52 13 C60 4 70 6 72 10 C64 14 58 15 52 13 Z" fill="#4caf50"/>';
+      return '<svg class="ns-mikan" viewBox="0 0 100 104" width="' + size + '" height="' + Math.round(size * 1.04) + '" role="img" aria-label="みかん">' + s + '</svg>';
+    }
+    function people_(n) { var s = ''; for (var i = 0; i < n; i++) s += '🧒'; return '<div class="ns-people">' + s + '</div>'; }
+    // 選択肢を「正解+まちがい(最大3つ)」にそろえる(同じものは入れない)
+    function choices_(ans, wrongs) {
+      var seen = {}, out = [ans];
+      seen[ans.key] = 1;
+      wrongs.forEach(function (w) { if (out.length < 4 && w && !seen[w.key]) { seen[w.key] = 1; out.push(w); } });
+      return shuffle_(out);
+    }
+    function fc_(n, d) { return { key: n + '/' + d, html: frac_(n, d) }; }
+
+    // ---- 🍊分数（みかんを分ける） ----
+    var FRAC_GENS_ = [
+      // ① 何人かで分けた1人分 → 何分の1
+      function () {
+        var n = pick_([2, 3, 4, 5, 6, 8]);
+        var others = shuffle_([2, 3, 4, 5, 6, 8].filter(function (m) { return m !== n; }));
+        return {
+          q: 'みかん1個を <b>' + n + '人</b> で同じように分けたよ。<br>1人分（色のついたところ）は、みかん1個の何分の1？',
+          pics: people_(n) + mikan_(n, [0]),
+          choices: choices_(fc_(1, n), [fc_(1, others[0]), fc_(1, others[1]), fc_(n, 1)]),
+          ans: '1/' + n,
+          expl: mikan_(n, [0], null, 90) + '<div>みかん1個を <b>' + n + 'つ</b> に同じように分けた <b>1つ分</b> だから、' + frac_(1, n) + '。<br>下の数（分母）は「いくつに分けたか」、上の数（分子）は「そのうちのいくつ分か」だよ。</div>'
+        };
+      },
+      // ② 何きれか食べた → 何分のいくつ
+      function () {
+        var n = pick_([3, 4, 5, 6, 8]), k = ri_(2, n - 1);
+        return {
+          q: 'みかん1個を <b>' + n + 'きれ</b> に同じように分けて、<b>' + k + 'きれ</b> 食べたよ（色のついたところ）。<br>食べたのは、みかん1個の何分のいくつ？',
+          pics: mikan_(n, range_(k)),
+          choices: choices_(fc_(k, n), [fc_(n - k, n), fc_(1, n), fc_(n, k), fc_(k, n + 1)]),
+          ans: k + '/' + n,
+          expl: mikan_(n, range_(k), null, 90) + '<div><b>' + n + 'つ</b> に分けたうちの <b>' + k + 'つ分</b> だから、' + frac_(k, n) + '。<br>' + frac_(1, n) + ' が ' + k + 'こ分、とも言えるね。</div>'
+        };
+      },
+      // ③ どっちの1人分が大きい？(分ける人数が多いほど1人分は小さい)
+      function () {
+        var pair = shuffle_([2, 3, 4, 5, 6, 8]).slice(0, 2), a = pair[0], b = pair[1];
+        return {
+          q: '左は <b>' + a + '人</b>、右は <b>' + b + '人</b> で、みかん1個を同じように分けたよ。<br>1人分が大きいのはどっち？',
+          pics: '<div class="ns-cmp"><div>' + mikan_(a, [0], null, 100) + '<div>' + a + '人で分けた1人分</div></div><div>' + mikan_(b, [0], null, 100) + '<div>' + b + '人で分けた1人分</div></div></div>',
+          choices: [{ key: 'L', html: '⬅️ 左（' + a + '人）' }, { key: 'R', html: '右（' + b + '人）➡️' }, { key: 'S', html: '同じ' }],
+          ans: a < b ? 'L' : 'R',
+          expl: '<div>分ける人数が <b>多いほど</b>、1人分は <b>小さく</b> なるよ。だから ' + frac_(1, Math.min(a, b)) + ' のほうが ' + frac_(1, Math.max(a, b)) + ' より大きい。<br>下の数（分母）が大きいほど、1つ分は小さいんだね。</div>'
+        };
+      },
+      // ④ のこりは？
+      function () {
+        var n = pick_([4, 5, 6, 8]), k = ri_(1, n - 2), rest = n - k;
+        var eaten = range_(k), left = range_(n).slice(k);
+        return {
+          q: 'みかん1個を <b>' + n + 'きれ</b> に分けて、<b>' + k + 'きれ</b> 食べたよ（点線のところ）。<br>のこりは、みかん1個の何分のいくつ？',
+          pics: mikan_(n, left, eaten),
+          choices: choices_(fc_(rest, n), [fc_(k, n), fc_(rest, k), fc_(1, n), fc_(rest, n + 1)]),
+          ans: rest + '/' + n,
+          expl: mikan_(n, left, eaten, 90) + '<div>全部で <b>' + n + 'きれ</b>。' + k + 'きれ食べたので、のこりは ' + n + '−' + k + '＝<b>' + rest + 'きれ</b>。<br>だから ' + frac_(rest, n) + '。</div>'
+        };
+      },
+      // ⑤ 全部食べたら？(n分のnは1個)
+      function () {
+        var n = pick_([2, 3, 4, 6, 8]);
+        return {
+          q: 'みかん1個を <b>' + n + 'きれ</b> に分けて、<b>' + n + 'きれ全部</b> 食べたよ。<br>食べたのは、みかん何個分？',
+          pics: mikan_(n, range_(n)),
+          choices: shuffle_([{ key: 'one', html: 'みかん <b>1個</b> 分' }, { key: 'n', html: 'みかん <b>' + n + '個</b> 分' }, { key: 'frac1', html: frac_(1, n) + ' 個分' }]),
+          ans: 'one',
+          expl: '<div>' + frac_(n, n) + ' は、' + n + 'つに分けたのを全部あつめたもの。だから <b>みかん1個</b> と同じ！<br>' + frac_(n, n) + '＝1 だよ。</div>'
+        };
+      },
+    ];
+    // テーマ一覧。ready:false は「じゅんび中」として表示だけする。
+    var NS_THEMES_ = [
+      { id: 'frac', label: '🍊 分数（みかんを分ける）', ready: true, gens: FRAC_GENS_ },
+      { id: 'dec', label: '📏 小数', ready: false },
+      { id: 'speed', label: '🚶 速さ', ready: false },
+      { id: 'shape', label: '📐 図形', ready: false },
+      { id: 'big', label: '💴 大きな数', ready: false },
+    ];
+    function theme_() { return NS_THEMES_.filter(function (t) { return t.id === ns.theme; })[0] || NS_THEMES_[0]; }
+    function renderThemes_() {
+      $('nsThemes').innerHTML = NS_THEMES_.map(function (t) {
+        return '<button type="button" class="ghost-btn ns-theme' + (t.id === ns.theme ? ' is-on' : '') + '" data-ns-theme="' + t.id + '"' + (t.ready ? '' : ' disabled') + '>' + t.label + (t.ready ? '' : ' <small>じゅんび中</small>') + '</button>';
+      }).join('');
+    }
+    function renderScore_() { $('nsScore').textContent = ns.total ? '今回 ' + ns.total + '問中 ' + ns.ok + '問正解' : ''; }
+    function next_() {
+      ns.q = pick_(theme_().gens)();
+      ns.answered = false;
+      $('nsCard').innerHTML = '<div class="ns-q">' + ns.q.q + '</div><div class="ns-pics">' + ns.q.pics + '</div>'
+        + '<div class="ns-choices">' + ns.q.choices.map(function (c) { return '<button type="button" class="ghost-btn ns-choice" data-ns-ans="' + c.key + '">' + c.html + '</button>'; }).join('') + '</div>'
+        + '<div class="ns-fb" id="nsFb"></div>';
+      renderScore_();
+    }
+    function answer_(key, btn) {
+      if (!ns.q || ns.answered) return;
+      ns.answered = true;
+      var ok = key === ns.q.ans;
+      ns.total++; if (ok) ns.ok++;
+      Array.prototype.forEach.call(panel.querySelectorAll('.ns-choice'), function (b) {
+        b.disabled = true;
+        if (b.getAttribute('data-ns-ans') === ns.q.ans) b.classList.add('is-correct');
+        else if (b === btn) b.classList.add('is-incorrect');
+      });
+      var fb = $('nsFb');
+      fb.className = 'ns-fb ' + (ok ? 'ns-ok' : 'ns-ng');
+      fb.innerHTML = '<div class="ns-fb-head">' + (ok ? '⭕ 正解！' : '❌ ざんねん！') + '</div><div class="ns-expl">' + ns.q.expl + '</div>'
+        + '<button type="button" class="primary-btn" data-ns-next="1">つぎの問題 ▶</button>';
+      renderScore_();
+    }
+    tg.addEventListener('click', function () {
+      if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel',
+        'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+        var p = document.getElementById(pid);
+        if (p) p.setAttribute('hidden', '');
+      });
+      panel.removeAttribute('hidden');
+      renderThemes_();
+      if (!ns.q || ns.answered) next_();
+    });
+    panel.addEventListener('click', function (e) {
+      var th = e.target.closest('[data-ns-theme]');
+      if (th && !th.disabled) { ns.theme = th.getAttribute('data-ns-theme'); renderThemes_(); next_(); return; }
+      var a = e.target.closest('[data-ns-ans]');
+      if (a) { answer_(a.getAttribute('data-ns-ans'), a); return; }
+      if (e.target.closest('[data-ns-next]')) next_();
+    });
+    // ほかのボタンを押したら閉じる
+    tg.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== tg) panel.setAttribute('hidden', '');
+    });
+  })();
 
   /* ---------- 🐞バグ報告(2026-11-09〜、lib/handlers/bugReport.js) ----------
      送れるのはレベル300以上の生徒だけ(サーバーでも確かめる)。先生(00001)には届いた報告の一覧も出す。 */

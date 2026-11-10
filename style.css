@@ -2701,3 +2701,31 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .bug-item-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .bug-img { max-width: 100%; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 8px; }
 .bug-item-claude { margin-top: 6px; padding: 6px 8px; border-radius: 8px; background: #ecfdf5; color: #065f46; font-size: 0.9rem; white-space: pre-wrap; }
+
+/* 🍊かずのかんかく */
+.ns-themes { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.ns-theme { font-size: 0.85rem; padding: 6px 10px; }
+.ns-theme.is-on { background: #fff3e0; border-color: #fb8c00; color: #e65100; font-weight: 700; }
+.ns-theme:disabled { opacity: 0.5; }
+.ns-card { background: #fffaf2; border: 2px solid #ffcc80; border-radius: 14px; padding: 14px; color: #3e2723; }
+.ns-q { font-size: 1.05rem; line-height: 1.7; margin-bottom: 8px; }
+.ns-pics { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 6px 0 10px; }
+.ns-people { font-size: 1.6rem; letter-spacing: 2px; text-align: center; }
+.ns-cmp { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; text-align: center; font-size: 0.85rem; }
+.ns-mikan .ns-seg { fill: #fff3e0; stroke: #fb8c00; stroke-width: 1.5; }
+.ns-mikan .ns-seg-on { fill: #ff9800; stroke: #e65100; stroke-width: 1.5; }
+.ns-mikan .ns-seg-gone { fill: #ffffff; stroke: #bdbdbd; stroke-width: 1.2; stroke-dasharray: 3 2; }
+.ns-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.ns-choice { font-size: 1.1rem; padding: 10px 8px; min-height: 64px; }
+.ns-choice.is-correct { background: #e8f5e9; border-color: #43a047; }
+.ns-choice.is-incorrect { background: #ffebee; border-color: #e53935; }
+.ns-frac-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px; }
+.ns-frac-wrap .dq-frac { font-size: 1.15em; font-weight: 700; }
+.ns-yomi { font-size: 0.65em; color: #8d6e63; }
+.ns-fb { margin-top: 12px; border-radius: 10px; padding: 10px; }
+.ns-fb:empty { display: none; }
+.ns-fb.ns-ok { background: #e8f5e9; }
+.ns-fb.ns-ng { background: #fff3e0; }
+.ns-fb-head { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
+.ns-expl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; line-height: 1.8; margin-bottom: 10px; }
+.ns-expl > div { flex: 1 1 200px; }

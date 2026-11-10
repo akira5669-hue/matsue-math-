@@ -214,6 +214,7 @@
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="kenToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧩計算パズル<span class="new-badge">NEW</span></button>
+        <button id="numSenseToggle" class="ghost-btn is-new" type="button" hidden>🍊かずのかんかく<span class="new-badge">NEW</span></button>
         <button id="bugToggle" class="ghost-btn is-new" type="button">🐞バグ報告<span class="new-badge">NEW</span></button>
         <button id="manualToggle" class="ghost-btn" type="button">📘使い方マニュアル</button>
         <button id="subjectToggle" class="ghost-btn" type="button">🔬理科</button>
@@ -897,6 +898,14 @@
       <div class="survey-q"><p class="survey-label">不満・改善してほしいこと</p><textarea class="survey-text" data-sv-text="improve" maxlength="2000" rows="3" placeholder="授業・アプリ・塾のことなど、こうしてほしいこと"></textarea></div>
       <div class="answer10-actions"><button type="button" class="primary-btn" id="surveySubmit">送信する</button></div>
       <div id="surveyResult"></div>
+    </section>
+
+    <section class="weekly-quiz-panel" id="numSensePanel" hidden>
+      <h3 class="history-title">🍊 かずのかんかく</h3>
+      <p class="test-photo-hint">分数・小数・速さ・図形などを習う前に、ふだんの生活の中で「なんとなく分かる」ようになっておきたい感覚を、絵を見ながら身につけよう！</p>
+      <div class="ns-themes" id="nsThemes"></div>
+      <p class="test-photo-hint" id="nsScore"></p>
+      <div class="ns-card" id="nsCard"></div>
     </section>
 
     <section class="weekly-quiz-panel" id="bugPanel" hidden>
