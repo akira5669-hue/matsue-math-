@@ -32305,7 +32305,7 @@
   var ZK_MODE_TEXT_ = {
     zukei: { heading: '🧊 超絶！図形！トレーニング！！', hint: '新！図形問題！キャンペーン！ 「平面図形」（回転と裏返し・対称な図形・角度・方眼の面積）と「空間図形」（積み木・見え方・展開図・回転体）で、図形の力をきたえよう！やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（🎓中学受験問題！とあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
     juken: { heading: '🎓 中学受験問題！', hint: '中学受験によく出る問題（角度の応用・相似と面積比・立体の切断と体積・切断面・円すいの展開図・計算の技）にチャレンジ！答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると（図形トレーニングとあわせて数えるよ）、その日の🎲サイコロガチャが1回引けるよ！' },
-    koko: { heading: '🏫 高校受験問題！数学', hint: '高校入試によく出る問題にチャレンジ！基礎編（計算・方程式・関数・円周角・三平方の定理・確率）と、標準編（関数と図形・文章題・空間図形・相似・円・確率の応用）があるよ。答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると、その日の⚽サッカーPKガチャが1回できるよ！' }
+    koko: { heading: '🏫 高校受験問題！数学', hint: '高校入試によく出る問題にチャレンジ！基礎編（計算・方程式・関数・円周角・三平方の定理・確率）と、標準編（関数と図形・文章題・空間図形・相似・円・確率の応用）があるよ。答えたあとに、くわしい解説が出るよ。やりたい問題にチェック☑️を入れてね。正解するとHP+1、まちがえるとHP-1（MPは増えないよ）。1日10問以上正解すると、その日の⚽サッカーPKガチャが1回できるよ！（⚠️ここの正解は🎲サイコロガチャには入らないよ。サイコロガチャは🧊図形トレーニングと🎓中学受験問題の正解で数えるよ）' }
   };
   // 今のモードで出す種類(中学受験問題！はjukenグループだけ、高校受験問題！はkokoグループだけ、図形トレーニングはそれ以外)。
   function zkGroupMode_(g) { return g === 'koko2' ? 'koko' : g === 'juken' || g === 'koko' ? g : 'zukei'; }
@@ -34256,7 +34256,7 @@
   function renderZukei_() {
     if (!zukei_.q) zkNewQuestion_();
     var q = zukei_.q;
-    if (zukei_.mode === 'koko') els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた高校受験問題 ' + zukei_.kokoAnsweredToday + '問（正解 ' + zukei_.kokoCorrectToday + '問）' + (!gachaVisible_() ? '' : zukei_.kokoCorrectToday >= KOKO_PK_UNLOCK_ ? '（⚽サッカーPKガチャができるよ！）' : '（あと' + (KOKO_PK_UNLOCK_ - zukei_.kokoCorrectToday) + '問正解で⚽サッカーPKガチャ）');
+    if (zukei_.mode === 'koko') els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた高校受験問題 ' + zukei_.kokoAnsweredToday + '問（正解 ' + zukei_.kokoCorrectToday + '問）' + (!gachaVisible_() ? '' : zukei_.kokoCorrectToday >= KOKO_PK_UNLOCK_ ? '（⚽サッカーPKガチャができるよ！）' : '（あと' + (KOKO_PK_UNLOCK_ - zukei_.kokoCorrectToday) + '問正解で⚽サッカーPKガチャ）') + (!gachaVisible_() ? '' : '　※高校受験問題の正解は🎲サイコロガチャには入らないよ');
     else els.zukeiMpInfo.textContent = 'HP ' + (Number(state.hp) || 0) + '　今日解いた問題 ' + zukei_.answeredToday + '問（正解 ' + zukei_.correctToday + '問）' + (!gachaVisible_() ? '' : zukei_.correctToday >= ZUKEI_GACHA_UNLOCK_ ? '（🎲サイコロガチャが引けるよ！）' : '（あと' + (ZUKEI_GACHA_UNLOCK_ - zukei_.correctToday) + '問正解で🎲サイコロガチャ）');
     els.zukeiQTitle.textContent = q.title;
     els.zukeiQText.innerHTML = q.text;
