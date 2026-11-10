@@ -21779,6 +21779,8 @@
     // あった(生徒からのバグ報告により発覚：内部の値は正しく増えていたが、表示が
     // 固まって見えていた)。理科モードでも確実に最新のHPを表示する。
     if (els.statHp) els.statHp.textContent = Number(state.hp) || 0;
+    // 計算の敵(天使の涙など)のセリフは理科モードでは出さない(2026-11-10 バグ報告#5：計算で出た天使の涙のセリフが理科の画面に残っていた)。
+    if (els.enemySpeech) els.enemySpeech.hidden = true;
   }
 
   function nextScienceQuestion() {
@@ -23625,6 +23627,7 @@
       els.bugFixNoticeBannerText.textContent = '🐞【バグを直しました】特訓部屋で解いた問題が、単元の「1日40問でコンプリート」に数えられず、部屋の中ではコンプリートできないバグがありました。11月10日に直したので、今は特訓部屋で解いた問題もコンプリートに数えられます。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました②】ふつうの計算を9問のあと文章題を1問だけ解くと、文章題の報酬（50MP・HP）がもらえてしまうバグがありました。11月10日に直しました。文章題の報酬は、連続正解がぜんぶ文章題のときだけもらえます（まざっているときは、ふつうの計算の報酬）。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました③】わざと2問まちがえるだけで「天使の涙」が何度でも出せたり、最後の1問だけ中3の単元にすると虹色の宝箱になったりするバグがありました。11月10日に直しました。天使の涙は1日1回まで、宝箱の色は連続正解の中でいちばん低い学年の単元で決まります。報告してくれた人、ありがとう！'
+        + '　🐞【バグを直しました④】計算で出た「天使の涙」のセリフが理科の画面に出てしまうバグと、学習記録でまだゲットしていないレアキャラの絵を長押しすると大きく見えてしまうバグを直しました。報告してくれた人、ありがとう！'
         + '　アプリのまちがいを見つけたら「🐞バグ報告」から教えてね（レベル300以上・1日3件まで）。本当にバグだったら、直してお礼に100MPプレゼント！';
     }
   }
@@ -25057,7 +25060,8 @@
       const defeatCount = state.rareDefeats[id] || 0;
       const tierCls = collected ? rareTierClassFor(defeatCount) : '';
       const cls = 'badge-item' + (collected ? ' badge-earned' : ' badge-locked') + (tierCls ? ' ' + tierCls : '');
-      const iconHtml = rt.img ? `<img src="${rt.img}" alt="">` : (rt.emoji || '❓');
+      // まだゲットしていないキャラの絵は、長押しで拡大・保存できないようにする(2026-11-10 バグ報告#6)。
+      const iconHtml = rt.img ? (collected ? `<img src="${rt.img}" alt="">` : `<img src="${rt.img}" alt="" draggable="false" oncontextmenu="return false">`) : (rt.emoji || '❓');
       const label = collected ? rt.name : '？？？';
       let title;
       if (collected) {
