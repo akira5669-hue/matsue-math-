@@ -20309,6 +20309,13 @@
   }
   // 文章題ではないが、同じように❤️HPが貯まる単元(MPは通常どおりの計算式のまま)。
   const HP_ONLY_CATEGORY_IDS = ['planeFigureComposite1', 'unitRateWordProblem5', 'coneDevelopment1', 'circleSector6', 'speedApp5', 'decWordProblem4', 'divWordProblem4', 'sumDiffWordProblem4', 'percentWordProblemAdvanced5', 'speedFrac6', 'figureArea5', 'angleApplication2', 'angleApplicationFig2', 'quartileBoxplot2', 'workMeetingPassage6', 'mathSummary456', 'diffFocus4', 'roundEstimateWordProblem4', 'functionTable4', 'volumeRect5', 'figureAreaInverse5', 'baseAmountPercent5', 'patternRelation6', 'congruenceProofFill2', 'rightTriProofFill2', 'parallelogramProofFill2', 'decTimes4', 'decDivRound4'];
+  // 連続正解の報酬の種類(2026-11-10 バグ報告#3：ふつうの計算を9問のあと文章題を1問解くと、10問目の文章題の
+  // 報酬(50MP・HP)がもらえてしまった)。連続正解の間ずっと同じ種類のときだけ、その種類の特別報酬にする。
+  function streakRewardClass_(catId) {
+    if (WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1) return 'word';
+    if (HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1 || catId === 'divisorMultipleAdvanced5') return catId;
+    return 'calc';
+  }
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
@@ -22410,7 +22417,8 @@
     if (isCorrect) {
       state.correct++;
       clearWrongQuestion(state.current);
-      if (state.streak === 0) state.streakAboveGrade = true;
+      if (state.streak === 0) { state.streakAboveGrade = true; state.streakRewardClass = streakRewardClass_(catId); }
+      else if (state.streakRewardClass !== streakRewardClass_(catId)) state.streakRewardClass = 'mixed';
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.streak++;
       state.wrongStreak = 0;
@@ -22882,13 +22890,16 @@
       const today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
       const bonusEligible = state.streakAboveGrade;
+      // 連続正解の途中で別の種類の問題がまじっていたら、最後の1問が文章題などでも、ふつうの計算の報酬にする。
+      const pureStreak = state.streakRewardClass === streakRewardClass_(catId);
+      const wordReward = isWordProblem && pureStreak;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(5 or 10)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
       // ボーナスは10MPで、2倍の比率は維持)。
-      let rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : isWordProblem ? WORD_PROBLEM_FIXED_MP : catId === 'divisorMultipleAdvanced5' ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
+      let rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : wordReward ? WORD_PROBLEM_FIXED_MP : (catId === 'divisorMultipleAdvanced5' && pureStreak) ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
       // 新単元キャンペーン中(カテゴリごとにaddedDateから2週間)はMPが2倍になる。
       // 1日のMP上限(dailyCapForThis)自体は変えず、通常通りそこで頭打ちになる。
       if (isDoubleMpCategoryActive_(catId)) rawBasePoints *= 2;
@@ -22911,10 +22922,10 @@
         state.curseBonusToday = curseBonusTodaySoFar + pointsToAdd;
         state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + pointsToAdd;
       } else {
-        const dailyCapForThis = isWordProblem ? POINTS_DAILY_CAP_WORD : POINTS_DAILY_CAP_CALC;
-        const todayBucketForThis = isWordProblem ? state.pointsTodayWord : state.pointsTodayCalc;
+        const dailyCapForThis = wordReward ? POINTS_DAILY_CAP_WORD : POINTS_DAILY_CAP_CALC;
+        const todayBucketForThis = wordReward ? state.pointsTodayWord : state.pointsTodayCalc;
         pointsToAdd = Math.max(0, Math.min(basePoints, dailyCapForThis - todayBucketForThis));
-        if (isWordProblem) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
+        if (wordReward) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
       }
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
@@ -22933,7 +22944,7 @@
       state.streakAboveGrade = true;
 
       let hpBonusHtml = '';
-      if (isHpEarningCategory_(catId) && !state.zombified) {
+      if (isHpEarningCategory_(catId) && pureStreak && !state.zombified) {
         const hpGain = catId === 'circleSector6' ? CIRCLE_SECTOR6_FIXED_HP_GAIN : wordProblemHpGainForGrade_(ownGrade);
         state.hp = (Number(state.hp) || 0) + hpGain;
         hpBonusHtml = ` +${hpGain}HP`;
@@ -23605,6 +23616,7 @@
     if (els.bugFixNoticeBanner.hidden) return;
     if (els.bugFixNoticeBannerText) {
       els.bugFixNoticeBannerText.textContent = '🐞【バグを直しました】特訓部屋で解いた問題が、単元の「1日40問でコンプリート」に数えられず、部屋の中ではコンプリートできないバグがありました。11月10日に直したので、今は特訓部屋で解いた問題もコンプリートに数えられます。報告してくれた人、ありがとう！'
+        + '　🐞【バグを直しました②】ふつうの計算を9問のあと文章題を1問だけ解くと、文章題の報酬（50MP・HP）がもらえてしまうバグがありました。11月10日に直しました。文章題の報酬は、連続正解がぜんぶ文章題のときだけもらえます（まざっているときは、ふつうの計算の報酬）。報告してくれた人、ありがとう！'
         + '　アプリのまちがいを見つけたら「🐞バグ報告」から教えてね（レベル300以上・1日3件まで）。本当にバグだったら、直してお礼に100MPプレゼント！';
     }
   }
