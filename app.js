@@ -20968,6 +20968,8 @@
     enrollmentNoticeBanner: document.getElementById('enrollmentNoticeBanner'),
     enrollmentNoticeBannerText: document.getElementById('enrollmentNoticeBannerText'),
     readingDuplicateNoticeBanner: document.getElementById('readingDuplicateNoticeBanner'),
+    bugFixNoticeBanner: document.getElementById('bugFixNoticeBanner'),
+    bugFixNoticeBannerText: document.getElementById('bugFixNoticeBannerText'),
     accountMergeNoticeBanner: document.getElementById('accountMergeNoticeBanner'),
     accountMergeNoticeBannerText: document.getElementById('accountMergeNoticeBannerText'),
     readingDuplicateNoticeBannerText: document.getElementById('readingDuplicateNoticeBannerText'),
@@ -22262,6 +22264,7 @@
     renderScienceServiceDayBanner_();
     renderOhachiBanner_();
     renderProfessionNoticeBanner_();
+    renderBugFixNoticeBanner_();
     renderAccountMergeNoticeBanner_();
     // 世界一周ボスの虹色の宝箱の告知は終了(2026-10-25)。特典自体は10月末まで続く。
     if (els.worldBossChestBanner) els.worldBossChestBanner.hidden = true;
@@ -23588,6 +23591,19 @@
     els.halloweenAvatarBanner.hidden = false;
     if (els.halloweenAvatarBannerText) {
       els.halloweenAvatarBannerText.textContent = '🎃【新登場】ハロウィンバージョンのアバターが12種類登場！ドラキュラ・魔法使い・かぼちゃ・オオカミ男・黒ねこ・ミイラ・おばけ（男の子・女の子）から選べるよ。アバターの「イラスト」のいちばん下にあります。変えるたびに' + HALLOWEEN_AVATAR_COST_MP_ + 'MP。ハロウィンが終わっても選べます！';
+    }
+  }
+
+  // 🐞バグ報告で見つかったバグを直したことの告知(全生徒に表示、BUG_FIX_NOTICE_END_まで)。
+  // 新しく直したら、文を書き足して終わりの日をのばす。
+  var BUG_FIX_NOTICE_END_ = '2026-11-17';
+  function renderBugFixNoticeBanner_() {
+    if (!els.bugFixNoticeBanner) return;
+    els.bugFixNoticeBanner.hidden = todayKey() > BUG_FIX_NOTICE_END_;
+    if (els.bugFixNoticeBanner.hidden) return;
+    if (els.bugFixNoticeBannerText) {
+      els.bugFixNoticeBannerText.textContent = '🐞【バグを直しました】特訓部屋で解いた問題が、単元の「1日40問でコンプリート」に数えられず、部屋の中ではコンプリートできないバグがありました。11月10日に直したので、今は特訓部屋で解いた問題もコンプリートに数えられます。報告してくれた人、ありがとう！'
+        + '　アプリのまちがいを見つけたら「🐞バグ報告」から教えてね（レベル300以上・1日3件まで）。本当にバグだったら、直してお礼に100MPプレゼント！';
     }
   }
 
