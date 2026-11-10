@@ -20070,6 +20070,9 @@
   const MISTAKEKING_BONUS_MP = 30;
   const SANSUDEVIL_BONUS_MP = 30;
   const ANGELTEARS_BONUS_MP = 20;
+  // 天使の涙が今日もう出たか(この端末のlocalStorageで数える。1日1回まで)。
+  function angelTearsAvailableToday_() { try { return localStorage.getItem('matsue-math-angel-tears-day') !== todayKey(); } catch (e) { return true; } }
+  function markAngelTearsToday_() { try { localStorage.setItem('matsue-math-angel-tears-day', todayKey()); } catch (e) { } }
   const INUDA_BONUS_MP = 20;
   const SOUBUSEN_BONUS_MP = 20;
   const NATTOMAN_BONUS_MP = 20;
@@ -22417,8 +22420,10 @@
     if (isCorrect) {
       state.correct++;
       clearWrongQuestion(state.current);
-      if (state.streak === 0) { state.streakAboveGrade = true; state.streakRewardClass = streakRewardClass_(catId); }
+      if (state.streak === 0) { state.streakAboveGrade = true; state.streakRewardClass = streakRewardClass_(catId); state.streakMinGrade = categoryGrade[catId] || ''; }
       else if (state.streakRewardClass !== streakRewardClass_(catId)) state.streakRewardClass = 'mixed';
+      // 宝箱の色は、連続正解の中でいちばん低い学年の単元で決める(2026-11-10 バグ報告#4：最後の1問だけ中3の単元にすると虹色の宝箱になった)。
+      if (state.streak > 0 && state.streakMinGrade) { var g_ = categoryGrade[catId] || ''; if (!g_ || (GRADE_RANK[g_] || 0) < (GRADE_RANK[state.streakMinGrade] || 0)) state.streakMinGrade = g_; }
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.streak++;
       state.wrongStreak = 0;
@@ -22624,7 +22629,9 @@
       // 後の敵も含む)を天使の涙に変える。間違えても逃げないので、ここでの判定は
       // 「まだ天使の涙になっていない時だけ」でよい。
       state.wrongStreak = (state.wrongStreak || 0) + 1;
-      if (state.wrongStreak >= 2 && !state.worldBossActiveStage && state.rareType !== 'angelTears') {
+      // 天使の涙は1日1回まで(2026-11-10 バグ報告#4：わざと2問まちがえるだけで何度でも出せて、MPや宝箱をかせげた)。
+      if (state.wrongStreak >= 2 && !state.worldBossActiveStage && state.rareType !== 'angelTears' && angelTearsAvailableToday_()) {
+        markAngelTearsToday_();
         state.rareType = 'angelTears';
         missLineHtml += `<div class="enemy-quote-banner">${RARE_TYPES.angelTears.lines.appear}</div>`;
         state.wrongStreak = 0;
@@ -22996,7 +23003,7 @@
       // その時解いていた問題の学年に応じたティアの宝箱を1個手に入れる。
       let treasureChestGainedHtml = '';
       if (wasRareType && isTreasureChestActive_() && Math.random() < treasureChestDropChance_()) {
-        const treasureTier = treasureTierForGrade_(categoryGrade[catId]);
+        const treasureTier = treasureTierForGrade_(state.streakMinGrade || '');
         if (treasureTier) {
           if (!addTreasureChest_(treasureTier)) {
             treasureChestGainedHtml = treasureChestFullHtml_();
@@ -23617,6 +23624,7 @@
     if (els.bugFixNoticeBannerText) {
       els.bugFixNoticeBannerText.textContent = '🐞【バグを直しました】特訓部屋で解いた問題が、単元の「1日40問でコンプリート」に数えられず、部屋の中ではコンプリートできないバグがありました。11月10日に直したので、今は特訓部屋で解いた問題もコンプリートに数えられます。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました②】ふつうの計算を9問のあと文章題を1問だけ解くと、文章題の報酬（50MP・HP）がもらえてしまうバグがありました。11月10日に直しました。文章題の報酬は、連続正解がぜんぶ文章題のときだけもらえます（まざっているときは、ふつうの計算の報酬）。報告してくれた人、ありがとう！'
+        + '　🐞【バグを直しました③】わざと2問まちがえるだけで「天使の涙」が何度でも出せたり、最後の1問だけ中3の単元にすると虹色の宝箱になったりするバグがありました。11月10日に直しました。天使の涙は1日1回まで、宝箱の色は連続正解の中でいちばん低い学年の単元で決まります。報告してくれた人、ありがとう！'
         + '　アプリのまちがいを見つけたら「🐞バグ報告」から教えてね（レベル300以上・1日3件まで）。本当にバグだったら、直してお礼に100MPプレゼント！';
     }
   }
