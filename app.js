@@ -22500,7 +22500,8 @@
       }
       // スットボケAKRは正解した問題ごとに(勝利のタイミングを待たず)その場で判定する。
       if (state.current.sutobokeActive) {
-        const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}出現！✨</span>`;
+        // 答えたあとは「出現！」ではなく名前だけ出す(2026-11-10 バグ報告#8)。
+        const sutobokeTag = `<span class="rare-badge">✨${RARE_TYPES.sutoboke.name}✨</span>`;
         if (!state.items.includes(SPECIAL_ITEM_SUTOBOKE_SWORD) && Math.random() < SUTOBOKE_ITEM_DROP_CHANCE) {
           state.items.push(SPECIAL_ITEM_SUTOBOKE_SWORD);
           sutobokeHtml = `<div class="enemy-quote-banner">${sutobokeTag}${RARE_TYPES.sutoboke.lines.defeat}</div><div class="item-gain-banner">⚔️ スペシャルアイテム「スットボケの剣」を手に入れた！⚔️</div>`;
@@ -23628,6 +23629,7 @@
         + '　🐞【バグを直しました②】ふつうの計算を9問のあと文章題を1問だけ解くと、文章題の報酬（50MP・HP）がもらえてしまうバグがありました。11月10日に直しました。文章題の報酬は、連続正解がぜんぶ文章題のときだけもらえます（まざっているときは、ふつうの計算の報酬）。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました③】わざと2問まちがえるだけで「天使の涙」が何度でも出せたり、最後の1問だけ中3の単元にすると虹色の宝箱になったりするバグがありました。11月10日に直しました。天使の涙は1日1回まで、宝箱の色は連続正解の中でいちばん低い学年の単元で決まります。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました④】計算で出た「天使の涙」のセリフが理科の画面に出てしまうバグと、学習記録でまだゲットしていないレアキャラの絵を長押しすると大きく見えてしまうバグを直しました。報告してくれた人、ありがとう！'
+        + '　🐞【バグを直しました⑤】スットボケAKRの問題に答えたあと、もう一度「スットボケAKR出現！」と出ていたのを直しました。報告してくれた人、ありがとう！'
         + '　アプリのまちがいを見つけたら「🐞バグ報告」から教えてね（レベル300以上・1日3件まで）。本当にバグだったら、直してお礼に100MPプレゼント！';
     }
   }
@@ -25199,6 +25201,8 @@
       return;
     }
     els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : mode === 'grade' ? `同学年 経験値上位 ${res.ranking.length} 名` : mode === 'hp' ? `HP上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
+    // ランキングの表は中をスクロールすると下の順位まで見られる(2026-11-10 バグ報告#7：勝手に順位が増えたように見えた)。
+    if (res.ranking.length > 10) els.rankingSummary.textContent += '（表の中を下にスクロールすると、' + res.ranking.length + '位まで見られるよ）';
     els.rankingList.innerHTML = res.ranking.map(function (r) { return rankingRowHtml(r, mode); }).join('');
 
     if (Array.isArray(res.nearby) && res.nearby.length > 0) {
