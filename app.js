@@ -29752,9 +29752,15 @@
       else if (b === btn) b.classList.add('is-incorrect');
     });
     var session = loadSession();
-    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect });
+    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: isScience || undefined });
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
+    // 特訓部屋で解いた問題も、単元の「1日40問でコンプリート」に数える(2026-11-10 バグ報告#1：
+    // 部屋の中で解いても数が増えず、コンプリートできなかった)。ふだんの練習(handleAnswer)と同じ数え方。
+    if (!isScience && isDailyCategoryLimitActive()) {
+      ensureCategoryDailyReset(state);
+      state.categoryDailyCounts[catId] = (state.categoryDailyCounts[catId] || 0) + 1;
+    }
 
     var hp = Number(state.hp) || 0;
     var resultHtml = '';
