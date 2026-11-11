@@ -27,7 +27,7 @@ const { handleHalloweenStatus, handleHalloweenBuyCandy, handleHalloweenGhost } =
 const { handleZukeiStatus, handleZukeiAnswer } = require('../lib/handlers/zukei');
 const { handleBugReportStatus, handleBugReportSubmit, handleBugReportList, handleBugReportImage, handleBugReportDone } = require('../lib/handlers/bugReport');
 const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep, handleGachaDiceQuiz } = require('../lib/handlers/gacha');
-const { handleZeroDragonReward } = require('../lib/handlers/zeroDragon');
+const { handleZeroDragonReward, handleZeroDragonUfoStatus, handleZeroDragonUfoPlay } = require('../lib/handlers/zeroDragon');
 const { handleKenStatus, handleKenClear, handleKenRanking } = require('../lib/handlers/kenken');
 const { handleSurveyStatus, handleSurveySubmit } = require('../lib/handlers/survey');
 const { handleDistributeChallengeFruits } = require('../lib/handlers/challengeReward');
@@ -130,6 +130,8 @@ const ACTIONS = {
   gachaPkKeep: handleGachaPkKeep,
   gachaDiceQuiz: handleGachaDiceQuiz,
   zeroDragonReward: handleZeroDragonReward,
+  zeroDragonUfoStatus: handleZeroDragonUfoStatus,
+  zeroDragonUfoPlay: handleZeroDragonUfoPlay,
   kenStatus: handleKenStatus,
   kenClear: handleKenClear,
   kenRanking: handleKenRanking,

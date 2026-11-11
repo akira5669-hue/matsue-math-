@@ -28750,7 +28750,8 @@
         saveGameState(state);
         syncPointsNow_(session.id);
         updateGameHud();
-        html = '<div class="item-gain-banner">🐉🎁 ゼロドラゴンのごほうび！' + info.label + 'を手に入れた！' + info.note + '</div>';
+        html = '<div class="item-gain-banner">🐉🎁 ゼロドラゴンのごほうび！' + info.label + 'を手に入れた！' + info.note + '</div>'
+          + '<div class="item-gain-banner">🛸 🎰ガチャの「UFOキャッチャーガチャ」が1回できるよ！魔法の書をつかもう！</div>';
       } else if (res && res.error === 'daily_limit') {
         html = '<div class="test-photo-hint">🐉 ゼロドラゴンのごほうび（種・実）は1日10回までです。また明日！</div>';
       }
@@ -35978,6 +35979,95 @@
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
+  // 🛸UFOキャッチャーガチャ(ドラゴン専用、2026-11-11〜、lib/handlers/zeroDragon.js)：ゼロドラゴンを倒すたびに1回。
+  // 左右に動くUFOを魔法の書の真上で止めるとキャッチ。どの書かはサーバーで決め、冊数は端末で+1して同期で保存する。
+  var UFO_HIT_RANGE_ = 7; // UFOと書の中心のずれ(枠の幅の%)がこれ以内ならキャッチ
+  var ufo_ = { left: 0, running: false, busy: false, x: 50, dir: 1, prizeX: 50, raf: 0, last: 0 };
+  function ufoRender_() {
+    var card = document.getElementById('ufoCard'), btn = document.getElementById('ufoBtn');
+    if (!card || !btn) return;
+    card.hidden = !(ufo_.left > 0 || isAdminSession_() || ufo_.running || ufo_.busy);
+    if (ufo_.running) { btn.disabled = false; btn.textContent = '⬇️ 今だ！キャッチ！'; return; }
+    btn.disabled = ufo_.busy || ufo_.left <= 0;
+    btn.textContent = ufo_.busy ? '…' : ufo_.left > 0 ? '▶ スタート（あと' + ufo_.left + '回）' : '🐉 ゼロドラゴンを倒すと遊べるよ';
+  }
+  function ufoRefresh_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('zeroDragonUfoStatus', { id: session.id }).then(function (res) { if (res && res.ok) { ufo_.left = Number(res.playsLeft) || 0; ufoRender_(); } }).catch(function () { });
+    ufoRender_();
+  }
+  function ufoPlace_() {
+    var claw = document.getElementById('ufoClaw'), prize = document.getElementById('ufoPrize');
+    if (claw) claw.style.left = ufo_.x + '%';
+    if (prize) prize.style.left = ufo_.prizeX + '%';
+  }
+  function ufoStep_(t) {
+    if (!ufo_.running) return;
+    var dt = ufo_.last ? Math.min(50, t - ufo_.last) : 16;
+    ufo_.last = t;
+    ufo_.x += ufo_.dir * dt * 0.09; // 1秒で枠の約90%動く
+    if (ufo_.x > 92) { ufo_.x = 92; ufo_.dir = -1; }
+    if (ufo_.x < 8) { ufo_.x = 8; ufo_.dir = 1; }
+    ufoPlace_();
+    ufo_.raf = requestAnimationFrame(ufoStep_);
+  }
+  function ufoStart_() {
+    var claw = document.getElementById('ufoClaw'), prize = document.getElementById('ufoPrize'), out = document.getElementById('ufoOut');
+    if (claw) claw.classList.remove('is-down');
+    if (prize) { prize.classList.remove('is-caught'); prize.textContent = '📕'; }
+    if (out) out.innerHTML = '';
+    ufo_.prizeX = 15 + Math.random() * 70;
+    ufo_.x = 8; ufo_.dir = 1; ufo_.last = 0; ufo_.running = true;
+    ufoPlace_();
+    ufoRender_();
+    ufo_.raf = requestAnimationFrame(ufoStep_);
+  }
+  function ufoCatch_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    ufo_.running = false;
+    cancelAnimationFrame(ufo_.raf);
+    ufo_.busy = true;
+    ufoRender_();
+    var caught = Math.abs(ufo_.x - ufo_.prizeX) <= UFO_HIT_RANGE_;
+    var claw = document.getElementById('ufoClaw'), prize = document.getElementById('ufoPrize'), out = document.getElementById('ufoOut');
+    if (claw) claw.classList.add('is-down');
+    var req = apiPost('zeroDragonUfoPlay', { id: session.id, caught: caught });
+    setTimeout(function () {
+      req.then(function (res) {
+        ufo_.busy = false;
+        if (!res || !res.ok) {
+          if (out) out.innerHTML = '<div class="test-photo-hint">' + (res && res.error === 'no_play' ? '今は遊べる回数がありません。ゼロドラゴンを倒すと1回できるよ！' : '通信に失敗しました。もう一度お試しください。') + '</div>';
+          if (res && res.error === 'no_play') ufo_.left = 0;
+          if (claw) claw.classList.remove('is-down');
+          ufoRender_();
+          return;
+        }
+        ufo_.left = Number(res.playsLeft) || 0;
+        var book = res.book ? spellbookById_(res.book) : null;
+        if (book) {
+          if (!state.spellbooks || typeof state.spellbooks !== 'object') state.spellbooks = {};
+          state.spellbooks[book.id] = (Number(state.spellbooks[book.id]) || 0) + 1;
+          saveGameState(state);
+          syncPointsNow_(session.id);
+          if (prize) { prize.textContent = book.emoji; prize.classList.add('is-caught'); }
+          if (out) out.innerHTML = '<div class="gacha-mp">🎉 キャッチ成功！</div><div class="gacha-line">' + book.emoji + ' 魔法の書「<b>' + book.label + '</b>」を手に入れた！（' + book.target + 'で' + book.dmg + 'ダメージ）</div>';
+        } else {
+          if (out) out.innerHTML = '<div class="gacha-line">💨 おしい！つかめなかった…' + (ufo_.left > 0 ? 'もう1回できるよ！' : '') + '</div>';
+        }
+        ufoRender_();
+      }).catch(function () {
+        ufo_.busy = false;
+        if (out) out.innerHTML = '<div class="test-photo-hint">通信に失敗しました。もう一度お試しください。</div>';
+        ufoRender_();
+      });
+    }, 700);
+  }
+  (function () {
+    var btn = document.getElementById('ufoBtn');
+    if (btn) btn.addEventListener('click', function () { if (ufo_.running) ufoCatch_(); else if (!ufo_.busy && ufo_.left > 0) ufoStart_(); });
+  })();
   function renderGacha_() {
     Array.prototype.forEach.call(els.gachaPanel.querySelectorAll('[data-gacha]'), function (card) {
       var kind = card.getAttribute('data-gacha');
@@ -36045,6 +36135,7 @@
     var session = loadSession();
     if (session && session.id) {
       // 解いたばかりの答え(理科の正解数など)を先に送ってから、ガチャの条件を確かめる
+      ufoRefresh_();
       Promise.resolve(flushLogQueue_()).catch(function () {}).then(function () { return zukeiInFlight_; }).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
         if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.bbUnlock = Number(res.bbUnlock) || 10; renderGacha_(); }
       }).catch(function () {});
