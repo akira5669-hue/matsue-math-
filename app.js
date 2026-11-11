@@ -22464,8 +22464,11 @@
     if (isCorrect) {
       state.correct++;
       clearWrongQuestion(state.current);
-      if (state.streak === 0) { state.streakAboveGrade = true; state.streakRewardClass = streakRewardClass_(catId); state.streakMinGrade = categoryGrade[catId] || ''; }
+      if (state.streak === 0) { state.streakAboveGrade = true; state.streakRewardClass = streakRewardClass_(catId); state.streakMinGrade = categoryGrade[catId] || ''; state.streakClassCounts = {}; }
       else if (state.streakRewardClass !== streakRewardClass_(catId)) state.streakRewardClass = 'mixed';
+      // 連続正解の中の種類ごとの問題数(10問のうち9問以上が同じ種類なら、その種類の報酬にする。2026-11-11 先生の指示)
+      if (!state.streakClassCounts) state.streakClassCounts = {};
+      state.streakClassCounts[streakRewardClass_(catId)] = (state.streakClassCounts[streakRewardClass_(catId)] || 0) + 1;
       // 宝箱の色は、連続正解の中でいちばん低い学年の単元で決める(2026-11-10 バグ報告#4：最後の1問だけ中3の単元にすると虹色の宝箱になった)。
       if (state.streak > 0 && state.streakMinGrade) { var g_ = categoryGrade[catId] || ''; if (!g_ || (GRADE_RANK[g_] || 0) < (GRADE_RANK[state.streakMinGrade] || 0)) state.streakMinGrade = g_; }
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
@@ -22944,7 +22947,9 @@
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
       const bonusEligible = state.streakAboveGrade;
       // 連続正解の途中で別の種類の問題がまじっていたら、最後の1問が文章題などでも、ふつうの計算の報酬にする。
-      const pureStreak = state.streakRewardClass === streakRewardClass_(catId);
+      // ぜんぶ同じ種類か、10問以上の連続正解でほかの種類が1問だけなら、その種類の報酬(例：文章題9問＋計算1問でも文章題のHP・MP)。2026-11-11 先生の指示。
+      const sameClassCount_ = (state.streakClassCounts && state.streakClassCounts[streakRewardClass_(catId)]) || 0;
+      const pureStreak = state.streakRewardClass === streakRewardClass_(catId) || (state.streak >= 10 && state.streak - sameClassCount_ <= 1);
       const wordReward = isWordProblem && pureStreak;
       const wasRareType = state.rareType;
       const rareMpBonus = wasRareType === 'kotsukotsugame' ? KOTSUKOTSUGAME_BONUS_MP : wasRareType === 'zerodragon' ? ZERODRAGON_BONUS_MP : wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
@@ -23003,7 +23008,7 @@
         hpBonusHtml = ` +${hpGain}HP`;
       } else if (isHpEarningCategory_(catId) && !pureStreak && !state.zombified) {
         // 連続正解にほかの種類の問題がまざるとHPは出ない(バグ報告#3の直し)。理由が分からず「HPがもらえない」と思われたので、理由を出す(2026-11-11 バグ報告#13)。
-        hpBonusHtml = '<br><small>（10問の中にほかの種類の問題がまざっていたので、HPはなし。同じ種類の問題だけで10問連続正解するとHPがもらえるよ）</small>';
+        hpBonusHtml = '<br><small>（10問の中にほかの種類の問題が2問以上まざっていたので、HPはなし。同じ種類の問題を9問以上ふくむ10問連続正解でHPがもらえるよ）</small>';
       }
       // 丸バツ君は1問正解しただけで倒せる代わりに、MPではなくHPを100もらえる特別報酬。
       if (wasRareType === 'marubatsukun' && !state.zombified) {
@@ -23687,7 +23692,7 @@
     '🐞【バグを直しました⑥】計算パズル「かんたん3×3」で、5秒より速くクリアするとランキングに出なかったのを直しました（2秒より速い記録だけ入らないようにしました）。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑦】計算の画面で、レベルの下の「経験値」に数が出ていなかったのを直しました。今は経験値の合計と、次のレベルまであと何かが出ます。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑧】富士登山は10月31日で終わったのに、10問ごとに「富士登山が8合目で止まっていませんか？」と出ていたのを直しました。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑨】文章題などHPがもらえる単元で、10問連続正解の中にほかの種類の問題がまざるとHPが出ないのに、その理由が出ていなかったので、理由を出すようにしました。同じ種類の問題だけで10問連続正解するとHPがもらえます。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑨】文章題などHPがもらえる単元で、10問連続正解の中にほかの種類の問題がまざるとHPが出ないのに、その理由が出ていなかったので、理由を出すようにしました。10問連続正解のうち9問以上が文章題なら、HPがもらえます（最後の1問は文章題で答えてね）。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
