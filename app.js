@@ -35922,7 +35922,64 @@
       + '<div class="pk-big ' + (r.win ? 'pk-win' : 'pk-lose') + '">' + (r.win ? '🎆 ' + BB_HOME_TEAM_ + 'のサヨナラ勝ち！！ ' + r.home + '−' + r.away : '😣 ゲームセット… ' + BB_AWAY_TEAM_ + 'の勝ち ' + r.home + '−' + r.away) + '</div>'
       + (last ? '<div class="gacha-line">' + bbEvText_(last, r) + '</div>' : '')
       + '<div class="gacha-mp">合計 ' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
+      + (r.avg ? bbQuizHtml_(r, last) : '')
       + '<div class="test-photo-hint">今日の試合は終わり（また明日）</div>' + again;
+  }
+  // ゲームセット後の打率クイズ(2026-11-11〜、gacha.jsのhandleGachaBbQuizと揃える)。最後のバッターの打率の読み方を4択で。正解で+1MP。
+  function bbAvgReading_(a) {
+    var d = [Math.floor(a / 100), Math.floor(a / 10) % 10, a % 10];
+    return (d[0] ? d[0] + '割' : '') + (d[1] ? d[1] + '分' : '') + (d[2] ? d[2] + '厘' : '');
+  }
+  function bbAvgText_(a) { return '.' + ('00' + a).slice(-3); }
+  function bbQuizInfo_(a) {
+    var d = [Math.floor(a / 100), Math.floor(a / 10) % 10, a % 10];
+    var ans = bbAvgReading_(a);
+    // まちがえやすいもの：位を1つずらす(3分4厘5毛)、分と厘の数字を入れかえる、0の位を飛ばして読む(.305→3割5分)
+    var cand = [];
+    cand.push((d[0] ? d[0] + '分' : '') + (d[1] ? d[1] + '厘' : '') + (d[2] ? d[2] + '毛' : ''));
+    if (d[1] !== d[2]) cand.push(bbAvgReading_(d[0] * 100 + d[2] * 10 + d[1]));
+    if (d[1] === 0) cand.push(d[0] + '割' + d[2] + '分');
+    if (d[2] === 0) cand.push(d[0] + '割' + d[1] + '厘');
+    cand.push(d[0] + '割' + (d[1] * 10 + d[2]) + '厘');
+    cand.push(bbAvgReading_(((d[0] % 3) + 1) * 100 + d[1] * 10 + d[2]));
+    var choices = [ans];
+    cand.forEach(function (c) { if (c && choices.length < 4 && choices.indexOf(c) === -1) choices.push(c); });
+    for (var k = 1; choices.length < 4; k++) { var c2 = bbAvgReading_((a + 37 * k) % 300 + 100); if (choices.indexOf(c2) === -1) choices.push(c2); }
+    // 並びは毎回同じになるよう、打率の数で決める
+    var rot = a % 4;
+    choices = choices.slice(rot).concat(choices.slice(0, rot));
+    var ex = '打率は「ヒットの数 ÷ 打数」。' + bbAvgText_(a) + '（0.' + ('00' + a).slice(-3) + '）は、小数第1位が<b>割</b>、第2位が<b>分</b>、第3位が<b>厘</b>。'
+      + '0.' + d[0] + d[1] + d[2] + ' → ' + d[0] + '割・' + d[1] + '分・' + d[2] + '厘' + (d[1] === 0 || d[2] === 0 ? '（0の位は読まない）' : '') + ' → <b>' + ans + '</b>。';
+    return { ans: ans, choices: choices, ex: ex };
+  }
+  function bbQuizHtml_(r, last) {
+    var a = Number(r.avg) || 0, qa = r.bq, info = bbQuizInfo_(a);
+    var who = last ? bbBatter_(last.ab) : bbBatter_(r.ab);
+    var h = '<div class="dq-box"><div class="dq-q">🧠 打率クイズ（正解で+1MP）<br>' + escHtml(who) + 'の今シーズンの打率は <b class="bq-avg">' + bbAvgText_(a) + '</b>（0.' + ('00' + a).slice(-3) + '）。<br><b>何割何分何厘？</b></div><div class="dq-choices bq-choices">';
+    info.choices.forEach(function (c) {
+      var cls = 'dq-btn bq-btn' + (qa ? (c === info.ans ? ' dq-ok' : c === qa.a ? ' dq-ng' : '') : '');
+      h += '<button type="button" class="' + cls + '" data-bq="' + c + '"' + (qa ? ' disabled' : '') + '>' + c + '</button>';
+    });
+    h += '</div>';
+    if (qa) h += '<div class="dq-res ' + (qa.ok ? 'pk-win' : '') + '">' + (qa.ok ? '⭕ 正解！ +1MP' : '❌ ざんねん！ 正解は<b>' + info.ans + '</b>（MPは減らないよ）') + '</div><div class="dq-ex">' + info.ex + '</div>';
+    return h + '</div>';
+  }
+  var bqBusy_ = false;
+  function bbQuizAnswer_(ans) {
+    var session = loadSession();
+    var cur = gacha_.today.baseball;
+    if (!session || !session.id || bqBusy_ || !cur || !cur.result || cur.result.bq) return;
+    bqBusy_ = true;
+    var out = els.gachaPanel.querySelector('[data-gacha="baseball"] .gacha-out');
+    Array.prototype.forEach.call(out.querySelectorAll('[data-bq]'), function (b) { b.disabled = true; });
+    apiPost('gachaBbQuiz', { id: session.id, answer: ans }).then(function (res) {
+      bqBusy_ = false;
+      if (res && res.ok) {
+        gacha_.today.baseball = { result: res.result, mp: res.mp };
+        if (res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+      } else if (res && res.prev) gacha_.today.baseball = res.prev;
+      renderGacha_();
+    }).catch(function () { bqBusy_ = false; renderGacha_(); });
   }
   function bbRender_(card) {
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.bb-choices');
@@ -36162,6 +36219,8 @@
       if (ag && isAdminSession_()) { delete gacha_.today[ag.getAttribute('data-gacha-again')]; renderGacha_(); return; }
       var dqb = e.target.closest('[data-dq]');
       if (dqb) { diceQuizAnswer_(dqb.getAttribute('data-dq')); return; }
+      var bqb = e.target.closest('[data-bq]');
+      if (bqb) { bbQuizAnswer_(bqb.getAttribute('data-bq')); return; }
       var bbb = e.target.closest('[data-bb]');
       if (bbb) { bbPlay_(bbb.getAttribute('data-bb')); return; }
       if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));

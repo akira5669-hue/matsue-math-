@@ -2803,3 +2803,8 @@ body.notices-folded .world-launch-banner { display: none !important; }
 
 /* 月1アンケートのいちばん上のお知らせ(相談はLINEで・面談希望には後日LINE) */
 .survey-notice { margin: 6px 0 10px; padding: 10px 12px; border: 2px solid #22c55e; border-radius: 10px; background: #f0fdf4; color: #14532d; font-size: 13px; line-height: 1.7; }
+
+/* ⚾野球ガチャの打率クイズ(2026-11-11〜)。読み方の文字が長いので2列にする */
+.bq-choices { grid-template-columns: repeat(2, 1fr); }
+.bq-btn { font-size: 1rem; padding: 8px 0; }
+.bq-avg { font-size: 1.25rem; color: #1d4ed8; }

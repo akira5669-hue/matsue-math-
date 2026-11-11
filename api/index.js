@@ -26,7 +26,7 @@ const { handleMangaStatus, handleMangaView, handleMangaSubmit, handleMangaSubmis
 const { handleHalloweenStatus, handleHalloweenBuyCandy, handleHalloweenGhost } = require('../lib/handlers/halloween');
 const { handleZukeiStatus, handleZukeiAnswer } = require('../lib/handlers/zukei');
 const { handleBugReportStatus, handleBugReportSubmit, handleBugReportList, handleBugReportImage, handleBugReportDone } = require('../lib/handlers/bugReport');
-const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep, handleGachaDiceQuiz } = require('../lib/handlers/gacha');
+const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep, handleGachaDiceQuiz, handleGachaBbQuiz } = require('../lib/handlers/gacha');
 const { handleZeroDragonReward, handleZeroDragonUfoStatus, handleZeroDragonUfoPlay } = require('../lib/handlers/zeroDragon');
 const { handleKenStatus, handleKenClear, handleKenRanking } = require('../lib/handlers/kenken');
 const { handleSurveyStatus, handleSurveySubmit } = require('../lib/handlers/survey');
@@ -129,6 +129,7 @@ const ACTIONS = {
   gachaDraw: handleGachaDraw,
   gachaPkKeep: handleGachaPkKeep,
   gachaDiceQuiz: handleGachaDiceQuiz,
+  gachaBbQuiz: handleGachaBbQuiz,
   zeroDragonReward: handleZeroDragonReward,
   zeroDragonUfoStatus: handleZeroDragonUfoStatus,
   zeroDragonUfoPlay: handleZeroDragonUfoPlay,
