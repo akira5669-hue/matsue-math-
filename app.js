@@ -23211,6 +23211,7 @@
       let dragonSwordHtml_ = '';
       if (wasRareType === 'zerodragon') {
         state.zeroDragonFight = false;
+        zeroDragonSeedReward_();
         if (Math.random() < DRAGON_SWORD_DROP_CHANCE_) {
           state.dragonSwordCount = (Number(state.dragonSwordCount) || 0) + 1;
           dragonSwordHtml_ = '<div class="item-gain-banner">⚔️ ドラゴンソードを手に入れた！（' + state.dragonSwordCount + '本）ボス戦で使うと1撃でHPを' + DRAGON_SWORD_DAMAGE_ + '減らせる！（1回で壊れる）</div>';
@@ -28729,6 +28730,33 @@
     els.feedback.classList.add(hit ? 'correct' : 'incorrect');
   }
 
+  // 🐉ゼロドラゴンを倒したごほうび：必ず種か実を1つ(どれが出るかはサーバーで決める。lib/handlers/zeroDragon.js)。
+  // 賢さの種0.3%・賢さの実3%・すばやさの種30%・努力の種66.7%。1日10回まで。
+  // 端末の数は、サーバーの返事が来てから+1する(先に足すと、同期の返事で元の数にもどされることがあるため)。
+  var ZERO_DRAGON_SEED_INFO_ = {
+    wisdomSeed: { key: 'wisdomSeedCount', label: '🌰 賢さの種', note: '（なんでも屋で1000MPで売れる！食べるとHP+1000）' },
+    wisdomFruit: { key: 'wisdomFruitCount', label: '🍎 賢さの実', note: '（売ると100MP・食べるとHP+200）' },
+    speedSeed: { key: 'speedSeedCount', label: '🌱 すばやさの種', note: '（1問まちがえても連続正解が途切れない）' },
+    effortSeed: { key: 'effortSeedCount', label: '🌿 努力の種', note: '（売ると20MP・食べるとHP+30）' },
+  };
+  function zeroDragonSeedReward_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('zeroDragonReward', { id: session.id }).then(function (res) {
+      var html;
+      if (res && res.ok && ZERO_DRAGON_SEED_INFO_[res.kind]) {
+        var info = ZERO_DRAGON_SEED_INFO_[res.kind];
+        state[info.key] = (Number(state[info.key]) || 0) + 1;
+        saveGameState(state);
+        syncPointsNow_(session.id);
+        updateGameHud();
+        html = '<div class="item-gain-banner">🐉🎁 ゼロドラゴンのごほうび！' + info.label + 'を手に入れた！' + info.note + '</div>';
+      } else if (res && res.error === 'daily_limit') {
+        html = '<div class="test-photo-hint">🐉 ゼロドラゴンのごほうび（種・実）は1日10回までです。また明日！</div>';
+      }
+      if (html && els.feedback) els.feedback.insertAdjacentHTML('beforeend', html);
+    }).catch(function () { });
+  }
   // 🐉ゼロドラゴン：戦うか逃げるかをまだ選んでいない
   function zeroDragonChoicePending_() {
     return state.subject !== 'science' && state.rareType === 'zerodragon' && !state.zeroDragonFight && !state.worldBossActiveStage && !state.fujiActive && !state.fujiDescentActive && !state.ohachiActive;
