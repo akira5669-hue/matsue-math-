@@ -2766,3 +2766,14 @@ input.survey-text.survey-short { width: 5em; margin-top: 0; }
 .shikoku-admin { margin-top: 12px; font-size: 12px; }
 .shikoku-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); width: min(92vw, 420px); background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.6; color: #1f2937; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 9999; transition: opacity .6s; }
 .shikoku-toast.is-out { opacity: 0; }
+
+/* 📢お知らせをたたむ(月1アンケートの要望、2026-11-11〜)。たたんでいる間は、ふつうのお知らせを隠す(呪い・ゾンビ・高山病などの状態の表示は隠さない) */
+.notice-fold-bar { margin: -6px 0 14px; text-align: right; }
+.notice-fold-bar[hidden] { display: none; }
+.notice-fold-btn { font-size: 13px; }
+body.notices-folded .mp-cap-banner,
+body.notices-folded .team-event-banner,
+body.notices-folded .apology-banner,
+body.notices-folded .hp-rules-banner,
+body.notices-folded .special-quiz-banner,
+body.notices-folded .world-launch-banner { display: none !important; }

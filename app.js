@@ -36086,3 +36086,38 @@
   }
 
 })();
+
+/* ---------- 📢お知らせをたたむ(2026-11-11〜、月1アンケートの要望) ----------
+   ボタンの並びの下のお知らせ(バナー)を、ボタン1つでたたんだりひらいたりできる。たたんだかどうかはこの端末に覚える。
+   たたんだあとに新しいお知らせが出たら、ボタンに🆕をつけて知らせる。呪い・ゾンビ・高山病など今の状態の表示はたたまない。 */
+(function () {
+  var bar = document.getElementById('noticeFoldBar'), btn = document.getElementById('noticeFoldBtn');
+  if (!bar || !btn) return;
+  var SEL = '.mp-cap-banner, .team-event-banner, .apology-banner, .hp-rules-banner, .special-quiz-banner, .world-launch-banner';
+  var KEY = 'noticesFolded_v1';
+  function get_() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
+  function set_(v) { try { if (v) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (e) { } }
+  // お知らせの中身が変わったら「新しい」とわかるように、出ているお知らせの文の短いしるしを作る(数字だけ変わったときは新しいとしない)
+  function sig_(el) { var t = (el.id || '') + '|' + (el.textContent || '').replace(/[\s0-9０-９]+/g, ''); var x = 0; for (var i = 0; i < t.length; i++) x = (x * 31 + t.charCodeAt(i)) | 0; return String(x); }
+  function shown_() { return Array.prototype.filter.call(document.querySelectorAll(SEL), function (el) { return !el.hidden; }); }
+  var folded = get_();
+  function render_() {
+    var list = shown_();
+    bar.hidden = list.length === 0;
+    var isFolded = !!folded;
+    document.body.classList.toggle('notices-folded', isFolded);
+    if (!isFolded) { btn.textContent = '📢 お知らせをたたむ ▲'; return; }
+    var seen = folded.seen || [];
+    var fresh = list.some(function (el) { return seen.indexOf(sig_(el)) === -1; });
+    btn.textContent = '📢 お知らせ（' + list.length + '件）をひらく ▼' + (fresh ? ' 🆕新しいお知らせあり' : '');
+  }
+  btn.addEventListener('click', function () {
+    folded = folded ? null : { seen: shown_().map(sig_) };
+    set_(folded);
+    render_();
+  });
+  var pending = false;
+  var mo = new MutationObserver(function () { if (pending) return; pending = true; setTimeout(function () { pending = false; render_(); }, 300); });
+  Array.prototype.forEach.call(document.querySelectorAll(SEL), function (el) { mo.observe(el, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true, characterData: true }); });
+  render_();
+})();
