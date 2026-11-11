@@ -22280,10 +22280,13 @@
     els.statHp.textContent = Number(state.hp) || 0;
     els.statExpSub.textContent = `算数・数学の経験値${state.exp}、理科の経験値${state.scienceExp}（Lv.${state.level}）`;
     els.statLevel.textContent = state.level;
-    els.expBarInner.style.width = `${(((state.exp + state.scienceExp) % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
+    // 経験値は敵をたおしたときにまとめて入る。バーには今の敵への連続正解の分(1問=1)も足して見せる(バグ報告#15)
+    var expPending_ = (!isBossFight && !isFuji && !isFujiDescent && !isOhachi && requiredStreak > 0) ? Math.floor(Math.min(Number(state.streak) || 0, requiredStreak) * ((!state.rareType && requiredStreak === NORMAL_ENEMY_STREAK_UPPER_) ? 5 : 10) / requiredStreak) : 0;
+    var expInLv_ = Math.min(EXP_PER_LEVEL, ((state.exp + state.scienceExp) % EXP_PER_LEVEL) + expPending_);
+    els.expBarInner.style.width = `${(expInLv_ / EXP_PER_LEVEL) * 100}%`;
     // バーの下の「経験値」に数も出す(算数・数学+理科の合計と、次のレベルまであと何か)(バグ報告#10)
     var expLb = document.getElementById('expLabel');
-    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (state.level < MAX_LEVEL ? '\n次のLvまであと' + (EXP_PER_LEVEL - expSum % EXP_PER_LEVEL) : ''); }
+    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (expPending_ ? '（+' + expPending_ + '）' : '') + (state.level < MAX_LEVEL ? '\n次のLvまであと' + Math.max(0, EXP_PER_LEVEL - expInLv_) : ''); }
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
@@ -23692,7 +23695,10 @@
     '🐞【バグを直しました⑥】計算パズル「かんたん3×3」で、5秒より速くクリアするとランキングに出なかったのを直しました（2秒より速い記録だけ入らないようにしました）。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑦】計算の画面で、レベルの下の「経験値」に数が出ていなかったのを直しました。今は経験値の合計と、次のレベルまであと何かが出ます。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑧】富士登山は10月31日で終わったのに、10問ごとに「富士登山が8合目で止まっていませんか？」と出ていたのを直しました。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑨】文章題などHPがもらえる単元で、10問連続正解の中にほかの種類の問題がまざるとHPが出ないのに、その理由が出ていなかったので、理由を出すようにしました。10問連続正解のうち9問以上が文章題なら、HPがもらえます（最後の1問は文章題で答えてね）。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑨】文章題などHPがもらえる単元で、10問連続正解の中にほかの種類の問題がまざるとHPが出ないのに、その理由が出ていなかったので、理由を出すようにしました。10問連続正解のうち9問以上が文章題なら、HPがもらえます（最後の1問は文章題で答えてね）。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑩】高校受験問題や図形の10問目に正解してすぐガチャを開くと、まだ9問と数えられて「あと1問」と出ることがあったのを直しました。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑪】経験値は敵をたおしたときにまとめて入るので、経験値のバーがずっと空っぽに見えていました。今は、今の敵に連続正解している分もバーに出ます（まちがえると、その分はなくなります）。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑫】富士登山が終わったのに、なんでも屋に酸素缶が出ていたのを直しました。サイコロガチャの説明の「2〜24MP」を「3〜24MP」に直しました（1と1はゾロ目で4MP）。読書ランキングのいいねも、マンガと同じようにもう一度押すと取り消せるようにしました。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -25360,7 +25366,7 @@
           editBtnHtml = '<button type="button" class="ghost-btn reading-edit-btn" data-reading-edit="' + b.id + '">✏️ 編集</button>';
         }
         return '<div class="reading-book-item"><span class="reading-book-title">📖 ' + escHtml(b.title) + '</span><p class="reading-book-review">' + escHtml(b.review) + '</p>'
-          + '<button type="button" class="' + likeBtnCls + '" data-reading-like="' + b.id + '"' + (b.likedByMe ? ' disabled' : '') + '>👍 いいね <span class="reading-like-count">' + (Number(b.likeCount) || 0) + '</span></button>'
+          + '<button type="button" class="' + likeBtnCls + '" data-reading-like="' + b.id + '"' + '>👍 いいね <span class="reading-like-count">' + (Number(b.likeCount) || 0) + '</span></button>'
           + editBtnHtml + '</div>';
       }).join('') + '</div>';
     }
@@ -25425,8 +25431,9 @@
     var readingLogId = btn.getAttribute('data-reading-like');
     btn.disabled = true;
     apiPost('likeReading', { id: session.id, readingLogId: readingLogId }).then(function (res) {
-      if (!res.ok) { btn.disabled = false; return; }
-      btn.classList.add('is-liked');
+      btn.disabled = false;
+      if (!res.ok) return;
+      btn.classList.toggle('is-liked', res.liked !== false);
       var countEl = btn.querySelector('.reading-like-count');
       if (countEl) countEl.textContent = res.likeCount;
     }).catch(function () {
@@ -25844,7 +25851,8 @@
     } else {
       oxygenActionHtml = `<span class="gift-insufficient">MP不足</span>`;
     }
-    var oxygenRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/oxygen_can.jpg" alt="酸素缶"><div class="gift-info"><span class="gift-label">🫁 酸素缶（高山病を治す）</span><span class="gift-cost">${OXYGEN_CAN_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${oxygenActionHtml}</div>`;
+    // 富士登山が終わったら、高山病のままの人にだけ出す(バグ報告#17)
+    var oxygenRowHtml = !(fujiEventActive_() || state.fujiAltitudeSick) ? '' : `<div class="gift-row"><img class="shop-item-img" src="images/oxygen_can.jpg" alt="酸素缶"><div class="gift-info"><span class="gift-label">🫁 酸素缶（高山病を治す）</span><span class="gift-cost">${OXYGEN_CAN_COST_MP}MP</span>${difficultyStarsHtml_(1)}</div>${oxygenActionHtml}</div>`;
 
     // 刀を研ぐ：富士登山の山頂到達で勇者の剣を手に入れたことがある生徒にだけ
     // 表示する(富士登山が全生徒公開になったため、この項目も全生徒に表示)。
@@ -32395,6 +32403,8 @@
   var ZUKEI_START_ = '2026-11-03';
   var ZUKEI_GACHA_UNLOCK_ = 10;
   // mode: 'zukei'=超絶！図形！トレーニング！！(平面・空間)、'juken'=🎓中学受験問題！(別ボタン。同じパネルを使い回す)
+  // 送っている途中の図形・高校受験問題の答え(ガチャを開いたとき、送り終わってから条件を確かめる。バグ報告#14・#16)
+  var zukeiInFlight_ = Promise.resolve();
   var zukei_ = { q: null, qType: '', answered: false, answeredToday: 0, correctToday: 0, kokoCorrectToday: 0, kokoAnsweredToday: 0, sel: null, mode: 'zukei' };
   // 🏫高校受験問題！の正解は別に数え、1日KOKO_PK_UNLOCK_問正解でその日の⚽サッカーPKガチャができる(2026-11-07〜、サーバーのzukei.jsと揃える)。
   var KOKO_PK_UNLOCK_ = 10;
@@ -34389,7 +34399,9 @@
     // 通信に失敗したときは、少し待ってもう一度だけ送る(数え漏れを防ぐ、2026-11-09)。
     var body = { id: session.id, correct: ok, mode: zukei_.mode };
     var send = function (retry) {
-      apiPost('zukeiAnswer', body).then(function (res) {
+      var pr = apiPost('zukeiAnswer', body);
+      zukeiInFlight_ = Promise.all([zukeiInFlight_, pr.catch(function () {})]);
+      pr.then(function (res) {
         if (!res || !res.ok) { if (retry) setTimeout(function () { send(false); }, 2500); return; }
         zukei_.answeredToday = Number(res.answeredToday) || 0;
         if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
@@ -35880,7 +35892,7 @@
     var session = loadSession();
     if (session && session.id) {
       // 解いたばかりの答え(理科の正解数など)を先に送ってから、ガチャの条件を確かめる
-      Promise.resolve(flushLogQueue_()).catch(function () {}).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
+      Promise.resolve(flushLogQueue_()).catch(function () {}).then(function () { return zukeiInFlight_; }).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
         if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.bbUnlock = Number(res.bbUnlock) || 10; renderGacha_(); }
       }).catch(function () {});
     }
