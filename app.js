@@ -23722,7 +23722,7 @@
     els.bugFixNoticeBanner.hidden = todayKey() > BUG_FIX_NOTICE_END_;
     if (els.bugFixNoticeBanner.hidden) return;
     if (els.bugFixNoticeBannerText) {
-      els.bugFixNoticeBannerText.textContent = '📝【月1アンケートが始まりました】上のボタンの「📝月1アンケート」から答えてね。テストの進み具合・目標・授業のこと・相談したいことなどを、生徒本人かおうちの人が答えられます。答えは先生に届きます。毎月1回答えられて、答えると+50MP！'
+      els.bugFixNoticeBannerText.textContent = '📝【月1アンケートが始まりました】上のボタンの「📝月1アンケート」から答えてね。テストの進み具合・目標・授業のこと・相談したいことなどを、生徒本人かおうちの人が答えられます。答えは先生に届きます。毎月1回答えられて、答えると+50MP！📱相談したいことがある人は、齋藤先生にLINEしてね。🗓️面談を希望した人には、後日、齋藤先生からLINEが届きます。'
         + '　🆕【小学生のみなさんへ】「🍊かずのかんかく」ができました！みかんを分けて分数、ものさしで小数、かけっこで速さ、紙を折って図形、お金で大きな数…と、絵を見ながら数の感じをつかむ問題です。1問正解で1MP（1日10MPまで・計算のMPに入る。MPは12月9日まで、そのあとは1日10HPまで）。';
     }
   }
