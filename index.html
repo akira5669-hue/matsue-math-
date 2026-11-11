@@ -855,6 +855,7 @@
     <section class="weekly-quiz-panel" id="surveyPanel" hidden>
       <h3 class="history-title" id="surveyTitle">📝 月1アンケート</h3>
       <p class="test-photo-hint"><b>生徒本人</b>と<b>保護者の方</b>が、それぞれ毎月1回答えられます。<b>生徒本人</b>が答えると<b>+50MP</b>！（保護者の方の回答ではMPは入りません）このアンケートはプライバシー保護に配慮し、先生だけが読みます。<br>答えたくないところは、選ばなくても・書かなくても大丈夫です（どこか1つだけ答えれば送れます）。</p>
+      <p class="survey-notice">📱 <b>相談したいことがある人は、齋藤先生にLINEしてね。</b>（アンケートにチェックを入れるだけでは、先生から連絡が来ないことがあります）<br>🗓️ <b>面談を希望した人には、後日、齋藤先生からLINEが届きます。</b></p>
       <p class="test-photo-hint" id="surveyStatus"></p>
       <div class="survey-q" id="surveyRespondentQ"><p class="survey-label">答える人</p>
         <label class="survey-radio"><input type="radio" name="surveyRespondent" value="student" checked> 生徒本人</label><label class="survey-radio"><input type="radio" name="surveyRespondent" value="guardian"> 保護者</label>
@@ -871,7 +872,7 @@
         <div class="survey-choices"><label class="survey-radio"><input type="radio" name="surveyClass" value="ok"> 特に不満はない</label><label class="survey-radio"><input type="radio" name="surveyClass" value="change"> ちょっと変えてほしいことがある</label></div>
         <textarea class="survey-text" data-sv-text="classRequest" maxlength="2000" rows="2" placeholder="「ある」と答えた人は、具体的な要望を書いてね（いくつでもOK）"></textarea>
       </div>
-      <div class="survey-q"><p class="survey-label">4. 相談したいことや不安なこと、問題を抱えていることにチェックをつけてください</p>
+      <div class="survey-q"><p class="survey-label">4. 相談したいことや不安なこと、問題を抱えていることにチェックをつけてください</p><p class="survey-sub">📱 相談したい人は、齋藤先生にLINEしてね。</p>
         <div class="survey-checks"><label class="survey-check"><input type="checkbox" name="surveyWorry" value="成績"> 成績</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="受験"> 受験</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="学校"> 学校</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="部活"> 部活</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="家庭"> 家庭</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="恋愛"> 恋愛</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="趣味"> 趣味</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="人間関係"> 人間関係</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="その他"> その他</label><label class="survey-check"><input type="checkbox" name="surveyWorry" value="なし"> なし</label></div>
         <input type="text" class="survey-text " data-sv-text="worryOther" maxlength="300" placeholder="その他（　　　　）">
       </div>
@@ -880,7 +881,7 @@
       <div class="survey-q"><p class="survey-label">チェック欄・自由記入欄に書いたことの不安度・モヤモヤ度</p>
         <div class="survey-inline"><input type="range" id="surveyAnxiety" min="0" max="100" step="10" value="0"> <b id="surveyAnxietyVal">0%</b></div>
       </div>
-      <div class="survey-q"><p class="survey-label">どちらかを選んでね！</p>
+      <div class="survey-q"><p class="survey-label">どちらかを選んでね！</p><p class="survey-sub">🗓️ 面談を希望した人には、後日、齋藤先生からLINEが届きます。</p>
         <div class="survey-choices"><label class="survey-radio"><input type="radio" name="surveyInterview" value="fine"> 今は大丈夫</label><label class="survey-radio"><input type="radio" name="surveyInterview" value="want"> 面談を希望する</label></div>
         <div class="survey-sub-q" id="surveyInterviewCourseBox" hidden><p class="survey-sub">希望するコースを選んでね</p>
           <div class="survey-choices survey-choices-col"><label class="survey-radio"><input type="radio" name="surveyInterviewCourse" value="parent"> 先生と保護者の二者面談</label><label class="survey-radio"><input type="radio" name="surveyInterviewCourse" value="three"> 先生・生徒・保護者の三者面談</label><label class="survey-radio"><input type="radio" name="surveyInterviewCourse" value="student"> 先生と生徒の二者面談</label></div>

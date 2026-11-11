@@ -2800,3 +2800,6 @@ body.notices-folded .world-launch-banner { display: none !important; }
 .ufo-claw.is-open .ufo-arm-r { transform: rotate(-28deg); }
 .ufo-prize { position: absolute; bottom: 4px; left: 50%; width: 20px; margin-left: -10px; text-align: center; font-size: 15px; line-height: 1; transition: bottom .6s ease-in-out; }
 .ufo-prize.is-caught { bottom: 131px; }
+
+/* 月1アンケートのいちばん上のお知らせ(相談はLINEで・面談希望には後日LINE) */
+.survey-notice { margin: 6px 0 10px; padding: 10px 12px; border: 2px solid #22c55e; border-radius: 10px; background: #f0fdf4; color: #14532d; font-size: 13px; line-height: 1.7; }
