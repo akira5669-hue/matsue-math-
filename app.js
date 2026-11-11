@@ -20096,13 +20096,13 @@
   const ZERODRAGON_BONUS_MP = 40;
   const ZERODRAGON_REQUIRED_STREAK = 15;
   // ゼロドラゴン(2026-11-11〜)：出現したら「戦う」か「逃げる」を選ぶ。逃げるとHP-100(100以下なら0)。
-  // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回100ダメージ、1回で壊れる、何本でも持てる)。
+  // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回700ダメージ、1回で壊れる、何本でも持てる)。
   const ZERODRAGON_HP_PENALTY_ = 100;
   const DRAGON_SWORD_DROP_CHANCE_ = 1 / 7;
   // ドラゴンソードは、なんでも屋で700MPで買えて、300MPで売れる(lib/handlers/shop.jsと揃える)
   const DRAGON_SWORD_COST_MP_ = 700;
   const DRAGON_SWORD_SELL_MP_ = 300;
-  const DRAGON_SWORD_DAMAGE_ = 100;
+  const DRAGON_SWORD_DAMAGE_ = 700; // 1撃必殺(2026-11-11、先生の指示で100→700)
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -24944,7 +24944,7 @@
     }
     var dragonSwordCount_ = Number(state.dragonSwordCount) || 0;
     if (dragonSwordCount_ > 0) {
-      html += `<div class="badge-item badge-earned" title="ゼロドラゴンを倒して手に入れた剣。ボス戦で使うと1撃で100ダメージ。1回で壊れる"><span class="badge-icon"><img src="images/dragon_sword.jpg" alt=""></span><span class="badge-name">ドラゴンソード ×${dragonSwordCount_}</span>${difficultyStarsHtml_(3)}</div>`;
+      html += `<div class="badge-item badge-earned" title="ゼロドラゴンを倒して手に入れた剣。ボス戦で使うと1撃で700ダメージ。1回で壊れる"><span class="badge-icon"><img src="images/dragon_sword.jpg" alt=""></span><span class="badge-name">ドラゴンソード ×${dragonSwordCount_}</span>${difficultyStarsHtml_(3)}</div>`;
     }
     // 賢さの種：入手方法は非公開の秘密アイテム。所持数で表示し、使い切ったら
     // 図鑑から消える(すばやさの種・折り紙の手裏剣と同じ表示方式)。
@@ -28755,7 +28755,7 @@
     var box = document.getElementById('zeroDragonChoice');
     if (box) box.addEventListener('click', function (e) { var b = e.target.closest('[data-zd]'); if (b) zeroDragonChoose_(b.getAttribute('data-zd') === 'fight'); });
   })();
-  // ⚔️ドラゴンソード：ボス戦で使うと、その場でボスに100ダメージ(必ず当たる)。1回で壊れる。
+  // ⚔️ドラゴンソード：ボス戦で使うと、その場でボスに700ダメージ(必ず当たる)。1回で壊れる。
   function useDragonSword_() {
     if (!state.worldBossActiveStage) return;
     if ((Number(state.dragonSwordCount) || 0) <= 0) return;
