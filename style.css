@@ -2807,4 +2807,4 @@ body.notices-folded .world-launch-banner { display: none !important; }
 /* ⚾野球ガチャの打率クイズ(2026-11-11〜)。読み方の文字が長いので2列にする */
 .bq-choices { grid-template-columns: repeat(2, 1fr); }
 .bq-btn { font-size: 1rem; padding: 8px 0; }
-.bq-avg { font-size: 1.25rem; color: #1d4ed8; }
+.bq-avg { font-size: 1.6rem; color: #1d4ed8; }
