@@ -20448,8 +20448,12 @@
   // 累積しきい値を手計算で並べる方式は、間に新しいレアキャラを差し込むと後続の
   // しきい値が更新漏れになりやすい(実際に発生したバグ)。ここでは各レアキャラの
   // 出現確率を配列で並べ、実行時に累積和を取ることでその種のバグを防ぐ。
+  // 🐉ゼロドラゴン強化期間(2026-11-11〜12-10の1か月)：敵が出るとき10回に1回はゼロドラゴン(先生の指示)
+  const ZERODRAGON_BOOST_END_ = '2026-12-11';
+  const ZERODRAGON_BOOST_CHANCE_ = 0.1;
   function rollRareType() {
     const r = Math.random();
+    if (newRareVisible_() && todayKey() < ZERODRAGON_BOOST_END_ && Math.random() < ZERODRAGON_BOOST_CHANCE_) return 'zerodragon';
     const chanceInuda = isWithinInudaWindow() ? RARE_CHANCE_INUDA : 0;
     const chanceSoubusen = isWithinDateWindow(SOUBUSEN_START, SOUBUSEN_END) ? RARE_CHANCE_SOUBUSEN : 0;
     const chanceNattoman = isWithinDateWindow(NATTOMAN_START, NATTOMAN_END) ? RARE_CHANCE_NATTOMAN : 0;
