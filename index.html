@@ -214,6 +214,7 @@
         <button id="answer10Toggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🔟アンサー10<span class="new-badge">NEW</span></button>
         <button id="mangaToggle" class="ghost-btn is-new eye-catch-frame" type="button">📖4コマ漫画<span class="new-badge">NEW</span></button>
         <button id="kenToggle" class="ghost-btn is-new eye-catch-frame" type="button" hidden>🧩計算パズル<span class="new-badge">NEW</span></button>
+        <button id="shikokuToggle" class="ghost-btn is-new" type="button" hidden>🙏四国88ヶ所めぐり<span class="new-badge">準備中</span></button>
         <button id="numSenseToggle" class="ghost-btn is-new" type="button" hidden>🍊かずのかんかく<span class="new-badge">NEW</span></button>
         <button id="bugToggle" class="ghost-btn is-new" type="button">🐞バグ報告<span class="new-badge">NEW</span></button>
         <button id="manualToggle" class="ghost-btn" type="button">📘使い方マニュアル</button>
@@ -900,6 +901,12 @@
       <div id="surveyResult"></div>
     </section>
 
+    <section class="weekly-quiz-panel" id="shikokuPanel" hidden>
+      <h3 class="history-title">🙏 四国88ヶ所めぐり</h3>
+      <p class="test-photo-hint">弘法大師(空海)ゆかりの、四国にある88のお寺(札所)をめぐる旅。歩くと約1200km、40日以上かかるといわれます。<br>計算や理科で<b>10問正解するごとに、次の札所に到着</b>！1番 霊山寺(徳島)から、阿波→土佐→伊予→讃岐とまわって、88番 大窪寺(香川)で「結願」をめざそう。<br>🧪今は先生(00001)だけのプレビューです(本番は2027年1月か2月の予定)。</p>
+      <div id="shikokuBody"></div>
+    </section>
+
     <section class="weekly-quiz-panel" id="numSensePanel" hidden>
       <h3 class="history-title">🍊 かずのかんかく</h3>
       <p class="test-photo-hint">分数・小数・速さ・図形などを習う前に、ふだんの生活の中で「なんとなく分かる」ようになっておきたい感覚を、絵を見ながら身につけよう！<br>小学生だけが解けるよ。<span id="nsRewardInfo">1問正解で1MP（1日10MPまで・計算のMPに入る）。</span></p>
@@ -1434,6 +1441,7 @@
 <script src="world-data.js?v=20261022a"></script>
 <script src="world-data-2.js?v=20261022a"></script>
 <script src="usa-state-data.js?v=20261022a"></script>
+<script src="shikoku-data.js?v=20261022a"></script>
 <script src="app.js?v=20261022a"></script>
 <script>
   if ('serviceWorker' in navigator) {

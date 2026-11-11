@@ -309,6 +309,9 @@
     return (s.categoryDailyCounts[catId] || 0) >= dailyCategoryCompleteAt_();
   }
 
+  // 🙏四国88ヶ所めぐり：正解したときに呼ぶ(中身は四国88ヶ所めぐりのところで入れる)
+  var shikokuOnCorrect_ = function () { };
+
   function todayKey() {
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -21899,6 +21902,7 @@
     const session = loadSession();
     // sci:true … 理科の正解数を数える(野球ガチャの条件、2026-11-10〜)
     if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: true });
+    if (isCorrect) shikokuOnCorrect_(); // 🙏四国88ヶ所めぐり(プレビュー)
     // 都道府県制覇（県庁所在地クイズ）イージーモードは、理科を解いても数える(2026-11-10〜)。
     // 10問解くたびに、次の3問(理科モードのまま)が県庁所在地クイズになる。
     if (!state.usaCrossingActive && capitalQuizEasyEligible_()) {
@@ -22123,6 +22127,8 @@
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
+    // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)
+    var skTg = document.getElementById('shikokuToggle'); if (skTg) { skTg.hidden = !isAdminSession_(); if (skTg.hidden) { var skPn = document.getElementById('shikokuPanel'); if (skPn) skPn.setAttribute('hidden', ''); } }
     // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
     var nsSs = loadSession(); var nsTg = document.getElementById('numSenseToggle'); if (nsTg) { nsTg.hidden = !(isAdminSession_() || (nsSs && String(nsSs.grade || '').charAt(0) === '小')); if (nsTg.hidden) { var nsPn = document.getElementById('numSensePanel'); if (nsPn) nsPn.setAttribute('hidden', ''); } }
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
@@ -22408,6 +22414,8 @@
       ensureCategoryDailyReset(state);
       state.categoryDailyCounts[catId] = (state.categoryDailyCounts[catId] || 0) + 1;
     }
+    // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)：正解で歩数をためる
+    if (isCorrect && catId !== 'capitalQuizBonus') shikokuOnCorrect_();
     const session = loadSession();
     const ownGrade = session && session.grade;
     const isWordProblem = WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1;
@@ -35032,6 +35040,101 @@
       var a = e.target.closest('[data-ns-ans]');
       if (a) { answer_(a.getAttribute('data-ns-ans'), a); return; }
       if (e.target.closest('[data-ns-next]')) next_();
+    });
+    // ほかのボタンを押したら閉じる
+    tg.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== tg) panel.setAttribute('hidden', '');
+    });
+  })();
+
+  /* ---------- 🙏四国88ヶ所めぐり(2027年1月か2月に予定。今は00001だけのプレビュー、2026-11-11〜) ----------
+     生徒の月1アンケートの要望(「四国88カ所巡りをアプリに追加してほしい」)から。札所のデータは shikoku-data.js。
+     ふつうの計算・理科で正解するたびに歩数がたまり、SHIKOKU_PER_TEMPLE_問正解ごとに次の札所に到着(1番→88番)。
+     到着すると札所の名前とトリビアが出る。阿波・土佐・伊予・讃岐の4つの国(道場)ごとの進み具合も見られる。
+     プレビュー中は進み具合をこの端末のlocalStorage(shikoku_<id>)だけに保存し、MPなどの報酬はまだ出さない。
+     本番にするときは：SHIKOKU_OPEN_ALL_をtrue、期間を決める、進み具合をサーバーに保存、報酬(国ごと・結願)を決める。 */
+  (function () {
+    var tg = document.getElementById('shikokuToggle'), panel = document.getElementById('shikokuPanel');
+    if (!tg || !panel || typeof SHIKOKU_TEMPLES === 'undefined') return;
+    var $ = function (id) { return document.getElementById(id); };
+    var SHIKOKU_OPEN_ALL_ = false;
+    var SHIKOKU_PER_TEMPLE_ = 10;
+    function visible_() { return isAdminSession_() || SHIKOKU_OPEN_ALL_; }
+    function key_() { var s = loadSession(); return s && s.id ? 'shikoku_' + s.id : ''; }
+    function load_() {
+      var k = key_(); if (!k) return { n: 0, steps: 0 };
+      try { var o = JSON.parse(localStorage.getItem(k) || 'null') || {}; return { n: Math.max(0, Math.min(88, Number(o.n) || 0)), steps: Math.max(0, Number(o.steps) || 0) }; } catch (e) { return { n: 0, steps: 0 }; }
+    }
+    function save_(p) { var k = key_(); if (!k) return; try { localStorage.setItem(k, JSON.stringify(p)); } catch (e) { } }
+    function toast_(html) {
+      var t = document.createElement('div');
+      t.className = 'shikoku-toast';
+      t.innerHTML = html;
+      document.body.appendChild(t);
+      setTimeout(function () { t.classList.add('is-out'); }, 3500);
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 4200);
+    }
+    function arrive_(p) {
+      p.n++; p.steps = 0;
+      var t = SHIKOKU_TEMPLES[p.n - 1], pv = SHIKOKU_PROVINCES[t.pref];
+      var extra = '';
+      if (p.n === 88) extra = '<br>🎊 <b>結願！</b>88ヶ所すべてまわりました！';
+      else if (SHIKOKU_TEMPLES[p.n] && SHIKOKU_TEMPLES[p.n].pref !== t.pref) extra = '<br>🎉 ' + pv.name + '（' + pv.dojo + '）の札所をすべてまわった！';
+      toast_('🙏 ' + t.no + '番 <b>' + t.name + '</b> に到着！（' + t.place + '）<br><small>' + t.trivia + '</small>' + extra);
+    }
+    shikokuOnCorrect_ = function () {
+      if (!visible_()) return;
+      var p = load_();
+      if (p.n >= 88) return;
+      p.steps++;
+      if (p.steps >= SHIKOKU_PER_TEMPLE_) arrive_(p);
+      save_(p);
+      if (!panel.hasAttribute('hidden')) render_();
+    };
+    function render_() {
+      var p = load_();
+      var next = SHIKOKU_TEMPLES[p.n];
+      var html = '<div class="shikoku-now">' + (p.n === 0 ? 'まだ出発していません。' : '今いるところ：<b>' + p.n + '番 ' + SHIKOKU_TEMPLES[p.n - 1].name + '</b>（' + SHIKOKU_TEMPLES[p.n - 1].place + '）')
+        + '<br>' + (next ? '次の札所：' + next.no + '番 ' + next.name + '　あと <b>' + (SHIKOKU_PER_TEMPLE_ - p.steps) + '問</b> 正解' : '🎊 結願！88ヶ所すべてまわりました！') + '</div>';
+      // 88か所の道(まわったところに色がつく)
+      html += '<div class="shikoku-road">' + SHIKOKU_TEMPLES.map(function (t) {
+        var pv = SHIKOKU_PROVINCES[t.pref];
+        return '<span class="shikoku-dot' + (t.no <= p.n ? ' is-done' : '') + (t.no === p.n + 1 ? ' is-next' : '') + '" style="--c:' + pv.color + '" title="' + t.no + '番 ' + t.name + '"></span>';
+      }).join('') + '</div>';
+      // 国(道場)ごとの進み具合
+      html += '<div class="shikoku-provs">' + SHIKOKU_PROVINCES.map(function (pv, i) {
+        var all = SHIKOKU_TEMPLES.filter(function (t) { return t.pref === i; });
+        var done = all.filter(function (t) { return t.no <= p.n; }).length;
+        return '<div class="shikoku-prov"><span>' + pv.emoji + ' ' + pv.name + '（' + pv.pref + '）' + pv.dojo + '</span><span class="shikoku-bar"><span style="width:' + Math.round(done / all.length * 100) + '%;background:' + pv.color + '"></span></span><span>' + done + '/' + all.length + '</span></div>';
+      }).join('') + '</div>';
+      // まわった札所の一覧(新しい順)
+      var visited = SHIKOKU_TEMPLES.slice(0, p.n).reverse();
+      html += '<p class="survey-label">📜 まわった札所</p>' + (visited.length ? visited.map(function (t) {
+        return '<div class="shikoku-temple" style="border-left-color:' + SHIKOKU_PROVINCES[t.pref].color + '"><b>' + t.no + '番 ' + t.name + '</b>　<small>' + t.place + '</small><br><small>' + t.trivia + '</small></div>';
+      }).join('') : '<p class="test-photo-hint">まだありません。問題に正解して出発しよう！</p>');
+      if (isAdminSession_()) html += '<div class="shikoku-admin">🧪 先生のテスト用：<button type="button" class="ghost-btn" data-sk="1">次の札所へ進む</button> <button type="button" class="ghost-btn" data-sk="10">10か所進む</button> <button type="button" class="ghost-btn" data-sk="reset">最初にもどす</button></div>';
+      $('shikokuBody').innerHTML = html;
+    }
+    tg.addEventListener('click', function () {
+      if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel', 'numSensePanel',
+        'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+        var p = document.getElementById(pid);
+        if (p) p.setAttribute('hidden', '');
+      });
+      panel.removeAttribute('hidden');
+      render_();
+    });
+    panel.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sk]');
+      if (!b || !isAdminSession_()) return;
+      var v = b.getAttribute('data-sk');
+      if (v === 'reset') { if (!window.confirm('四国88ヶ所めぐりを最初にもどしますか？（テスト用）')) return; save_({ n: 0, steps: 0 }); render_(); return; }
+      var p = load_();
+      for (var i = 0; i < Number(v) && p.n < 88; i++) arrive_(p);
+      save_(p);
+      render_();
     });
     // ほかのボタンを押したら閉じる
     tg.parentNode.addEventListener('click', function (e) {
