@@ -23631,7 +23631,7 @@
         + '　🐞【バグを直しました④】計算で出た「天使の涙」のセリフが理科の画面に出てしまうバグと、学習記録でまだゲットしていないレアキャラの絵を長押しすると大きく見えてしまうバグを直しました。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました⑤】スットボケAKRの問題に答えたあと、もう一度「スットボケAKR出現！」と出ていたのを直しました。報告してくれた人、ありがとう！'
         + '　🐞【バグを直しました⑥】計算パズル「かんたん3×3」で、5秒より速くクリアするとランキングに出なかったのを直しました（2秒より速い記録だけ入らないようにしました）。報告してくれた人、ありがとう！'
-        + '　🆕【小学生のみなさんへ】「🍊かずのかんかく」ができました！みかんを分けて分数、ものさしで小数、かけっこで速さ、紙を折って図形、お金で大きな数…と、絵を見ながら数の感じをつかむ問題です。1問正解で1MP（1日10MPまで・計算のMPに入る）。'
+        + '　🆕【小学生のみなさんへ】「🍊かずのかんかく」ができました！みかんを分けて分数、ものさしで小数、かけっこで速さ、紙を折って図形、お金で大きな数…と、絵を見ながら数の感じをつかむ問題です。1問正解で1MP（1日10MPまで・計算のMPに入る。MPは12月9日まで、そのあとは1日10HPまで）。'
         + '　アプリのまちがいを見つけたら「🐞バグ報告」から教えてね（レベル300以上・1日3件まで）。本当にバグだったら、直してお礼に100MPプレゼント！';
     }
   }
@@ -34540,12 +34540,16 @@
      テーマ：🍊分数(みかん)・📏小数(1Lます・ものさし)・🚶速さ・📐図形(折り紙)・💴大きな数(お金)。問題は端末で作り、答え合わせも端末。
      解けるのは小学生だけ(と00001)。MP：1問正解で1MP、1日NS_MP_DAILY_(10)MPまで。計算のMP(pointsTodayCalc、1日POINTS_DAILY_CAP_CALC)に含める(2026-11-10 先生の指示)。
      「今日何MPもらったか」はこの端末のlocalStorage(nsMp_<id>)で数える。計算の1日上限はサーバー(sync.js)でも守られる。
+     MPが入るのは始まってから1か月(NS_MP_END_の前日 2026-12-09まで)だけ。そのあとも解けるが、1問正解で1HP・1日NS_MP_DAILY_(10)HPまで(nsHp_<id>で数える)(2026-11-11 先生の指示)。
      テーマを増やすときは NS_THEMES_ に足して、gens に問題を作る関数を入れる。 */
   (function () {
     var tg = document.getElementById('numSenseToggle'), panel = document.getElementById('numSensePanel');
     if (!tg || !panel) return;
     var $ = function (id) { return document.getElementById(id); };
     var NS_MP_DAILY_ = 10;
+    var NS_MP_END_ = '2026-12-10'; // この日からはMPではなくHP(1日10HPまで)
+    function nsMpPeriod_() { return todayKey() < NS_MP_END_; }
+    function nsUnit_() { return nsMpPeriod_() ? 'MP' : 'HP'; }
     // 解けるのは小学生だけ(2026-11-10 先生の指示)。先生(00001)は確認用に使える。
     function nsAllowed_() { var s = loadSession(); return !!(s && (s.id === '00001' || String(s.grade || '').charAt(0) === '小')); }
     var ns = { theme: 'frac', q: null, answered: false, ok: 0, total: 0 };
@@ -34929,8 +34933,8 @@
         return '<button type="button" class="ghost-btn ns-theme' + (t.id === ns.theme ? ' is-on' : '') + '" data-ns-theme="' + t.id + '">' + t.label + '</button>';
       }).join('');
     }
-    // 今日この端末でもらったMP(1日NS_MP_DAILY_まで)
-    function mpKey_() { var s = loadSession(); return s && s.id ? 'nsMp_' + s.id : ''; }
+    // 今日この端末でもらったMP(MPの期間のあとはHP)(1日NS_MP_DAILY_まで)
+    function mpKey_() { var s = loadSession(); return s && s.id ? (nsMpPeriod_() ? 'nsMp_' : 'nsHp_') + s.id : ''; }
     function mpToday_() {
       var k = mpKey_(); if (!k) return 0;
       try { var o = JSON.parse(localStorage.getItem(k) || 'null'); return o && o.d === todayKey() ? Number(o.n) || 0 : 0; } catch (e) { return 0; }
@@ -34939,9 +34943,20 @@
     function giveMp_() {
       var session = loadSession();
       if (!session || !session.id) return 0;
+      var got = mpToday_();
+      if (!nsMpPeriod_()) {
+        // MPの期間のあと：1問正解で1HP(1日NS_MP_DAILY_まで)
+        var addHp = Math.max(0, Math.min(1, NS_MP_DAILY_ - got));
+        if (addHp <= 0) return 0;
+        state.hp = (Number(state.hp) || 0) + addHp;
+        mpSet_(got + addHp);
+        saveGameState(state);
+        updateGameHud();
+        syncPointsNow_(session.id);
+        return addHp;
+      }
       var today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
-      var got = mpToday_();
       var add = Math.max(0, Math.min(1, NS_MP_DAILY_ - got, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
       if (add <= 0) return 0;
       state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + add;
@@ -34954,7 +34969,11 @@
       return add;
     }
     function renderScore_() {
-      $('nsScore').textContent = (ns.total ? '今回 ' + ns.total + '問中 ' + ns.ok + '問正解　' : '') + '今日のMP ' + mpToday_() + '/' + NS_MP_DAILY_ + '（1問正解で1MP）';
+      $('nsScore').textContent = (ns.total ? '今回 ' + ns.total + '問中 ' + ns.ok + '問正解　' : '') + '今日の' + nsUnit_() + ' ' + mpToday_() + '/' + NS_MP_DAILY_ + '（1問正解で1' + nsUnit_() + '）';
+      var info = $('nsRewardInfo');
+      if (info) info.textContent = nsMpPeriod_()
+        ? '1問正解で1MP（1日10MPまで・計算のMPに入る）。MPがもらえるのは12月9日まで！そのあとも解けて、1問正解で1HP（1日10HPまで）になるよ。'
+        : '1問正解で1HP（1日10HPまで）。（MPがもらえるのは12月9日まででした）';
     }
     function next_() {
       ns.q = pick_(theme_().gens)();
@@ -34975,7 +34994,8 @@
         if (b.getAttribute('data-ns-ans') === ns.q.ans) b.classList.add('is-correct');
         else if (b === btn) b.classList.add('is-incorrect');
       });
-      var mpLine = !ok ? '' : add > 0 ? '　+' + add + 'MP' : mpToday_() >= NS_MP_DAILY_ ? '（今日のMPは' + NS_MP_DAILY_ + 'MPまでもらったよ）' : '（今日の計算のMP上限のためMPなし）';
+      var u = nsUnit_();
+      var mpLine = !ok ? '' : add > 0 ? '　+' + add + u : mpToday_() >= NS_MP_DAILY_ ? '（今日の' + u + 'は' + NS_MP_DAILY_ + u + 'までもらったよ）' : '（今日の計算のMP上限のためMPなし）';
       var fb = $('nsFb');
       fb.className = 'ns-fb ' + (ok ? 'ns-ok' : 'ns-ng');
       fb.innerHTML = '<div class="ns-fb-head">' + (ok ? '⭕ 正解！' + mpLine : '❌ ざんねん！') + '</div><div class="ns-expl">' + ns.q.expl + '</div>'
