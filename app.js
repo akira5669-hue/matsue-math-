@@ -23617,7 +23617,7 @@
     }
   }
 
-  // 全生徒向けのお知らせバナー(BUG_FIX_NOTICE_END_まで)。今は🍊かずのかんかくの告知だけ。
+  // 全生徒向けのお知らせバナー(BUG_FIX_NOTICE_END_まで)。今は📝月1アンケートと🍊かずのかんかくの告知。
   // 直したバグの告知はここには書かず、🐞バグ報告の画面(BUG_FIXES_)にだけ書く(2026-11-11 先生の指示)。
   var BUG_FIX_NOTICE_END_ = '2026-11-17';
   function renderBugFixNoticeBanner_() {
@@ -23625,7 +23625,8 @@
     els.bugFixNoticeBanner.hidden = todayKey() > BUG_FIX_NOTICE_END_;
     if (els.bugFixNoticeBanner.hidden) return;
     if (els.bugFixNoticeBannerText) {
-      els.bugFixNoticeBannerText.textContent = '🆕【小学生のみなさんへ】「🍊かずのかんかく」ができました！みかんを分けて分数、ものさしで小数、かけっこで速さ、紙を折って図形、お金で大きな数…と、絵を見ながら数の感じをつかむ問題です。1問正解で1MP（1日10MPまで・計算のMPに入る。MPは12月9日まで、そのあとは1日10HPまで）。';
+      els.bugFixNoticeBannerText.textContent = '📝【月1アンケートが始まりました】上のボタンの「📝月1アンケート」から答えてね。テストの進み具合・目標・授業のこと・相談したいことなどを、生徒本人かおうちの人が答えられます。答えは先生に届きます。毎月1回答えられて、答えると+50MP！'
+        + '　🆕【小学生のみなさんへ】「🍊かずのかんかく」ができました！みかんを分けて分数、ものさしで小数、かけっこで速さ、紙を折って図形、お金で大きな数…と、絵を見ながら数の感じをつかむ問題です。1問正解で1MP（1日10MPまで・計算のMPに入る。MPは12月9日まで、そのあとは1日10HPまで）。';
     }
   }
   // 🐞バグ報告で直したバグの一覧(🐞バグ報告の画面にだけ出す)。新しく直したら下に足す。
