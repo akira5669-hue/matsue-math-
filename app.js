@@ -20091,7 +20091,8 @@
   function newRareVisible_() { return SHOW_NEW_RARE_ALL_ || isAdminSession_(); }
   const RARE_CHANCE_KOTSUKOTSUGAME = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_ZERODRAGON = (1 / 60) * RARE_SCALE;
-  const KOTSUKOTSUGAME_BONUS_MP = 15;
+  // コツコツガメは倒すと+10MP。1日のMP上限(100MP)とは別に入る(2026-11-11、先生の指示)
+  const KOTSUKOTSUGAME_BONUS_MP = 10;
   const ZERODRAGON_BONUS_MP = 40;
   const ZERODRAGON_REQUIRED_STREAK = 15;
   const RARE_BONUS_MP = 10;
@@ -22955,7 +22956,7 @@
       const pureStreak = state.streakRewardClass === streakRewardClass_(catId) || (state.streak >= 10 && state.streak - sameClassCount_ <= 1);
       const wordReward = isWordProblem && pureStreak;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'kotsukotsugame' ? KOTSUKOTSUGAME_BONUS_MP : wasRareType === 'zerodragon' ? ZERODRAGON_BONUS_MP : wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'zerodragon' ? ZERODRAGON_BONUS_MP : wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(5 or 10)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
@@ -22988,6 +22989,8 @@
         pointsToAdd = Math.max(0, Math.min(basePoints, dailyCapForThis - todayBucketForThis));
         if (wordReward) state.pointsTodayWord += pointsToAdd; else state.pointsTodayCalc += pointsToAdd;
       }
+      // コツコツガメの+10MPは、1日の上限とは別枠(上限を経由しないボーナス)で入れる
+      if (wasRareType === 'kotsukotsugame') { pointsToAdd += KOTSUKOTSUGAME_BONUS_MP; state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + KOTSUKOTSUGAME_BONUS_MP; }
       state.points += pointsToAdd;
       state.pointsToday += pointsToAdd;
       let doubleGainedHtml = '';
@@ -23176,7 +23179,7 @@
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
       const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
-      const rareTag = wasRareType === 'kotsukotsugame' ? ('<span class="rare-badge">🐢レア撃破！+' + KOTSUKOTSUGAME_BONUS_MP + 'MP✨</span>')
+      const rareTag = wasRareType === 'kotsukotsugame' ? ('<span class="rare-badge">🐢レア撃破！+' + KOTSUKOTSUGAME_BONUS_MP + 'MP（上限とは別）✨</span>')
         : wasRareType === 'zerodragon' ? ('<span class="rare-badge">🐉激レア撃破！+' + ZERODRAGON_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
