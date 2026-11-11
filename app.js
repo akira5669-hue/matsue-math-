@@ -20093,7 +20093,7 @@
   const RARE_CHANCE_ZERODRAGON = (1 / 60) * RARE_SCALE;
   // コツコツガメは倒すと+10MP。1日のMP上限(100MP)とは別に入る(2026-11-11、先生の指示)
   const KOTSUKOTSUGAME_BONUS_MP = 10;
-  const ZERODRAGON_BONUS_MP = 40;
+  const ZERODRAGON_BONUS_MP = 0; // +40MPはなくした(2026-11-11、先生の指示。かわりに種・実とドラゴンソード)
   const ZERODRAGON_REQUIRED_STREAK = 15;
   // ゼロドラゴン(2026-11-11〜)：出現したら「戦う」か「逃げる」を選ぶ。逃げるとHP-100(100以下なら0)。
   // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回700ダメージ、1回で壊れる、何本でも持てる)。
@@ -23218,7 +23218,7 @@
         }
       }
       const rareTag = wasRareType === 'kotsukotsugame' ? ('<span class="rare-badge">🐢レア撃破！+' + KOTSUKOTSUGAME_BONUS_MP + 'MP（上限とは別）✨</span>')
-        : wasRareType === 'zerodragon' ? ('<span class="rare-badge">🐉激レア撃破！+' + ZERODRAGON_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'zerodragon' ? ('<span class="rare-badge">🐉激レア撃破！✨</span>')
         : wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
         : wasRareType === 'thinker' ? '<span class="rare-badge">🤔レベル100記念撃破！🤔</span>'
