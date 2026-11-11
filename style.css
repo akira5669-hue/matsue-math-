@@ -2777,3 +2777,9 @@ body.notices-folded .apology-banner,
 body.notices-folded .hp-rules-banner,
 body.notices-folded .special-quiz-banner,
 body.notices-folded .world-launch-banner { display: none !important; }
+
+/* 🐉ゼロドラゴン：戦うか逃げるか */
+.zero-dragon-choice { margin: 8px 0 12px; padding: 12px; border: 2px solid #b91c1c; border-radius: 12px; background: #fef2f2; text-align: center; }
+.zero-dragon-choice[hidden] { display: none; }
+.zero-dragon-choice p { margin: 0 0 8px; font-weight: 900; color: #7f1d1d; }
+.zero-dragon-choice button { margin: 4px; min-width: 140px; line-height: 1.4; }

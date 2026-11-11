@@ -406,7 +406,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -428,7 +428,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -19802,7 +19802,7 @@
     zerodragon: {
       id: 'zerodragon', name: 'ゼロドラゴン', img: 'images/zerodragon.jpg',
       lines: {
-        appear: 'ガオー！われはゼロドラゴン！15問連続で正解できなければ、たおせぬぞ！',
+        appear: 'ガオー！われはゼロドラゴン！戦うか、逃げるか、選ぶがよい！まちがえるたびにHP100をもらうぞ！',
         defeat: 'ぐぬぬ…ミス「ゼロ」で15問とは…おぬし、なかなかやるな！',
         miss: 'ガハハ！連続正解は「ゼロ」からやり直しだ！',
       },
@@ -20095,6 +20095,14 @@
   const KOTSUKOTSUGAME_BONUS_MP = 10;
   const ZERODRAGON_BONUS_MP = 40;
   const ZERODRAGON_REQUIRED_STREAK = 15;
+  // ゼロドラゴン(2026-11-11〜)：出現したら「戦う」か「逃げる」を選ぶ。逃げるとHP-100(100以下なら0)。
+  // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回100ダメージ、1回で壊れる、何本でも持てる)。
+  const ZERODRAGON_HP_PENALTY_ = 100;
+  const DRAGON_SWORD_DROP_CHANCE_ = 1 / 7;
+  // ドラゴンソードは、なんでも屋で700MPで買えて、300MPで売れる(lib/handlers/shop.jsと揃える)
+  const DRAGON_SWORD_COST_MP_ = 700;
+  const DRAGON_SWORD_SELL_MP_ = 300;
+  const DRAGON_SWORD_DAMAGE_ = 100;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -20557,6 +20565,8 @@
     speedSeedCount: (savedProgress && Number(savedProgress.speedSeedCount)) || (savedGame && Number(savedGame.speedSeedCount)) || 0,
     // なんでも屋で買える消費アイテム「折り紙の手裏剣」の所持数(00001限定プレビュー中)。
     shurikenCount: (savedProgress && Number(savedProgress.shurikenCount)) || (savedGame && Number(savedGame.shurikenCount)) || 0,
+    // ゼロドラゴンを倒すと手に入るドラゴンソードの本数(2026-11-11〜)
+    dragonSwordCount: (savedProgress && Number(savedProgress.dragonSwordCount)) || (savedGame && Number(savedGame.dragonSwordCount)) || 0,
     // 賢さの種：月間の読書いいね数ランキング上位3名にだけ配布される秘密アイテムの
     // 所持数。なんでも屋で「食べる」(+1000HP)か「売る」(1000MPで売却)ができる。
     wisdomSeedCount: (savedProgress && Number(savedProgress.wisdomSeedCount)) || (savedGame && Number(savedGame.wisdomSeedCount)) || 0,
@@ -22241,6 +22251,14 @@
     }
     // 手裏剣：氷の剣と同じくボス戦専用の消費アイテムだが、投げた瞬間に50%の
     // 確率で命中する(00001限定プレビュー中)。
+    // ゼロドラゴン：出現したら戦うか逃げるかを選ぶ
+    var zdBox = document.getElementById('zeroDragonChoice'); if (zdBox) zdBox.hidden = !zeroDragonChoicePending_();
+    var dsBtn = document.getElementById('dragonSwordBtn');
+    if (dsBtn) {
+      var dsCount_ = Number(state.dragonSwordCount) || 0;
+      dsBtn.hidden = !(isBossFight && dsCount_ > 0);
+      if (!dsBtn.hidden) dsBtn.textContent = '⚔️ ドラゴンソードで斬る（1撃で' + DRAGON_SWORD_DAMAGE_ + 'ダメージ・残り' + dsCount_ + '本）';
+    }
     if (els.shurikenBtn) {
       var shurikenCountForBtn_ = Number(state.shurikenCount) || 0;
       els.shurikenBtn.hidden = !(isBossFight && isAdminSession_() && shurikenCountForBtn_ > 0);
@@ -22440,6 +22458,7 @@
     if (state.trainingActive) { handleTrainingAnswer_(btn, choiceStr); return; }
     if (state.subject === 'science' && !(state.current && state.current.category === 'capitalQuizBonus')) { handleScienceAnswer(btn, choiceStr); return; }
     if (state.answered) return;
+    if (zeroDragonChoicePending_()) { els.feedback.innerHTML = '<span class="fb-result">🐉 先に「⚔️戦う」か「🏃逃げる」を選んでね</span>'; return; }
     state.answered = true;
     state.total++;
 
@@ -22600,6 +22619,12 @@
       const goumajiFled = !speedSeedSaved && state.rareType === 'goumaji';
       const percentkunFled = !speedSeedSaved && state.rareType === 'percentkun';
       state.streak = 0;
+      // ゼロドラゴンと戦っている間は、まちがえるとHP-100(0より下にはならない)
+      if (!state.worldBossActiveStage && state.rareType === 'zerodragon' && state.zeroDragonFight) {
+        state.hp = Math.max(0, (Number(state.hp) || 0) - ZERODRAGON_HP_PENALTY_);
+        missLineHtml += `<div class="enemy-quote-banner">🐉🔥 ゼロドラゴンの炎！HPが${ZERODRAGON_HP_PENALTY_}減った…（今のHP ${state.hp}）</div>`;
+        saveGameState(state);
+      }
       state.capitalQuizStreak = 0;
       // 都道府県制覇（県庁所在地クイズ）：3問セットの最後の問題を間違えても
       // 罰則は無く、正誤に関係なく次の都道府県へ進む。
@@ -23183,6 +23208,14 @@
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
       const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
+      let dragonSwordHtml_ = '';
+      if (wasRareType === 'zerodragon') {
+        state.zeroDragonFight = false;
+        if (Math.random() < DRAGON_SWORD_DROP_CHANCE_) {
+          state.dragonSwordCount = (Number(state.dragonSwordCount) || 0) + 1;
+          dragonSwordHtml_ = '<div class="item-gain-banner">⚔️ ドラゴンソードを手に入れた！（' + state.dragonSwordCount + '本）ボス戦で使うと1撃でHPを' + DRAGON_SWORD_DAMAGE_ + '減らせる！（1回で壊れる）</div>';
+        }
+      }
       const rareTag = wasRareType === 'kotsukotsugame' ? ('<span class="rare-badge">🐢レア撃破！+' + KOTSUKOTSUGAME_BONUS_MP + 'MP（上限とは別）✨</span>')
         : wasRareType === 'zerodragon' ? ('<span class="rare-badge">🐉激レア撃破！+' + ZERODRAGON_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
@@ -23206,7 +23239,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -24112,6 +24145,7 @@
         state.worldAllies = Array.isArray(progress.worldAllies) ? progress.worldAllies.slice() : state.worldAllies;
         state.speedSeedCount = Number(progress.speedSeedCount) || state.speedSeedCount;
         state.shurikenCount = Number(progress.shurikenCount) || state.shurikenCount;
+        state.dragonSwordCount = Number(progress.dragonSwordCount) || state.dragonSwordCount;
         state.wisdomSeedCount = Number(progress.wisdomSeedCount) || state.wisdomSeedCount;
         state.wisdomFruitCount = Number(progress.wisdomFruitCount) || state.wisdomFruitCount;
         state.effortSeedCount = Number(progress.effortSeedCount) || state.effortSeedCount;
@@ -24215,6 +24249,7 @@
       mathGodTitleEarned: state.mathGodTitleEarned,
       speedSeedCount: state.speedSeedCount,
       shurikenCount: state.shurikenCount,
+      dragonSwordCount: Number(state.dragonSwordCount) || 0,
       ironWallCharges: state.ironWallCharges,
       steelArmorCharges: state.steelArmorCharges,
       iceSwordCharges: state.iceSwordCharges,
@@ -24906,6 +24941,10 @@
     var shurikenCount = Number(state.shurikenCount) || 0;
     if (shurikenCount > 0) {
       html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span>${difficultyStarsHtml_(1)}</div>`;
+    }
+    var dragonSwordCount_ = Number(state.dragonSwordCount) || 0;
+    if (dragonSwordCount_ > 0) {
+      html += `<div class="badge-item badge-earned" title="ゼロドラゴンを倒して手に入れた剣。ボス戦で使うと1撃で100ダメージ。1回で壊れる"><span class="badge-icon"><img src="images/dragon_sword.jpg" alt=""></span><span class="badge-name">ドラゴンソード ×${dragonSwordCount_}</span>${difficultyStarsHtml_(3)}</div>`;
     }
     // 賢さの種：入手方法は非公開の秘密アイテム。所持数で表示し、使い切ったら
     // 図鑑から消える(すばやさの種・折り紙の手裏剣と同じ表示方式)。
@@ -25935,6 +25974,9 @@
     var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span>${difficultyStarsHtml_(1)}</div>${speedSeedActionHtml}</div>`;
 
     // 折り紙で作った手裏剣：00001限定プレビュー中。
+    // ⚔️ドラゴンソード：700MPで買える・300MPで売れる
+    var dsHave_ = Number(state.dragonSwordCount) || 0;
+    var dragonSwordRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(3)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
     var shurikenRowHtml = '';
     if (isAdminSession_()) {
       var shurikenCanAfford = state.points >= SHURIKEN_COST_MP;
@@ -26032,7 +26074,7 @@
         return '<div class="gift-row shop-festival-row"><div class="gift-info"><span class="gift-label">' + f.emoji + ' ' + f.label + '（HPを' + f.hpGain + '増やす）<span class="shop-sale-badge">今日限り</span></span><span class="gift-cost">' + f.costMp + 'MP</span></div>' + actionHtml + '</div>';
       }).join('');
     }
-    els.shopList.innerHTML = halloweenShopRowHtml_() + festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = halloweenShopRowHtml_() + festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + dragonSwordRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -26068,6 +26110,10 @@
     if (seimeiMizuBtn) seimeiMizuBtn.addEventListener('click', function () { handleBuySeimeiMizuClick(seimeiMizuBtn); });
     var speedSeedBtn = document.getElementById('buySpeedSeedBtn');
     if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
+    var dsBuyBtn = document.getElementById('buyDragonSwordBtn');
+    if (dsBuyBtn) dsBuyBtn.addEventListener('click', function () { dragonSwordShop_(dsBuyBtn, 'buy'); });
+    var dsSellBtn = document.getElementById('sellDragonSwordBtn');
+    if (dsSellBtn) dsSellBtn.addEventListener('click', function () { dragonSwordShop_(dsSellBtn, 'sell'); });
     var shurikenBuyBtn = document.getElementById('buyShurikenBtn');
     if (shurikenBuyBtn) shurikenBuyBtn.addEventListener('click', function () { handleBuyShurikenClick(shurikenBuyBtn); });
     var ironWallBtn = document.getElementById('buyIronWallBtn');
@@ -26641,6 +26687,32 @@
     });
   }
 
+  // ⚔️ドラゴンソードの購入・売却(サーバーで本数とMPを変える)。売るときは、先に今の本数をサーバーに送ってから売る。
+  function dragonSwordShop_(btn, mode) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    var buy = mode === 'buy';
+    if (!window.confirm(buy ? 'ドラゴンソードを購入します（' + DRAGON_SWORD_COST_MP_ + 'MP）。ボス戦で使うと1撃で' + DRAGON_SWORD_DAMAGE_ + 'ダメージ（1回で壊れる）。よろしいですか？' : 'ドラゴンソードを1本売ります（+' + DRAGON_SWORD_SELL_MP_ + 'MP）。よろしいですか？')) return;
+    btn.disabled = true;
+    var pre = buy ? Promise.resolve() : apiPost('syncPoints', buildProgressSyncPayload(session.id)).then(applySyncedPoints_).catch(function () { });
+    pre.then(function () { return apiPost(buy ? 'buyDragonSword' : 'sellDragonSword', { id: session.id }); }).then(function (res) {
+      if (!res || !res.ok) {
+        window.alert(res && res.error === 'insufficient_points' ? 'MPが不足しています。' : res && res.error === 'no_item' ? 'ドラゴンソードを持っていません。' : (buy ? '購入' : '売却') + 'に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+        return;
+      }
+      state.points = res.remainingPoints;
+      state.dragonSwordCount = res.count;
+      saveGameState(state);
+      updateGameHud();
+      renderShopList();
+      renderItems();
+      window.alert(buy ? '⚔️ ドラゴンソードを手に入れた！（所持数: ' + res.count + '本）' : '⚔️ ドラゴンソードを売った！+' + DRAGON_SWORD_SELL_MP_ + 'MP（残り' + res.count + '本）');
+    }).catch(function () {
+      window.alert('通信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+    });
+  }
   function handleBuyShurikenClick(btn) {
     var session = loadSession();
     if (!session || !session.id) return;
@@ -28656,6 +28728,51 @@
     els.feedback.classList.remove(hit ? 'incorrect' : 'correct');
     els.feedback.classList.add(hit ? 'correct' : 'incorrect');
   }
+
+  // 🐉ゼロドラゴン：戦うか逃げるかをまだ選んでいない
+  function zeroDragonChoicePending_() {
+    return state.subject !== 'science' && state.rareType === 'zerodragon' && !state.zeroDragonFight && !state.worldBossActiveStage && !state.fujiActive && !state.fujiDescentActive && !state.ohachiActive;
+  }
+  function zeroDragonChoose_(fight) {
+    if (!zeroDragonChoicePending_()) return;
+    var session = loadSession();
+    if (fight) {
+      state.zeroDragonFight = true;
+      els.feedback.innerHTML = '<span class="fb-result">⚔️ ゼロドラゴンと戦う！15問連続正解でたおせる。まちがえるとHP-' + ZERODRAGON_HP_PENALTY_ + '…！</span>';
+    } else {
+      if (!window.confirm('ゼロドラゴンから逃げますか？逃げるとHPが' + ZERODRAGON_HP_PENALTY_ + '減ります（' + ZERODRAGON_HP_PENALTY_ + '以下なら0になります）。今のHP ' + (Number(state.hp) || 0))) return;
+      state.hp = Math.max(0, (Number(state.hp) || 0) - ZERODRAGON_HP_PENALTY_);
+      state.rareType = null;
+      state.streak = 0;
+      state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
+      els.feedback.innerHTML = '<span class="fb-result">🏃💨 ゼロドラゴンから逃げた！HPが' + ZERODRAGON_HP_PENALTY_ + '減った…（今のHP ' + state.hp + '）</span>';
+    }
+    saveGameState(state);
+    if (session && session.id) syncPointsNow_(session.id);
+    updateGameHud();
+  }
+  (function () {
+    var box = document.getElementById('zeroDragonChoice');
+    if (box) box.addEventListener('click', function (e) { var b = e.target.closest('[data-zd]'); if (b) zeroDragonChoose_(b.getAttribute('data-zd') === 'fight'); });
+  })();
+  // ⚔️ドラゴンソード：ボス戦で使うと、その場でボスに100ダメージ(必ず当たる)。1回で壊れる。
+  function useDragonSword_() {
+    if (!state.worldBossActiveStage) return;
+    if ((Number(state.dragonSwordCount) || 0) <= 0) return;
+    if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
+    if (!window.confirm('ドラゴンソードを使いますか？ボスに' + DRAGON_SWORD_DAMAGE_ + 'ダメージ！使うと壊れます。（残り' + state.dragonSwordCount + '本）')) return;
+    state.dragonSwordCount = (Number(state.dragonSwordCount) || 0) - 1;
+    state.worldBossDamage = (Number(state.worldBossDamage) || 0) + DRAGON_SWORD_DAMAGE_;
+    saveGameState(state);
+    var session = loadSession();
+    if (session && session.id) syncPointsNow_(session.id);
+    updateGameHud();
+    if (els.worldPanel && !els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
+    els.feedback.innerHTML = '<span class="fb-result">⚔️🐉 ドラゴンソードの一撃！ボスに' + DRAGON_SWORD_DAMAGE_ + 'ダメージ！剣は砕けた…（残り' + state.dragonSwordCount + '本）</span>';
+    els.feedback.classList.remove('incorrect');
+    els.feedback.classList.add('correct');
+  }
+  (function () { var b = document.getElementById('dragonSwordBtn'); if (b) b.addEventListener('click', useDragonSword_); })();
 
   // 賢さの種：購入不可(月間いいねランキング上位3名だけへの秘密の配布品)。
   // 1個につき「食べる」でHP+1000、または「売る」で1000MPに変えられる
@@ -35215,6 +35332,7 @@
       if (!b || !isAdminSession_()) return;
       state.rareType = b.getAttribute('data-rp');
       state.streak = 0;
+      state.zeroDragonFight = false;
       saveGameState(state);
       updateGameHud();
     });
