@@ -34420,8 +34420,8 @@
      紙の「月1アンケート」(テストの進み具合・目標・授業・相談したいこと・頑張っていること・不安度・面談)を
      アプリにしたもの＋満足度・改善点。生徒本人か保護者が、生徒のアカウントで答える。
      答えられるのは毎月1回だけで、答えると+50MP。答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
-     今は00001だけに表示(SURVEY_OPEN_ALL_をtrueにすると全員。survey.js側も揃えること)。 */
-  var SURVEY_OPEN_ALL_ = false;
+     2026-11-11 全員に公開(SURVEY_OPEN_ALL_=true。falseに戻すと00001だけ。survey.js側も揃えること)。 */
+  var SURVEY_OPEN_ALL_ = true;
   var surveySat_ = { satClass: 0, satOverall: 0 };
   function surveyVisible_() { return isAdminSession_() || SURVEY_OPEN_ALL_; }
   function renderSurveyStars_() {
