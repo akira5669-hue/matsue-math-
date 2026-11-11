@@ -35981,7 +35981,7 @@
   }
   // 🛸UFOキャッチャーガチャ(ドラゴン専用、2026-11-11〜、lib/handlers/zeroDragon.js)：ゼロドラゴンを倒すたびに1回。
   // 左右に動くUFOを魔法の書の真上で止めるとキャッチ。どの書かはサーバーで決め、冊数は端末で+1して同期で保存する。
-  var UFO_HIT_RANGE_ = 7; // UFOと書の中心のずれ(枠の幅の%)がこれ以内ならキャッチ
+  var UFO_HIT_RANGE_ = 3.5; // UFOと書の中心のずれ(枠の幅の%)がこれ以内ならキャッチ(2026-11-11 先生の指示で、大きさ半分・速さ2倍にしてむずかしく。7→3.5)
   var ufo_ = { left: 0, running: false, busy: false, x: 50, dir: 1, prizeX: 50, raf: 0, last: 0 };
   function ufoRender_() {
     var card = document.getElementById('ufoCard'), btn = document.getElementById('ufoBtn');
@@ -36006,7 +36006,7 @@
     if (!ufo_.running) return;
     var dt = ufo_.last ? Math.min(50, t - ufo_.last) : 16;
     ufo_.last = t;
-    ufo_.x += ufo_.dir * dt * 0.09; // 1秒で枠の約90%動く
+    ufo_.x += ufo_.dir * dt * 0.18; // 1秒で枠の約180%動く(前の2倍)
     if (ufo_.x > 92) { ufo_.x = 92; ufo_.dir = -1; }
     if (ufo_.x < 8) { ufo_.x = 8; ufo_.dir = 1; }
     ufoPlace_();

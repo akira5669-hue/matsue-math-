@@ -2789,14 +2789,14 @@ body.notices-folded .world-launch-banner { display: none !important; }
 .ufo-card[hidden] { display: none; }
 .ufo-box { position: relative; height: 180px; border: 2px solid #fca5a5; border-radius: 12px; background: linear-gradient(180deg, #1e1b4b, #4c1d95); overflow: hidden; }
 /* アームはワイヤー(ufo-cable)がのびて下りる。is-openで手が開き、外すと閉じる */
-.ufo-claw { position: absolute; top: 0; left: 50%; width: 64px; margin-left: -32px; display: flex; flex-direction: column; align-items: center; }
-.ufo-cable { width: 3px; height: 8px; background: #cbd5e1; transition: height .6s ease-in-out; }
-.ufo-claw.is-down .ufo-cable { height: 84px; }
-.ufo-head { width: 64px; height: 72px; overflow: visible; }
+.ufo-claw { position: absolute; top: 0; left: 50%; width: 32px; margin-left: -16px; display: flex; flex-direction: column; align-items: center; }
+.ufo-cable { width: 2px; height: 8px; background: #cbd5e1; transition: height .6s ease-in-out; }
+.ufo-claw.is-down .ufo-cable { height: 128px; }
+.ufo-head { width: 32px; height: 36px; overflow: visible; }
 .ufo-arm-l, .ufo-arm-r { transition: transform .3s ease; transform-box: view-box; }
 .ufo-arm-l { transform-origin: 16px 36px; transform: rotate(-6deg); }
 .ufo-arm-r { transform-origin: 48px 36px; transform: rotate(6deg); }
 .ufo-claw.is-open .ufo-arm-l { transform: rotate(28deg); }
 .ufo-claw.is-open .ufo-arm-r { transform: rotate(-28deg); }
-.ufo-prize { position: absolute; bottom: 4px; left: 50%; width: 40px; margin-left: -20px; text-align: center; font-size: 30px; line-height: 1; transition: bottom .6s ease-in-out; }
-.ufo-prize.is-caught { bottom: 90px; }
+.ufo-prize { position: absolute; bottom: 4px; left: 50%; width: 20px; margin-left: -10px; text-align: center; font-size: 15px; line-height: 1; transition: bottom .6s ease-in-out; }
+.ufo-prize.is-caught { bottom: 131px; }
