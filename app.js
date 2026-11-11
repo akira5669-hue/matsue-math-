@@ -22244,6 +22244,9 @@
     els.statExpSub.textContent = `算数・数学の経験値${state.exp}、理科の経験値${state.scienceExp}（Lv.${state.level}）`;
     els.statLevel.textContent = state.level;
     els.expBarInner.style.width = `${(((state.exp + state.scienceExp) % EXP_PER_LEVEL) / EXP_PER_LEVEL) * 100}%`;
+    // バーの下の「経験値」に数も出す(算数・数学+理科の合計と、次のレベルまであと何か)(バグ報告#10)
+    var expLb = document.getElementById('expLabel');
+    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (state.level < MAX_LEVEL ? '\n次のLvまであと' + (EXP_PER_LEVEL - expSum % EXP_PER_LEVEL) : ''); }
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
@@ -23636,7 +23639,8 @@
     '🐞【バグを直しました③】わざと2問まちがえるだけで「天使の涙」が何度でも出せたり、最後の1問だけ中3の単元にすると虹色の宝箱になったりするバグがありました。11月10日に直しました。天使の涙は1日1回まで、宝箱の色は連続正解の中でいちばん低い学年の単元で決まります。報告してくれた人、ありがとう！',
     '🐞【バグを直しました④】計算で出た「天使の涙」のセリフが理科の画面に出てしまうバグと、学習記録でまだゲットしていないレアキャラの絵を長押しすると大きく見えてしまうバグを直しました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑤】スットボケAKRの問題に答えたあと、もう一度「スットボケAKR出現！」と出ていたのを直しました。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑥】計算パズル「かんたん3×3」で、5秒より速くクリアするとランキングに出なかったのを直しました（2秒より速い記録だけ入らないようにしました）。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑥】計算パズル「かんたん3×3」で、5秒より速くクリアするとランキングに出なかったのを直しました（2秒より速い記録だけ入らないようにしました）。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑦】計算の画面で、レベルの下の「経験値」に数が出ていなかったのを直しました。今は経験値の合計と、次のレベルまであと何かが出ます。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');

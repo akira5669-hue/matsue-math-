@@ -273,6 +273,7 @@ h1 {
   transition: width 0.4s ease;
 }
 .exp-label {
+  white-space: pre-line;
   font-size: 10px;
   font-weight: 700;
   color: var(--c-ink-soft);
