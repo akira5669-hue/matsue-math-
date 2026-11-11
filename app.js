@@ -19789,6 +19789,24 @@
     // 漁師AKRは他のレアキャラと違い、間違えても逃げない(FLEEING_RARE_TYPES_に
     // 含めていない)。その代わり不正解のたびにHPを2つ奪ってくる特別なレアキャラ
     // (HP処理はhandleAnswer内でstate.rareType==='gyoshi'を見て行う)。
+    // 新しいレアキャラ(2026-11-11〜、今は00001だけのプレビュー。月1アンケートの「レアモンスターを増やしてほしい」から)。
+    // 絵は仮(images/*.svg)。先生の絵ができたら img を差しかえる。
+    kotsukotsugame: {
+      id: 'kotsukotsugame', name: 'コツコツガメ', img: 'images/kotsukotsugame.svg',
+      lines: {
+        appear: 'のんびり行こうよ〜。ぼくは逃げないから、10問コツコツ正解してね。',
+        defeat: 'ゆっくりでも、毎日つづけた人がいちばん遠くまで行けるんだよ。',
+        miss: 'あわてない、あわてない。1問ずつ、ていねいにね。',
+      },
+    },
+    zerodragon: {
+      id: 'zerodragon', name: 'ゼロドラゴン', img: 'images/zerodragon.svg',
+      lines: {
+        appear: 'ガオー！われはゼロドラゴン！15問連続で正解できなければ、たおせぬぞ！',
+        defeat: 'ぐぬぬ…ミス「ゼロ」で15問とは…おぬし、なかなかやるな！',
+        miss: 'ガハハ！連続正解は「ゼロ」からやり直しだ！',
+      },
+    },
     gyoshi: {
       id: 'gyoshi', name: '漁師AKR', img: 'images/gyoshi_akr.jpg',
       lines: {
@@ -20067,6 +20085,15 @@
   const RARE_CHANCE_GYOSHI = (1 / 20) * RARE_SCALE;
   // パーセント君：固定0.01%(他のレアキャラと違いRARE_SCALEでスケールしない絶対値)。
   const RARE_CHANCE_PERCENTKUN = 0.0001;
+  // 新しいレアキャラ(今は00001だけのプレビュー)。SHOW_NEW_RARE_ALL_をtrueにすると全員に出る。
+  const SHOW_NEW_RARE_ALL_ = false;
+  const NEW_RARE_PREVIEW_IDS_ = ['kotsukotsugame', 'zerodragon'];
+  function newRareVisible_() { return SHOW_NEW_RARE_ALL_ || isAdminSession_(); }
+  const RARE_CHANCE_KOTSUKOTSUGAME = (1 / 20) * RARE_SCALE;
+  const RARE_CHANCE_ZERODRAGON = (1 / 60) * RARE_SCALE;
+  const KOTSUKOTSUGAME_BONUS_MP = 15;
+  const ZERODRAGON_BONUS_MP = 40;
+  const ZERODRAGON_REQUIRED_STREAK = 15;
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -20443,6 +20470,8 @@
       ['superakirametal', superAkirametalChance_()],
       ['percentkun', RARE_CHANCE_PERCENTKUN],
       ['marubatsukun', maruBatsuKunChance_()],
+      ['kotsukotsugame', newRareVisible_() ? RARE_CHANCE_KOTSUKOTSUGAME : 0],
+      ['zerodragon', newRareVisible_() ? RARE_CHANCE_ZERODRAGON : 0],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -22127,6 +22156,8 @@
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
+    // 新レアキャラのテストボタン(00001だけ)
+    var rpAdm = document.getElementById('rarePreviewAdmin'); if (rpAdm) rpAdm.hidden = !isAdminSession_();
     // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)
     var skTg = document.getElementById('shikokuToggle'); if (skTg) { skTg.hidden = !isAdminSession_(); if (skTg.hidden) { var skPn = document.getElementById('shikokuPanel'); if (skPn) skPn.setAttribute('hidden', ''); } }
     // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
@@ -22147,7 +22178,7 @@
     const requiredStreak = isFuji ? fujiCurrentLeg_().streak
       : isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak
       : isOhachi ? OHACHI_REQUIRED_STREAK_
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'zerodragon' ? ZERODRAGON_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
     const hp = isFuji ? Math.max(0, fujiCurrentLeg_().streak - (Number(state.fujiLegStreak) || 0))
       : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
       : isOhachi ? Math.max(0, OHACHI_REQUIRED_STREAK_ - (Number(state.ohachiStreak) || 0))
@@ -22884,7 +22915,7 @@
       : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
       : state.ohachiActive ? OHACHI_REQUIRED_STREAK_
       : state.ohachiEasyActive ? OHACHI_EASY_REQUIRED_CORRECT_
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'zerodragon' ? ZERODRAGON_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
     if (isCorrect && state.ohachiActive && (Number(state.ohachiStreak) || 0) >= OHACHI_REQUIRED_STREAK_) {
       // お鉢巡り達成：MP/経験値の通常報酬ではなく、かかった時間に応じたHP
       // ボーナスの特別演出。
@@ -22915,7 +22946,7 @@
       const pureStreak = state.streakRewardClass === streakRewardClass_(catId);
       const wordReward = isWordProblem && pureStreak;
       const wasRareType = state.rareType;
-      const rareMpBonus = wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
+      const rareMpBonus = wasRareType === 'kotsukotsugame' ? KOTSUKOTSUGAME_BONUS_MP : wasRareType === 'zerodragon' ? ZERODRAGON_BONUS_MP : wasRareType === 'zombie' ? RARE_BONUS_MP : wasRareType === 'smile' ? SMILE_BONUS_MP : wasRareType === 'warisu' ? WARISU_BONUS_MP : wasRareType === 'mistakeking' ? MISTAKEKING_BONUS_MP : wasRareType === 'sansudevil' ? SANSUDEVIL_BONUS_MP : wasRareType === 'angelTears' ? ANGELTEARS_BONUS_MP : wasRareType === 'inuda' ? INUDA_BONUS_MP : wasRareType === 'soubusen' ? SOUBUSEN_BONUS_MP : wasRareType === 'nattoman' ? NATTOMAN_BONUS_MP : wasRareType === 'fugoupakkun' ? FUGOUPAKKUN_BONUS_MP : wasRareType === 'gyoshi' ? GYOSHI_BONUS_MP : wasRareType === 'percentkun' ? PERCENTKUN_BONUS_MP : 0;
       // ごーまじは20問連続正解という高いハードルの代わりに、通常の(5 or 10)+ボーナス
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
@@ -23001,7 +23032,7 @@
       }
 
       let collectionGainedHtml = '';
-      if (wasRareType && RARE_COLLECTIBLE_IDS.indexOf(wasRareType) !== -1) {
+      if (wasRareType && (RARE_COLLECTIBLE_IDS.indexOf(wasRareType) !== -1 || NEW_RARE_PREVIEW_IDS_.indexOf(wasRareType) !== -1)) {
         state.rareDefeats[wasRareType] = (state.rareDefeats[wasRareType] || 0) + 1;
         if (state.rareDefeats[wasRareType] >= RARE_COLLECTION_THRESHOLD && state.rareCollected.indexOf(wasRareType) === -1) {
           state.rareCollected.push(wasRareType);
@@ -23133,7 +23164,9 @@
       const lvlMsg = leveledUp ? `<span class="level-up-badge">LEVEL UP! Lv.${state.level}</span>` : '';
       const eIcon = (e) => e.img ? `<img src="${e.img}" class="enemy-char-img-sm" alt="">` : e.emoji;
       const bonusTag = bonusEligible ? '（学年より上の単元に挑戦！）' : '';
-      const rareTag = wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
+      const rareTag = wasRareType === 'kotsukotsugame' ? ('<span class="rare-badge">🐢レア撃破！+' + KOTSUKOTSUGAME_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'zerodragon' ? ('<span class="rare-badge">🐉激レア撃破！+' + ZERODRAGON_BONUS_MP + 'MP✨</span>')
+        : wasRareType === 'zombie' ? ('<span class="rare-badge">✨レア撃破！+' + RARE_BONUS_MP + 'MP✨</span>')
         : wasRareType === 'santa' ? '<span class="rare-badge">🎅レア撃破！🎅</span>'
         : wasRareType === 'thinker' ? '<span class="rare-badge">🤔レベル100記念撃破！🤔</span>'
         : wasRareType === 'smile' ? ('<span class="rare-badge">😊レア撃破！+' + SMILE_BONUS_MP + 'MP✨</span>')
@@ -25078,7 +25111,7 @@
     return '';
   }
   function renderRareCollection() {
-    const ids = RARE_COLLECTIBLE_IDS.concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
+    const ids = RARE_COLLECTIBLE_IDS.concat(newRareVisible_() ? NEW_RARE_PREVIEW_IDS_ : []).concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
     els.historyRareCollection.innerHTML = ids.map(function (id) {
       const rt = RARE_TYPES[id];
       const collected = state.rareCollected.indexOf(id) !== -1;
@@ -35140,6 +35173,20 @@
     tg.parentNode.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b && b !== tg) panel.setAttribute('hidden', '');
+    });
+  })();
+
+  // 新レアキャラのテストボタン(00001だけ)：押すと、今の敵をそのレアキャラにする
+  (function () {
+    var box = document.getElementById('rarePreviewAdmin');
+    if (!box) return;
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-rp]');
+      if (!b || !isAdminSession_()) return;
+      state.rareType = b.getAttribute('data-rp');
+      state.streak = 0;
+      saveGameState(state);
+      updateGameHud();
     });
   })();
 
