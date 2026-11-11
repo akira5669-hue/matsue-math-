@@ -36014,7 +36014,7 @@
   }
   function ufoStart_() {
     var claw = document.getElementById('ufoClaw'), prize = document.getElementById('ufoPrize'), out = document.getElementById('ufoOut');
-    if (claw) claw.classList.remove('is-down');
+    if (claw) claw.classList.remove('is-down', 'is-open');
     if (prize) { prize.classList.remove('is-caught'); prize.textContent = '📕'; }
     if (out) out.innerHTML = '';
     ufo_.prizeX = 15 + Math.random() * 70;
@@ -36032,7 +36032,11 @@
     ufoRender_();
     var caught = Math.abs(ufo_.x - ufo_.prizeX) <= UFO_HIT_RANGE_;
     var claw = document.getElementById('ufoClaw'), prize = document.getElementById('ufoPrize'), out = document.getElementById('ufoOut');
-    if (claw) claw.classList.add('is-down');
+    // 手を開く → 下りる → 手を閉じる → 上がる(つかめたら書もいっしょに上がる)
+    if (claw) claw.classList.add('is-open');
+    setTimeout(function () { if (claw) claw.classList.add('is-down'); }, 300);
+    setTimeout(function () { if (claw) claw.classList.remove('is-open'); }, 950);
+    setTimeout(function () { if (claw) claw.classList.remove('is-down'); if (caught && prize) prize.classList.add('is-caught'); }, 1300);
     var req = apiPost('zeroDragonUfoPlay', { id: session.id, caught: caught });
     setTimeout(function () {
       req.then(function (res) {
@@ -36040,7 +36044,7 @@
         if (!res || !res.ok) {
           if (out) out.innerHTML = '<div class="test-photo-hint">' + (res && res.error === 'no_play' ? '今は遊べる回数がありません。ゼロドラゴンを倒すと1回できるよ！' : '通信に失敗しました。もう一度お試しください。') + '</div>';
           if (res && res.error === 'no_play') ufo_.left = 0;
-          if (claw) claw.classList.remove('is-down');
+          if (prize) prize.classList.remove('is-caught');
           ufoRender_();
           return;
         }
@@ -36051,7 +36055,7 @@
           state.spellbooks[book.id] = (Number(state.spellbooks[book.id]) || 0) + 1;
           saveGameState(state);
           syncPointsNow_(session.id);
-          if (prize) { prize.textContent = book.emoji; prize.classList.add('is-caught'); }
+          if (prize) prize.textContent = book.emoji;
           if (out) out.innerHTML = '<div class="gacha-mp">🎉 キャッチ成功！</div><div class="gacha-line">' + book.emoji + ' 魔法の書「<b>' + book.label + '</b>」を手に入れた！（' + book.target + 'で' + book.dmg + 'ダメージ）</div>';
         } else {
           if (out) out.innerHTML = '<div class="gacha-line">💨 おしい！つかめなかった…' + (ufo_.left > 0 ? 'もう1回できるよ！' : '') + '</div>';
@@ -36062,7 +36066,7 @@
         if (out) out.innerHTML = '<div class="test-photo-hint">通信に失敗しました。もう一度お試しください。</div>';
         ufoRender_();
       });
-    }, 700);
+    }, 2000);
   }
   (function () {
     var btn = document.getElementById('ufoBtn');
