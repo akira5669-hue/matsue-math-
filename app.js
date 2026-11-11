@@ -19790,9 +19790,9 @@
     // 含めていない)。その代わり不正解のたびにHPを2つ奪ってくる特別なレアキャラ
     // (HP処理はhandleAnswer内でstate.rareType==='gyoshi'を見て行う)。
     // 新しいレアキャラ(2026-11-11〜、今は00001だけのプレビュー。月1アンケートの「レアモンスターを増やしてほしい」から)。
-    // 絵は仮(images/*.svg)。先生の絵ができたら img を差しかえる。
+    // 絵は先生のイラスト(2026-11-11)。
     kotsukotsugame: {
-      id: 'kotsukotsugame', name: 'コツコツガメ', img: 'images/kotsukotsugame.svg',
+      id: 'kotsukotsugame', name: 'コツコツガメ', img: 'images/kotsukotsugame.jpg',
       lines: {
         appear: 'のんびり行こうよ〜。ぼくは逃げないから、10問コツコツ正解してね。',
         defeat: 'ゆっくりでも、毎日つづけた人がいちばん遠くまで行けるんだよ。',
@@ -19800,7 +19800,7 @@
       },
     },
     zerodragon: {
-      id: 'zerodragon', name: 'ゼロドラゴン', img: 'images/zerodragon.svg',
+      id: 'zerodragon', name: 'ゼロドラゴン', img: 'images/zerodragon.jpg',
       lines: {
         appear: 'ガオー！われはゼロドラゴン！15問連続で正解できなければ、たおせぬぞ！',
         defeat: 'ぐぬぬ…ミス「ゼロ」で15問とは…おぬし、なかなかやるな！',
