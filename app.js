@@ -35931,7 +35931,7 @@
     return (d[0] ? d[0] + '割' : '') + (d[1] ? d[1] + '分' : '') + (d[2] ? d[2] + '厘' : '');
   }
   function bbAvgText_(a) { return '.' + ('00' + a).slice(-3); }
-  function bbQuizInfo_(a) {
+  function bbQuizInfo_(a, rev) {
     var d = [Math.floor(a / 100), Math.floor(a / 10) % 10, a % 10];
     var ans = bbAvgReading_(a);
     // まちがえやすいもの：位を1つずらす(3分4厘5毛)、分と厘の数字を入れかえる、0の位を飛ばして読む(.305→3割5分)
@@ -35948,14 +35948,34 @@
     // 並びは毎回同じになるよう、打率の数で決める
     var rot = a % 4;
     choices = choices.slice(rot).concat(choices.slice(0, rot));
+    if (rev) {
+      // 逆向き(何割何分何厘→小数)。答えは「0.345」「0.34」「0.305」のように、終わりの0は書かない
+      var dec = function (n) { return String(n / 1000); };
+      var ansD = dec(a), cd = [];
+      cd.push(String(a / 10000));
+      if (d[1] !== d[2]) cd.push(dec(d[0] * 100 + d[2] * 10 + d[1]));
+      if (d[1] === 0) cd.push(dec(d[0] * 100 + d[2] * 10));
+      if (d[2] === 0) cd.push(dec(d[0] * 100 + d[1]));
+      cd.push(String(a / 100));
+      cd.push(dec(((d[0] % 3) + 1) * 100 + d[1] * 10 + d[2]));
+      var chD = [ansD];
+      cd.forEach(function (c) { if (c && chD.length < 4 && chD.indexOf(c) === -1) chD.push(c); });
+      for (var k2 = 1; chD.length < 4; k2++) { var c3 = dec((a + 37 * k2) % 300 + 100); if (chD.indexOf(c3) === -1) chD.push(c3); }
+      var rot2 = a % 4;
+      chD = chD.slice(rot2).concat(chD.slice(0, rot2));
+      var exD = '割は小数第1位、分は第2位、厘は第3位。' + ans + ' → ' + d[0] + '割・' + d[1] + '分・' + d[2] + '厘' + (d[1] === 0 || d[2] === 0 ? '（書いていない位は0）' : '')
+        + ' → 0.' + d[0] + d[1] + d[2] + ' → <b>' + ansD + '</b>' + (d[2] === 0 ? '（終わりの0は書かなくてよい）' : '') + '。';
+      return { ans: ansD, choices: chD, ex: exD, reading: ans };
+    }
     var ex = '打率は「ヒットの数 ÷ 打数」。' + bbAvgText_(a) + '（0.' + ('00' + a).slice(-3) + '）は、小数第1位が<b>割</b>、第2位が<b>分</b>、第3位が<b>厘</b>。'
       + '0.' + d[0] + d[1] + d[2] + ' → ' + d[0] + '割・' + d[1] + '分・' + d[2] + '厘' + (d[1] === 0 || d[2] === 0 ? '（0の位は読まない）' : '') + ' → <b>' + ans + '</b>。';
     return { ans: ans, choices: choices, ex: ex };
   }
   function bbQuizHtml_(r, last) {
-    var a = Number(r.avg) || 0, qa = r.bq, info = bbQuizInfo_(a);
+    var a = Number(r.avg) || 0, qa = r.bq, info = bbQuizInfo_(a, !!r.bqRev);
     var who = last ? bbBatter_(last.ab) : bbBatter_(r.ab);
-    var h = '<div class="dq-box"><div class="dq-q">🧠 打率クイズ（正解で+1MP）<br>' + escHtml(who) + 'の今シーズンの打率は <b class="bq-avg">' + bbAvgText_(a) + '</b>（0.' + ('00' + a).slice(-3) + '）。<br><b>何割何分何厘？</b></div><div class="dq-choices bq-choices">';
+    var h = '<div class="dq-box"><div class="dq-q">🧠 打率クイズ（正解で+1MP）<br>' + escHtml(who) + 'の今シーズンの打率は '
+      + (r.bqRev ? '<b class="bq-avg">' + info.reading + '</b>。<br><b>小数で表すと？</b>' : '<b class="bq-avg">' + bbAvgText_(a) + '</b>（0.' + ('00' + a).slice(-3) + '）。<br><b>何割何分何厘？</b>') + '</div><div class="dq-choices bq-choices">';
     info.choices.forEach(function (c) {
       var cls = 'dq-btn bq-btn' + (qa ? (c === info.ans ? ' dq-ok' : c === qa.a ? ' dq-ng' : '') : '');
       h += '<button type="button" class="' + cls + '" data-bq="' + c + '"' + (qa ? ' disabled' : '') + '>' + c + '</button>';
