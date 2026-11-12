@@ -21965,7 +21965,8 @@
 
     const session = loadSession();
     // sci:true … 理科の正解数を数える(野球ガチャの条件、2026-11-10〜)
-    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: true });
+    // 野球ガチャの条件は、自分の学年以上の理科の正解だけ数える(2026-11-12〜 先生の指示)
+    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: isAtOrAboveOwnGrade(catId, session.grade) || undefined });
     if (isCorrect) shikokuOnCorrect_(); // 🙏四国88ヶ所めぐり(プレビュー)
     // 都道府県制覇（県庁所在地クイズ）イージーモードは、理科を解いても数える(2026-11-10〜)。
     // 10問解くたびに、次の3問(理科モードのまま)が県庁所在地クイズになる。
@@ -30108,7 +30109,7 @@
       else if (b === btn) b.classList.add('is-incorrect');
     });
     var session = loadSession();
-    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: isScience || undefined });
+    if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: (isScience && isAtOrAboveOwnGrade(catId, session.grade)) || undefined });
     if (!state.catStats[catId]) state.catStats[catId] = { total: 0, correct: 0 };
     state.catStats[catId].total++;
     // 特訓部屋で解いた問題も、単元の「1日40問でコンプリート」に数える(2026-11-10 バグ報告#1：
@@ -36091,7 +36092,7 @@
     // 野球ガチャは、今日🔬理科をbbUnlock問正解するとできる(2026-11-10〜、先生は条件なし)
     if (!(t && t.result) && !isAdminSession_() && gacha_.sciCorrect < gacha_.bbUnlock) {
       out.innerHTML = bbSceneHtml_(bbNewGame_(), 'bb-ready', true);
-      ch.innerHTML = '<button type="button" class="primary-btn gacha-btn" disabled>🔒 理科をあと' + (gacha_.bbUnlock - gacha_.sciCorrect) + '問正解</button>';
+      ch.innerHTML = '<button type="button" class="primary-btn gacha-btn" disabled>🔒 学年以上の理科をあと' + (gacha_.bbUnlock - gacha_.sciCorrect) + '問正解</button>';
       return;
     }
     var st = t && t.result ? t.result : bbNewGame_();
@@ -36134,7 +36135,7 @@
       if (res && res.ok && res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
       if (res && res.ok && res.result && res.last) { gacha_.today.baseball = { result: res.result, mp: res.mp }; play(res.last, res.result); }
       else if (res && res.prev && res.prev.result) { gacha_.today.baseball = res.prev; done(''); }
-      else if (res && res.error === 'bb_locked') { gacha_.sciCorrect = Number(res.sciCorrect) || 0; done('🔒 🔬理科を今日' + (Number(res.bbUnlock) || 10) + '問正解するとできるよ。'); }
+      else if (res && res.error === 'bb_locked') { gacha_.sciCorrect = Number(res.sciCorrect) || 0; done('🔒 🔬自分の学年以上の理科を今日' + (Number(res.bbUnlock) || 10) + '問正解するとできるよ。'); }
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
