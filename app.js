@@ -23285,7 +23285,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}` + necklaceOfferHtml_();
     }
 
     let missionHtml = '';
@@ -24556,7 +24556,7 @@
       var sv = Number(sTreasureItems[k]) || 0;
       if (sv > (Number(state.treasureItems[k]) || 0)) { state.treasureItems[k] = sv; changed = true; }
     });
-    GEM_ITEM_ALL_KEYS_.forEach(function (k) {
+    GEM_ITEM_ALL_KEYS_.concat(['goldNecklace']).forEach(function (k) {
       var sv = Number(sGemItems[k]) || 0;
       if (sv > (Number(state.gemItems[k]) || 0)) { state.gemItems[k] = sv; changed = true; }
     });
@@ -26175,7 +26175,7 @@
         return '<div class="gift-row shop-festival-row"><div class="gift-info"><span class="gift-label">' + f.emoji + ' ' + f.label + '（HPを' + f.hpGain + '増やす）<span class="shop-sale-badge">今日限り</span></span><span class="gift-cost">' + f.costMp + 'MP</span></div>' + actionHtml + '</div>';
       }).join('');
     }
-    els.shopList.innerHTML = halloweenShopRowHtml_() + festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + dragonSwordRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + diamondRingRowHtml + spellbookRowsHtml;
+    els.shopList.innerHTML = halloweenShopRowHtml_() + festivalRowsHtml + prayerRowHtml + vaccineRowHtml + oxygenRowHtml + sharpenRowHtml + onigiriRowHtml + steakRowHtml + herbRowHtml + bakuHerbRowHtml + chouHerbRowHtml + seimeiMizuRowHtml + speedSeedRowHtml + dragonSwordRowHtml + shurikenRowHtml + ironWallRowHtml + steelArmorRowHtml + iceSwordRowHtml + skySpearRowHtml + raidenAxeRowHtml + wisdomSeedRowHtml + wisdomFruitRowHtml + effortSeedRowHtml + treasureRowsHtml + gemRowsHtml + goldNecklaceShopRowHtml_() + diamondRingRowHtml + spellbookRowsHtml;
     els.shopList.querySelectorAll('[data-treasure-buy-key]').forEach(function (btn) {
       btn.addEventListener('click', function () { handleBuyTreasureKeyClick(btn.getAttribute('data-treasure-buy-key'), btn); });
     });
@@ -26213,6 +26213,8 @@
     if (speedSeedBtn) speedSeedBtn.addEventListener('click', function () { handleBuySpeedSeedClick(speedSeedBtn); });
     var dsBuyBtn = document.getElementById('buyDragonSwordBtn');
     if (dsBuyBtn) dsBuyBtn.addEventListener('click', function () { dragonSwordShop_(dsBuyBtn, 'buy'); });
+    var gnSellBtn = document.getElementById('sellGoldNecklaceBtn');
+    if (gnSellBtn) gnSellBtn.addEventListener('click', function () { sellGoldNecklace_(gnSellBtn); });
     var dsSellBtn = document.getElementById('sellDragonSwordBtn');
     if (dsSellBtn) dsSellBtn.addEventListener('click', function () { dragonSwordShop_(dsSellBtn, 'sell'); });
     var shurikenBuyBtn = document.getElementById('buyShurikenBtn');
@@ -26418,6 +26420,90 @@
     }).join('');
     if (!rowsHtml) return '';
     return `<div class="shop-section-title">💎 宝石（宝箱からのごく稀なドロップのみ）</div>` + rowsHtml;
+  }
+
+  // 📿金のネックレス(2026-11-13〜、先生の指示。shop.jsと揃える)：敵をたおしたあと、たまに「あやしい商人」が来て
+  // 「100MPで買いませんか？なんでも屋で売ればきっと500MPで売れますよ」とすすめてくる。
+  // 実際になんでも屋で売れるのは50MPだけ(うまい話には気をつけよう)。個数は gemItems.goldNecklace。
+  // 商人は敵をたおすたびに1/25で来る。1日1回まで(端末・IDごと)。
+  const GOLD_NECKLACE_BUY_MP_ = 100;
+  const GOLD_NECKLACE_SELL_MP_ = 50;
+  const GOLD_NECKLACE_CLAIM_MP_ = 500;
+  const NECKLACE_SELLER_CHANCE_ = 1 / 25;
+  function necklaceOfferHtml_() {
+    var sess = loadSession();
+    if (!sess || !sess.id) return '';
+    var k = 'necklaceSeller_v1_' + sess.id, today = todayKey();
+    try { if (localStorage.getItem(k) === today) return ''; } catch (e) { return ''; }
+    if (Math.random() >= NECKLACE_SELLER_CHANCE_) return '';
+    try { localStorage.setItem(k, today); } catch (e) { }
+    return '<div class="enemy-quote-banner necklace-offer" id="necklaceOffer">🕴️ あやしい商人がやってきた！<br>「この金のネックレス、<b>' + GOLD_NECKLACE_BUY_MP_ + 'MP</b>で買いませんか？<br>なんでも屋で売ると、きっと<b>' + GOLD_NECKLACE_CLAIM_MP_ + 'MP</b>で売れますよ。」📿'
+      + '<div class="necklace-actions"><button type="button" class="gift-redeem-btn" data-necklace="buy">買う</button> <button type="button" class="ghost-btn" data-necklace="no">ことわる</button></div></div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-necklace]');
+    if (!b) return;
+    var box = document.getElementById('necklaceOffer');
+    if (!box) return;
+    var act = b.getAttribute('data-necklace');
+    var actions = box.querySelector('.necklace-actions');
+    if (act === 'buy') {
+      actions.innerHTML = '<div>本当に購入しますか？（' + GOLD_NECKLACE_BUY_MP_ + 'MP）</div><button type="button" class="gift-redeem-btn" data-necklace="yes">はい</button> <button type="button" class="ghost-btn" data-necklace="no">いいえ</button>';
+      return;
+    }
+    if (act === 'no') {
+      actions.innerHTML = '<div>「そうですか…またどうぞ。」商人は去っていった。</div>';
+      return;
+    }
+    if (act !== 'yes') return;
+    var session = loadSession();
+    if (!session || !session.id) return;
+    Array.prototype.forEach.call(actions.querySelectorAll('button'), function (x) { x.disabled = true; });
+    apiPost('syncPoints', buildProgressSyncPayload(session.id)).then(applySyncedPoints_).catch(function () { })
+      .then(function () { return apiPost('buyGoldNecklace', { id: session.id }); }).then(function (res) {
+        if (!res || !res.ok) {
+          actions.innerHTML = '<div>' + (res && res.error === 'insufficient_points' ? 'MPが足りなかった…。「お金がないならしかたないですね。」商人は去っていった。' : '通信に失敗しました。商人は去っていった。') + '</div>';
+          return;
+        }
+        state.points = res.remainingPoints;
+        state.gemItems = res.gemItems;
+        if (typeof res.treasureRev === 'number') state.treasureRev = res.treasureRev;
+        saveGameState(state);
+        updateGameHud();
+        actions.innerHTML = '<div>📿 金のネックレスを買った！（-' + GOLD_NECKLACE_BUY_MP_ + 'MP）「まいどあり〜！」商人は去っていった。<br>なんでも屋で売れるよ。</div>';
+      }).catch(function () {
+        actions.innerHTML = '<div>通信に失敗しました。商人は去っていった。</div>';
+      });
+  });
+  function goldNecklaceShopRowHtml_() {
+    var count = Number((state.gemItems || {}).goldNecklace) || 0;
+    if (count <= 0) return '';
+    return `<div class="gift-row"><span class="shop-item-img shop-item-img-emoji">📿</span><div class="gift-info"><span class="gift-label">📿 金のネックレス（所持: ${count}個）</span><span class="gift-cost">${GOLD_NECKLACE_SELL_MP_}MPで売却</span><span class="shop-item-note">あやしい商人から買ったネックレス</span></div><button type="button" class="gift-redeem-btn" id="sellGoldNecklaceBtn">売却する</button></div>`;
+  }
+  function sellGoldNecklace_(btn) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    if (!window.confirm('金のネックレスを1個売ります。よろしいですか？')) return;
+    btn.disabled = true;
+    apiPost('syncPoints', buildProgressSyncPayload(session.id)).then(applySyncedPoints_).catch(function () { })
+      .then(function () { return apiPost('sellGoldNecklace', { id: session.id }); }).then(function (res) {
+        if (!res || !res.ok) {
+          window.alert(res && res.error === 'no_item' ? '金のネックレスを持っていません。' : '売却に失敗しました。もう一度お試しください。');
+          btn.disabled = false;
+          return;
+        }
+        state.points = res.remainingPoints;
+        state.gemItems = res.gemItems;
+        if (typeof res.treasureRev === 'number') state.treasureRev = res.treasureRev;
+        saveGameState(state);
+        updateGameHud();
+        renderShopList();
+        renderItems();
+        window.alert('なんでも屋「うーん、このネックレスは' + GOLD_NECKLACE_SELL_MP_ + 'MPですね。」\n\n📿 +' + GOLD_NECKLACE_SELL_MP_ + 'MP…。\n「' + GOLD_NECKLACE_CLAIM_MP_ + 'MPで売れる」と言われたのに、' + GOLD_NECKLACE_SELL_MP_ + 'MPにしかならなかった！\n「きっともうかる」といううまい話には気をつけよう。');
+      }).catch(function () {
+        window.alert('通信に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+      });
   }
 
   // ダイヤの指輪：購入不可、謎のおばさんイベント限定の超激レアアイテム。
