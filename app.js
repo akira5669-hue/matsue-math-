@@ -32213,6 +32213,20 @@
   els.avatarToggle.addEventListener('click', toggleAvatar);
   els.worldToggle.addEventListener('click', toggleWorld);
   if (els.fujiToggle) els.fujiToggle.addEventListener('click', toggleFuji);
+  // 🇺🇸アメリカ横断(00001だけのプレビュー)：カードは富士登山の画面の中にあるが、富士登山のボタンは
+  // イベント期間しか出ないので、00001用に専用のボタンを置く(2026-11-13)。押すと富士登山の画面を開いてカードまで動く。
+  (function () {
+    var b = document.getElementById('usaCrossingToggle');
+    if (!b) return;
+    var sync_ = function () { b.hidden = !usaCrossingCardActive_(); };
+    sync_();
+    setInterval(sync_, 3000);
+    b.addEventListener('click', function () {
+      if (els.fujiPanel && els.fujiPanel.hasAttribute('hidden')) toggleFuji();
+      renderUsaCrossingCard_();
+      if (els.usaCrossingCard) setTimeout(function () { els.usaCrossingCard.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+    });
+  })();
   if (els.mangaToggle) els.mangaToggle.addEventListener('click', toggleManga);
   // ---- 計算パズル(KenKen型)の問題づくり ----
   // n×nのマスに1〜nを、たて・よこの列で同じ数が出ないように入れる。太線の囲み(ブロック)ごとに、
