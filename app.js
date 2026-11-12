@@ -35815,7 +35815,7 @@
   // チーム名(2026-11-07先生の指示)：あなたのチーム(青・後攻)と相手(赤・先攻)
   var BB_HOME_TEAM_ = '松江ブルーソックス', BB_AWAY_TEAM_ = '川越レッドヤンキース';
   // 左バッター(2026-11-07先生の指示)。左打席(ホームベースの右側)に立ち、内角・外角の向きも逆になる。
-  var BB_LEFTY_ = { 'イテロー': true, '玉貞治': true };
+  var BB_LEFTY_ = { '大谷笑平': true, 'イテロー': true, '玉貞治': true };
   function bbBatter_(ab) { return BB_BATTERS_[((Number(ab) || 1) - 1) % BB_BATTERS_.length]; }
   var BB_RES_ = {
     single: { t: 'ヒット！', out: false },
