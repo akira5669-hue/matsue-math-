@@ -12212,7 +12212,8 @@
       `${N1}/${L} ${opSym} ${N2}/${L} = ${numAns}/${denAns}`,
       `= ${answer}`,
     ];
-    return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+    const fracQ_ = numAns > denAns && answer.indexOf('/') !== -1 ? question + '（答えは仮分数で）' : question;
+    return { category: 'fracAddSub5', question: fracQ_, questionHtml: stepToHtml(fracQ_), answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   // 帯分数どうしのたし算・ひき算（分母が異なる、繰り上がり・繰り下がりあり、小5）
@@ -12252,6 +12253,8 @@
     }
     const [rn, rd] = reduceFrac(numAns, L);
     const answer = mixedFracStr_(wholeAns, rn, rd);
+    // 答えが帯分数のときは、帯分数で答えると書く(仮分数で答える問題もあるので。バグ報告#23)
+    const mixedQuestion_ = wholeAns > 0 && rn > 0 ? question + '（答えは帯分数で）' : question;
 
     // 誤答候補: 繰り上がり/繰り下がりを忘れた場合、約分し忘れた場合、通分せず分母をそのまま足した場合
     const wrongNoCarry = mixedFracStr_(isAdd ? w1 + w2 : w1 - w2, isAdd ? N1 + N2 : Math.abs(N1 - N2), L);
@@ -12265,7 +12268,7 @@
       isAdd ? `整数部分どうし、分数部分どうしをたす（繰り上がりに注意）` : `整数部分どうし、分数部分どうしをひく（繰り下がりに注意）`,
       `= ${answer}`,
     ];
-    return { category: 'fracAddSub5', question, questionHtml: stepToHtml(question), answer, choices: buildChoicesFromSet(answer, candidates), steps };
+    return { category: 'fracAddSub5', question: mixedQuestion_, questionHtml: stepToHtml(mixedQuestion_), answer, choices: buildChoicesFromSet(answer, candidates), steps };
   }
 
   // 小数と分数のたし算・ひき算（小5）。答えは分数で表す。
@@ -12283,13 +12286,14 @@
     // ひき算のときは大きい方から小さい方を引く(答えが負にならないようにする)。
     const decimalFirst = isAdd ? Math.random() < 0.5 : N1 >= N2;
     const opSym = isAdd ? '+' : '−';
-    const question = decimalFirst
-      ? `${decStr} ${opSym} ${n2}/${d2} = ?`
-      : `${n2}/${d2} ${opSym} ${decStr} = ?`;
-
     const numAns = isAdd ? N1 + N2 : Math.abs(N1 - N2);
     const denAns = L;
     const answer = fracToStr(numAns, denAns);
+    // 答えが1より大きい分数のときは、仮分数で答えると書く(帯分数で答える問題もあるので。バグ報告#23)
+    const fracNote_ = numAns > denAns && answer.indexOf('/') !== -1 ? '（答えは仮分数で）' : '';
+    const question = (decimalFirst
+      ? `${decStr} ${opSym} ${n2}/${d2} = ?`
+      : `${n2}/${d2} ${opSym} ${decStr} = ?`) + fracNote_;
 
     const [, rd] = reduceFrac(numAns, denAns);
     const wrongUnreduced = denAns === rd ? null : `${numAns}/${denAns}`;
@@ -21831,6 +21835,9 @@
     if (els.scienceStreakBarInner) els.scienceStreakBarInner.style.width = `${pct}%`;
     if (els.scienceStreakText) els.scienceStreakText.textContent = `${streak}/${SCIENCE_STREAK_REQUIRED}`;
     if (els.scienceExpText) els.scienceExpText.textContent = state.scienceExp;
+    // 理科の画面にもレベルを出す(バグ報告#24)
+    var sciLv_ = document.getElementById('scienceLevel');
+    if (sciLv_) sciLv_.textContent = state.level;
     if (els.statPoints) els.statPoints.textContent = state.points;
     // HPの表示自体はupdateGameHud()(算数・数学モード用)でしか更新しておらず、
     // 理科モードで正解を重ねてstate.hpが増えても画面上の数値が更新されないバグが
@@ -22320,7 +22327,9 @@
     els.expBarInner.style.width = `${(expInLv_ / EXP_PER_LEVEL) * 100}%`;
     // バーの下の「経験値」に数も出す(算数・数学+理科の合計と、次のレベルまであと何か)(バグ報告#10)
     var expLb = document.getElementById('expLabel');
-    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (expPending_ ? '（+' + expPending_ + '）' : '') + (state.level < MAX_LEVEL ? '\n次のLvまであと' + Math.max(0, EXP_PER_LEVEL - expInLv_) : ''); }
+    // 数は今の経験値だけ(たおす前の分は足さない)。「あと」も今の経験値で数え、今の敵をたおせばレベルが上がるところまで来ていたらそう出す(バグ報告#21・#27)
+    var expRest_ = EXP_PER_LEVEL - ((state.exp + state.scienceExp) % EXP_PER_LEVEL);
+    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (state.level < MAX_LEVEL ? (expPending_ >= expRest_ ? '\nこの敵をたおすとLvアップ！' : '\n次のLvまであと' + expRest_) : ''); }
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
@@ -23750,7 +23759,9 @@
     '🐞【バグを直しました⑨】文章題などHPがもらえる単元で、10問連続正解の中にほかの種類の問題がまざるとHPが出ないのに、その理由が出ていなかったので、理由を出すようにしました。10問連続正解のうち9問以上が文章題なら、HPがもらえます（最後の1問は文章題で答えてね）。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑩】高校受験問題や図形の10問目に正解してすぐガチャを開くと、まだ9問と数えられて「あと1問」と出ることがあったのを直しました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑪】経験値は敵をたおしたときにまとめて入るので、経験値のバーがずっと空っぽに見えていました。今は、今の敵に連続正解している分もバーに出ます（まちがえると、その分はなくなります）。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑫】富士登山が終わったのに、なんでも屋に酸素缶が出ていたのを直しました。サイコロガチャの説明の「2〜24MP」を「3〜24MP」に直しました（1と1はゾロ目で4MP）。読書ランキングのいいねも、マンガと同じようにもう一度押すと取り消せるようにしました。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑫】富士登山が終わったのに、なんでも屋に酸素缶が出ていたのを直しました。サイコロガチャの説明の「2〜24MP」を「3〜24MP」に直しました（1と1はゾロ目で4MP）。読書ランキングのいいねも、マンガと同じようにもう一度押すと取り消せるようにしました。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑬】経験値の「次のLvまであと」がずっと0になっていたのを直しました。今の敵に連続正解して、たおせばレベルが上がるところまで来たら「この敵をたおすとLvアップ！」と出ます。理科の画面にもレベルを出しました。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑭】なんでも屋の鍵の絵に宝箱が写っていたのを直しました。使いかけの指輪（残りの回数）も、なんでも屋に出るようにしました。分数のたし算・ひき算で、答えを仮分数と帯分数のどちらで答えるか、問題に書くようにしました。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -26199,10 +26210,12 @@
         ? `<button type="button" class="gift-redeem-btn" data-treasure-sell-ring="${tier}">売却する</button>`
         : `<span class="gift-insufficient">未所持</span>`;
       var shieldCharges = RING_SHIELD_CHARGES_[tier];
+      // 使いかけの指輪は所持数から引かれているので、残りの回数を別に出す(バグ報告#25)
+      var ringInUse_ = Number(items['ringShieldCharges' + tier.charAt(0).toUpperCase() + tier.slice(1)]) || 0;
       var shieldNoteHtml = shieldCharges
         ? `<span class="shop-item-note">持っているとボス戦のダメージを${shieldCharges}回防いでくれる（使い切ると壊れてなくなる）</span>`
         : '';
-      var sellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ring_${tier}.jpg" alt="${label}の指輪"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}${difficultyStarsHtml_(tierStars)}</div>${sellActionHtml}</div>`;
+      var sellRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/ring_${tier}.jpg" alt="${label}の指輪"><div class="gift-info"><span class="gift-label">${emoji} ${label}の指輪（所持: ${ringCount}個${ringInUse_ > 0 ? `＋使いかけ1個・残り${ringInUse_}回` : ''}）</span><span class="gift-cost">${ringSell}MPで売却</span>${shieldNoteHtml}${difficultyStarsHtml_(tierStars)}</div>${sellActionHtml}</div>`;
 
       return keyRowHtml + openRowHtml + sellRowHtml;
     }).join('');
