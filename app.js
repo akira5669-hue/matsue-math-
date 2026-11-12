@@ -444,6 +444,9 @@
         // 県庁所在地クイズの途中経過(連続正解数・出題待ちの3問)。アプリ更新時の自動再読み込みで
         // 消えて「10問連続正解したのに出ない」ことがあったため、アカウントごとに端末へ保存する(2026-11-05)。
         capitalQuizStreak: s.capitalQuizStreak, capitalQuizEasyStreak: s.capitalQuizEasyStreak,
+        // 通常/イージーの選択とイージーの制覇数も保存する(保存していなかったため、再読み込みで通常モードに戻り、
+        // 画面を開いて切り替え直すまでイージーモードが進まなかった。バグ報告#32、2026-11-12)
+        capitalQuizSelectedMode: s.capitalQuizSelectedMode, capitalQuizEasyCorrectTotal: s.capitalQuizEasyCorrectTotal,
         capitalQuizBonusQueue: ((s.current && s.current.category === 'capitalQuizBonus' && !s.answered) ? [s.current] : []).concat(s.capitalQuizBonusQueue || []),
       });
     }
@@ -21833,9 +21836,11 @@
 
   function updateScienceHud() {
     const streak = state.scienceStreak || 0;
-    const pct = Math.round((streak / SCIENCE_STREAK_REQUIRED) * 100);
+    // 敵の残りHPとして出す(正解するたびに減る。算数・数学の敵と同じ向き。バグ報告#33)
+    const sciLeft_ = Math.max(0, SCIENCE_STREAK_REQUIRED - streak);
+    const pct = Math.round((sciLeft_ / SCIENCE_STREAK_REQUIRED) * 100);
     if (els.scienceStreakBarInner) els.scienceStreakBarInner.style.width = `${pct}%`;
-    if (els.scienceStreakText) els.scienceStreakText.textContent = `${streak}/${SCIENCE_STREAK_REQUIRED}`;
+    if (els.scienceStreakText) els.scienceStreakText.textContent = `${sciLeft_}/${SCIENCE_STREAK_REQUIRED}`;
     if (els.scienceExpText) els.scienceExpText.textContent = state.scienceExp;
     // 理科の画面にもレベルを出す(バグ報告#24)
     var sciLv_ = document.getElementById('scienceLevel');
@@ -23768,7 +23773,8 @@
     '🐞【バグを直しました⑬】経験値の「次のLvまであと」がずっと0になっていたのを直しました。今の敵に連続正解して、たおせばレベルが上がるところまで来たら「この敵をたおすとLvアップ！」と出ます。理科の画面にもレベルを出しました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑭】なんでも屋の鍵の絵に宝箱が写っていたのを直しました。使いかけの指輪（残りの回数）も、なんでも屋に出るようにしました。分数のたし算・ひき算で、答えを仮分数と帯分数のどちらで答えるか、問題に書くようにしました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑮】ボン・ミスコの呪いやゾンビ化が、別の端末では続かなかったのを直しました。今は、どの端末でも同じになります（AKRの祈りやワクチンで治すと、どの端末でも治ります）。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑯】中1の問題で連続正解したあと、中3の単元だけに切りかえると、5問で敵を倒せてしまっていたのを直しました（連続正解の中に中1以下の問題があれば10問）。都道府県制覇の説明に、中2・中3の単元だけなら5問で倒せることを書きました。ゾンビワクチンを30MPにしました（AKRの祈りと同じ）。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑯】中1の問題で連続正解したあと、中3の単元だけに切りかえると、5問で敵を倒せてしまっていたのを直しました（連続正解の中に中1以下の問題があれば10問）。都道府県制覇の説明に、中2・中3の単元だけなら5問で倒せることを書きました。ゾンビワクチンを30MPにしました（AKRの祈りと同じ）。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑰】都道府県制覇（県庁所在地クイズ）のイージーモードが、アプリを開き直すと通常モードに戻ってしまい、画面を開かないと進まなかったのを直しました。理科の敵のバーも、正解するたびに減るようにしました（算数・数学の敵と同じ）。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
