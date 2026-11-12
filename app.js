@@ -35975,7 +35975,7 @@
     var a = Number(r.avg) || 0, qa = r.bq, info = bbQuizInfo_(a, !!r.bqRev);
     var who = last ? bbBatter_(last.ab) : bbBatter_(r.ab);
     var h = '<div class="dq-box"><div class="dq-q">🧠 打率クイズ（正解で+1MP）<br>' + escHtml(who) + 'の今シーズンの打率は '
-      + (r.bqRev ? '<b class="bq-avg">' + info.reading + '</b>。<br><b>小数で表すと？</b>' : '<b class="bq-avg">0.' + ('00' + a).slice(-3) + '</b>。<br><b>何割何分何厘？</b>') + '</div><div class="dq-choices bq-choices">';
+      + (r.bqRev ? '<b class="bq-avg">' + info.reading + '</b><b>小数で表すと？</b>' : '<b class="bq-avg">0.' + ('00' + a).slice(-3) + '</b><b>何割何分何厘？</b>') + '</div><div class="dq-choices bq-choices">';
     info.choices.forEach(function (c) {
       var cls = 'dq-btn bq-btn' + (qa ? (c === info.ans ? ' dq-ok' : c === qa.a ? ' dq-ng' : '') : '');
       h += '<button type="button" class="' + cls + '" data-bq="' + c + '"' + (qa ? ' disabled' : '') + '>' + c + '</button>';
