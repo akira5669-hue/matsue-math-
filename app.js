@@ -171,6 +171,7 @@
   var LOG_BATCH_SIZE_ = 20;
   var LOG_FLUSH_DEBOUNCE_MS_ = 4000;
   var logQueueFlushing = false;
+  var logFlushPromise_ = null; // 送っている途中の分(ガチャを開いたとき、送り終わるのを待つため)
   var logFlushTimer_ = null;
   var LOG_QUEUE_DROP_ERRORS_ = { not_found: true, force_blocked: true, missing_fields: true };
 
@@ -194,7 +195,7 @@
   // 混ざっていた場合はそこで区切る)をまとめて1回のlogBatchで送信する。成功した分だけ
   // キューから取り除き、失敗したら打ち切って次回の呼び出しに委ねる。
   function flushLogQueue_() {
-    if (logQueueFlushing) return;
+    if (logQueueFlushing) return logFlushPromise_;
     var queue = loadLogQueue_();
     if (queue.length === 0) return;
     var targetId = queue[0].id;
@@ -206,7 +207,7 @@
     if (batch.length === 0) return;
     logQueueFlushing = true;
     var entries = batch.map(function (e) { var o = { category: e.category, correct: e.correct }; if (e.sci) o.sci = true; return o; });
-    return apiPost('logBatch', { id: targetId, entries: entries }).then(function (res) {
+    return logFlushPromise_ = apiPost('logBatch', { id: targetId, entries: entries }).then(function (res) {
       logQueueFlushing = false;
       // 成功した分に加え、再送しても絶対に成功しないエラー(該当IDなし・利用禁止・
       // 送信内容の不備)の分もキューから取り除く。以前はこれらがキューに残り続け、
@@ -227,6 +228,13 @@
       }
     }).catch(function () {
       logQueueFlushing = false;
+    });
+  }
+  // たまっている答えを全部送り終わるまで待つ(送っている途中の分も待つ)。失敗しても先へ進めるよう、回数に上限をつける。
+  // ガチャを開いたときに使う(理科の10問目に正解してすぐ開くと、まだ9問と数えられることがあった。2026-11-12 LINEでの報告)
+  function flushAllLogs_(n) {
+    return Promise.resolve(flushLogQueue_()).catch(function () {}).then(function () {
+      if ((n || 0) > 0 && loadLogQueue_().length > 0) return flushAllLogs_(n - 1);
     });
   }
   function scheduleLogFlush_() {
@@ -36221,7 +36229,8 @@
     if (session && session.id) {
       // 解いたばかりの答え(理科の正解数など)を先に送ってから、ガチャの条件を確かめる
       ufoRefresh_();
-      Promise.resolve(flushLogQueue_()).catch(function () {}).then(function () { return zukeiInFlight_; }).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
+      if (logFlushTimer_) { window.clearTimeout(logFlushTimer_); logFlushTimer_ = null; }
+      flushAllLogs_(3).then(function () { return zukeiInFlight_; }).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
         if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.bbUnlock = Number(res.bbUnlock) || 10; renderGacha_(); }
       }).catch(function () {});
     }
