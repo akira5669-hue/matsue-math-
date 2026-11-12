@@ -36200,9 +36200,11 @@
   function bbQuizInfo_(a, rev, calc) {
     if (calc) {
       // 打数と安打数から打率を計算する(2026-11-13〜)。答えは小数第3位まで(0.340)
+      // 勝率(calc.w・calc.l)のときも同じ形で作る
       var f3 = function (x) { return x.toFixed(3); };
       var ansC = f3(a / 1000), cc = [];
-      cc.push(f3(calc.ab / calc.h));                 // 打数÷安打数(逆に割った)
+      if (calc.w) { cc.push(f3(calc.w / calc.l)); cc.push(f3(calc.l / (calc.w + calc.l))); }  // 勝ち÷負け・負け÷試合数
+      else cc.push(f3(calc.ab / calc.h));                 // 打数÷安打数(逆に割った)
       cc.push(f3(a / 100));                          // 位を1つまちがえた
       var dd = [Math.floor(a / 100), Math.floor(a / 10) % 10, a % 10];
       if (dd[1] !== dd[2]) cc.push(f3((dd[0] * 100 + dd[2] * 10 + dd[1]) / 1000));
@@ -36213,7 +36215,9 @@
       for (var k3 = 1; chC.length < 4; k3++) { var c4 = f3(((a + 37 * k3) % 300 + 100) / 1000); if (chC.indexOf(c4) === -1) chC.push(c4); }
       var rot3 = a % 4;
       chC = chC.slice(rot3).concat(chC.slice(0, rot3));
-      var exC = '打率 ＝ 安打数 ÷ 打数。' + calc.h + ' ÷ ' + calc.ab + ' ＝ <b>' + ansC + '</b>（' + bbAvgReading_(a) + '）。';
+      var exC = calc.w
+        ? '勝率 ＝ 勝ち数 ÷ 試合数（勝ち数＋負け数）。' + calc.w + ' ÷ (' + calc.w + ' ＋ ' + calc.l + ') ＝ ' + calc.w + ' ÷ ' + (calc.w + calc.l) + ' ＝ <b>' + ansC + '</b>（' + bbAvgReading_(a) + '）。'
+        : '打率 ＝ 安打数 ÷ 打数。' + calc.h + ' ÷ ' + calc.ab + ' ＝ <b>' + ansC + '</b>（' + bbAvgReading_(a) + '）。';
       return { ans: ansC, choices: chC, ex: exC, reading: bbAvgReading_(a) };
     }
     var d = [Math.floor(a / 100), Math.floor(a / 10) % 10, a % 10];
@@ -36256,11 +36260,13 @@
     return { ans: ans, choices: choices, ex: ex };
   }
   function bbQuizHtml_(r, last) {
-    var calc = r.bqAb ? { ab: Number(r.bqAb), h: Number(r.bqH) } : null;
+    var calc = r.bqW ? { w: Number(r.bqW), l: Number(r.bqL) } : r.bqAb ? { ab: Number(r.bqAb), h: Number(r.bqH) } : null;
     var a = Number(r.avg) || 0, qa = r.bq, info = bbQuizInfo_(a, !!r.bqRev, calc);
     var who = last ? bbBatter_(last.ab) : bbBatter_(r.ab);
-    var h = '<div class="dq-box"><div class="dq-q">🧠 打率クイズ（正解で+1MP）<br>' + escHtml(who) + 'の今シーズンの打率は '
-      + (calc ? '…？<br>今シーズンは <b class="bq-avg">' + calc.ab + '打数 ' + calc.h + '安打</b><b>打率を計算すると？</b><br><small>打率 ＝ 安打数 ÷ 打数（小数第3位まで）</small>' : r.bqRev ? '<b class="bq-avg">' + info.reading + '</b><b>小数で表すと？</b>' : '<b class="bq-avg">0.' + ('00' + a).slice(-3) + '</b><b>何割何分何厘？</b>') + '</div><div class="dq-choices bq-choices">';
+    var h = '<div class="dq-box"><div class="dq-q">🧠 ' + (calc && calc.w ? '勝率' : '打率') + 'クイズ（正解で+1MP）<br>' + (calc && calc.w
+      ? 'このチームの今シーズンは <b class="bq-avg">' + calc.w + '勝 ' + calc.l + '敗</b><b>勝率を計算すると？</b><br><small>勝率 ＝ 勝ち数 ÷ 試合数（勝ち数＋負け数）（小数第3位まで）</small>'
+      : escHtml(who) + 'の今シーズンの打率は '
+      + (calc ? '…？<br>今シーズンは <b class="bq-avg">' + calc.ab + '打数 ' + calc.h + '安打</b><b>打率を計算すると？</b><br><small>打率 ＝ 安打数 ÷ 打数（小数第3位まで）</small>' : r.bqRev ? '<b class="bq-avg">' + info.reading + '</b><b>小数で表すと？</b>' : '<b class="bq-avg">0.' + ('00' + a).slice(-3) + '</b><b>何割何分何厘？</b>')) + '</div><div class="dq-choices bq-choices">';
     info.choices.forEach(function (c) {
       var cls = 'dq-btn bq-btn' + (qa ? (c === info.ans ? ' dq-ok' : c === qa.a ? ' dq-ng' : '') : '');
       h += '<button type="button" class="' + cls + '" data-bq="' + c + '"' + (qa ? ' disabled' : '') + '>' + c + '</button>';
