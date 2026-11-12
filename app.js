@@ -21972,7 +21972,6 @@
     // sci:true … 理科の正解数を数える(野球ガチャの条件、2026-11-10〜)
     // 野球ガチャの条件は、自分の学年以上の理科の正解だけ数える(2026-11-12〜 先生の指示)
     if (session && session.id) logAnswer_({ id: session.id, category: catId, correct: isCorrect, sci: isAtOrAboveOwnGrade(catId, session.grade) || undefined });
-    if (isCorrect) shikokuOnCorrect_(); // 🙏四国88ヶ所めぐり(プレビュー)
     // 都道府県制覇（県庁所在地クイズ）イージーモードは、理科を解いても数える(2026-11-10〜)。
     // 10問解くたびに、次の3問(理科モードのまま)が県庁所在地クイズになる。
     if (!state.usaCrossingActive && capitalQuizEasyEligible_()) {
@@ -22501,7 +22500,7 @@
       state.categoryDailyCounts[catId] = (state.categoryDailyCounts[catId] || 0) + 1;
     }
     // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)：正解で歩数をためる
-    if (isCorrect && catId !== 'capitalQuizBonus') shikokuOnCorrect_();
+    if (isCorrect && catId !== 'capitalQuizBonus') shikokuOnCorrect_(catId);
     const session = loadSession();
     const ownGrade = session && session.grade;
     const isWordProblem = WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1;
@@ -35381,8 +35380,24 @@
       else if (SHIKOKU_TEMPLES[p.n] && SHIKOKU_TEMPLES[p.n].pref !== t.pref) extra = '<br>🎉 ' + pv.name + '（' + pv.dojo + '）の札所をすべてまわった！';
       toast_('🙏 ' + t.no + '番 <b>' + t.name + '</b> に到着！（' + t.place + '）<br><small>' + t.trivia + '</small>' + extra);
     }
-    shikokuOnCorrect_ = function () {
+    // 進む条件(2026-11-13 先生の指示)：算数・数学で、自分の学年以上の単元を5つ以上オン(文章題を1つ以上ふくむ)。
+    // 自分の学年より下の単元が1つでもオンになっていたら進まない。理科の正解では進まない。
+    // okでないときは、理由(reason)を画面に出す。
+    function cond_() {
+      var sess = loadSession(), g = sess && sess.grade;
+      if (!g || !GRADE_RANK[g]) return isAdminSession_() ? { ok: true } : { ok: false, reason: '学年が分からないので進めません。' };
+      var on = CATEGORIES.filter(function (c) { return state.enabled.has(c.id); });
+      var below = on.filter(function (c) { return !isAtOrAboveOwnGrade(c.id, g); });
+      if (below.length) return { ok: false, reason: '自分の学年より下の単元がオンになっています（' + below.slice(0, 3).map(function (c) { return c.label; }).join('・') + (below.length > 3 ? ' ほか' + (below.length - 3) + '個' : '') + '）。オフにしてね。' };
+      if (on.length < 5) return { ok: false, reason: '自分の学年以上の単元を、あと' + (5 - on.length) + '個オンにしてね（今' + on.length + '個）。' };
+      if (!on.some(function (c) { return WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) !== -1; })) return { ok: false, reason: '文章題を1つ以上オンにしてね。' };
+      return { ok: true };
+    }
+    shikokuOnCorrect_ = function (catId) {
       if (!visible_()) return;
+      if (!cond_().ok) return;
+      var sess_ = loadSession();
+      if (sess_ && sess_.grade && GRADE_RANK[sess_.grade] && !isAtOrAboveOwnGrade(catId, sess_.grade)) return;
       var p = load_();
       if (p.n >= 88) return;
       p.steps++;
@@ -35395,6 +35410,8 @@
       var next = SHIKOKU_TEMPLES[p.n];
       var html = '<div class="shikoku-now">' + (p.n === 0 ? 'まだ出発していません。' : '今いるところ：<b>' + p.n + '番 ' + SHIKOKU_TEMPLES[p.n - 1].name + '</b>（' + SHIKOKU_TEMPLES[p.n - 1].place + '）')
         + '<br>' + (next ? '次の札所：' + next.no + '番 ' + next.name + '　あと <b>' + (SHIKOKU_PER_TEMPLE_ - p.steps) + '問</b> 正解' : '🎊 結願！88ヶ所すべてまわりました！') + '</div>';
+      var c_ = cond_();
+      html += '<div class="test-photo-hint">' + (c_.ok ? '✅ 今の単元の選び方で進めます。' : '⛔ 今は進みません：' + escHtml(c_.reason)) + '</div>';
       // 88か所の道(まわったところに色がつく)
       html += '<div class="shikoku-road">' + SHIKOKU_TEMPLES.map(function (t) {
         var pv = SHIKOKU_PROVINCES[t.pref];
