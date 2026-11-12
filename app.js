@@ -22713,6 +22713,7 @@
       // AKRの祈りを受けるまで解除されない。
       if (!state.worldBossActiveStage && enemyBeforeMiss.name === 'ボンミスコ' && !state.cursed) {
         state.cursed = true;
+        markAilment_('cursed');
         missLineHtml += `<div class="enemy-quote-banner">😈 ボン・ミスコの呪いをかけられた…！なんでも屋でAKRの祈りを受けるまで、間違えた問題ばかり出題され、MP獲得も${BONMISUKO_CURSE_MP_CAP}に制限されてしまう…</div>`;
         saveGameState(state);
       }
@@ -22722,6 +22723,7 @@
       // なんでも屋でゾンビワクチンを打つまで解除されない。
       if (!state.worldBossActiveStage && state.rareType === 'zombie' && !state.zombified) {
         state.zombified = true;
+        markAilment_('zombified');
         missLineHtml += `<div class="enemy-quote-banner">🧟 ゾンビ化してしまった…！なんでも屋でゾンビワクチンを打つまで、HPが増えなくなり、正解しても不正解でも1問ごとにHPが${ZOMBIE_HP_DRAIN_}減ってしまう…</div>`;
         saveGameState(state);
       }
@@ -23761,7 +23763,8 @@
     '🐞【バグを直しました⑪】経験値は敵をたおしたときにまとめて入るので、経験値のバーがずっと空っぽに見えていました。今は、今の敵に連続正解している分もバーに出ます（まちがえると、その分はなくなります）。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑫】富士登山が終わったのに、なんでも屋に酸素缶が出ていたのを直しました。サイコロガチャの説明の「2〜24MP」を「3〜24MP」に直しました（1と1はゾロ目で4MP）。読書ランキングのいいねも、マンガと同じようにもう一度押すと取り消せるようにしました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑬】経験値の「次のLvまであと」がずっと0になっていたのを直しました。今の敵に連続正解して、たおせばレベルが上がるところまで来たら「この敵をたおすとLvアップ！」と出ます。理科の画面にもレベルを出しました。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑭】なんでも屋の鍵の絵に宝箱が写っていたのを直しました。使いかけの指輪（残りの回数）も、なんでも屋に出るようにしました。分数のたし算・ひき算で、答えを仮分数と帯分数のどちらで答えるか、問題に書くようにしました。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑭】なんでも屋の鍵の絵に宝箱が写っていたのを直しました。使いかけの指輪（残りの回数）も、なんでも屋に出るようにしました。分数のたし算・ひき算で、答えを仮分数と帯分数のどちらで答えるか、問題に書くようにしました。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑮】ボン・ミスコの呪いやゾンビ化が、別の端末では続かなかったのを直しました。今は、どの端末でも同じになります（AKRの祈りやワクチンで治すと、どの端末でも治ります）。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -24259,7 +24262,51 @@
 
   // points/level/exp/prefectureCount/items/rareCollected/rareDefeats/thinkerMilestoneを
   // まとめてサーバーへ送るための共通ペイロード(syncPointsアクション)。
+  // ボン・ミスコの呪い・ゾンビ化をサーバーにも記録する(2026-11-12〜、バグ報告#20：別の端末では呪い・ゾンビが続かなかった)。
+  // かかったら「まだ送っていない」として覚えておき、同期で送る。サーバーが受け取ったら消す。
+  // 治すのはAKRの祈り・ゾンビワクチン(サーバーで記録)。同期の答えでサーバーの状態に揃える(ほかの端末で治した・かかった分も入る)。
+  function ailmentKey_(id) { return 'ailmentPending_v1_' + id; }
+  function ailmentPending_(id) { try { return JSON.parse(localStorage.getItem(ailmentKey_(id)) || '{}') || {}; } catch (e) { return {}; } }
+  function setAilmentPending_(id, v) { try { if (v && Object.keys(v).length) localStorage.setItem(ailmentKey_(id), JSON.stringify(v)); else localStorage.removeItem(ailmentKey_(id)); } catch (e) { } }
+  function markAilment_(kind) {
+    var sess = loadSession();
+    if (!sess || !sess.id) return;
+    var p = ailmentPending_(sess.id); p[kind] = true; setAilmentPending_(sess.id, p);
+  }
+  function clearAilmentPending_(kind) {
+    var sess = loadSession();
+    if (!sess || !sess.id) return;
+    var p = ailmentPending_(sess.id); delete p[kind]; setAilmentPending_(sess.id, p);
+  }
+  // この直しの前からかかっていた人の分も、1回だけ送る
+  function migrateAilment_(id) {
+    try {
+      if (localStorage.getItem('ailmentMigrated_v1_' + id)) return;
+      var p = ailmentPending_(id);
+      if (state.cursed) p.cursed = true;
+      if (state.zombified) p.zombified = true;
+      setAilmentPending_(id, p);
+      localStorage.setItem('ailmentMigrated_v1_' + id, '1');
+    } catch (e) { }
+  }
+  // サーバーの状態(cursed/zombified)に揃える。まだ送っていない「かかった」があるものは、端末のまま。変わったらtrueを返す
+  function applyServerAilment_(id, server) {
+    if (!server || typeof server.cursed !== 'boolean') return false;
+    var p = ailmentPending_(id), changed = false;
+    ['cursed', 'zombified'].forEach(function (k) {
+      if (typeof server[k] !== 'boolean') return;
+      if (p[k]) { if (server[k]) { delete p[k]; } return; }
+      if (!!state[k] !== server[k]) { state[k] = server[k]; changed = true; }
+    });
+    setAilmentPending_(id, p);
+    return changed;
+  }
   function buildProgressSyncPayload(id) {
+    migrateAilment_(id);
+    var ailmentUp_ = ailmentPending_(id);
+    return Object.assign(buildProgressSyncPayloadBase_(id), Object.keys(ailmentUp_).length ? { ailmentUp: ailmentUp_ } : {});
+  }
+  function buildProgressSyncPayloadBase_(id) {
     return {
       id: id, points: state.points, level: state.level, exp: state.exp, scienceExp: state.scienceExp, prefectureCount: state.prefectureCount, prefectureLap: state.prefectureLap,
       items: state.items, rareCollected: state.rareCollected, rareDefeats: state.rareDefeats, thinkerMilestone: state.thinkerMilestone,
@@ -24347,6 +24394,8 @@
   }
   function applySyncedPoints_(res) {
     applyTreasureRev_(res);
+    var sessA_ = loadSession();
+    if (res && res.ok && sessA_ && sessA_.id && applyServerAilment_(sessA_.id, res)) { saveGameState(state); updateGameHud(); }
     // 賢さの実・努力の種：ほかの端末で売った・食べた分はサーバーの方が少ないので、端末もそれに揃える
     // (古い端末で数が戻って何度も売れる不具合の対策、2026-11-02)。増える方向はログイン時の読み込みで反映される。
     if (res && res.ok) {
@@ -24493,6 +24542,9 @@
     // 富士登山の山頂到達は一度trueになったら戻らない実績フラグなのでOR、
     // 勇者の剣の所持数はironWallCharges等と同じく大きい方を採用する。
     if (server.fujiSummitReached && !state.fujiSummitReached) { state.fujiSummitReached = true; changed = true; }
+    // 呪い・ゾンビ化はサーバーの状態に揃える(バグ報告#20)
+    migrateAilment_(id);
+    if (applyServerAilment_(id, server)) changed = true;
     if (server.streak7TitleEarned && !state.streak7TitleEarned) { state.streak7TitleEarned = true; changed = true; }
     if (server.streak15TitleEarned && !state.streak15TitleEarned) { state.streak15TitleEarned = true; changed = true; }
     if (server.streak30TitleEarned && !state.streak30TitleEarned) { state.streak30TitleEarned = true; changed = true; }
@@ -26491,6 +26543,7 @@
       }
       state.points = res.remainingPoints;
       state.cursed = false;
+      clearAilmentPending_('cursed');
       saveGameState(state);
       updateGameHud();
       renderCurseBanner();
@@ -26518,6 +26571,7 @@
       }
       state.points = res.remainingPoints;
       state.zombified = false;
+      clearAilmentPending_('zombified');
       saveGameState(state);
       updateGameHud();
       renderShopList();
