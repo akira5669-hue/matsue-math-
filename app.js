@@ -20089,6 +20089,9 @@
   const SHOW_NEW_RARE_ALL_ = false;
   const NEW_RARE_PREVIEW_IDS_ = ['kotsukotsugame', 'zerodragon'];
   function newRareVisible_() { return SHOW_NEW_RARE_ALL_ || isAdminSession_(); }
+  // ゼロドラゴンは2026-11-27から全員に出す(先生の指示)。コツコツガメはまだ00001だけ。
+  const ZERODRAGON_START_ = '2026-11-27';
+  function zeroDragonVisible_() { return newRareVisible_() || todayKey() >= ZERODRAGON_START_; }
   const RARE_CHANCE_KOTSUKOTSUGAME = (1 / 20) * RARE_SCALE;
   const RARE_CHANCE_ZERODRAGON = (1 / 60) * RARE_SCALE;
   // コツコツガメは倒すと+10MP。1日のMP上限(100MP)とは別に入る(2026-11-11、先生の指示)
@@ -20461,7 +20464,7 @@
   const ZERODRAGON_BOOST_CHANCE_ = 0.1;
   function rollRareType() {
     const r = Math.random();
-    if (newRareVisible_() && todayKey() < ZERODRAGON_BOOST_END_ && Math.random() < ZERODRAGON_BOOST_CHANCE_) return 'zerodragon';
+    if (zeroDragonVisible_() && todayKey() < ZERODRAGON_BOOST_END_ && Math.random() < ZERODRAGON_BOOST_CHANCE_) return 'zerodragon';
     const chanceInuda = isWithinInudaWindow() ? RARE_CHANCE_INUDA : 0;
     const chanceSoubusen = isWithinDateWindow(SOUBUSEN_START, SOUBUSEN_END) ? RARE_CHANCE_SOUBUSEN : 0;
     const chanceNattoman = isWithinDateWindow(NATTOMAN_START, NATTOMAN_END) ? RARE_CHANCE_NATTOMAN : 0;
@@ -20484,7 +20487,7 @@
       ['percentkun', RARE_CHANCE_PERCENTKUN],
       ['marubatsukun', maruBatsuKunChance_()],
       ['kotsukotsugame', newRareVisible_() ? RARE_CHANCE_KOTSUKOTSUGAME : 0],
-      ['zerodragon', newRareVisible_() ? RARE_CHANCE_ZERODRAGON : 0],
+      ['zerodragon', zeroDragonVisible_() ? RARE_CHANCE_ZERODRAGON : 0],
     ];
     let cumulative = 0;
     for (let i = 0; i < slices.length; i++) {
@@ -25175,7 +25178,7 @@
     return '';
   }
   function renderRareCollection() {
-    const ids = RARE_COLLECTIBLE_IDS.concat(newRareVisible_() ? NEW_RARE_PREVIEW_IDS_ : []).concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
+    const ids = RARE_COLLECTIBLE_IDS.concat(newRareVisible_() ? NEW_RARE_PREVIEW_IDS_ : zeroDragonVisible_() ? ['zerodragon'] : []).concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
     els.historyRareCollection.innerHTML = ids.map(function (id) {
       const rt = RARE_TYPES[id];
       const collected = state.rareCollected.indexOf(id) !== -1;
@@ -25977,7 +25980,8 @@
     // 折り紙で作った手裏剣：00001限定プレビュー中。
     // ⚔️ドラゴンソード：700MPで買える・300MPで売れる
     var dsHave_ = Number(state.dragonSwordCount) || 0;
-    var dragonSwordRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(3)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
+    // ドラゴンソードは、ゼロドラゴンが出るようになる日(ZERODRAGON_START_)から店に出す。持っている人には売れるように出す
+    var dragonSwordRowHtml = !(zeroDragonVisible_() || dsHave_ > 0) ? '' : `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(3)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
     var shurikenRowHtml = '';
     if (isAdminSession_()) {
       var shurikenCanAfford = state.points >= SHURIKEN_COST_MP;
