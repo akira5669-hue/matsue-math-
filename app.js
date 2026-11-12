@@ -28724,9 +28724,9 @@
     saveGameState(state);
     renderUsaCrossingCard_();
   }
-  // 🕵️ アメリカで旅行者がよくあう詐欺の手口(2026-11-13、先生の指示)。だまされると挑戦は続くがHPが減る。
+  // 🕵️ アメリカで旅行者がよくあう詐欺の手口(2026-11-13、先生の指示)。だまされると挑戦は続くがMPを取られる
+  // (10〜20MP、白タクは50MP。shop.jsのhandleUsaScamPenaltyで引く)。
   // どちらを選んでも、最後に「こういう手口がある」と教える。15・30・45州目(犯罪のさそい)とは別の州で出る。
-  const USA_SCAM_HP_LOSS_ = 20;
   const USA_CROSSING_SCAMS_ = {
     5: {
       q: '🧸 観光地で、人気キャラクターの着ぐるみが「いっしょに写真をとろうよ！」と声をかけてきた。いっしょに写真をとりますか？',
@@ -28761,6 +28761,7 @@
     48: {
       q: '🚕 空港を出たら「タクシー安いよ！乗っていきな！」と声をかけてきた人がいる。決められたタクシー乗り場ではない。乗りますか？',
       fall: '🚕 着いたら、ふつうの5倍の料金を請求された…。',
+      taxi: true,
       tip: '空港で声をかけてくる「白タク」は、高いお金をとられることがある。タクシーは決められた乗り場から乗ろう。',
     },
   };
@@ -28768,8 +28769,16 @@
     const sc = USA_CROSSING_SCAMS_[state.usaCrossingProgress];
     if (sc) {
       if (window.confirm(sc.q)) {
-        state.hp = Math.max(0, (Number(state.hp) || 0) - USA_SCAM_HP_LOSS_);
-        return `<div class="enemy-quote-banner">😱 だまされた！${sc.fall}ショックでHPが${USA_SCAM_HP_LOSS_}減った（残りHP: ${state.hp}）<br>🕵️ ${sc.tip}</div>`;
+        var scMp = sc.taxi ? 50 : randInt(10, 20);
+        state.points = Math.max(0, (Number(state.points) || 0) - scMp);
+        saveGameState(state);
+        var scSess = loadSession();
+        if (scSess && scSess.id) {
+          apiPost('usaScamPenalty', { id: scSess.id, kind: sc.taxi ? 'taxi' : '', mp: scMp }).then(function (res) {
+            if (res && res.ok) { state.points = Number(res.points) || 0; saveGameState(state); updateGameHud(); }
+          }).catch(function () { });
+        }
+        return `<div class="enemy-quote-banner">😱 だまされた！${sc.fall}${scMp}MP取られた（残りMP: ${state.points}）<br>🕵️ ${sc.tip}</div>`;
       }
       return `<div class="item-gain-banner">🙅 ことわって、その場をはなれた。正解！<br>🕵️ ${sc.tip}</div>`;
     }
@@ -28840,7 +28849,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了(参加料は戻らない)。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされるとHPが20減る。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功は一度きり(達成後は再挑戦不可)、失敗した場合は何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPを払うと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了(参加料は戻らない)。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功は一度きり(達成後は再挑戦不可)、失敗した場合は何度でも再挑戦できる(その都度' + USA_CROSSING_ENTRY_FEE_MP + 'MP必要)。';
     }
     if (els.usaCrossingStatusText) {
       els.usaCrossingStatusText.textContent = state.usaCrossingCompleted
