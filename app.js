@@ -3128,6 +3128,8 @@
   function normalEnemyStreak_() {
     const ids = state && state.enabled ? [...state.enabled].filter(id => MATH_CATEGORY_IDS_.has(id)) : [];
     if (!ids.length) return NORMAL_ENEMY_STREAK_;
+    // 今の連続正解の中に中1以下の問題がまざっていたら10問(中1を4問→中3に切りかえて1問で倒せていた。バグ報告#28)
+    if ((Number(state.streak) || 0) > 0 && (GRADE_RANK[state.streakMinGrade] || 0) < GRADE_RANK['中2']) return NORMAL_ENEMY_STREAK_;
     return ids.every(id => (GRADE_RANK[categoryGrade[id]] || 0) >= GRADE_RANK['中2']) ? NORMAL_ENEMY_STREAK_UPPER_ : NORMAL_ENEMY_STREAK_;
   }
   const categoryGrade = Object.fromEntries([...CATEGORIES, ...SCIENCE_CATEGORIES].map(c => {
@@ -20280,7 +20282,7 @@
   // 形でもHPが増えなくなり、正解・不正解を問わず1問答えるたびにHPが1減る。なんでも屋で
   // ゾンビワクチンを打つまで解除されない。
   const ZOMBIE_HP_DRAIN_ = 1;
-  const ZOMBIE_VACCINE_COST_MP = 100;
+  const ZOMBIE_VACCINE_COST_MP = 30; // 2026-11-12〜(それまでは100MP、AKRの祈りと同じに)。lib/handlers/shop.jsと揃えること。
   // 富士登山の高山病：8合目以降で不正解になるとかかる状態異常。ゾンビ化と同じく
   // 治るまで科目を問わず1問答えるたびにHPが10減る。なんでも屋で酸素缶を買うまで解除されない。
   const FUJI_ALTITUDE_SICKNESS_DRAIN_ = 10;
@@ -23764,7 +23766,8 @@
     '🐞【バグを直しました⑫】富士登山が終わったのに、なんでも屋に酸素缶が出ていたのを直しました。サイコロガチャの説明の「2〜24MP」を「3〜24MP」に直しました（1と1はゾロ目で4MP）。読書ランキングのいいねも、マンガと同じようにもう一度押すと取り消せるようにしました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑬】経験値の「次のLvまであと」がずっと0になっていたのを直しました。今の敵に連続正解して、たおせばレベルが上がるところまで来たら「この敵をたおすとLvアップ！」と出ます。理科の画面にもレベルを出しました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑭】なんでも屋の鍵の絵に宝箱が写っていたのを直しました。使いかけの指輪（残りの回数）も、なんでも屋に出るようにしました。分数のたし算・ひき算で、答えを仮分数と帯分数のどちらで答えるか、問題に書くようにしました。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑮】ボン・ミスコの呪いやゾンビ化が、別の端末では続かなかったのを直しました。今は、どの端末でも同じになります（AKRの祈りやワクチンで治すと、どの端末でも治ります）。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑮】ボン・ミスコの呪いやゾンビ化が、別の端末では続かなかったのを直しました。今は、どの端末でも同じになります（AKRの祈りやワクチンで治すと、どの端末でも治ります）。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑯】中1の問題で連続正解したあと、中3の単元だけに切りかえると、5問で敵を倒せてしまっていたのを直しました（連続正解の中に中1以下の問題があれば10問）。都道府県制覇の説明に、中2・中3の単元だけなら5問で倒せることを書きました。ゾンビワクチンを30MPにしました（AKRの祈りと同じ）。報告してくれた人、ありがとう！'
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
