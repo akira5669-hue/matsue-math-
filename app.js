@@ -19811,9 +19811,9 @@
     kotsukotsugame: {
       id: 'kotsukotsugame', name: 'コツコツガメ', img: 'images/kotsukotsugame.jpg',
       lines: {
-        appear: 'のんびり行こうよ〜。ぼくは逃げないから、10問コツコツ正解してね。',
+        appear: 'のんびり行こうよ〜。ぼくは逃げないから、10問コツコツ正解してね。でも、まちがえたらかみつくよ（HP-10）。',
         defeat: 'ゆっくりでも、毎日つづけた人がいちばん遠くまで行けるんだよ。',
-        miss: 'あわてない、あわてない。1問ずつ、ていねいにね。',
+        miss: 'ガブッ！あわてない、あわてない。1問ずつ、ていねいにね。',
       },
     },
     zerodragon: {
@@ -20140,6 +20140,8 @@
   // FLEEING_RARE_TYPES_に含めないことで実現、HP減少は上のhandleAnswer内で処理)。
   const GYOSHI_BONUS_MP = 20;
   const GYOSHI_HP_STEAL_ = 2;
+  // コツコツガメは、まちがえるとかみついてHP-10(2026-11-13、先生の指示)
+  const KOTSUKOTSUGAME_BITE_HP_ = 10;
   // パーセント君：出現率0.01%の超レアキャラなので、通常のレアボーナス(10〜30MP)より
   // 高めの固定ボーナスとする。
   const PERCENTKUN_BONUS_MP = 50;
@@ -22869,6 +22871,20 @@
         // このキャラ固有のルールとして常に有効)。
         state.hp = Math.max(0, (Number(state.hp) || 0) - GYOSHI_HP_STEAL_);
         missLineHtml += `<div class="enemy-quote-banner">🎣 漁師AKRに、HPを${GYOSHI_HP_STEAL_}つ奪われた！（残りHP: ${state.hp}）</div>`;
+        if (state.hp <= 0) {
+          missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
+        }
+        saveGameState(state);
+      } else if (state.rareType === 'kotsukotsugame' && hasSteelArmorCharge_()) {
+        state.steelArmorCharges = (Number(state.steelArmorCharges) || 0) - 1;
+        missLineHtml += state.steelArmorCharges > 0
+          ? `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！（残り${state.steelArmorCharges}回）</div>`
+          : `<div class="enemy-quote-banner">🛡️ 鋼の鎧のおかげでダメージなし！…鎧は壊れてなくなった。</div>`;
+        saveGameState(state);
+      } else if (state.rareType === 'kotsukotsugame') {
+        // コツコツガメは逃げないかわりに、まちがえるとかみついてHPを10へらす(漁師AKRと同じく、日付に関係なく常に有効)
+        state.hp = Math.max(0, (Number(state.hp) || 0) - KOTSUKOTSUGAME_BITE_HP_);
+        missLineHtml += `<div class="enemy-quote-banner">🐢 ガブッ！コツコツガメにかみつかれた！HPが${KOTSUKOTSUGAME_BITE_HP_}減った！（残りHP: ${state.hp}）</div>`;
         if (state.hp <= 0) {
           missLineHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
