@@ -20106,7 +20106,7 @@
   const SHOW_NEW_RARE_ALL_ = false;
   const NEW_RARE_PREVIEW_IDS_ = ['kotsukotsugame', 'zerodragon'];
   function newRareVisible_() { return SHOW_NEW_RARE_ALL_ || isAdminSession_(); }
-  // ゼロドラゴンは2026-11-27から全員に出す(先生の指示)。コツコツガメはまだ00001だけ。
+  // ゼロドラゴンは2026-11-27から全員に出す(先生の指示)。コツコツガメは2026-11-13から全員に出す(先生の指示)。
   const ZERODRAGON_START_ = '2026-11-27';
   function zeroDragonVisible_() { return newRareVisible_() || todayKey() >= ZERODRAGON_START_; }
   const RARE_CHANCE_KOTSUKOTSUGAME = (1 / 20) * RARE_SCALE;
@@ -20503,7 +20503,7 @@
       ['superakirametal', superAkirametalChance_()],
       ['percentkun', RARE_CHANCE_PERCENTKUN],
       ['marubatsukun', maruBatsuKunChance_()],
-      ['kotsukotsugame', newRareVisible_() ? RARE_CHANCE_KOTSUKOTSUGAME : 0],
+      ['kotsukotsugame', RARE_CHANCE_KOTSUKOTSUGAME],
       ['zerodragon', zeroDragonVisible_() ? RARE_CHANCE_ZERODRAGON : 0],
     ];
     let cumulative = 0;
@@ -25259,7 +25259,7 @@
     return '';
   }
   function renderRareCollection() {
-    const ids = RARE_COLLECTIBLE_IDS.concat(newRareVisible_() ? NEW_RARE_PREVIEW_IDS_ : zeroDragonVisible_() ? ['zerodragon'] : []).concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
+    const ids = RARE_COLLECTIBLE_IDS.concat(newRareVisible_() || zeroDragonVisible_() ? NEW_RARE_PREVIEW_IDS_ : ['kotsukotsugame']).concat(['thinker']).concat(WORLD_BOSS_COLLECTIBLE_IDS);
     els.historyRareCollection.innerHTML = ids.map(function (id) {
       const rt = RARE_TYPES[id];
       const collected = state.rareCollected.indexOf(id) !== -1;
