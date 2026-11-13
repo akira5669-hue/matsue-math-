@@ -20533,6 +20533,8 @@
   const SHISUU_KUN = { name: 'しすうくん', img: 'images/shisuukun.jpg' };
   function currentEnemyDisplay(st) {
     if (st.rareType && RARE_TYPES[st.rareType]) return RARE_TYPES[st.rareType];
+    // ボン・ミスコは、かけちゃん・分数くんなどに見た目を差しかえない(バグ報告#35：かけ算の単元にすると呪いをよけられた)
+    if (ENEMIES[st.enemyIdx] && ENEMIES[st.enemyIdx].name === 'ボンミスコ') return ENEMIES[st.enemyIdx];
     if (st.current && FRACTION_CATEGORY_IDS.indexOf(st.current.category) !== -1) return FRACTION_KUN;
     if (st.current && KAKE_CATEGORY_IDS.indexOf(st.current.category) !== -1) return KAKE_CHAN;
     if (st.current && WARU_CATEGORY_IDS.indexOf(st.current.category) !== -1) return WARU_KUN;
@@ -21386,7 +21388,7 @@
     els.settingsDailyLimitNote.textContent = !isDailyCategoryLimitActive()
       ? '📢 8月1日から、同じ単元は1日最大100問まで（90問でその日はコンプリート）になります。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解く必要があります。'
       : todayKey() >= DAILY_CATEGORY_LIMIT_V2_START
-      ? '📌 同じ単元は1日最大50問まで（40問でその日はコンプリート）。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！'
+      ? '📌 同じ単元は1日40問でその日はコンプリート。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！'
       : '📌 同じ単元は1日最大100問まで（90問でその日はコンプリート）。コンプリートした単元は翌日にまた挑戦できます。ポイント・経験値を稼ぐには、他の単元も解こう！ 📢8月8日から、1日最大50問（40問でコンプリート）に変更されます。';
     els.settingsGrid.innerHTML = CATEGORIES.map(c => {
       const cs = state.catStats[c.id];
@@ -22110,6 +22112,8 @@
     if (els.mathArea) els.mathArea.hidden = state.subject === 'science';
     if (els.scienceArea) els.scienceArea.hidden = state.subject !== 'science';
     if (els.subjectToggle) els.subjectToggle.textContent = state.subject === 'science' ? '🧮計算' : '🔬理科';
+    // ハナマルコ(理科のキャラ)の吹き出しは、計算に切りかえたら消す(バグ報告#34：計算の画面に残っていた)
+    if (state.subject !== 'science' && els.scienceCharBanner) { els.scienceCharBanner.hidden = true; els.scienceCharBanner.innerHTML = ''; }
   }
 
   // 算数・数学 ⇔ 理科の科目を切り替える。単元設定・出題プール・HUD表示が
@@ -23798,7 +23802,10 @@
     '🐞【バグを直しました⑭】なんでも屋の鍵の絵に宝箱が写っていたのを直しました。使いかけの指輪（残りの回数）も、なんでも屋に出るようにしました。分数のたし算・ひき算で、答えを仮分数と帯分数のどちらで答えるか、問題に書くようにしました。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑮】ボン・ミスコの呪いやゾンビ化が、別の端末では続かなかったのを直しました。今は、どの端末でも同じになります（AKRの祈りやワクチンで治すと、どの端末でも治ります）。報告してくれた人、ありがとう！',
     '🐞【バグを直しました⑯】中1の問題で連続正解したあと、中3の単元だけに切りかえると、5問で敵を倒せてしまっていたのを直しました（連続正解の中に中1以下の問題があれば10問）。都道府県制覇の説明に、中2・中3の単元だけなら5問で倒せることを書きました。ゾンビワクチンを30MPにしました（AKRの祈りと同じ）。報告してくれた人、ありがとう！',
-    '🐞【バグを直しました⑰】都道府県制覇（県庁所在地クイズ）のイージーモードが、アプリを開き直すと通常モードに戻ってしまい、画面を開かないと進まなかったのを直しました。理科の敵のバーも、正解するたびに減るようにしました（算数・数学の敵と同じ）。報告してくれた人、ありがとう！'
+    '🐞【バグを直しました⑰】都道府県制覇（県庁所在地クイズ）のイージーモードが、アプリを開き直すと通常モードに戻ってしまい、画面を開かないと進まなかったのを直しました。理科の敵のバーも、正解するたびに減るようにしました（算数・数学の敵と同じ）。報告してくれた人、ありがとう！',
+    '🐞【バグを直しました⑱】理科のハナマルコの吹き出しが、計算に切りかえても残っていたのを直しました。',
+    '🐞【バグを直しました⑲】ボン・ミスコが敵のとき、かけ算などの単元にすると「かけちゃん」に変わって呪いをよけられたのを直しました。ボン・ミスコはどの単元でもボン・ミスコのままです。',
+    '🐞【バグを直しました⑳】「同じ単元は1日最大50問」という説明をなおしました。同じ単元は1日40問でその日はコンプリートです。なんでも屋の宝箱の欄に残っていた「8/29・30はイベントデー」の案内も消しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -26309,7 +26316,7 @@
     }).join('');
     var dropNote = (todayKey() >= TREASURE_EVENT_START_ && todayKey() <= TREASURE_EVENT_END_)
       ? '宝箱イベントデー中！レアキャラを倒すと5分の1の確率で宝箱ゲット！'
-      : 'レアキャラを倒すと20分の1の確率で宝箱ゲット！（8/29・30はイベントデーで5分の1に）';
+      : 'レアキャラを倒すと20分の1の確率で宝箱ゲット！';
     return `<div class="shop-section-title">🗝️ 宝箱・鍵・指輪（${dropNote}）</div>` + rowsHtml;
   }
 
@@ -34941,7 +34948,9 @@
     var msg = [];
     if (surveyDone_.student) msg.push('✅ 生徒本人は、今月のアンケートに答えてくれました。');
     if (surveyDone_.guardian) msg.push('✅ 保護者の方は、今月のアンケートに答えてくださいました。');
-    if (msg.length) msg.push(all ? 'ありがとうございました！次は来月また答えてね。' : hide ? '（もう一方の方は、上の「答える人」を選びかえると答えられます）' : '');
+    // 生徒本人が答えたあとに開く欄は保護者用だと、はっきり書く(バグ報告#44：何回でも答えられるように見えた)
+    if (msg.length) msg.push(all ? 'ありがとうございました！次は来月また答えてね。' : hide ? '（もう一方の方は、上の「答える人」を選びかえると答えられます）'
+      : who === 'guardian' && surveyDone_.student ? '⬇️ ここから下は【保護者の方】が答える欄です。生徒本人がもう一度答えることはできません（MPも入りません）。' : '');
     els.surveyStatus.textContent = msg.join(' ');
   }
   document.addEventListener('change', function (e) { if (e.target && e.target.name === 'surveyRespondent') surveySetFormHidden_(); });
