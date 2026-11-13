@@ -22047,6 +22047,7 @@
             winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
           }
           winHtml += checkUsaCrossingTemptation_();
+          if (state.usaCrossingActive) winHtml += necklaceOfferHtml_();
           if (state.usaCrossingActive && state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
             winHtml += finishUsaCrossing_();
           }
@@ -23293,7 +23294,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}` + necklaceOfferHtml_();
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -26433,12 +26434,14 @@
   // 📿金のネックレス(2026-11-13〜、先生の指示。shop.jsと揃える)：敵をたおしたあと、たまに「あやしい商人」が来て
   // 「100MPで買いませんか？なんでも屋で売ればきっと500MPで売れますよ」とすすめてくる。
   // 実際になんでも屋で売れるのは50MPだけ(うまい話には気をつけよう)。個数は gemItems.goldNecklace。
-  // 商人は敵をたおすたびに1/25で来る。1日1回まで(端末・IDごと)。
+  // 商人はアメリカ横断の挑戦中だけ、州を1つ進むたびに1/10で来る(2026-11-13 修正：最初は算数の敵をたおしたときにも出ていた)。
+  // 1日1回まで(端末・IDごと)。
   const GOLD_NECKLACE_BUY_MP_ = 100;
   const GOLD_NECKLACE_SELL_MP_ = 50;
   const GOLD_NECKLACE_CLAIM_MP_ = 500;
-  const NECKLACE_SELLER_CHANCE_ = 1 / 25;
+  const NECKLACE_SELLER_CHANCE_ = 1 / 10;
   function necklaceOfferHtml_() {
+    if (!state.usaCrossingActive) return '';
     var sess = loadSession();
     if (!sess || !sess.id) return '';
     var k = 'necklaceSeller_v1_' + sess.id, today = todayKey();
