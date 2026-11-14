@@ -22370,6 +22370,7 @@
     renderHpRulesBanner_();
     renderMpCapBanner_();
     renderWinterCourseBanner_();
+    renderKenPauseBanner_();
     renderQuizPerfectBanner_();
     renderCharArtBanner_();
     renderCategoryRankBanner_();
@@ -23562,6 +23563,18 @@
     if (els.mpCapBannerText) {
       els.mpCapBannerText.textContent = '📢 9月1日からのお知らせ：🔬理科は、10問連続正解ではなく5問連続正解ごとに+5MP（理科の経験値+5）がもらえるようになりました！ログイン時にもらえるMPも、1日最大100MP（計算40＋文章題40＋理科20）の上限に含まれるようになりました（何度ログインし直しても増えません）。';
     }
+  }
+
+  // 計算パズルお休みのお知らせ(2026-11-14〜11-26)。
+  function renderKenPauseBanner_() {
+    var b = document.getElementById('kenPauseBanner'), tx = document.getElementById('kenPauseBannerText');
+    if (!b) return;
+    var today = todayKey();
+    if (today < '2026-11-14' || today > KEN_PAUSE_UNTIL_) { b.hidden = true; return; }
+    b.hidden = false;
+    if (tx) tx.textContent = today < KEN_PAUSE_FROM_
+      ? '📢【計算パズルお休みのお知らせ】小学生のランキングテストと定期テストが終わるまで、明日11月15日（日）から11月26日（木）まで、計算パズルはお休みします。11月27日（金）から再開します。テスト勉強をがんばろう！'
+      : '📢【計算パズルはお休み中】小学生のランキングテストと定期テストが終わるまで、11月26日（木）まで計算パズルはお休みです。11月27日（金）から再開します。テスト勉強をがんばろう！';
   }
 
   // 冬期講習（小6対象の中学準備講座・算数総復習講座）のお知らせ。
@@ -32349,13 +32362,19 @@
   }
   // ---- 計算パズルの画面(2026-11-05〜。2026-11-06から全員に公開) ----
   var KEN_OPEN_ALL_ = true;
-  function kenVisible_() { return isAdminSession_() || KEN_OPEN_ALL_; }
+  // 小学生のランキングテスト・定期テストのため、2026-11-15〜11-26はお休み(ボタンを出さず、解けない。先生だけは出す)。11-27から再開。
+  // lib/handlers/kenken.jsのKEN_PAUSE_*と揃えること。
+  var KEN_PAUSE_FROM_ = '2026-11-15';
+  var KEN_PAUSE_UNTIL_ = '2026-11-26';
+  function kenPaused_() { var d = todayKey(); return d >= KEN_PAUSE_FROM_ && d <= KEN_PAUSE_UNTIL_; }
+  function kenVisible_() { return isAdminSession_() || (KEN_OPEN_ALL_ && !kenPaused_()); }
   var ken_ = { p: null, vals: [], sel: -1, start: 0, done: false, timer: null, wrong: {} };
   function kenBest_(n) { try { return Number(localStorage.getItem('kenBest_' + n)) || 0; } catch (e) { return 0; } }
   function kenSetBest_(n, sec) { try { localStorage.setItem('kenBest_' + n, String(sec)); } catch (e) {} }
   function kenTimeText_(sec) { return Math.floor(sec / 60) + '分' + ('0' + (sec % 60)).slice(-2) + '秒'; }
   function kenElapsed_() { return Math.floor((Date.now() - ken_.start) / 1000); }
   function kenStart_(n) {
+    if (!kenVisible_()) return;
     var p = kenMakePuzzle_(n);
     if (!p) return;
     ken_.p = p; ken_.vals = Array(n * n).fill(0); ken_.sel = -1; ken_.start = Date.now(); ken_.done = false; ken_.wrong = {};
