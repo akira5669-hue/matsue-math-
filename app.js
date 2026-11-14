@@ -23370,6 +23370,9 @@
   /* ---------- イベント登録 ---------- */
 
   document.addEventListener('keydown', (e) => {
+    // 入力らん(アンケートなど)に文字を打っているときは、数字キー・Enterで問題を進めない(バグ報告#49：アンケートに数字を書いたら問題に答えてしまった)
+    const tg = e.target;
+    if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' || tg.isContentEditable)) return;
     if (state.answered) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -23821,6 +23824,7 @@
     '🐞【バグを直しました⑲】ボン・ミスコが敵のとき、かけ算などの単元にすると「かけちゃん」に変わって呪いをよけられたのを直しました。ボン・ミスコはどの単元でもボン・ミスコのままです。',
     '🐞【バグを直しました⑳】「同じ単元は1日最大50問」という説明をなおしました。同じ単元は1日40問でその日はコンプリートです。なんでも屋の宝箱の欄に残っていた「8/29・30はイベントデー」の案内も消しました。',
     '🐞【バグを直しました㉑】理科の画面に、計算の敵（徳川家康など）のセリフが出ていたのを直しました。県庁所在地クイズの特産品の答えから、「（川越）」などのかっこ書きを消しました。',
+    '🐞【バグを直しました㉒】アンケートなどに数字を書くと、そのときの問題に勝手に答えてしまうことがあったのを直しました。計算パズルの自己ベストが、遅いタイムに書きかわってしまうことがあったのも直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -32484,7 +32488,14 @@
       });
       kp.removeAttribute('hidden');
       var ss = loadSession();
-      if (ss && ss.id) apiPost('kenStatus', { id: ss.id }).then(function (r) { if (r && r.ok) kenShowMp_(r.todayMp, r.dailyMax); }).catch(function () {});
+      // 自己ベストは端末に残しているが、消えたり別の端末だったりすると遅いタイムが自己ベストになっていた(バグ報告#50)。
+      // サーバーの記録の方が速ければ、そちらを自己ベストにする。
+      if (ss && ss.id) apiPost('kenStatus', { id: ss.id }).then(function (r) {
+        if (!r || !r.ok) return;
+        kenShowMp_(r.todayMp, r.dailyMax);
+        Object.keys(r.best || {}).forEach(function (n) { var sv = Number(r.best[n]) || 0, lo = kenBest_(n); if (sv > 0 && (!lo || sv < lo)) kenSetBest_(n, sv); });
+        kenTick_();
+      }).catch(function () {});
       if (!ken_.p) kenStart_(4);
       else if (!ken_.done && !ken_.timer) ken_.timer = setInterval(kenTick_, 1000);
       kp.scrollIntoView({ behavior: 'smooth', block: 'start' });
