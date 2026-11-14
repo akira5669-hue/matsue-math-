@@ -22251,7 +22251,8 @@
     els.enemyEmoji.classList.toggle('is-rare', isRare);
     els.enemyName.textContent = ((isBossFight || isFuji || isOhachi) ? '👑 ' : isRare ? '✨ ' : '') + enemy.name + ((isBossFight || isFuji || isOhachi) ? ' 👑' : isRare ? ' ✨' : '');
     els.enemyName.classList.toggle('is-rare-name', isRare);
-    if ((isRare || isBossFight || isFuji) && enemy.lines && enemy.lines.appear) {
+    // 理科の画面では算数の敵のセリフを出さない(バグ報告#45：理科の問題のところに徳川家康のセリフが出ていた)
+    if (state.subject !== 'science' && (isRare || isBossFight || isFuji) && enemy.lines && enemy.lines.appear) {
       els.enemySpeech.textContent = enemy.lines.appear;
       els.enemySpeech.hidden = false;
     } else {
@@ -23806,6 +23807,7 @@
     '🐞【バグを直しました⑱】理科のハナマルコの吹き出しが、計算に切りかえても残っていたのを直しました。',
     '🐞【バグを直しました⑲】ボン・ミスコが敵のとき、かけ算などの単元にすると「かけちゃん」に変わって呪いをよけられたのを直しました。ボン・ミスコはどの単元でもボン・ミスコのままです。',
     '🐞【バグを直しました⑳】「同じ単元は1日最大50問」という説明をなおしました。同じ単元は1日40問でその日はコンプリートです。なんでも屋の宝箱の欄に残っていた「8/29・30はイベントデー」の案内も消しました。',
+    '🐞【バグを直しました㉑】理科の画面に、計算の敵（徳川家康など）のセリフが出ていたのを直しました。県庁所在地クイズの特産品の答えから、「（川越）」などのかっこ書きを消しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -27331,17 +27333,21 @@
   // 10問(通常=連続正解、イージー=解いた数)のたびに出題する3問セット(県庁
   // 所在地1問+特産品2問、同じ都道府県について)を作る。都道府県は沖縄からの
   // 制覇順で、一周したら最初へ戻る。
+  // 特産品クイズの選択肢は、（川越）（平泉）などのかっこ書きを消して使う(バグ報告#46：地名で答えが分かってしまう)
+  function capitalQuizItems_(pref) {
+    return pref.trivia.split('・').map(function (s) { return s.replace(/（[^）]*）/g, '').trim(); }).filter(Boolean);
+  }
   function buildCapitalQuizTrivia_(pref, correctItem, step, mode) {
     // 不正解の選択肢に、出題中の都道府県自身の特産品(例：静岡の「お茶」が正解の
     // 時に、和歌山由来の「みかん」)が混ざると正解が2つになるため除外する。
-    var ownItems = pref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
+    var ownItems = capitalQuizItems_(pref);
     var wrongItems = [];
     var guard = 0;
     while (wrongItems.length < 3 && guard < 60) {
       guard++;
       var otherPref = PREFECTURE_DATA[randInt(0, PREFECTURE_DATA.length - 1)];
       if (otherPref.name === pref.name) continue;
-      var otherItems = otherPref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean);
+      var otherItems = capitalQuizItems_(otherPref);
       var w = otherItems[randInt(0, otherItems.length - 1)];
       if (w && ownItems.indexOf(w) === -1 && wrongItems.indexOf(w) === -1) wrongItems.push(w);
     }
@@ -27366,7 +27372,7 @@
       question: '【社会】' + pref.name + 'の県庁所在地はどこ？', answer: capital,
       choices: shuffle([capital].concat(wrongCapitals)), steps: [],
     };
-    var items = shuffle(pref.trivia.split('・').map(function (s) { return s.trim(); }).filter(Boolean));
+    var items = shuffle(capitalQuizItems_(pref));
     var item1 = items[0];
     var item2 = items.length > 1 ? items[1] : items[0];
     return [q1, buildCapitalQuizTrivia_(pref, item1, 2, mode), buildCapitalQuizTrivia_(pref, item2, 3, mode)];
