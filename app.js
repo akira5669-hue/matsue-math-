@@ -22217,6 +22217,8 @@
     var skTg = document.getElementById('shikokuToggle'); if (skTg) { skTg.hidden = !isAdminSession_(); if (skTg.hidden) { var skPn = document.getElementById('shikokuPanel'); if (skPn) skPn.setAttribute('hidden', ''); } }
     // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
     var nsSs = loadSession(); var nsTg = document.getElementById('numSenseToggle'); if (nsTg) { nsTg.hidden = !(isAdminSession_() || (nsSs && String(nsSs.grade || '').charAt(0) === '小')); if (nsTg.hidden) { var nsPn = document.getElementById('numSensePanel'); if (nsPn) nsPn.setAttribute('hidden', ''); } }
+    // 📰時事問題(2026-11-15〜、中学生だけ。NEWS_OPEN_がfalseの間は先生(00001)だけのプレビュー)
+    var nwTg = document.getElementById('newsToggle'); if (nwTg) { nwTg.hidden = !newsVisible_(); if (nwTg.hidden) { var nwPn = document.getElementById('newsPanel'); if (nwPn) nwPn.setAttribute('hidden', ''); } }
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
@@ -35570,6 +35572,159 @@
       var a = e.target.closest('[data-ns-ans]');
       if (a) { answer_(a.getAttribute('data-ns-ans'), a); return; }
       if (e.target.closest('[data-ns-next]')) next_();
+    });
+    // ほかのボタンを押したら閉じる
+    tg.parentNode.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b && b !== tg) panel.setAttribute('hidden', '');
+    });
+  })();
+
+  /* ---------- 📰時事問題(2026年10月・11月)(2026-11-15〜) ----------
+     中学生だけが解ける4択の時事問題。NEWS_OPEN_がfalseの間は先生(00001)だけのプレビュー(先生が問題を確認してから公開)。
+     MP：1問正解で1MP、1日NEWS_MP_DAILY_(10)MPまで。かずのかんかくと同じく計算のMP(pointsTodayCalc)に含める。
+     「今日何MPもらったか」はこの端末のlocalStorage(newsMp_<id>)で数える。計算の1日上限はサーバー(sync.js)でも守られる。
+     問題は2026-11-15時点のニュースまとめ(複数の情報源で確かめられたものだけ)から作った。11月の分は11/13ごろまで。 */
+  var NEWS_OPEN_ = false; // trueにすると中学生に公開
+  function newsVisible_() {
+    var s = loadSession();
+    if (!s || !s.id) return false;
+    if (s.id === '00001') return true;
+    return NEWS_OPEN_ && String(s.grade || '').charAt(0) === '中';
+  }
+  (function () {
+    var tg = document.getElementById('newsToggle');
+    var panel = document.getElementById('newsPanel');
+    if (!tg || !panel) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var NEWS_MP_DAILY_ = 10;
+    // m:月 / q:問題 / a:正解 / w:まちがいの選択肢3つ / e:解説
+    var NEWS_QS_ = [
+      // ---- 10月 ----
+      { m: 10, q: '2026年のノーベル化学賞を受賞した日本人は誰？', a: '硤合憲三さん', w: ['北川進さん', '山中伸弥さん', '本庶佑さん'], e: '東京理科大学名誉教授の硤合憲三（そあい けんぞう）さんが、フランスのアンリ・カガンさんと一緒に受賞しました（10月7日発表）。2025年の北川進さんに続き、化学賞で2年続けて日本人が受賞しました。' },
+      { m: 10, q: '硤合憲三さんがノーベル化学賞を受賞した研究は、分子の何に関係する発見？', a: '「右手型」と「左手型」', w: ['電池の充電のしくみ', '細胞の中の時計', '金属が光を出すしくみ'], e: '分子には、鏡に映したように形が反対の「右手型」と「左手型」があります。硤合さんは、片方の型が自分と同じ型をどんどん増やしていく反応（硤合反応）を発見しました。薬づくりにも大切な研究です。' },
+      { m: 10, q: '2026年のノーベル生理学・医学賞は、何を使って脳の神経細胞を操る研究？', a: '光', w: ['電波', '音', '磁石'], e: '光を当てると神経細胞を動かしたり止めたりできる「光遺伝学（オプトジェネティクス）」の研究に贈られました。アメリカのダイセロスさん、ドイツのヘーゲマンさん・ナーゲルさんの3人です。' },
+      { m: 10, q: '2026年のノーベル物理学賞は、どこの氷を使って宇宙から来る小さな粒（ニュートリノ）をとらえた研究？', a: '南極', w: ['北極', 'エベレスト', '富士山'], e: '南極の氷の中に検出器を埋めた観測施設「アイスキューブ」で、宇宙から来るとても高いエネルギーのニュートリノを観測しました。日本の「カミオカンデ」もニュートリノの研究で有名ですね。' },
+      { m: 10, q: '2026年のノーベル平和賞を受賞した、元国連人権高等弁務官のナビ・ピレイさんの出身国は？', a: '南アフリカ', w: ['ブラジル', 'インド', 'ケニア'], e: 'ナビ・ピレイさんは南アフリカ出身で、国連で人権を守る仕事のトップ（人権高等弁務官）を務めました。南アフリカでは、かつて人種で人を分ける「アパルトヘイト」という政策がありました。' },
+      { m: 10, q: '2026年のノーベル文学賞を受賞した詩人、アン・カーソンさんの国は？', a: 'カナダ', w: ['イギリス', 'フランス', 'オーストラリア'], e: 'カナダの詩人アン・カーソンさんが受賞しました。古代ギリシャの古典と現代の文学を組み合わせた作品で知られています。' },
+      { m: 10, q: '10月1日から変わった最低賃金（全国の平均）は、1時間いくら？', a: '1177円', w: ['1055円', '1121円', '1500円'], e: '最低賃金の全国平均は1177円（56円アップ）になりました。最低賃金は、会社が働く人に払わなければいけない1時間あたりの最低の金額で、都道府県ごとに決まります。' },
+      { m: 10, q: '10月1日の酒税の変更で、税金が下がったのはどれ？', a: 'ビール', w: ['発泡酒', '第3のビール（新ジャンル）', '3つとも上がった'], e: 'ビール系のお酒の税金が1つにそろえられ、ビールは減税、発泡酒と第3のビールは増税になりました。税金は国や地方の仕事のためのお金で、お酒の税金は「国税」です。' },
+      { m: 10, q: '10月、ビール大手4社に「カルテル」の疑いで強制調査に入った国の機関は？', a: '公正取引委員会', w: ['消費者庁', '金融庁', '会計検査院'], e: 'カルテルは、会社どうしが話し合って値段などを決めてしまうことで、「独占禁止法」で禁止されています。自由な競争を守るため、公正取引委員会が調べます。' },
+      { m: 10, q: '10月に閣議決定された法案で、食料品の消費税は何％にする予定？（2027年4月から2年間）', a: '1％', w: ['0％', '5％', '10％'], e: '今は8％（軽減税率）の食料品の消費税を、2027年4月から2年間1％にする法案です。消費税は1989年に始まり、下げるのは初めてです。' },
+      { m: 10, q: '消費税が日本で初めて導入されたのは何年？（10月の消費税を下げる法案のニュースでも話題に）', a: '1989年', w: ['1945年', '1973年', '2000年'], e: '消費税は1989年に3％で始まり、5％→8％→10％と上がってきました（食料品などは軽減税率で8％）。' },
+      { m: 10, q: '10月5日に始まった、必要なときに開かれる国会を何という？', a: '臨時国会', w: ['通常国会', '特別国会', '参議院の緊急集会'], e: '臨時国会は、内閣が必要と判断したときなどに開かれます。毎年1月に始まる150日間の国会は「通常国会」、衆議院の総選挙のあとに開かれるのは「特別国会」です。' },
+      { m: 10, q: '10月の臨時国会で所信表明演説をした内閣総理大臣は？', a: '高市早苗さん', w: ['石破茂さん', '岸田文雄さん', '小泉進次郎さん'], e: '高市早苗首相が所信表明演説を行い、食料品の消費税を下げる法案などを説明しました。内閣総理大臣は国会議員の中から国会が指名します。' },
+      { m: 10, q: '9月〜10月にアジア競技大会とアジアパラ競技大会が開かれた日本の県は？', a: '愛知県', w: ['大阪府', '福岡県', '北海道'], e: '愛知・名古屋でアジア競技大会（9/19〜10/4）とアジアパラ競技大会（10/18〜24）が開かれました。日本はアジア大会でメダル269個と、過去最高でした。' },
+      { m: 10, q: '10月28日、プロ野球の日本シリーズで2年続けて日本一になったチームは？', a: '福岡ソフトバンクホークス', w: ['横浜DeNAベイスターズ', '読売ジャイアンツ', '阪神タイガース'], e: 'ソフトバンクがDeNAに4連勝して、2年連続の日本一になりました。' },
+      { m: 10, q: '10月はサイバー攻撃による個人情報の流出が相次いだ。国が進める「能動的サイバー防御」で、守ることとのバランスが話題の「通信の秘密」は、日本国憲法の第何条？', a: '第21条', w: ['第9条', '第14条', '第25条'], e: '第21条は「表現の自由」と「通信の秘密」を守る条文です。攻撃を防ぐために通信を調べることと、通信の秘密を守ることの両立が議論されています。（第9条は平和主義、第14条は法の下の平等、第25条は生存権）' },
+      { m: 10, q: '10月30日、日本の政策金利を「据え置く」と決めた、日本の中央銀行は？', a: '日本銀行', w: ['ゆうちょ銀行', '財務省', '日本政策金融公庫'], e: '日本銀行（日銀）は日本の中央銀行で、お札を発行し、金利を上げ下げして物価の安定をめざします。「発券銀行」「銀行の銀行」「政府の銀行」の3つの役割があります。' },
+      // ---- 11月 ----
+      { m: 11, q: '11月2日に発足した、災害への対策の司令塔となる国の新しい役所は？', a: '防災庁', w: ['デジタル庁', 'こども家庭庁', '復興庁'], e: '防災庁は、地震や豪雨などの災害に、事前の備えから復興まで国としてまとめて取り組むための役所です。デジタル庁は2021年、こども家庭庁は2023年にできました。' },
+      { m: 11, q: '防災庁が発足の日に呼びかけた、家での水や食料の備えは「最低」何日分？', a: '3日分', w: ['1日分', '10日分', '1か月分'], e: '水・食料・携帯トイレなどを最低3日分、できれば1週間分そなえるよう呼びかけました。災害のすぐあとは、助けが届くまで時間がかかることがあるためです。' },
+      { m: 11, q: '11月3日のアメリカの中間選挙で、上院・下院の両方で多数をとったとみられる政党は？', a: '民主党', w: ['共和党', '自由民主党', '労働党'], e: '民主党が上院・下院の両方で多数をとったとみられ、共和党のトランプ大統領と議会の多数派がちがう「ねじれ」の状態になります。（結果は州の確定待ちのところもあります）' },
+      { m: 11, q: 'アメリカの「中間選挙」は、どうしてこう呼ばれる？', a: '大統領の4年の任期の真ん中に行われるから', w: ['国の真ん中の州だけで行われるから', '大統領選挙と同じ日に行われるから', '上院と下院の真ん中の議員を選ぶから'], e: 'アメリカの大統領の任期は4年で、その真ん中の年に行われるので「中間選挙」といいます。下院は全員、上院は約3分の1が選び直されます。' },
+      { m: 11, q: '11月3日で、日本国憲法が公布されてから何年？', a: '80年', w: ['50年', '70年', '100年'], e: '日本国憲法は1946年11月3日に公布、1947年5月3日に施行されました。11月3日は「文化の日」、5月3日は「憲法記念日」です。' },
+      { m: 11, q: '11月6日、食料品の消費税を下げる法案は衆議院で可決された。このあと、法案はどこで話し合われる？', a: '参議院', w: ['最高裁判所', '内閣', '天皇'], e: '法律案は衆議院と参議院の両方で可決されると法律になります。この法案は11月11日から参議院で話し合われています。両院の議決がちがうとき、衆議院で3分の2以上の賛成で再び可決すれば法律になります（衆議院の優越）。' },
+      { m: 11, q: '11月11日、最高裁判所が参議院選挙の「一票の格差」（最大3.13倍）について出した判断は？', a: '違憲状態', w: ['合憲', '違憲で選挙は無効', '判断しなかった'], e: '最高裁は「違憲状態」としましたが、選挙を無効にする訴えは退けました。一票の格差は、選挙区によって一票の重さがちがうことで、憲法14条の「法の下の平等」に関わります。' },
+      { m: 11, q: '最高裁判所は、法律などが憲法に合っているかを最終的に決める。このことから最高裁判所は何と呼ばれる？', a: '憲法の番人', w: ['国権の最高機関', '良識の府', '全体の奉仕者'], e: '違憲審査権を最終的に持つ最高裁判所は「憲法の番人」と呼ばれます。「国権の最高機関」は国会、「良識の府」は参議院のことです。' },
+      { m: 11, q: '11月9日から、気候変動について話し合う国際会議「COP31」が開かれている国は？', a: 'トルコ', w: ['ブラジル', 'エジプト', '日本'], e: 'COP31はトルコのアンタルヤで開かれています（11/20まで）。COPは「気候変動枠組条約」の締約国会議です。2015年のCOP21では「パリ協定」が結ばれました。' },
+      { m: 11, q: '11月中旬、会社どうしで売り買いする商品の値段（企業物価）は前の年より7.1％上がった。物価が上がり続けることを何という？', a: 'インフレーション', w: ['デフレーション', 'リサイクル', 'バブル崩壊'], e: '物価が上がり続けることをインフレーション（インフレ）、下がり続けることをデフレーション（デフレ）といいます。ものの値段が上がると、同じお金で買える量がへります。' },
+      { m: 11, q: '11月18〜19日に首脳会議が予定されている、アジア太平洋の国と地域が経済協力について話し合う集まりは？', a: 'APEC', w: ['NATO', 'EU', 'OPEC'], e: 'APEC（アジア太平洋経済協力）は、日本・アメリカ・中国などが参加する経済の集まりで、今年は中国で開かれます。NATOは北大西洋条約機構、OPECは石油輸出国機構です。' },
+      { m: 11, q: '11月、衆議院の憲法審査会で集中して話し合われた、「戦争の放棄」などを定めた日本国憲法の条文は？', a: '第9条', w: ['第1条', '第21条', '第96条'], e: '第9条は戦争の放棄、戦力を持たないこと、交戦権を認めないことを定めています。憲法改正の手続きは第96条で、国会の発議と国民投票が必要です。' },
+    ];
+    var NEWS_THEMES_ = [
+      { id: 'all', label: '🗞️ ぜんぶ' },
+      { id: '10', label: '🍂 10月' },
+      { id: '11', label: '🍁 11月' },
+    ];
+    var nw = { theme: 'all', deck: [], q: null, answered: false, total: 0, ok: 0 };
+    function shuffle_(arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
+    function newsAllowed_() { var s = loadSession(); return !!(s && (s.id === '00001' || String(s.grade || '').charAt(0) === '中')); }
+    function renderThemes_() {
+      $('newsThemes').innerHTML = NEWS_THEMES_.map(function (t) {
+        return '<button type="button" class="ghost-btn ns-theme' + (t.id === nw.theme ? ' is-on' : '') + '" data-news-theme="' + t.id + '">' + t.label + '</button>';
+      }).join('');
+    }
+    // 今日この端末でもらったMP(1日NEWS_MP_DAILY_まで)
+    function mpKey_() { var s = loadSession(); return s && s.id ? 'newsMp_' + s.id : ''; }
+    function mpToday_() {
+      var k = mpKey_(); if (!k) return 0;
+      try { var o = JSON.parse(localStorage.getItem(k) || 'null'); return o && o.d === todayKey() ? Number(o.n) || 0 : 0; } catch (e) { return 0; }
+    }
+    function mpSet_(n) { var k = mpKey_(); if (!k) return; try { localStorage.setItem(k, JSON.stringify({ d: todayKey(), n: n })); } catch (e) { } }
+    function giveMp_() {
+      var session = loadSession();
+      if (!session || !session.id) return 0;
+      var got = mpToday_();
+      var today = todayKey();
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
+      var add = Math.max(0, Math.min(1, NEWS_MP_DAILY_ - got, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
+      if (add <= 0) return 0;
+      state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + add;
+      state.points += add;
+      state.pointsToday += add;
+      mpSet_(got + add);
+      saveGameState(state);
+      updateGameHud();
+      syncPointsNow_(session.id);
+      return add;
+    }
+    function renderScore_() {
+      $('newsScore').textContent = (nw.total ? '今回 ' + nw.total + '問中 ' + nw.ok + '問正解　' : '') + '今日のMP ' + mpToday_() + '/' + NEWS_MP_DAILY_ + '（1問正解で1MP）';
+      var note = $('newsAdminNote');
+      if (note) note.textContent = NEWS_OPEN_ ? '' : '　🧪今は先生(00001)だけのプレビューです。';
+    }
+    // 同じ問題が続かないように、テーマの問題をシャッフルして順に出す(1周したらまたシャッフル)
+    function next_() {
+      if (!nw.deck.length) {
+        nw.deck = shuffle_(NEWS_QS_.filter(function (x) { return nw.theme === 'all' || String(x.m) === nw.theme; }).slice());
+      }
+      var x = nw.deck.shift();
+      var choices = shuffle_([x.a].concat(x.w));
+      nw.q = { x: x, choices: choices };
+      nw.answered = false;
+      $('newsCard').innerHTML = '<div class="ns-q">【' + x.m + '月】' + escHtml(x.q) + '</div>'
+        + '<div class="ns-choices">' + choices.map(function (c, i) { return '<button type="button" class="ghost-btn ns-choice" data-news-ans="' + i + '">' + escHtml(c) + '</button>'; }).join('') + '</div>'
+        + '<div class="ns-fb" id="newsFb"></div>';
+      renderScore_();
+    }
+    function answer_(idx, btn) {
+      if (!nw.q || nw.answered || !newsAllowed_()) return;
+      nw.answered = true;
+      var x = nw.q.x;
+      var okIdx = nw.q.choices.indexOf(x.a);
+      var ok = idx === okIdx;
+      nw.total++; if (ok) nw.ok++;
+      var add = ok ? giveMp_() : 0;
+      Array.prototype.forEach.call(panel.querySelectorAll('.ns-choice'), function (b) {
+        b.disabled = true;
+        if (Number(b.getAttribute('data-news-ans')) === okIdx) b.classList.add('is-correct');
+        else if (b === btn) b.classList.add('is-incorrect');
+      });
+      var mpLine = !ok ? '' : add > 0 ? '　+' + add + 'MP' : mpToday_() >= NEWS_MP_DAILY_ ? '（今日のMPは' + NEWS_MP_DAILY_ + 'MPまでもらったよ）' : '（今日の計算のMP上限のためMPなし）';
+      var fb = $('newsFb');
+      fb.className = 'ns-fb ' + (ok ? 'ns-ok' : 'ns-ng');
+      fb.innerHTML = '<div class="ns-fb-head">' + (ok ? '⭕ 正解！' + mpLine : '❌ ざんねん！正解は「' + escHtml(x.a) + '」') + '</div><div class="ns-expl">' + escHtml(x.e) + '</div>'
+        + '<button type="button" class="primary-btn" data-news-next="1">つぎの問題 ▶</button>';
+      renderScore_();
+    }
+    tg.addEventListener('click', function () {
+      if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel', 'numSensePanel',
+        'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+        var p = document.getElementById(pid);
+        if (p) p.setAttribute('hidden', '');
+      });
+      panel.removeAttribute('hidden');
+      renderThemes_();
+      if (!nw.q || nw.answered) next_(); else renderScore_();
+    });
+    panel.addEventListener('click', function (e) {
+      var th = e.target.closest('[data-news-theme]');
+      if (th) { nw.theme = th.getAttribute('data-news-theme'); nw.deck = []; renderThemes_(); next_(); return; }
+      var a = e.target.closest('[data-news-ans]');
+      if (a) { answer_(Number(a.getAttribute('data-news-ans')), a); return; }
+      if (e.target.closest('[data-news-next]')) next_();
     });
     // ほかのボタンを押したら閉じる
     tg.parentNode.addEventListener('click', function (e) {
