@@ -22350,9 +22350,9 @@
     els.expBarInner.style.width = `${(expInLv_ / EXP_PER_LEVEL) * 100}%`;
     // バーの下の「経験値」に数も出す(算数・数学+理科の合計と、次のレベルまであと何か)(バグ報告#10)
     var expLb = document.getElementById('expLabel');
-    // 数は今の経験値だけ(たおす前の分は足さない)。「あと」も今の経験値で数え、今の敵をたおせばレベルが上がるところまで来ていたらそう出す(バグ報告#21・#27)
+    // 数は今の経験値だけ(たおす前の分は足さない)。「あと」はバーと同じく今の敵への連続正解の分を引いて数え(バグ報告#55〜#57)、今の敵をたおせばレベルが上がるところまで来ていたらそう出す(バグ報告#21・#27)
     var expRest_ = EXP_PER_LEVEL - ((state.exp + state.scienceExp) % EXP_PER_LEVEL);
-    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (state.level < MAX_LEVEL ? (expPending_ >= expRest_ ? '\nこの敵をたおすとLvアップ！' : '\n次のLvまであと' + expRest_) : ''); }
+    if (expLb) { var expSum = (Number(state.exp) || 0) + (Number(state.scienceExp) || 0); expLb.textContent = '経験値 ' + expSum + (state.level < MAX_LEVEL ? (expPending_ >= expRest_ ? '\nこの敵をたおすとLvアップ！' : '\n次のLvまであと' + (expRest_ - expPending_)) : ''); }
     updateUserAvatarBadge();
     updateWorldToggleVisibility();
     updateFujiToggleVisibility();
@@ -23826,6 +23826,7 @@
     '🐞【バグを直しました㉑】理科の画面に、計算の敵（徳川家康など）のセリフが出ていたのを直しました。県庁所在地クイズの特産品の答えから、「（川越）」などのかっこ書きを消しました。',
     '🐞【バグを直しました㉒】アンケートなどに数字を書くと、そのときの問題に勝手に答えてしまうことがあったのを直しました。計算パズルの自己ベストが、遅いタイムに書きかわってしまうことがあったのも直しました。',
     '🐞【バグを直しました㉓】文章題の報酬が「50MP」と書いてあったのに、40MPしか入らなかったのを直しました。文章題の1日の上限が40MPなので、報酬の表示を40MPにそろえました。',
+    '🐞【バグを直しました㉔】問題に正解して経験値のバーがのびても、「次のLvまであと」の数が敵をたおすまで変わらなかったのを直しました。今はバーと同じように、正解するたびに数がへります（まちがえると元にもどります）。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
