@@ -35593,7 +35593,7 @@
     });
   })();
 
-  /* ---------- 📰時事問題(2026-11-15〜。問題は news-data.js、毎週自動で追加・1か月で入れかえ) ----------
+  /* ---------- 📰時事問題(2026-11-15〜。問題は news-data.js、毎週自動で追加・最大3か月分) ----------
      中学生だけが解ける4択の時事問題。NEWS_OPEN_がfalseの間は先生(00001)だけのプレビュー(先生が問題を確認してから公開)。
      MP：1問正解で1MP、1日NEWS_MP_DAILY_(10)MPまで。計算・文章題などの1日上限とは別枠(pointsTodayNews)(2026-11-15 先生の指示)。
      pointsTodayNewsはサーバー(sync.js、points_today_news)でも1日10MPまでに制限し、端末どうしで大きい方にそろえる。
@@ -35612,14 +35612,15 @@
     var $ = function (id) { return document.getElementById(id); };
     var NEWS_MP_DAILY_ = 10;
     // 問題は news-data.js(window.NEWS_QS)。d:ニュースの日付 / q:問題 / a:正解 / w:まちがいの選択肢3つ / e:解説
-    // 毎週クラウドの定期タスクが問題を足し、1か月より古い問題を消す(2026-11-15 先生の指示)。
-    // アプリ側でも、dが1か月より前の問題は出さない。ただし定期タスクが止まっても空にならないよう、残りがNEWS_MIN_QS_問より少ないときは新しい順にNEWS_MIN_QS_問は残す。
+    // 毎週クラウドの定期タスクが問題を足す。ニュースは最大3か月分(今月と前の2か月)。月が変わったら3か月前の月の分を消す
+    // (例：10月・11月・12月はそのまま、1月になったら10月の分を消す)(2026-11-15 先生の指示)。
+    // アプリ側でも、dが前々月の1日より前の問題は出さない。ただし定期タスクが止まっても空にならないよう、残りがNEWS_MIN_QS_問より少ないときは新しい順にNEWS_MIN_QS_問は残す。
     var NEWS_MIN_QS_ = 15;
     function newsMonth_(x) { return Number(String(x.d || '').slice(5, 7)) || 0; }
     function newsQs_() {
       var all = (Array.isArray(window.NEWS_QS) ? window.NEWS_QS : []).filter(function (x) { return x && x.d && x.q && x.a && Array.isArray(x.w); });
-      var lim = new Date(); lim.setMonth(lim.getMonth() - 1);
-      var limKey = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0') + '-' + String(lim.getDate()).padStart(2, '0');
+      var now = new Date(); var lim = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      var limKey = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0') + '-01';
       var fresh = all.filter(function (x) { return x.d >= limKey; });
       if (fresh.length >= NEWS_MIN_QS_) return fresh;
       return all.slice().sort(function (p, q) { return p.d < q.d ? 1 : p.d > q.d ? -1 : 0; }).slice(0, NEWS_MIN_QS_);
