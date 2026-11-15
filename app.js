@@ -35598,7 +35598,7 @@
      MP：1問正解で1MP、1日NEWS_MP_DAILY_(10)MPまで。計算・文章題などの1日上限とは別枠(pointsTodayNews)(2026-11-15 先生の指示)。
      pointsTodayNewsはサーバー(sync.js、points_today_news)でも1日10MPまでに制限し、端末どうしで大きい方にそろえる。
      問題は2026-11-15時点のニュースまとめ(複数の情報源で確かめられたものだけ)から作った。11月の分は11/13ごろまで。 */
-  var NEWS_OPEN_ = false; // trueにすると中学生に公開
+  var NEWS_OPEN_ = true; // 2026-11-15 先生が問題を確認して公開OK(中学生に公開)
   function newsVisible_() {
     var s = loadSession();
     if (!s || !s.id) return false;
