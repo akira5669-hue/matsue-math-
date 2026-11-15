@@ -35582,8 +35582,8 @@
 
   /* ---------- 📰時事問題(2026年10月・11月)(2026-11-15〜) ----------
      中学生だけが解ける4択の時事問題。NEWS_OPEN_がfalseの間は先生(00001)だけのプレビュー(先生が問題を確認してから公開)。
-     MP：1問正解で1MP、1日NEWS_MP_DAILY_(10)MPまで。かずのかんかくと同じく計算のMP(pointsTodayCalc)に含める。
-     「今日何MPもらったか」はこの端末のlocalStorage(newsMp_<id>)で数える。計算の1日上限はサーバー(sync.js)でも守られる。
+     MP：1問正解で1MP、1日NEWS_MP_DAILY_(10)MPまで。計算・文章題などの1日上限とは別枠(pointsTodayBonus)(2026-11-15 先生の指示)。
+     「今日何MPもらったか」はこの端末のlocalStorage(newsMp_<id>)で数える。
      問題は2026-11-15時点のニュースまとめ(複数の情報源で確かめられたものだけ)から作った。11月の分は11/13ごろまで。 */
   var NEWS_OPEN_ = false; // trueにすると中学生に公開
   function newsVisible_() {
@@ -35658,11 +35658,11 @@
       var got = mpToday_();
       var today = todayKey();
       if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; }
-      var add = Math.max(0, Math.min(1, NEWS_MP_DAILY_ - got, POINTS_DAILY_CAP_CALC - (Number(state.pointsTodayCalc) || 0)));
+      // 計算などの1日上限とは別枠(2026-11-15 先生の指示)。ダブル成功・今日のミッションと同じpointsTodayBonusに入れる。
+      var add = Math.max(0, Math.min(1, NEWS_MP_DAILY_ - got));
       if (add <= 0) return 0;
-      state.pointsTodayCalc = (Number(state.pointsTodayCalc) || 0) + add;
+      state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + add;
       state.points += add;
-      state.pointsToday += add;
       mpSet_(got + add);
       saveGameState(state);
       updateGameHud();
@@ -35701,7 +35701,7 @@
         if (Number(b.getAttribute('data-news-ans')) === okIdx) b.classList.add('is-correct');
         else if (b === btn) b.classList.add('is-incorrect');
       });
-      var mpLine = !ok ? '' : add > 0 ? '　+' + add + 'MP' : mpToday_() >= NEWS_MP_DAILY_ ? '（今日のMPは' + NEWS_MP_DAILY_ + 'MPまでもらったよ）' : '（今日の計算のMP上限のためMPなし）';
+      var mpLine = !ok ? '' : add > 0 ? '　+' + add + 'MP' : '（今日のMPは' + NEWS_MP_DAILY_ + 'MPまでもらったよ）';
       var fb = $('newsFb');
       fb.className = 'ns-fb ' + (ok ? 'ns-ok' : 'ns-ng');
       fb.innerHTML = '<div class="ns-fb-head">' + (ok ? '⭕ 正解！' + mpLine : '❌ ざんねん！正解は「' + escHtml(x.a) + '」') + '</div><div class="ns-expl">' + escHtml(x.e) + '</div>'
