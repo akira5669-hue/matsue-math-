@@ -30150,7 +30150,8 @@
   /* ---------- 超特訓部屋(2026-11-02〜) ----------
      基本は特訓部屋と同じ(入るのは無料・HPが0でも死なない・HPが10以上で出られる・MPは増えない・キャラは倒せない)。
      ちがうところ：
-     ・問題は「自分の学年」と「1つ上の学年」の算数・数学の単元からランダム(単元設定は見ない)。中3は中3だけ。
+     ・問題は学年ごとに決めた学年(SUPER_TRAINING_GRADES_)の算数・数学の単元からランダム(単元設定は見ない)(2026-11-15 先生の指示)。
+       小4→小4 / 小5→小5と中1 / 小6→小6と中1 / 中1→中1と中2 / 中2→中2と中3 / 中3→中3。表にない学年(小3など)は自分と1つ上、学年なしは全部。
      ・3問に1問くらい(SUPER_TRAINING_WRONG_RATE_)は、過去に間違えた算数・数学の問題(間違えた問題の保存庫)から出す。
      ・使えるのはレベル100以上の生徒だけ。2026-11-16〜11-30の期間限定。00001はいつでも入れる。
      ・期間中はHPが2000以上でも入れて、HPも2000を超えて増やせる。
@@ -30185,16 +30186,21 @@
     if (state.superTrainingDayKey !== todayKey()) { state.superTrainingDayKey = todayKey(); state.superTrainingDayGain = 0; }
     return Number(state.superTrainingDayGain) || 0;
   }
+  var SUPER_TRAINING_GRADES_ = { '小4': ['小4'], '小5': ['小5', '中1'], '小6': ['小6', '中1'], '中1': ['中1', '中2'], '中2': ['中2', '中3'], '中3': ['中3'] };
+  function superTrainingGrades_(ownGrade) {
+    if (SUPER_TRAINING_GRADES_[ownGrade]) return SUPER_TRAINING_GRADES_[ownGrade];
+    var ownRank = GRADE_RANK[ownGrade];
+    if (!ownRank) return null;
+    var gs = [ownGrade];
+    Object.keys(GRADE_RANK).forEach(function (g) { if (GRADE_RANK[g] === ownRank + 1) gs.push(g); });
+    return gs;
+  }
   function superTrainingCategories_() {
     var session = loadSession();
-    var ownGrade = session && session.grade;
-    var ownRank = GRADE_RANK[ownGrade];
-    if (!ownRank) return CATEGORIES.slice();
-    var maxRank = Math.min(ownRank + 1, GRADE_RANK['中3']);
-    return CATEGORIES.filter(function (c) {
-      var r = GRADE_RANK[categoryGrade[c.id]];
-      return r && r >= ownRank && r <= maxRank;
-    });
+    var gs = superTrainingGrades_(session && session.grade);
+    if (!gs) return CATEGORIES.slice();
+    var list = CATEGORIES.filter(function (c) { return gs.indexOf(categoryGrade[c.id]) >= 0; });
+    return list.length ? list : CATEGORIES.slice();
   }
   function enterSuperTrainingRoom_() {
     if (state.trainingActive || !superTrainingVisible_()) return;
@@ -30209,7 +30215,8 @@
     }
     var session = loadSession();
     var ownGrade = session && session.grade;
-    var rangeText = ownGrade === '中3' ? '中3' : (ownGrade && GRADE_RANK[ownGrade] ? ownGrade + 'と1つ上の学年' : '');
+    var rangeGs = superTrainingGrades_(ownGrade);
+    var rangeText = rangeGs ? rangeGs.join('と') : '';
     if (!window.confirm('🔥 超特訓部屋に入ります（入るのは無料）。\n\n'
       + '・問題は' + (rangeText ? rangeText + 'の' : '') + '算数・数学からランダム（過去に間違えた問題も出るよ）\n'
       + '・正解するとHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1\n'
