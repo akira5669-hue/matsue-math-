@@ -2853,30 +2853,6 @@
   /* ---------- 出題範囲の定義 ---------- */
 
   const CATEGORIES = [
-    // ---------- 語句の穴埋め(中1〜中3)：出題範囲の画面ではいちばん上に見出しつきで並べる ----------
-    { id: 'termsNum1', label: '語句の穴埋め：正の数・負の数（中1）', gen: () => genMathTerms_('termsNum1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsLiteral1', label: '語句の穴埋め：文字と式（中1）', gen: () => genMathTerms_('termsLiteral1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsEq1', label: '語句の穴埋め：1次方程式（中1）', gen: () => genMathTerms_('termsEq1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsProp1', label: '語句の穴埋め：比例と反比例（中1）', gen: () => genMathTerms_('termsProp1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsPlane1', label: '語句の穴埋め：平面図形（中1）', gen: () => genMathTerms_('termsPlane1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsSolid1', label: '語句の穴埋め：空間図形（中1）', gen: () => genMathTerms_('termsSolid1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsData1', label: '語句の穴埋め：データの活用（中1）', gen: () => genMathTerms_('termsData1'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsPoly2', label: '語句の穴埋め：式の計算（中2）', gen: () => genMathTerms_('termsPoly2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsSimul2', label: '語句の穴埋め：連立方程式（中2）', gen: () => genMathTerms_('termsSimul2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsLinear2', label: '語句の穴埋め：1次関数（中2）', gen: () => genMathTerms_('termsLinear2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsCong2', label: '語句の穴埋め：平行と合同（中2）', gen: () => genMathTerms_('termsCong2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsTriQuad2', label: '語句の穴埋め：三角形と四角形（中2）', gen: () => genMathTerms_('termsTriQuad2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsProb2', label: '語句の穴埋め：確率（中2）', gen: () => genMathTerms_('termsProb2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsBox2', label: '語句の穴埋め：データの分布（中2）', gen: () => genMathTerms_('termsBox2'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsExpand3', label: '語句の穴埋め：式の展開と因数分解（中3）', gen: () => genMathTerms_('termsExpand3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsSqrt3', label: '語句の穴埋め：平方根（中3）', gen: () => genMathTerms_('termsSqrt3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsQuad3', label: '語句の穴埋め：2次方程式（中3）', gen: () => genMathTerms_('termsQuad3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsQuadFunc3', label: '語句の穴埋め：関数 y＝ax²（中3）', gen: () => genMathTerms_('termsQuadFunc3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsSim3', label: '語句の穴埋め：相似な図形（中3）', gen: () => genMathTerms_('termsSim3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsCircle3', label: '語句の穴埋め：円（中3）', gen: () => genMathTerms_('termsCircle3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsPyth3', label: '語句の穴埋め：三平方の定理（中3）', gen: () => genMathTerms_('termsPyth3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-    { id: 'termsSample3', label: '語句の穴埋め：標本調査（中3）', gen: () => genMathTerms_('termsSample3'), addedDate: '2026-11-16', newBadgeDays: 14 },
-
     // ---------- 中1 ----------
     { id: 'add2',       label: '加法（たし算）（中1）',           gen: genAdd2 },
     { id: 'sub2',       label: '減法（ひき算）（中1）',           gen: genSub2 },
@@ -3043,6 +3019,30 @@
     { id: 'fraction3',       label: '分数の計算（小3）',                   gen: genFraction3,       defaultOff: true , addedDate: '2026-08-10' },
     { id: 'fractionWordProblem3', label: '分数の文章題（小3）',            gen: genFractionWordProblem3, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'wordProblemMulDiv3', label: '算数の文章題まとめ（小3）',        gen: genWordProblemMulDiv3, defaultOff: true , addedDate: '2026-08-10' },
+
+    // ---------- 語句の穴埋め(中1〜中3)：出題範囲の画面ではいちばん下に見出しつきで並べる ----------
+    { id: 'termsNum1', label: '語句の穴埋め：正の数・負の数（中1）', gen: () => genMathTerms_('termsNum1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsLiteral1', label: '語句の穴埋め：文字と式（中1）', gen: () => genMathTerms_('termsLiteral1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsEq1', label: '語句の穴埋め：1次方程式（中1）', gen: () => genMathTerms_('termsEq1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsProp1', label: '語句の穴埋め：比例と反比例（中1）', gen: () => genMathTerms_('termsProp1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsPlane1', label: '語句の穴埋め：平面図形（中1）', gen: () => genMathTerms_('termsPlane1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsSolid1', label: '語句の穴埋め：空間図形（中1）', gen: () => genMathTerms_('termsSolid1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsData1', label: '語句の穴埋め：データの活用（中1）', gen: () => genMathTerms_('termsData1'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsPoly2', label: '語句の穴埋め：式の計算（中2）', gen: () => genMathTerms_('termsPoly2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsSimul2', label: '語句の穴埋め：連立方程式（中2）', gen: () => genMathTerms_('termsSimul2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsLinear2', label: '語句の穴埋め：1次関数（中2）', gen: () => genMathTerms_('termsLinear2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsCong2', label: '語句の穴埋め：平行と合同（中2）', gen: () => genMathTerms_('termsCong2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsTriQuad2', label: '語句の穴埋め：三角形と四角形（中2）', gen: () => genMathTerms_('termsTriQuad2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsProb2', label: '語句の穴埋め：確率（中2）', gen: () => genMathTerms_('termsProb2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsBox2', label: '語句の穴埋め：データの分布（中2）', gen: () => genMathTerms_('termsBox2'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsExpand3', label: '語句の穴埋め：式の展開と因数分解（中3）', gen: () => genMathTerms_('termsExpand3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsSqrt3', label: '語句の穴埋め：平方根（中3）', gen: () => genMathTerms_('termsSqrt3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsQuad3', label: '語句の穴埋め：2次方程式（中3）', gen: () => genMathTerms_('termsQuad3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsQuadFunc3', label: '語句の穴埋め：関数 y＝ax²（中3）', gen: () => genMathTerms_('termsQuadFunc3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsSim3', label: '語句の穴埋め：相似な図形（中3）', gen: () => genMathTerms_('termsSim3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsCircle3', label: '語句の穴埋め：円（中3）', gen: () => genMathTerms_('termsCircle3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsPyth3', label: '語句の穴埋め：三平方の定理（中3）', gen: () => genMathTerms_('termsPyth3'), addedDate: '2026-11-16', newBadgeDays: 14 },
+    { id: 'termsSample3', label: '語句の穴埋め：標本調査（中3）', gen: () => genMathTerms_('termsSample3'), addedDate: '2026-11-16', newBadgeDays: 14 },
   ];
 
   // 理科の単元一覧。CATEGORIESとは完全に独立した別リスト(算数・数学とは出題範囲の
@@ -21788,7 +21788,7 @@
       const isTerms = isMathTermsCategory_(c.id);
       const prevTerms = i > 0 && isMathTermsCategory_(CATEGORIES[i - 1].id);
       const groupHead = (isTerms && !prevTerms) ? `<div class="settings-group-head">📝 言葉の穴埋め（中1〜中3・単元ごと）</div>`
-        : (!isTerms && prevTerms) ? `<div class="settings-group-head">🔢 計算・図形・文章題など</div>` : '';
+        : '';
       const cs = state.catStats[c.id];
       const acc = cs && cs.total >= 3
         ? `<span class="cat-acc">${Math.round(cs.correct / cs.total * 100)}%</span>`
