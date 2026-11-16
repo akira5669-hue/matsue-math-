@@ -414,7 +414,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -436,7 +436,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -21152,12 +21152,13 @@
     ohachiStreak: 0,
     ohachiStartedAt: null,
     ohachiEligibleIds_: null,
-    // アメリカ横断・理科バトル(2026-12限定、00001専用プレビュー)。お鉢巡りと
-    // 同じく挑戦中かどうかは端末セッション限定(あえて永続化しない。挑戦は
-    // 1回100MPの使い切りで、ログアウトしたらその回の挑戦は諦めて再度払う想定)。
-    usaCrossingActive: false,
-    usaCrossingProgress: 0,
-    usaCrossingCorrect: 0, // 次の州までの正解数(5問で1州)
+    // アメリカ横断・理科バトル(2026-12限定、00001専用プレビュー)。2026-11-16〜 挑戦中の状態
+    // (挑戦中か・何州目か・次の州までの正解数)を端末とサーバーの両方に保存し、別の端末でも
+    // 続きから始められる(先生の指示)。新しいほう(usaCrossingUpdatedAt)を採用する。
+    usaCrossingActive: usaRunFrom_(savedProgress, savedGame).active,
+    usaCrossingProgress: usaRunFrom_(savedProgress, savedGame).progress,
+    usaCrossingCorrect: usaRunFrom_(savedProgress, savedGame).correct, // 次の州までの正解数(5問で1州)
+    usaCrossingUpdatedAt: usaRunFrom_(savedProgress, savedGame).updatedAt,
     // 謎のおばさんに渡した宝石の数(クリスマスにダイヤの指輪に変わるまで保留中の数)。
     usaLadyGiftPending: (savedProgress && Number(savedProgress.usaLadyGiftPending)) || (savedGame && Number(savedGame.usaLadyGiftPending)) || 0,
     // ダイヤの指輪の所持数。なんでも屋で2000MPに交換できる(購入不可)。
@@ -22439,6 +22440,7 @@
       // (都道府県制覇と同じ「進むたびに名前と州の特色を表示」方式)。
       if (state.usaCrossingActive) {
         state.usaCrossingCorrect = (Number(state.usaCrossingCorrect) || 0) + 1;
+        touchUsaRun_();
         if (state.usaCrossingCorrect >= USA_CROSSING_CORRECT_PER_STATE_) {
           state.usaCrossingCorrect = 0;
           state.usaCrossingProgress = Math.min(USA_CROSSING_GOAL_, (Number(state.usaCrossingProgress) || 0) + 1);
@@ -24656,6 +24658,7 @@
         state.usaLadyGiftPending = Number(progress.usaLadyGiftPending) || state.usaLadyGiftPending;
         state.diamondRingCount = Number(progress.diamondRingCount) || state.diamondRingCount;
         state.usaCrossingCompleted = !!(state.usaCrossingCompleted || progress.usaCrossingCompleted);
+        adoptUsaRun_(progress.usaCrossingRun);
         state.capitalQuizCorrectTotal = Number(progress.capitalQuizCorrectTotal) || state.capitalQuizCorrectTotal;
         state.capitalQuizEasyCorrectTotal = Number(progress.capitalQuizEasyCorrectTotal) || state.capitalQuizEasyCorrectTotal;
         state.spellbooks = (progress.spellbooks && typeof progress.spellbooks === 'object') ? Object.assign({}, progress.spellbooks) : state.spellbooks;
@@ -24793,6 +24796,7 @@
       usaLadyGiftPending: state.usaLadyGiftPending,
       diamondRingCount: state.diamondRingCount,
       usaCrossingCompleted: state.usaCrossingCompleted,
+      usaCrossingRun: usaRunOf_(state),
       capitalQuizCorrectTotal: state.capitalQuizCorrectTotal,
       capitalQuizEasyCorrectTotal: state.capitalQuizEasyCorrectTotal,
       spellbooks: state.spellbooks || {},
@@ -24874,6 +24878,7 @@
         if (els.shopPanel && !els.shopPanel.hasAttribute('hidden')) renderShopList();
       }
     }
+    if (res && res.ok && adoptUsaRun_(res.usaCrossingRun)) saveGameState(state);
     // 📰時事問題の今日のMP：ほかの端末でもらった分があれば、同期のたびにそろえる(何台使っても1日10MPまで)
     if (res && res.ok && res.pointsDate === todayKey() && state.pointsDate === todayKey() && (Number(res.pointsTodayNews) || 0) > (Number(state.pointsTodayNews) || 0)) {
       state.pointsTodayNews = Number(res.pointsTodayNews) || 0;
@@ -25030,6 +25035,7 @@
     if (server.ohachiEasyCompleted && !state.ohachiEasyCompleted) { state.ohachiEasyCompleted = true; changed = true; }
     if (server.fujiDescentCompleted && !state.fujiDescentCompleted) { state.fujiDescentCompleted = true; changed = true; }
     if (server.usaCrossingCompleted && !state.usaCrossingCompleted) { state.usaCrossingCompleted = true; changed = true; }
+    if (adoptUsaRun_(server.usaCrossingRun)) changed = true;
     var sCapitalQuizCorrectTotal = Number(server.capitalQuizCorrectTotal) || 0;
     if (sCapitalQuizCorrectTotal > (Number(state.capitalQuizCorrectTotal) || 0)) { state.capitalQuizCorrectTotal = sCapitalQuizCorrectTotal; changed = true; }
     var sCapitalQuizEasyCorrectTotal = Number(server.capitalQuizEasyCorrectTotal) || 0;
@@ -29125,8 +29131,10 @@
       state.usaCrossingActive = true;
       state.usaCrossingProgress = 0;
       state.usaCrossingCorrect = 0;
+      touchUsaRun_();
       if (state.subject !== 'science') { state.subject = 'science'; syncSubjectUi_(); }
       saveGameState(state);
+      syncPointsNow_(session.id);
       if (els.fujiPanel) els.fujiPanel.hidden = true;
       updateGameHud();
       renderUsaCrossingCard_();
@@ -29235,6 +29243,8 @@
     if (window.confirm(t.confirmText)) {
       state.usaCrossingActive = false;
       state.usaCrossingProgress = 0;
+      state.usaCrossingCorrect = 0;
+      touchUsaRun_();
       return `<div class="enemy-quote-banner">${t.caughtText}</div>`;
     }
     return `<div class="item-gain-banner">😮‍💨 怪しい誘いを断った。先へ進もう。</div>`;
@@ -29247,6 +29257,7 @@
     state.usaCrossingActive = false;
     state.usaCrossingProgress = 0;
     state.usaCrossingCorrect = 0;
+    touchUsaRun_();
     state.usaCrossingCompleted = true;
     state.hp = (Number(state.hp) || 0) + USA_CROSSING_HP_REWARD_;
     var gemId = USA_CROSSING_GEM_IDS_[randInt(0, USA_CROSSING_GEM_IDS_.length - 1)];
@@ -29289,6 +29300,41 @@
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     window.alert('💍 クリスマスの贈り物！謎のおばさんに渡した宝石が、ダイヤの指輪' + pending + '個になって返ってきた！なんでも屋で' + DIAMOND_RING_SELL_MP_ + 'MPに交換できます。');
+  }
+
+  // アメリカ横断の挑戦中の状態(別の端末でも続きから。2026-11-16〜)。
+  function usaRunNorm_(r) {
+    r = (r && typeof r === 'object') ? r : {};
+    return {
+      active: !!r.active,
+      progress: Math.max(0, Math.min(50, Math.floor(Number(r.progress)) || 0)),
+      correct: Math.max(0, Math.min(4, Math.floor(Number(r.correct)) || 0)),
+      updatedAt: Math.max(0, Number(r.updatedAt) || 0),
+    };
+  }
+  function usaRunFrom_(sp, sg) {
+    var a = usaRunNorm_(sp && sp.usaCrossingRun), b = usaRunNorm_(sg && sg.usaCrossingRun);
+    return a.updatedAt >= b.updatedAt ? a : b;
+  }
+  function usaRunOf_(s) {
+    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0 };
+  }
+  function touchUsaRun_() { state.usaCrossingUpdatedAt = Date.now(); }
+  // r のほうが新しければ取り入れる(変わったらtrue)。挑戦中なら理科モードにする。
+  function adoptUsaRun_(r) {
+    if (!r) return false;
+    var n = usaRunNorm_(r);
+    if (n.updatedAt <= (Number(state.usaCrossingUpdatedAt) || 0)) return false;
+    state.usaCrossingActive = n.active && !state.usaCrossingCompleted;
+    state.usaCrossingProgress = n.progress;
+    state.usaCrossingCorrect = n.correct;
+    state.usaCrossingUpdatedAt = n.updatedAt;
+    if (state.usaCrossingActive && state.subject !== 'science' && !(state.trainingActive && state.trainingSuper)) {
+      state.subject = 'science';
+      try { syncSubjectUi_(); updateScienceHud(); nextQuestion(); } catch (e) { }
+    }
+    try { renderUsaCrossingCard_(); } catch (e) { }
+    return true;
   }
 
   // アメリカ横断カードの表示更新(00001限定プレビュー、usaCrossingCardActive_参照)。

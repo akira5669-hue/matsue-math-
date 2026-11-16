@@ -58,6 +58,7 @@ CREATE TABLE students (
   raiden_axe_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「雷電の斧」の残りチャージ数(保有上限なし、購入ごとに+3)
   usa_lady_gift_pending INTEGER NOT NULL DEFAULT 0, -- アメリカ横断の謎のおばさんに渡した宝石の数(クリスマス12/25にダイヤの指輪へ変換されるまでの保留数)
   diamond_ring_count INTEGER NOT NULL DEFAULT 0, -- ダイヤの指輪の所持数(購入不可、なんでも屋で2000MPに売却できるのみ)
+  usa_crossing_run JSONB, -- アメリカ横断の挑戦中の状態 {active,progress,correct,updatedAt}(2026-11-16〜、別の端末でも続きから)
   usa_crossing_completed BOOLEAN NOT NULL DEFAULT FALSE, -- アメリカ横断の成功は一度きり(成功後は再挑戦不可、失敗は何度でも再挑戦可)
   capital_quiz_correct_total INTEGER NOT NULL DEFAULT 0, -- 都道府県制覇(県庁所在地クイズ、2026-11-01〜)通常モードで制覇した都道府県数(都道府県制覇の本体=prefecture_countとは別カウント)
   capital_quiz_easy_correct_total INTEGER NOT NULL DEFAULT 0, -- 都道府県制覇(県庁所在地クイズ)イージーモードで制覇した都道府県数(通常モードとは独立)
