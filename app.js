@@ -21159,6 +21159,8 @@
     usaCrossingProgress: usaRunFrom_(savedProgress, savedGame).progress,
     usaCrossingCorrect: usaRunFrom_(savedProgress, savedGame).correct, // 次の州までの正解数(5問で1州)
     usaCrossingUpdatedAt: usaRunFrom_(savedProgress, savedGame).updatedAt,
+    // 達成した周回数(2026-11-16〜 周回制。1周目・2周目…でごほうびが変わる)。
+    usaCrossingLaps: Math.max(usaRunFrom_(savedProgress, savedGame).laps, ((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)) ? 1 : 0),
     // 謎のおばさんに渡した宝石の数(クリスマスにダイヤの指輪に変わるまで保留中の数)。
     usaLadyGiftPending: (savedProgress && Number(savedProgress.usaLadyGiftPending)) || (savedGame && Number(savedGame.usaLadyGiftPending)) || 0,
     // ダイヤの指輪の所持数。なんでも屋で2000MPに交換できる(購入不可)。
@@ -21946,6 +21948,21 @@
   const USA_CROSSING_MISS_HP_PENALTY_ = 5; // 2026-11-13 先生の指示で10→5(進み方を「5問連続」→「5問正解」にしたかわりに、まちがえるたびに減る)
   const USA_CROSSING_CORRECT_PER_STATE_ = 5;
   const USA_CROSSING_HP_REWARD_ = 1000;
+  const USA_CROSSING_STATE_MP_ = 1; // 1州進むごとのMP(1日の上限とは別)
+  // 周回ごとの達成のごほうび(2026-11-16 先生の指示)。HP+1000は毎周。宝石は★3(ルビー/エメラルド/サファイア)からランダムで、
+  // 宝石がもらえる周だけ謎のおばさんが出る。'random'はランク(銅/銀/金/虹色)ランダム。seed=種や実をランダムに1つ(サーバーで決める)。
+  // 10周目以降は考え中(ごほうびは州ごとの1MPとHP+1000だけ)。
+  const USA_CROSSING_LAP_REWARDS_ = {
+    1: { gem: true, chest: 'bronze' },
+    2: { gem: true, key: 'bronze' },
+    3: { key: 'silver', chest: 'silver' },
+    4: { gem: true, chest: 'gold' },
+    5: { key: 'gold', chest: 'rainbow' },
+    6: { gem: true, key: 'rainbow' },
+    7: { key: 'random', chest: 'random', seed: true },
+    8: { dragonSword: true, chest: 'random', key: 'random' },
+    9: { dragonSword: true, gem: true },
+  };
   const USA_CROSSING_GEM_IDS_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
   const USA_CROSSING_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
   // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
@@ -22445,8 +22462,13 @@
           state.usaCrossingCorrect = 0;
           state.usaCrossingProgress = Math.min(USA_CROSSING_GOAL_, (Number(state.usaCrossingProgress) || 0) + 1);
           const newUsaState = USA_STATE_DATA[state.usaCrossingProgress - 1];
+          // 1州進むごとに+1MP(1日のMP上限とは別。ミッションと同じボーナス枠。2026-11-16 先生の指示)
+          const usaToday_ = todayKey();
+          if (state.pointsDate !== usaToday_) { state.pointsDate = usaToday_; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; state.pointsTodayNews = 0; }
+          state.points = (Number(state.points) || 0) + USA_CROSSING_STATE_MP_;
+          state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + USA_CROSSING_STATE_MP_;
           if (newUsaState) {
-            winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
+            winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）+${USA_CROSSING_STATE_MP_}MP<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
           }
           winHtml += checkUsaCrossingTemptation_();
           if (state.usaCrossingActive) winHtml += necklaceOfferHtml_();
@@ -25035,6 +25057,7 @@
     if (server.ohachiEasyCompleted && !state.ohachiEasyCompleted) { state.ohachiEasyCompleted = true; changed = true; }
     if (server.fujiDescentCompleted && !state.fujiDescentCompleted) { state.fujiDescentCompleted = true; changed = true; }
     if (server.usaCrossingCompleted && !state.usaCrossingCompleted) { state.usaCrossingCompleted = true; changed = true; }
+    if (state.usaCrossingCompleted && !(Number(state.usaCrossingLaps) > 0)) { state.usaCrossingLaps = 1; changed = true; }
     if (adoptUsaRun_(server.usaCrossingRun)) changed = true;
     var sCapitalQuizCorrectTotal = Number(server.capitalQuizCorrectTotal) || 0;
     if (sCapitalQuizCorrectTotal > (Number(state.capitalQuizCorrectTotal) || 0)) { state.capitalQuizCorrectTotal = sCapitalQuizCorrectTotal; changed = true; }
@@ -29106,10 +29129,6 @@
   // 処理で払ってから、進行度を0に戻して理科モードで開始する。
   function startUsaCrossing_() {
     if (!usaCrossingCardActive_() || state.usaCrossingActive) return;
-    if (state.usaCrossingCompleted) {
-      window.alert('アメリカ横断は既に達成済みです。再挑戦はできません。');
-      return;
-    }
     if (USA_CROSSING_ENTRY_FEE_MP > 0 && (Number(state.points) || 0) < USA_CROSSING_ENTRY_FEE_MP) {
       window.alert('アメリカ横断には参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
       return;
@@ -29259,26 +29278,49 @@
     state.usaCrossingCorrect = 0;
     touchUsaRun_();
     state.usaCrossingCompleted = true;
+    state.usaCrossingLaps = (Number(state.usaCrossingLaps) || 0) + 1;
+    var lap = state.usaCrossingLaps;
+    var rw = USA_CROSSING_LAP_REWARDS_[lap] || {};
+    var pickTier = function (t) { return t === 'random' ? USA_CROSSING_CHEST_TIERS_[randInt(0, USA_CROSSING_CHEST_TIERS_.length - 1)] : t; };
     state.hp = (Number(state.hp) || 0) + USA_CROSSING_HP_REWARD_;
-    var gemId = USA_CROSSING_GEM_IDS_[randInt(0, USA_CROSSING_GEM_IDS_.length - 1)];
+    var html = '<div class="win-banner">🎉🇺🇸 アメリカ横断 ' + lap + '周目 達成！🎉</div>'
+      + '<div class="item-gain-banner">💪 HPが' + USA_CROSSING_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>';
     state.gemItems = state.gemItems || {};
-    state.gemItems[gemId] = (Number(state.gemItems[gemId]) || 0) + 1;
-    var chestTier = USA_CROSSING_CHEST_TIERS_[randInt(0, USA_CROSSING_CHEST_TIERS_.length - 1)];
-    var chestAdded = addTreasureChest_(chestTier);
-    var gemDef = GEM_DEFS_[gemId];
-    var html = '<div class="win-banner">🎉🇺🇸 アメリカ横断達成！🎉</div>'
-      + '<div class="item-gain-banner">💪 HPが' + USA_CROSSING_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>'
-      + '<div class="item-gain-banner">' + gemDef.emoji + ' ' + gemDef.label + 'を手に入れた！</div>'
-      + (chestAdded ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>' : treasureChestFullHtml_());
-    // 制覇した直後、謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
+    state.treasureItems = state.treasureItems || {};
+    var gemId = null, gemDef = null;
+    if (rw.gem) {
+      gemId = USA_CROSSING_GEM_IDS_[randInt(0, USA_CROSSING_GEM_IDS_.length - 1)];
+      state.gemItems[gemId] = (Number(state.gemItems[gemId]) || 0) + 1;
+      gemDef = GEM_DEFS_[gemId];
+      html += '<div class="item-gain-banner">' + gemDef.emoji + ' ' + gemDef.label + 'を手に入れた！</div>';
+    }
+    if (rw.key) {
+      var keyTier = pickTier(rw.key);
+      var keyKey = treasureItemKey_('key', keyTier);
+      state.treasureItems[keyKey] = (Number(state.treasureItems[keyKey]) || 0) + 1;
+      html += '<div class="item-gain-banner">🗝️ ' + TREASURE_TIER_EMOJI_[keyTier] + ' ' + TREASURE_TIER_LABEL_[keyTier] + 'の鍵を手に入れた！</div>';
+    }
+    if (rw.chest) {
+      var chestTier = pickTier(rw.chest);
+      html += addTreasureChest_(chestTier) ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[chestTier] + ' ' + TREASURE_TIER_LABEL_[chestTier] + 'の宝箱を手に入れた！</div>' : treasureChestFullHtml_();
+    }
+    if (rw.dragonSword) {
+      state.dragonSwordCount = (Number(state.dragonSwordCount) || 0) + 1;
+      html += '<div class="item-gain-banner">⚔️ ドラゴンソードを手に入れた！（' + state.dragonSwordCount + '本）</div>';
+    }
+    if (rw.seed) usaCrossingSeedReward_();
+    if (!USA_CROSSING_LAP_REWARDS_[lap]) {
+      html += '<div class="test-photo-hint">🎁 ' + lap + '周目のごほうびは準備中です（1州ごとの1MPとHPはもらえています）。</div>';
+    }
+    // 宝石をもらった周だけ、制覇した直後に謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
     // なくてもその場で消える(ペナルティなし)が、渡した場合はクリスマス(12/25)に
     // ダイヤの指輪になって返ってくる。
-    var giveToLady = window.confirm('🧙‍♀️ 制覇した直後、謎のおばさんが現れた。「その' + gemDef.label + 'を、わたしにおくれでないかい？」と頼まれている。渡しますか？（渡しても渡さなくても、おばさんはすぐに消えます）');
+    var giveToLady = !!gemDef && window.confirm('🧙‍♀️ 制覇した直後、謎のおばさんが現れた。「その' + gemDef.label + 'を、わたしにおくれでないかい？」と頼まれている。渡しますか？（渡しても渡さなくても、おばさんはすぐに消えます）');
     if (giveToLady) {
       state.gemItems[gemId] = Math.max(0, (Number(state.gemItems[gemId]) || 0) - 1);
       state.usaLadyGiftPending = (Number(state.usaLadyGiftPending) || 0) + 1;
       html += '<div class="item-gain-banner">🧙‍♀️ ' + gemDef.label + 'を渡した。おばさんはお礼を言って消えた…（12月25日のクリスマスにダイヤの指輪がもらえるかも？）</div>';
-    } else {
+    } else if (gemDef) {
       html += '<div class="item-gain-banner">🧙‍♀️ ' + gemDef.label + 'を渡さなかった。おばさんは静かに消えた。</div>';
     }
     // この場で確実に保存・同期する(以前は呼び忘れがあり、達成してもHP/宝石/宝箱が
@@ -29287,6 +29329,22 @@
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     return html;
+  }
+
+  // 7周目のごほうびの種・実(賢さの種/賢さの実/すばやさの種/努力の種からランダム)。数はサーバーで足す
+  // (賢さの種・実・努力の種は端末から増やせないため)。端末の数は返事が来てから+1する。
+  function usaCrossingSeedReward_() {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('usaCrossingSeed', { id: session.id }).then(function (res) {
+      if (!res || !res.ok || !ZERO_DRAGON_SEED_INFO_[res.kind]) return;
+      var info = ZERO_DRAGON_SEED_INFO_[res.kind];
+      state[info.key] = (Number(state[info.key]) || 0) + 1;
+      saveGameState(state);
+      syncPointsNow_(session.id);
+      updateGameHud();
+      if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', '<div class="item-gain-banner">🎁 ' + info.label + 'を手に入れた！' + info.note + '</div>');
+    }).catch(function () { });
   }
 
   // クリスマス(12/25)になったら、謎のおばさんに渡した宝石の数だけダイヤの
@@ -29310,6 +29368,7 @@
       progress: Math.max(0, Math.min(50, Math.floor(Number(r.progress)) || 0)),
       correct: Math.max(0, Math.min(4, Math.floor(Number(r.correct)) || 0)),
       updatedAt: Math.max(0, Number(r.updatedAt) || 0),
+      laps: Math.max(0, Math.min(999, Math.floor(Number(r.laps)) || 0)),
     };
   }
   function usaRunFrom_(sp, sg) {
@@ -29317,15 +29376,20 @@
     return a.updatedAt >= b.updatedAt ? a : b;
   }
   function usaRunOf_(s) {
-    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0 };
+    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0, laps: Number(s.usaCrossingLaps) || 0 };
   }
   function touchUsaRun_() { state.usaCrossingUpdatedAt = Date.now(); }
   // r のほうが新しければ取り入れる(変わったらtrue)。挑戦中なら理科モードにする。
   function adoptUsaRun_(r) {
     if (!r) return false;
     var n = usaRunNorm_(r);
-    if (n.updatedAt <= (Number(state.usaCrossingUpdatedAt) || 0)) return false;
-    state.usaCrossingActive = n.active && !state.usaCrossingCompleted;
+    var lapsUp = n.laps > (Number(state.usaCrossingLaps) || 0);
+    if (lapsUp) { state.usaCrossingLaps = n.laps; state.usaCrossingCompleted = true; }
+    if (n.updatedAt <= (Number(state.usaCrossingUpdatedAt) || 0)) {
+      if (lapsUp) { try { renderUsaCrossingCard_(); } catch (e) { } }
+      return lapsUp;
+    }
+    state.usaCrossingActive = n.active;
     state.usaCrossingProgress = n.progress;
     state.usaCrossingCorrect = n.correct;
     state.usaCrossingUpdatedAt = n.updatedAt;
@@ -29343,17 +29407,18 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、★3の宝石(ルビー/エメラルド/サファイアからランダム)・宝箱(ランク問わずランダム)・HP' + USA_CROSSING_HP_REWARD_ + 'がもらえる。成功は一度きり(達成後は再挑戦不可)、失敗した場合は何度でも再挑戦できる。';
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦でき、周ごとのごほうび：1周目=宝石+銅の宝箱、2周目=宝石+銅の鍵、3周目=銀の鍵+銀の宝箱、4周目=宝石+金の宝箱、5周目=金の鍵+虹色の宝箱、6周目=宝石+虹色の鍵、7周目=鍵・宝箱・種や実(ランダム)、8周目=ドラゴンソード+宝箱+鍵(ランダム)、9周目=ドラゴンソード+宝石、10周目〜は準備中。宝石は★3(ルビー/エメラルド/サファイア)から1つ。宝石をもらった周は謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
-      els.usaCrossingStatusText.textContent = state.usaCrossingCompleted
-        ? '✅ アメリカ横断達成済みです。再挑戦はできません。'
-        : state.usaCrossingActive
-        ? '挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.usaCrossingProgress) || 0) + '/' + USA_CROSSING_GOAL_ + '州）'
+      var lapsDone = Number(state.usaCrossingLaps) || 0;
+      els.usaCrossingStatusText.textContent = state.usaCrossingActive
+        ? (lapsDone + 1) + '周目に挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.usaCrossingProgress) || 0) + '/' + USA_CROSSING_GOAL_ + '州）'
+        : lapsDone > 0
+        ? '✅ ' + lapsDone + '周達成！ ' + (lapsDone + 1) + '周目に挑戦できます（参加料は無料）。'
         : '挑戦条件はありません。参加料は無料で、いつでも開始できます。';
     }
     if (els.usaCrossingStartBtn) {
-      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive || !!state.usaCrossingCompleted;
+      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive;
     }
     if (els.usaCrossingStateList) {
       var progress = Number(state.usaCrossingProgress) || 0;
