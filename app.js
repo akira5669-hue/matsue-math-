@@ -22238,7 +22238,9 @@
     const session = loadSession();
     const ownGrade = session && session.grade;
     const allowed = SCIENCE_CATEGORIES.filter(c => !c.adminOnly || isAdminSession_());
-    const pool = allowed.filter(c => categoryGrade[c.id] === ownGrade);
+    // 2026-11-16 先生の指示で「自分の学年ちょうど」→「自分の学年以上」に変更
+    const ownRank = GRADE_RANK[ownGrade] || 0;
+    const pool = allowed.filter(c => (GRADE_RANK[categoryGrade[c.id]] || 0) >= ownRank && ownRank > 0);
     const src = pool.length > 0 ? pool : allowed;
     return src[randInt(0, src.length - 1)].gen();
   }
@@ -24364,7 +24366,7 @@
       t.textContent = (today >= USA_CROSSING_START_
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
-        + '自分の学年の理科の問題に5問正解するごとに1州進み、全50州の制覇をめざそう！参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
+        + '自分の学年以上の理科の問題に5問正解するごとに1州進み、全50州の制覇をめざそう！参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
         + '50州を制覇すると、最後にHP+1000と、宝石・宝箱・鍵・種や実などのごほうびがもらえるよ！何周でも挑戦できて、周を重ねるほどごほうびが豪華に（8周目・9周目はドラゴンソード！）。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわなもあるので気をつけて！別の端末でも続きから挑戦できます。12月31日まで。';
     }
@@ -29426,7 +29428,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、自分の学年ちょうどの理科単元からランダムに出題される。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦でき、周ごとのごほうび：1周目=宝石+銅の宝箱、2周目=宝石+銅の鍵、3周目=銀の鍵+銀の宝箱、4周目=宝石+金の宝箱、5周目=金の鍵+虹色の宝箱、6周目=宝石+虹色の鍵、7周目=鍵・宝箱・種や実(ランダム)、8周目=ドラゴンソード+宝箱+鍵(ランダム)、9周目=ドラゴンソード+宝石、10周目〜は準備中。宝石は★3(ルビー/エメラルド/サファイア)から1つ。宝石をもらった周は謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '【作成中・00001専用プレビュー】12月限定のイベント(予定)。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、自分の学年以上の理科単元からランダムに出題される。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦でき、周ごとのごほうび：1周目=宝石+銅の宝箱、2周目=宝石+銅の鍵、3周目=銀の鍵+銀の宝箱、4周目=宝石+金の宝箱、5周目=金の鍵+虹色の宝箱、6周目=宝石+虹色の鍵、7周目=鍵・宝箱・種や実(ランダム)、8周目=ドラゴンソード+宝箱+鍵(ランダム)、9周目=ドラゴンソード+宝石、10周目〜は準備中。宝石は★3(ルビー/エメラルド/サファイア)から1つ。宝石をもらった周は謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
