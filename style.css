@@ -775,6 +775,15 @@ h1 {
   padding: 1px 6px;
 }
 .settings-item.is-daily-complete { opacity: 0.65; }
+.settings-group-head {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--c-ink);
+  border-bottom: 2px solid var(--c-line);
+  padding: 10px 0 4px;
+  margin-top: 4px;
+}
+.settings-group-head:first-child { padding-top: 0; margin-top: 0; }
 .cat-complete-badge {
   font-size: 11px;
   font-weight: 700;
