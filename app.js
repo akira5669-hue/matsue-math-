@@ -20380,6 +20380,16 @@
     if (HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1 || catId === 'divisorMultipleAdvanced5') return catId;
     return 'calc';
   }
+  // 中1の文章題(2026-11-16 先生の指示)：連続正解がぜんぶ文章題で、いちばん低い学年が中1なら、
+  // 5問連続正解で敵を撃破して20MP。1日の文章題のMP上限(POINTS_DAILY_CAP_WORD=40)は同じ。ほかの学年の文章題は今までどおり。
+  const WORD_CHU1_STREAK_ = 5;
+  const WORD_CHU1_MP_ = 20;
+  function wordChu1Rule_() {
+    if (state.rareType) return false;
+    if ((Number(state.streak) || 0) > 0) return state.streakRewardClass === 'word' && state.streakMinGrade === '中1';
+    const c = state.current && state.current.category;
+    return !!c && WORD_PROBLEM_CATEGORY_IDS.indexOf(c) !== -1 && categoryGrade[c] === '中1';
+  }
   function isHpEarningCategory_(catId) {
     return WORD_PROBLEM_CATEGORY_IDS.indexOf(catId) !== -1 || HP_ONLY_CATEGORY_IDS.indexOf(catId) !== -1;
   }
@@ -22239,7 +22249,7 @@
     const requiredStreak = isFuji ? fujiCurrentLeg_().streak
       : isBossFight ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndex).streak
       : isOhachi ? OHACHI_REQUIRED_STREAK_
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'zerodragon' ? ZERODRAGON_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'zerodragon' ? ZERODRAGON_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : wordChu1Rule_() ? WORD_CHU1_STREAK_ : normalEnemyStreak_());
     const hp = isFuji ? Math.max(0, fujiCurrentLeg_().streak - (Number(state.fujiLegStreak) || 0))
       : isBossFight ? worldBossRemainingHp_(state.worldBossActiveStage, bossSubIndex)
       : isOhachi ? Math.max(0, OHACHI_REQUIRED_STREAK_ - (Number(state.ohachiStreak) || 0))
@@ -23018,7 +23028,7 @@
       : state.worldBossActiveStage ? worldBossCurrentSubBoss(state.worldBossActiveStage, bossSubIndexForWin).streak
       : state.ohachiActive ? OHACHI_REQUIRED_STREAK_
       : state.ohachiEasyActive ? OHACHI_EASY_REQUIRED_CORRECT_
-      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'zerodragon' ? ZERODRAGON_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : normalEnemyStreak_());
+      : (state.rareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : state.rareType === 'zerodragon' ? ZERODRAGON_REQUIRED_STREAK : state.rareType === 'marubatsukun' ? 1 : state.rareType ? 10 : wordChu1Rule_() ? WORD_CHU1_STREAK_ : normalEnemyStreak_());
     if (isCorrect && state.ohachiActive && (Number(state.ohachiStreak) || 0) >= OHACHI_REQUIRED_STREAK_) {
       // お鉢巡り達成：MP/経験値の通常報酬ではなく、かかった時間に応じたHP
       // ボーナスの特別演出。
@@ -23056,7 +23066,7 @@
       // 積み上げ方式ではなく、固定30MPを報酬とする。文章題カテゴリは学年に関わらず
       // 固定50MP。計算問題は10問正解で5MP(学年より上の単元に挑戦した
       // ボーナスは10MPで、2倍の比率は維持)。
-      let rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : wordReward ? WORD_PROBLEM_FIXED_MP : (catId === 'divisorMultipleAdvanced5' && pureStreak) ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
+      let rawBasePoints = wasRareType === 'goumaji' ? GOUMAJI_BONUS_MP : wordReward ? (wordChu1Rule_() ? WORD_CHU1_MP_ : WORD_PROBLEM_FIXED_MP) : (catId === 'divisorMultipleAdvanced5' && pureStreak) ? DIVISOR_MULTIPLE_ADVANCED5_FIXED_MP : (bonusEligible ? 10 : 5) + rareMpBonus;
       // 新単元キャンペーン中(カテゴリごとにaddedDateから2週間)はMPが2倍になる。
       // 1日のMP上限(dailyCapForThis)自体は変えず、通常通りそこで頭打ちになる。
       if (isDoubleMpCategoryActive_(catId)) rawBasePoints *= 2;
