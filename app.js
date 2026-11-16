@@ -30220,7 +30220,9 @@
     var rangeGs = superTrainingGrades_(ownGrade);
     var rangeText = rangeGs ? rangeGs.join('と') : '';
     if (!window.confirm('🔥 超特訓部屋に入ります（入るのは無料）。\n\n'
-      + '・問題は' + (rangeText ? rangeText + 'の' : '') + '算数・数学からランダム（過去に間違えた問題も出るよ）\n'
+      + '・問題は学年ごとに決まった範囲の算数・数学からランダム（過去に間違えた問題も出るよ）\n'
+      + Object.keys(SUPER_TRAINING_GRADES_).map(function (g) { return '　' + g + '：' + SUPER_TRAINING_GRADES_[g].join('と') + (g === ownGrade ? '　←あなた' : ''); }).join('\n') + '\n'
+      + (rangeText && !SUPER_TRAINING_GRADES_[ownGrade] ? '　（あなたは' + rangeText + 'から出るよ）\n' : '')
       + '・正解するとHP+' + SUPER_TRAINING_HP_GAIN_ + '・経験値+1\n'
       + '・まちがえるとHP-' + SUPER_TRAINING_HP_LOSS_ + '（経験値は増えない）\n'
       + '・超特訓で増やせるHPは1日' + SUPER_TRAINING_DAILY_HP_MAX_ + 'まで（今日はあと' + Math.max(0, SUPER_TRAINING_DAILY_HP_MAX_ - superTrainingDayGain_()) + '）\n'
