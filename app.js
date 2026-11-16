@@ -3362,9 +3362,10 @@
       } else {
         answer = NONMAGNETIC_METALS_1_[randInt(0, NONMAGNETIC_METALS_1_.length - 1)];
         question = '次の金属のうち、磁石につかないものはどれですか。';
-        const others = NONMAGNETIC_METALS_1_.filter(m => m !== answer);
-        choices = shuffle([answer, '鉄', ...shuffle(others).slice(0, 2)]);
-        steps = [`${answer}は磁石につかない`, '鉄は磁石につくが、銅・アルミニウム・金・銀・鉛などは磁石につかない'];
+        // バグ報告#61：以前は「つかない金属」が選択肢に2つ以上まざり、正解が1つに決まらなかった。
+        // ほかの選択肢は磁石につく金属(鉄・ニッケル・コバルト)にする。
+        choices = shuffle([answer, '鉄', 'ニッケル', 'コバルト']);
+        steps = [`${answer}は磁石につかない`, '鉄・ニッケル・コバルトは磁石につくが、銅・アルミニウム・金・銀・鉛などは磁石につかない'];
       }
       return { category: 'matterInvestigation1', question, answer, choices, steps };
     } else if (pat === 8) {
@@ -22564,8 +22565,9 @@
     syncSubjectUi_();
     saveGameState(state);
     if (!els.settingsPanel.hasAttribute('hidden')) renderSettings();
-    updateGameHud();
+    // 理科のHUD→算数のHUDの順に更新する(逆だと、算数に切り替えたときにボスのセリフが隠れたままになる。バグ報告#59)
     updateScienceHud();
+    updateGameHud();
     nextQuestion();
   }
 
@@ -23527,7 +23529,8 @@
       let doubleGainedHtml = '';
       // 5問で倒す敵(中2・中3だけ選んでいる時)は経験値も5(1問あたり1のまま)。10にするとサーバーの
       // 経験値上限(正解数×1.4+500)を超えてレベルが戻されるため。
-      state.exp += (!wasRareType && requiredStreak === NORMAL_ENEMY_STREAK_UPPER_) ? 5 : 10;
+      // ごーまじは20問連続正解で倒すので経験値も20(1問あたり1。バグ報告#60)
+      state.exp += wasRareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : (!wasRareType && requiredStreak === NORMAL_ENEMY_STREAK_UPPER_) ? 5 : 10;
       // レベルは算数・数学の経験値(exp)と理科の経験値(scienceExp)を合算して決まる。
       // 経験値そのものは科目ごとに別集計だが、レベルは1つに統一する。
       const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
@@ -24269,6 +24272,7 @@
     '🐞【バグを直しました㉒】アンケートなどに数字を書くと、そのときの問題に勝手に答えてしまうことがあったのを直しました。計算パズルの自己ベストが、遅いタイムに書きかわってしまうことがあったのも直しました。',
     '🐞【バグを直しました㉓】文章題の報酬が「50MP」と書いてあったのに、40MPしか入らなかったのを直しました。文章題の1日の上限が40MPなので、報酬の表示を40MPにそろえました。',
     '🐞【バグを直しました㉔】問題に正解して経験値のバーがのびても、「次のLvまであと」の数が敵をたおすまで変わらなかったのを直しました。今はバーと同じように、正解するたびに数がへります（まちがえると元にもどります）。',
+    '🐞【バグを直しました㉕】理科の「磁石につかない金属はどれ？」の問題で、答えになる金属が2つ以上まざっていたのを直しました。ごーまじ（20問連続正解）をたおしたときの経験値が10しかなかったのを、20にしました。理科から算数に切りかえたとき、世界一周のボスのセリフが出なかったのを直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
