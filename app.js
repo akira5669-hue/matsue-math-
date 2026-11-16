@@ -22632,6 +22632,7 @@
     // アンサー10は今は00001(管理者)だけに表示(試験公開)。
     if (els.answer10Toggle) { els.answer10Toggle.hidden = !answer10Visible_(); if (els.answer10Toggle.hidden && els.answer10Panel) els.answer10Panel.setAttribute('hidden', ''); }
     renderAnswer10Banner_();
+    renderUsaCrossingBanner_();
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
     // 新レアキャラのテストボタン(00001だけ)
     var rpAdm = document.getElementById('rarePreviewAdmin'); if (rpAdm) rpAdm.hidden = !isAdminSession_();
@@ -24349,6 +24350,24 @@
         + '4つの数字に「＋ − × ÷」と「( )」を入れて、答えを10にしよう！数字は4つとも1回ずつ使ってね（順番は入れかえてOK）。正解すると+2MP（計算問題の1日のMP上限に入るよ）。';
     }
     if (els.answer10BannerBtn) els.answer10BannerBtn.hidden = !started;
+  }
+
+  // 🇺🇸アメリカ横断・理科バトルの告知(2026-11-16〜12-31、全生徒に表示)。12/1より前は予告。
+  function renderUsaCrossingBanner_() {
+    var b = document.getElementById('usaCrossingBanner');
+    if (!b) return;
+    var today = todayKey();
+    if (today > USA_CROSSING_END_) { b.hidden = true; return; }
+    b.hidden = false;
+    var t = document.getElementById('usaCrossingBannerText');
+    if (t) {
+      t.textContent = (today >= USA_CROSSING_START_
+        ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
+        : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
+        + '自分の学年の理科の問題に5問正解するごとに1州進み、全50州の制覇をめざそう！参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
+        + '50州を制覇すると、最後にHP+1000と、宝石・宝箱・鍵・種や実などのごほうびがもらえるよ！何周でも挑戦できて、周を重ねるほどごほうびが豪華に（8周目・9周目はドラゴンソード！）。'
+        + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわなもあるので気をつけて！別の端末でも続きから挑戦できます。12月31日まで。';
+    }
   }
 
   // 図形トレーニング・中学受験問題・サイコロガチャの告知バナー(11月中)。
