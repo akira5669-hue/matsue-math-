@@ -22221,6 +22221,8 @@
     var nsSs = loadSession(); var nsTg = document.getElementById('numSenseToggle'); if (nsTg) { nsTg.hidden = !(isAdminSession_() || (nsSs && String(nsSs.grade || '').charAt(0) === '小')); if (nsTg.hidden) { var nsPn = document.getElementById('numSensePanel'); if (nsPn) nsPn.setAttribute('hidden', ''); } }
     // 📰時事問題(2026-11-15〜、中学生だけ。NEWS_OPEN_がfalseの間は先生(00001)だけのプレビュー)
     var nwTg = document.getElementById('newsToggle'); if (nwTg) { nwTg.hidden = !newsVisible_(); if (nwTg.hidden) { var nwPn = document.getElementById('newsPanel'); if (nwPn) nwPn.setAttribute('hidden', ''); } }
+    // 📰時事問題の告知(11/30まで、時事問題が見える人だけ)
+    var nwBn = document.getElementById('newsBanner'); if (nwBn) nwBn.hidden = !(newsVisible_() && todayKey() <= newsBannerEnd_());
     if (els.surveyToggle) { els.surveyToggle.hidden = !surveyVisible_(); if (els.surveyToggle.hidden && els.surveyPanel) els.surveyPanel.setAttribute('hidden', ''); }
     if (els.gachaToggle) { els.gachaToggle.hidden = !gachaVisible_(); if (els.gachaToggle.hidden && els.gachaPanel) els.gachaPanel.setAttribute('hidden', ''); }
     if (els.jukenToggle) els.jukenToggle.hidden = !zukeiVisible_();
@@ -35606,6 +35608,7 @@
      pointsTodayNewsはサーバー(sync.js、points_today_news)でも1日10MPまでに制限し、端末どうしで大きい方にそろえる。
      問題は複数の情報源で確かめられたニュースだけから作る。 */
   var NEWS_OPEN_ = true; // 2026-11-15 先生が問題を確認して公開OK(中学生に公開)
+  function newsBannerEnd_() { return '2026-11-30'; } // 時事問題の告知を出す最後の日(関数にして、読み込み順に関係なく使えるように)
   function newsVisible_() {
     var s = loadSession();
     if (!s || !s.id) return false;
@@ -35731,6 +35734,11 @@
       panel.removeAttribute('hidden');
       renderThemes_();
       if (!nw.q || nw.answered) next_(); else renderScore_();
+    });
+    var bnBtn = document.getElementById('newsBannerBtn');
+    if (bnBtn) bnBtn.addEventListener('click', function () {
+      if (panel.hasAttribute('hidden')) tg.click();
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     panel.addEventListener('click', function (e) {
       var th = e.target.closest('[data-news-theme]');
