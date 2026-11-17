@@ -2,7 +2,7 @@
 // 全く同じ形式で呼び出すため、apiPost自体は書き換えず、API_URLをこのエンドポイントに
 // 向けるだけで済むようにしてある。
 const { handleGetPoints } = require('../lib/handlers/points');
-const { handleLogin, handleRegister, handleResetPassword, handleCheckId, handleCheckName } = require('../lib/handlers/auth');
+const { handleLogin, handleRegister, handleResetPassword, handleCheckId, handleCheckName, handleTrialCreate, handleTrialList, handleTrialEnroll } = require('../lib/handlers/auth');
 const { handleLog, handleLogBatch, handleHistory } = require('../lib/handlers/logging');
 const { handleSyncPoints, handleSaveAvatar } = require('../lib/handlers/sync');
 const {
@@ -37,6 +37,9 @@ const ACTIONS = {
   getPoints: handleGetPoints,
   login: handleLogin,
   register: handleRegister,
+  trialCreate: handleTrialCreate,
+  trialList: handleTrialList,
+  trialEnroll: handleTrialEnroll,
   checkName: handleCheckName,
   resetPassword: handleResetPassword,
   checkId: handleCheckId,

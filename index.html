@@ -451,6 +451,20 @@
         <button type="button" class="ghost-btn" id="shopPurchaseHistoryBtn">📜 購入履歴を見る（直近2ヶ月・00001限定）</button>
         <div id="shopPurchaseHistoryBox" hidden></div>
       </div>
+      <div class="test-photo-card" id="trialAdminCard" hidden>
+        <p class="test-photo-hint">🛠️ 管理者用：🎫 体験IDを作る（体験期間は2027年2月28日まで。全部の機能が使えます）。入塾したら「入塾にする」を押すと、そのIDのままMP・レベルなどを引き継げます。</p>
+        <input class="login-input" id="trialName" type="text" placeholder="名前（フルネーム）" autocomplete="off">
+        <select class="login-input" id="trialGrade">
+          <option value="" disabled selected>学年を選択</option>
+          <option value="小3">小学3年</option><option value="小4">小学4年</option><option value="小5">小学5年</option><option value="小6">小学6年</option>
+          <option value="中1">中学1年</option><option value="中2">中学2年</option><option value="中3">中学3年</option>
+        </select>
+        <input class="login-input" id="trialPassword" type="text" maxlength="4" placeholder="パスワード（英数字4桁）" autocomplete="off">
+        <button type="button" class="ghost-btn" id="trialCreateBtn">体験IDを作る</button>
+        <p class="test-photo-result" id="trialCreateResult"></p>
+        <button type="button" class="ghost-btn" id="trialListBtn">体験IDの一覧を見る</button>
+        <div id="trialList"></div>
+      </div>
       <div class="test-photo-card" id="wisdomSeedAdminCard" hidden>
         <p class="test-photo-hint">🛠️ 管理者用：今月の読書いいねランキング特典（1〜3位に賢さの種、1〜25位にHPボーナス）を配布します。月が変わったら実行してください（同じ月は二重配布できません）。</p>
         <button type="button" class="ghost-btn" id="wisdomSeedDistributeBtn">今月の読書いいね特典を配布する</button>

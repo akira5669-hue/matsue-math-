@@ -24654,6 +24654,7 @@
       if (!res.ok) {
         var msg = '通信に失敗しました。もう一度お試しください。';
         if (res.error === 'not_found') msg = 'そのIDは登録されていません。先生に確認してください。';
+        else if (res.error === 'trial_expired') msg = '体験期間が終わりました。続けて使いたいときは、先生に聞いてください。';
         else if (res.error === 'no_password') msg = 'パスワードが未設定です。下の「パスワードを忘れた方はこちら」から新しいパスワードを設定してください。';
         else if (res.error === 'wrong_password') {
           msg = 'パスワードが違います。';
@@ -25455,6 +25456,62 @@
     // まっさらな状態にする。
     window.location.reload();
   }
+
+  // 🎫 体験ID(先生用、2026-11-17〜)。作る・一覧・入塾にする。
+  (function () {
+    function $t(id) { return document.getElementById(id); }
+    function teacherId_() { var s = loadSession(); return s && s.id; }
+    function renderTrialList_() {
+      var box = $t('trialList');
+      if (!box) return;
+      box.textContent = '読み込み中…';
+      apiPost('trialList', { id: teacherId_() }).then(function (res) {
+        if (!res || !res.ok) { box.textContent = '読み込めませんでした。'; return; }
+        if (!res.list.length) { box.textContent = '体験IDはまだありません。'; return; }
+        box.innerHTML = res.list.map(function (r) {
+          var last = r.lastLogin ? new Date(r.lastLogin).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }) : '-';
+          return '<div class="gift-row"><div class="gift-info"><span class="gift-label">' + escHtml(r.id) + '　' + escHtml(r.name) + '（' + escHtml(r.grade) + '）</span>'
+            + '<span class="shop-item-note">Lv.' + r.level + '・' + r.points + 'MP・最後に使った日 ' + last + '・' + escHtml(r.trialUntil) + 'まで</span></div>'
+            + '<button type="button" class="gift-redeem-btn" data-trial-enroll="' + escHtml(r.id) + '" data-trial-name="' + escHtml(r.name) + '">入塾にする</button></div>';
+        }).join('');
+      }).catch(function () { box.textContent = '通信に失敗しました。'; });
+    }
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('#trialListBtn')) { renderTrialList_(); return; }
+      var en = e.target.closest('[data-trial-enroll]');
+      if (en) {
+        var tid = en.getAttribute('data-trial-enroll');
+        if (!window.confirm(en.getAttribute('data-trial-name') + '（' + tid + '）を入塾にします。体験期間の制限がなくなり、ふつうの塾生のIDになります。よろしいですか？')) return;
+        en.disabled = true;
+        apiPost('trialEnroll', { id: teacherId_(), target: tid }).then(function (res) {
+          if (!res || !res.ok) { en.disabled = false; window.alert('できませんでした。もう一度お試しください。'); return; }
+          window.alert(res.name + '（' + res.id + '）を入塾にしました。');
+          renderTrialList_();
+        }).catch(function () { en.disabled = false; window.alert('通信に失敗しました。'); });
+        return;
+      }
+      if (e.target.closest('#trialCreateBtn')) {
+        var out = $t('trialCreateResult');
+        var name = ($t('trialName').value || '').trim();
+        var grade = $t('trialGrade').value;
+        var pw = ($t('trialPassword').value || '').trim();
+        if (!name || !grade || !/^[A-Za-z0-9]{4}$/.test(pw)) { out.textContent = '名前・学年・パスワード（英数字4桁）を入れてください。'; return; }
+        var btn = $t('trialCreateBtn');
+        btn.disabled = true;
+        out.textContent = '作成中…';
+        apiPost('trialCreate', { id: teacherId_(), name: name, grade: grade, password: pw }).then(function (res) {
+          btn.disabled = false;
+          if (!res || !res.ok) {
+            out.textContent = res && res.error === 'duplicate_name' ? '同じ名前のIDがすでにあります。名前を変えてください（例：名前のあとに「体験」）。' : '作れませんでした（' + ((res && res.error) || '通信エラー') + '）。';
+            return;
+          }
+          out.textContent = '✅ 作りました！ ID：' + res.id + '　パスワード：' + pw + '　名前：' + res.name + '（' + res.grade + '）　' + res.trialUntil + 'まで使えます。';
+          $t('trialName').value = ''; $t('trialPassword').value = '';
+          renderTrialList_();
+        }).catch(function () { btn.disabled = false; out.textContent = '通信に失敗しました。'; });
+      }
+    });
+  })();
 
   function handleLogout() {
     // ログアウト時にlocalStorageを消してからreloadするため、直前の正解が何らかの
@@ -26477,6 +26534,7 @@
     els.shopSummary.textContent = `現在のMP: ${state.points}`;
     if (els.shopPurchaseHistoryCard) els.shopPurchaseHistoryCard.hidden = !isAdminSession_();
     if (els.wisdomSeedAdminCard) els.wisdomSeedAdminCard.hidden = !isAdminSession_();
+    var trialCard_ = document.getElementById('trialAdminCard'); if (trialCard_) trialCard_.hidden = !isAdminSession_();
     if (els.wisdomFruitAdminCard) els.wisdomFruitAdminCard.hidden = !isAdminSession_();
     if (els.effortSeedDailyAdminCard) els.effortSeedDailyAdminCard.hidden = !isAdminSession_();
     if (els.effortSeedMonthlyAdminCard) els.effortSeedMonthlyAdminCard.hidden = !isAdminSession_();
@@ -37411,6 +37469,11 @@
     showApp(existingSession.name, !!existingSession.guest);
     if (existingSession.id) {
       apiPost('getPoints', { id: existingSession.id, keyGrantV1: true }).then(function (res) {
+        if (res && res.error === 'trial_expired') {
+          window.alert('体験期間が終わりました。続けて使いたいときは、先生に聞いてください。');
+          finishLogout();
+          return;
+        }
         if (res.ok) {
           photoAvatarConsent_ = !!res.photoAvatarConsent;
           var parsedAvatar = parseAvatarJson(res.avatar);
