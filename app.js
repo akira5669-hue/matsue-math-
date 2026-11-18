@@ -35639,7 +35639,8 @@
      アプリにしたもの＋満足度・改善点。生徒本人か保護者が、生徒のアカウントで答える。
      答えられるのは毎月1回だけで、答えると+50MP。答えはサーバー(lib/handlers/survey.js)に保存し、先生にメールでも届く。
      2026-11-11 全員に公開(SURVEY_OPEN_ALL_=true。falseに戻すと00001だけ。survey.js側も揃えること)。 */
-  var SURVEY_OPEN_ALL_ = true;
+  // 2026-11-19 先生の指示で、生徒には📝月1アンケートのボタンを出さない(先生00001だけ見える。回答の確認用)。
+  var SURVEY_OPEN_ALL_ = false;
   var surveySat_ = { satClass: 0, satOverall: 0 };
   function surveyVisible_() { return isAdminSession_() || SURVEY_OPEN_ALL_; }
   function renderSurveyStars_() {
