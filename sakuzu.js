@@ -199,7 +199,7 @@
         st.done = true; st.correctLine = o;
         msg('⭕ <b>正解！</b>きれいに作図できたね！「🔄 別の図」で次の問題にチャレンジしよう。');
         draw();
-        if (opts.onCorrect) try { opts.onCorrect(PROBLEMS[st.pi].id); } catch (e) { }
+        if (opts.onCorrect) try { var extra = opts.onCorrect(PROBLEMS[st.pi].id); if (extra) $('.sk-msg').innerHTML +='<br>' + extra; } catch (e) { }
       } else {
         msg('❌ その直線は正しい作図の線ではないみたい。「↩️ 1つもどす」で消して、もう一度考えてみよう。');
       }

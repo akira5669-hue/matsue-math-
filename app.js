@@ -24406,7 +24406,7 @@
     b.hidden = false;
     var t = document.getElementById('sakuzuBannerText');
     if (t) t.textContent = (started ? '📐 新機能「作図にチャレンジ」スタート！' : '📐【予告】11月27日(金)から、新機能「作図にチャレンジ」がスタート！')
-      + 'アプリの中のコンパスと定規を使って、本当に作図ができるよ。垂直二等分線・角の二等分線・垂線を作図して、正しい線が引けたら正解！まちがえても「1つもどす」でやり直せるし、ヒントもあるよ。中1で習う作図の練習にぴったり！';
+      + 'アプリの中のコンパスと定規を使って、本当に作図ができるよ。垂直二等分線・角の二等分線・垂線を作図して、正しい線が引けたら正解で、1問1MP（1日10MPまで。ほかのMPの1日の上限とは別にもらえる）！まちがえても「1つもどす」でやり直せるし、ヒントもあるよ。中1で習う作図の練習にぴったり！';
     var btn = document.getElementById('sakuzuBannerBtn');
     if (btn) btn.hidden = !started;
   }
@@ -36392,6 +36392,26 @@
     var tg = document.getElementById('sakuzuToggle'), panel = document.getElementById('sakuzuPanel');
     if (!tg || !panel || !window.Sakuzu) return;
     var mounted = false;
+    // ごほうび(先生の指示 2026-11-18)：1問正解で1MP、1日SAKUZU_MP_DAILY_までで、ほかのMPの1日の上限とは別(上限のないボーナス枠pointsTodayBonusに入れる)。
+    // 今日もらった数は端末ごとにlocalStorageで数える。
+    var SAKUZU_MP_DAILY_ = 10;
+    function giveMp_() {
+      var s = loadSession();
+      if (!s || !s.id) return '';
+      var today = todayKey(), k = 'sakuzuMp_' + s.id, o = {};
+      try { o = JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { }
+      var got = o.d === today ? (Number(o.n) || 0) : 0;
+      if (got >= SAKUZU_MP_DAILY_) return '（今日の作図のMPは' + SAKUZU_MP_DAILY_ + 'MPまでもらったよ。また明日！）';
+      if (state.pointsDate !== today) { state.pointsDate = today; state.pointsToday = 0; state.pointsTodayCalc = 0; state.pointsTodayWord = 0; state.pointsTodayScience = 0; state.pointsTodayBonus = 0; state.curseBonusToday = 0; state.pointsTodayNews = 0; }
+      state.points += 1;
+      state.pointsToday += 1;
+      state.pointsTodayBonus = (Number(state.pointsTodayBonus) || 0) + 1;
+      try { localStorage.setItem(k, JSON.stringify({ d: today, n: got + 1 })); } catch (e) { }
+      saveGameState(state);
+      updateGameHud();
+      syncPointsNow_(s.id);
+      return '🪙 +1MP！（今日の作図のMP ' + (got + 1) + '/' + SAKUZU_MP_DAILY_ + '）';
+    }
     tg.addEventListener('click', function () {
       if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
       ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel', 'numSensePanel', 'shikokuPanel',
@@ -36400,7 +36420,7 @@
         if (p) p.setAttribute('hidden', '');
       });
       panel.removeAttribute('hidden');
-      if (!mounted) { window.Sakuzu.mount(document.getElementById('sakuzuBody')); mounted = true; }
+      if (!mounted) { window.Sakuzu.mount(document.getElementById('sakuzuBody'), { onCorrect: giveMp_ }); mounted = true; }
     });
   })();
 
