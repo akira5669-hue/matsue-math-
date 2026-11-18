@@ -24273,6 +24273,7 @@
     '🐞【バグを直しました㉓】文章題の報酬が「50MP」と書いてあったのに、40MPしか入らなかったのを直しました。文章題の1日の上限が40MPなので、報酬の表示を40MPにそろえました。',
     '🐞【バグを直しました㉔】問題に正解して経験値のバーがのびても、「次のLvまであと」の数が敵をたおすまで変わらなかったのを直しました。今はバーと同じように、正解するたびに数がへります（まちがえると元にもどります）。',
     '🐞【バグを直しました㉕】理科の「磁石につかない金属はどれ？」の問題で、答えになる金属が2つ以上まざっていたのを直しました。ごーまじ（20問連続正解）をたおしたときの経験値が10しかなかったのを、20にしました。理科から算数に切りかえたとき、世界一周のボスのセリフが出なかったのを直しました。',
+    '🐞【バグを直しました㉖】野球ガチャの打率・勝率の計算問題で、答えが「0.340」のように最後に0がついていたのを、「0.34」のように0を消した書き方に直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -37055,7 +37056,8 @@
     if (calc) {
       // 打数と安打数から打率を計算する(2026-11-13〜)。答えは小数第3位まで(0.340)
       // 勝率(calc.w・calc.l)のときも同じ形で作る
-      var f3 = function (x) { return x.toFixed(3); };
+      // 最後の0は消す(0.340→0.34。学校の書き方に合わせる。バグ報告#62)
+      var f3 = function (x) { return String(Number(x.toFixed(3))); };
       var ansC = f3(a / 1000), cc = [];
       if (calc.w) { cc.push(f3(calc.w / calc.l)); cc.push(f3(calc.l / (calc.w + calc.l))); }  // 勝ち÷負け・負け÷試合数
       else cc.push(f3(calc.ab / calc.h));                 // 打数÷安打数(逆に割った)
@@ -37118,9 +37120,9 @@
     var a = Number(r.avg) || 0, qa = r.bq, info = bbQuizInfo_(a, !!r.bqRev, calc);
     var who = last ? bbBatter_(last.ab) : bbBatter_(r.ab);
     var h = '<div class="dq-box"><div class="dq-q">🧠 ' + (calc && calc.w ? '勝率' : '打率') + 'クイズ（正解で+1MP）<br>' + (calc && calc.w
-      ? 'このチームの今シーズンは <b class="bq-avg">' + calc.w + '勝 ' + calc.l + '敗</b><b>勝率を計算すると？</b><br><small>勝率 ＝ 勝ち数 ÷ 試合数（勝ち数＋負け数）（小数第3位まで）</small>'
+      ? 'このチームの今シーズンは <b class="bq-avg">' + calc.w + '勝 ' + calc.l + '敗</b><b>勝率を計算すると？</b><br><small>勝率 ＝ 勝ち数 ÷ 試合数（勝ち数＋負け数）</small>'
       : escHtml(who) + 'の今シーズンの打率は '
-      + (calc ? '…？<br>今シーズンは <b class="bq-avg">' + calc.ab + '打数 ' + calc.h + '安打</b><b>打率を計算すると？</b><br><small>打率 ＝ 安打数 ÷ 打数（小数第3位まで）</small>' : r.bqRev ? '<b class="bq-avg">' + info.reading + '</b><b>小数で表すと？</b>' : '<b class="bq-avg">0.' + ('00' + a).slice(-3) + '</b><b>何割何分何厘？</b>')) + '</div><div class="dq-choices bq-choices">';
+      + (calc ? '…？<br>今シーズンは <b class="bq-avg">' + calc.ab + '打数 ' + calc.h + '安打</b><b>打率を計算すると？</b><br><small>打率 ＝ 安打数 ÷ 打数</small>' : r.bqRev ? '<b class="bq-avg">' + info.reading + '</b><b>小数で表すと？</b>' : '<b class="bq-avg">0.' + ('00' + a).slice(-3) + '</b><b>何割何分何厘？</b>')) + '</div><div class="dq-choices bq-choices">';
     info.choices.forEach(function (c) {
       var cls = 'dq-btn bq-btn' + (qa ? (c === info.ans ? ' dq-ok' : c === qa.a ? ' dq-ng' : '') : '');
       h += '<button type="button" class="' + cls + '" data-bq="' + c + '"' + (qa ? ' disabled' : '') + '>' + c + '</button>';
