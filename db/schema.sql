@@ -58,6 +58,7 @@ CREATE TABLE students (
   raiden_axe_charges INTEGER NOT NULL DEFAULT 0, -- なんでも屋「雷電の斧」の残りチャージ数(保有上限なし、購入ごとに+3)
   usa_lady_gift_pending INTEGER NOT NULL DEFAULT 0, -- アメリカ横断の謎のおばさんに渡した宝石の数(クリスマス12/25にダイヤの指輪へ変換されるまでの保留数)
   diamond_ring_count INTEGER NOT NULL DEFAULT 0, -- ダイヤの指輪の所持数(購入不可、なんでも屋で2000MPに売却できるのみ)
+  points_today_sakuzu INTEGER NOT NULL DEFAULT 0, -- 📐作図の今日のMP(1日10まで、2026-11-18〜)
   trial_until TEXT, -- 体験IDの使える最後の日(YYYY-MM-DD、日本時間)。入塾したらNULL(2026-11-17〜)
   usa_crossing_run JSONB, -- アメリカ横断の挑戦中の状態 {active,progress,correct,updatedAt}(2026-11-16〜、別の端末でも続きから)
   usa_crossing_completed BOOLEAN NOT NULL DEFAULT FALSE, -- アメリカ横断の成功は一度きり(成功後は再挑戦不可、失敗は何度でも再挑戦可)
