@@ -22653,8 +22653,9 @@
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
     // 新レアキャラのテストボタン(00001だけ)
     var rpAdm = document.getElementById('rarePreviewAdmin'); if (rpAdm) rpAdm.hidden = !isAdminSession_();
-    // 📐作図にチャレンジ(2026-11-18〜、今は00001だけのプレビュー)
-    var szTg = document.getElementById('sakuzuToggle'); if (szTg) { szTg.hidden = !isAdminSession_(); if (szTg.hidden) { var szPn = document.getElementById('sakuzuPanel'); if (szPn) szPn.setAttribute('hidden', ''); } }
+    // 📐作図にチャレンジ(2026-11-18〜00001だけのプレビュー、2026-11-27から全員)
+    renderSakuzuBanner_();
+    var szTg = document.getElementById('sakuzuToggle'); if (szTg) { szTg.hidden = !sakuzuVisible_(); var szBd = szTg.querySelector('.new-badge'); if (szBd) szBd.textContent = todayKey() >= SAKUZU_START_ ? 'NEW' : '準備中'; if (szTg.hidden) { var szPn = document.getElementById('sakuzuPanel'); if (szPn) szPn.setAttribute('hidden', ''); } }
     // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)
     var skTg = document.getElementById('shikokuToggle'); if (skTg) { skTg.hidden = !isAdminSession_(); if (skTg.hidden) { var skPn = document.getElementById('shikokuPanel'); if (skPn) skPn.setAttribute('hidden', ''); } }
     // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
@@ -24391,6 +24392,30 @@
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわなもあるので気をつけて！別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
+
+  // 📐作図にチャレンジ：2026-11-27(金)から全員に公開(先生の指示)。告知は今日からSAKUZU_BANNER_END_まで(公開前は予告)。
+  var SAKUZU_START_ = '2026-11-27';
+  var SAKUZU_BANNER_END_ = '2026-12-06';
+  function sakuzuVisible_() { return isAdminSession_() || todayKey() >= SAKUZU_START_; }
+  function renderSakuzuBanner_() {
+    var b = document.getElementById('sakuzuBanner');
+    if (!b) return;
+    var today = todayKey();
+    if (today > SAKUZU_BANNER_END_) { b.hidden = true; return; }
+    var started = today >= SAKUZU_START_;
+    b.hidden = false;
+    var t = document.getElementById('sakuzuBannerText');
+    if (t) t.textContent = (started ? '📐 新機能「作図にチャレンジ」スタート！' : '📐【予告】11月27日(金)から、新機能「作図にチャレンジ」がスタート！')
+      + 'アプリの中のコンパスと定規を使って、本当に作図ができるよ。垂直二等分線・角の二等分線・垂線を作図して、正しい線が引けたら正解！まちがえても「1つもどす」でやり直せるし、ヒントもあるよ。中1で習う作図の練習にぴったり！';
+    var btn = document.getElementById('sakuzuBannerBtn');
+    if (btn) btn.hidden = !started;
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#sakuzuBannerBtn')) return;
+    var pn = document.getElementById('sakuzuPanel'), tgl = document.getElementById('sakuzuToggle');
+    if (pn && tgl && pn.hasAttribute('hidden')) tgl.click();
+    if (pn) pn.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   // 図形トレーニング・中学受験問題・サイコロガチャの告知バナー(11月中)。
   var ZUKEI_BANNER_END_ = '2026-11-30';
@@ -36362,7 +36387,7 @@
     });
   })();
 
-  /* ---------- 📐作図にチャレンジ(2026-11-18〜、00001だけのプレビュー。本体は sakuzu.js) ---------- */
+  /* ---------- 📐作図にチャレンジ(2026-11-18〜00001だけのプレビュー、2026-11-27から全員。本体は sakuzu.js) ---------- */
   (function () {
     var tg = document.getElementById('sakuzuToggle'), panel = document.getElementById('sakuzuPanel');
     if (!tg || !panel || !window.Sakuzu) return;
