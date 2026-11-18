@@ -1,87 +1,217 @@
-/* 📐 作図にチャレンジ(2026-11-18〜、今は先生(00001)だけのプレビュー)
+/* 📐 作図にチャレンジ(2026-11-18〜、先生(00001)だけのプレビュー)
    コンパスと定規だけを使って、画面の上で本当に作図する。
    - コンパス：中心にする点をタップ → 半径をきめる場所をタップ(点の近くなら点にぴったり)。「同じ半径」ボタンで前と同じ半径の円もかける。
    - 定規：2つの点をタップすると、その2点を通る直線を引く。
+   - 答えの点：答えが「点」の問題で、作図してできた点をタップして答える。
    - 点は、はじめからある点と、線や円が交わる点(交点)だけ。タップすると一番近い点に吸いつく。
-   - 引いた直線が、正しい作図の線と重なったら正解。
-   app.js から window.Sakuzu.mount(要素) で使う。 */
+   レベル：基本・標準・入試。答えの種類(target.kind)は line(直線)・point(点)・circle(円)。
+   app.js から window.Sakuzu.mount(要素, { onCorrect }) で使う。 */
 (function () {
   'use strict';
-  var W = 360, H = 360, SNAP = 22, EPS = 1e-6;
+  var W = 360, H = 360, SNAP = 22, EPS = 1e-6, TOL = 2.5;
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function dist(p, q) { return Math.hypot(p.x - q.x, p.y - q.y); }
   function unit(dx, dy) { var l = Math.hypot(dx, dy) || 1; return { x: dx / l, y: dy / l }; }
+  // 点Oから、長さlen・角度deg(左回りが正、画面で見た向き)の点
+  function at(O, len, deg, label) { var t = deg * Math.PI / 180; var p = { x: O.x + len * Math.cos(t), y: O.y - len * Math.sin(t) }; if (label) p.label = label; return p; }
+  function dirDeg(deg) { var t = deg * Math.PI / 180; return { x: Math.cos(t), y: -Math.sin(t) }; }
+  function foot(P, A, B) { var u = unit(B.x - A.x, B.y - A.y); var t = (P.x - A.x) * u.x + (P.y - A.y) * u.y; return { x: A.x + t * u.x, y: A.y + t * u.y }; }
+  function reflect(P, A, B) { var f = foot(P, A, B); return { x: 2 * f.x - P.x, y: 2 * f.y - P.y }; }
+  function lineMeet(p1, u1, p2, u2) { var den = u1.x * u2.y - u1.y * u2.x; var t = ((p2.x - p1.x) * u2.y - (p2.y - p1.y) * u2.x) / den; return { x: p1.x + t * u1.x, y: p1.y + t * u1.y }; }
+  function circumcenter(A, B, C) {
+    var d = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
+    var a2 = A.x * A.x + A.y * A.y, b2 = B.x * B.x + B.y * B.y, c2 = C.x * C.x + C.y * C.y;
+    return { x: (a2 * (B.y - C.y) + b2 * (C.y - A.y) + c2 * (A.y - B.y)) / d, y: (a2 * (C.x - B.x) + b2 * (A.x - C.x) + c2 * (B.x - A.x)) / d };
+  }
+  function incenter(A, B, C) {
+    var a = dist(B, C), b = dist(C, A), c = dist(A, B), s = a + b + c;
+    return { x: (a * A.x + b * B.x + c * C.x) / s, y: (a * A.y + b * B.y + c * C.y) / s };
+  }
+  function tri() {
+    var A = { x: rnd(50, 100), y: rnd(215, 245), label: 'A' };
+    var B = { x: rnd(260, 310), y: rnd(205, 245), label: 'B' };
+    var C = { x: rnd(140, 220), y: rnd(45, 80), label: 'C' };
+    return [A, B, C];
+  }
+  function triObjs(A, B, C) { return [{ type: 'segment', p: A, q: B }, { type: 'segment', p: B, q: C }, { type: 'segment', p: C, q: A }]; }
+  function lineAcross(y0, tilt, label) { return { type: 'line', p: { x: 20, y: y0 - tilt * 160 }, q: { x: 340, y: y0 + tilt * 160 }, label: label || 'ℓ' }; }
+  function onLine(L, x) { return { x: x, y: L.p.y + (L.q.y - L.p.y) / (L.q.x - L.p.x) * (x - L.p.x) }; }
 
   // ---- 問題 ----
-  // given: 表示する図(点・線分・半直線・直線)。target: 正解の直線(通る点pと向きu)。
+  var LEVELS = [{ id: 'basic', label: '基本' }, { id: 'std', label: '標準' }, { id: 'exam', label: '入試' }];
   var PROBLEMS = [
+    // ===== 基本 =====
     {
-      id: 'bisector', title: '線分ABの垂直二等分線',
+      id: 'bisector', level: 'basic', title: '線分ABの垂直二等分線',
       make: function () {
-        var A = { x: rnd(60, 100), y: rnd(200, 250), label: 'A' };
-        var B = { x: rnd(260, 300), y: rnd(150, 210), label: 'B' };
-        var M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+        var A = { x: rnd(60, 100), y: rnd(200, 250), label: 'A' }, B = { x: rnd(260, 300), y: rnd(150, 210), label: 'B' };
         return {
-          points: [A, B],
-          objs: [{ type: 'segment', p: A, q: B }],
-          target: { p: M, u: unit(-(B.y - A.y), B.x - A.x) },
+          points: [A, B], objs: [{ type: 'segment', p: A, q: B }],
+          target: { kind: 'line', lines: [{ p: { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, u: unit(-(B.y - A.y), B.x - A.x) }] },
           hint: '① 点Aを中心に円をかく（半径はABの半分より大きく）。② 点Bを中心に、同じ半径の円をかく。③ 2つの円の交点2つを定規で結ぶ。',
         };
       },
     },
     {
-      id: 'angle', title: '∠AOBの二等分線',
+      id: 'angle', level: 'basic', title: '∠AOBの二等分線',
       make: function () {
-        var O = { x: rnd(50, 70), y: rnd(290, 310), label: 'O' };
-        var t1 = rnd(0, 15) * Math.PI / 180, t2 = t1 + rnd(40, 80) * Math.PI / 180;
-        var A = { x: O.x + 250 * Math.cos(t1), y: O.y - 250 * Math.sin(t1), label: 'A' };
-        var B = { x: O.x + 200 * Math.cos(t2), y: O.y - 200 * Math.sin(t2), label: 'B' };
-        var tm = (t1 + t2) / 2;
+        var O = { x: rnd(50, 70), y: rnd(290, 310), label: 'O' }, d1 = rnd(0, 15), d2 = d1 + rnd(40, 80);
+        var A = at(O, 250, d1, 'A'), B = at(O, 200, d2, 'B');
         return {
-          points: [O, A, B],
-          objs: [{ type: 'ray', p: O, q: A }, { type: 'ray', p: O, q: B }],
-          target: { p: O, u: { x: Math.cos(tm), y: -Math.sin(tm) } },
+          points: [O, A, B], objs: [{ type: 'ray', p: O, q: A }, { type: 'ray', p: O, q: B }],
+          target: { kind: 'line', lines: [{ p: O, u: dirDeg((d1 + d2) / 2) }] },
           hint: '① 点Oを中心に円をかき、辺OA・辺OBとの交点をつくる。② その2つの交点を中心に、同じ半径の円をそれぞれかく。③ その2つの円の交点と、点Oを定規で結ぶ。',
         };
       },
     },
     {
-      id: 'perpOut', title: '点Pを通る、直線ℓの垂線（Pは直線の外）',
+      id: 'perpOut', level: 'basic', title: '点Pを通る、直線ℓの垂線（Pは直線の外）',
       make: function () {
-        var y0 = rnd(230, 260), tilt = rnd(-0.15, 0.15);
-        var C = { x: 40, y: y0 + tilt * -140 }, D = { x: 320, y: y0 + tilt * 140 };
-        var u = unit(D.x - C.x, D.y - C.y);
-        var P = { x: rnd(150, 210), y: 0, label: 'P' };
-        P.y = C.y + u.y / u.x * (P.x - C.x) - rnd(110, 150);
+        var L = lineAcross(rnd(230, 260), rnd(-0.15, 0.15)), u = unit(L.q.x - L.p.x, L.q.y - L.p.y);
+        var P = onLine(L, rnd(150, 210)); P.y -= rnd(110, 150); P.label = 'P';
         return {
-          points: [P],
-          objs: [{ type: 'line', p: C, q: D, label: 'ℓ' }],
-          target: { p: P, u: { x: -u.y, y: u.x } },
+          points: [P], objs: [L], target: { kind: 'line', lines: [{ p: P, u: { x: -u.y, y: u.x } }] },
           hint: '① 点Pを中心に、直線ℓと2点で交わる円をかく。② その2つの交点を中心に、同じ半径の円をそれぞれかく。③ その2つの円の交点と、点Pを定規で結ぶ。',
         };
       },
     },
     {
-      id: 'perpOn', title: '直線ℓ上の点Pを通る、ℓの垂線',
+      id: 'perpOn', level: 'basic', title: '直線ℓ上の点Pを通る、ℓの垂線',
       make: function () {
-        var y0 = rnd(200, 240), tilt = rnd(-0.15, 0.15);
-        var C = { x: 30, y: y0 + tilt * -150 }, D = { x: 330, y: y0 + tilt * 150 };
-        var u = unit(D.x - C.x, D.y - C.y);
-        var px = rnd(160, 200);
-        var P = { x: px, y: C.y + u.y / u.x * (px - C.x), label: 'P' };
+        var L = lineAcross(rnd(200, 240), rnd(-0.15, 0.15)), u = unit(L.q.x - L.p.x, L.q.y - L.p.y);
+        var P = onLine(L, rnd(160, 200)); P.label = 'P';
         return {
-          points: [P],
-          objs: [{ type: 'line', p: C, q: D, label: 'ℓ' }],
-          target: { p: P, u: { x: -u.y, y: u.x } },
+          points: [P], objs: [L], target: { kind: 'line', lines: [{ p: P, u: { x: -u.y, y: u.x } }] },
           hint: '① 点Pを中心に円をかき、直線ℓとの交点を2つつくる。② その2つの交点を中心に、①より大きい同じ半径の円をそれぞれかく。③ その2つの円の交点と、点Pを定規で結ぶ。',
+        };
+      },
+    },
+    // ===== 標準 =====
+    {
+      id: 'circum', level: 'std', title: '3点A、B、Cを通る円の中心O',
+      make: function () {
+        var t = tri();
+        return {
+          points: t, objs: triObjs(t[0], t[1], t[2]), target: { kind: 'point', p: circumcenter(t[0], t[1], t[2]) },
+          ask: '作図してできた中心Oを「📍 答えの点」でタップしてね。',
+          hint: '円の中心は、A・B・Cのどれからも同じ距離にある点。① 辺ABの垂直二等分線をひく。② 辺BCの垂直二等分線をひく。③ 2本の交点が中心O。',
+        };
+      },
+    },
+    {
+      id: 'tangent', level: 'std', title: '円Oの周上の点Aを通る、円Oの接線',
+      make: function () {
+        var O = { x: rnd(160, 200), y: rnd(200, 230), label: 'O' }, r = rnd(80, 95), deg = rnd(20, 70) * (Math.random() < 0.5 ? 1 : -1) + (Math.random() < 0.5 ? 0 : 180);
+        if (Math.sin(deg * Math.PI / 180) < -0.3) deg = -deg; // 下すぎると画面からはみ出すので上側に
+        var A = at(O, r, deg, 'A');
+        return {
+          points: [O, A], objs: [{ type: 'circle', c: O, r: r, given: true }],
+          target: { kind: 'line', lines: [{ p: A, u: dirDeg(deg + 90) }] },
+          hint: '接線は、接点Aを通る半径OAに垂直な直線。① 定規で直線OAをひく。② 直線OA上の点Aを通る垂線を作図する（基本の「直線上の点を通る垂線」と同じ）。',
+        };
+      },
+    },
+    {
+      id: 'eqOnLine', level: 'std', title: '直線ℓ上にあって、2点A、Bから等しい距離にある点P',
+      make: function () {
+        for (var k = 0; k < 50; k++) {
+          var L = lineAcross(rnd(270, 300), rnd(-0.08, 0.08));
+          var A = { x: rnd(60, 130), y: rnd(70, 130), label: 'A' }, B = { x: rnd(220, 300), y: rnd(150, 210), label: 'B' };
+          var M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+          var P = lineMeet(M, unit(-(B.y - A.y), B.x - A.x), L.p, unit(L.q.x - L.p.x, L.q.y - L.p.y));
+          if (P.x > 40 && P.x < 320) {
+            return {
+              points: [A, B], objs: [L], target: { kind: 'point', p: P },
+              ask: '作図してできた点Pを「📍 答えの点」でタップしてね。',
+              hint: 'AとBから等しい距離にある点は、線分ABの垂直二等分線の上にある。① 線分ABの垂直二等分線をひく。② それと直線ℓの交点がP。',
+            };
+          }
+        }
+        return PROBLEMS[0].make();
+      },
+    },
+    {
+      id: 'angle45', level: 'std', title: '∠XOA＝45°となる直線OA',
+      make: function () {
+        var O = { x: rnd(110, 150), y: rnd(250, 280), label: 'O' }, d0 = rnd(-6, 6), X = at(O, 190, d0, 'X');
+        return {
+          points: [O, X], objs: [{ type: 'line', p: at(O, 100, d0 + 180), q: X }],
+          target: { kind: 'line', lines: [{ p: O, u: dirDeg(d0 + 45) }, { p: O, u: dirDeg(d0 - 45) }] },
+          hint: '45°は90°の半分。① 直線OX上の点Oを通る垂線をひいて90°をつくる。② その90°の角の二等分線をひく。',
+        };
+      },
+    },
+    {
+      id: 'angle30', level: 'std', title: '∠XOA＝30°となる直線OA',
+      make: function () {
+        var O = { x: rnd(70, 100), y: rnd(270, 300), label: 'O' }, d0 = rnd(-6, 6), X = at(O, 250, d0, 'X');
+        return {
+          points: [O, X], objs: [{ type: 'ray', p: O, q: X }],
+          target: { kind: 'line', lines: [{ p: O, u: dirDeg(d0 + 30) }, { p: O, u: dirDeg(d0 - 30) }] },
+          hint: '30°は60°の半分。60°は正三角形の角。① 点Oを中心に円をかき、半直線OXとの交点Eをつくる。② 点Eを中心に、同じ半径の円をかく（交点Fと、O・Eで正三角形）。③ ∠EOF(60°)の二等分線をひく。',
+        };
+      },
+    },
+    // ===== 入試 =====
+    {
+      id: 'incenter', level: 'exam', title: '△ABCの3辺から等しい距離にある点I（内心）',
+      make: function () {
+        var t = tri();
+        return {
+          points: t, objs: triObjs(t[0], t[1], t[2]), target: { kind: 'point', p: incenter(t[0], t[1], t[2]) },
+          ask: '作図してできた点Iを「📍 答えの点」でタップしてね。',
+          hint: '2辺から等しい距離にある点は、角の二等分線の上にある。① ∠Aの二等分線をひく。② ∠Bの二等分線をひく。③ 2本の交点がI。',
+        };
+      },
+    },
+    {
+      id: 'shortest', level: 'exam', title: '直線ℓ上の点Pで、AP＋PBがいちばん短くなる点P',
+      make: function () {
+        for (var k = 0; k < 50; k++) {
+          var L = lineAcross(rnd(195, 215), rnd(-0.06, 0.06));
+          var A = { x: rnd(60, 120), y: rnd(60, 110), label: 'A' }, B = { x: rnd(230, 300), y: rnd(100, 160), label: 'B' };
+          var A2 = reflect(A, L.p, L.q);
+          var P = lineMeet(A2, unit(B.x - A2.x, B.y - A2.y), L.p, unit(L.q.x - L.p.x, L.q.y - L.p.y));
+          if (A2.y < 340 && P.x > 50 && P.x < 310) {
+            return {
+              points: [A, B], objs: [L], target: { kind: 'point', p: P },
+              ask: '作図してできた点Pを「📍 答えの点」でタップしてね。',
+              hint: '直線ℓについて点Aと対称な点A′をつくると、AP＝A′P。① 点Aから直線ℓに垂線をひく。② ℓとの交点を中心に、Aを通る円をかいて、垂線の反対側にA′をつくる。③ A′とBを定規で結ぶ。④ その直線とℓの交点がP。',
+            };
+          }
+        }
+        return PROBLEMS[0].make();
+      },
+    },
+    {
+      id: 'tangentCircle', level: 'exam', title: '点Aを中心とし、直線ℓに接する円',
+      make: function () {
+        var L = lineAcross(rnd(250, 280), rnd(-0.15, 0.15));
+        var A = { x: rnd(140, 220), y: 0, label: 'A' }; A.y = onLine(L, A.x).y - rnd(90, 130);
+        var F = foot(A, L.p, L.q);
+        return {
+          points: [A], objs: [L], target: { kind: 'circle', c: A, r: dist(A, F) },
+          hint: '接する円の半径は、中心Aから直線ℓまでの距離（垂線の長さ）。① 点Aから直線ℓに垂線をひく。② 垂線とℓの交点Hを通るように、Aを中心に円をかく。',
+        };
+      },
+    },
+    {
+      id: 'rotate90', level: 'exam', title: '点Oを中心に、点Aを左回りに90°回転させた点A′',
+      make: function () {
+        var O = { x: rnd(150, 190), y: rnd(220, 250), label: 'O' }, d = rnd(-25, 25), r = rnd(100, 120);
+        var A = at(O, r, d, 'A');
+        return {
+          points: [O, A], objs: [],
+          target: { kind: 'point', p: at(O, r, d + 90) },
+          ask: '作図してできた点A′を「📍 答えの点」でタップしてね。',
+          hint: '回転させても、Oからの距離は同じ。① 定規で直線OAをひく。② 直線OA上の点Oを通る垂線をひく。③ Oを中心に、Aを通る円をかく。④ 円と垂線の交点のうち、左回りに90°のほうがA′。',
         };
       },
     },
   ];
 
   // ---- 交点 ----
-  // 直線系の図形は p + t*u (uは単位ベクトル)。半直線は t>=0、線分は 0<=t<=len。
   function lineOf(o) {
     var u = unit(o.q.x - o.p.x, o.q.y - o.p.y);
     return { p: o.p, u: u, min: o.type === 'line' ? -Infinity : 0, max: o.type === 'segment' ? dist(o.p, o.q) : Infinity };
@@ -122,19 +252,27 @@
     if (lb) return interLC(b, a);
     return interCC(a, b);
   }
+  function lineMatches(o, T) {
+    var L = lineOf(o);
+    var cross = Math.abs(L.u.x * T.u.y - L.u.y * T.u.x);
+    var off = Math.abs((T.p.x - L.p.x) * L.u.y - (T.p.y - L.p.y) * L.u.x);
+    return cross < 0.02 && off < TOL;
+  }
 
   // ---- 画面 ----
   function mount(root, opts) {
     opts = opts || {};
-    var st = { pi: 0, prob: null, objs: [], points: [], tool: 'compass', pick: null, lastR: 0, done: false, history: [] };
+    var st = { level: 'basic', pid: 'bisector', prob: null, objs: [], points: [], tool: 'compass', pick: null, lastR: 0, done: false, history: [] };
 
     root.innerHTML =
+      '<div class="sk-levels"></div>' +
       '<div class="sk-top"><select class="sk-sel"></select> <button type="button" class="ghost-btn sk-new">🔄 別の図</button></div>' +
       '<p class="sk-title"></p>' +
       '<svg class="sk-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg"></svg>' +
       '<div class="sk-tools">' +
       '<button type="button" class="ghost-btn sk-tool" data-t="compass">🧭 コンパス</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="ruler">📏 定規</button>' +
+      '<button type="button" class="ghost-btn sk-tool" data-t="answer" hidden>📍 答えの点</button>' +
       '<button type="button" class="ghost-btn sk-same" hidden>⭕ 同じ半径でかく</button>' +
       '</div>' +
       '<p class="sk-msg"></p>' +
@@ -142,30 +280,39 @@
       '<p class="sk-hinttext" hidden></p>';
     var $ = function (c) { return root.querySelector(c); };
     var svg = $('.sk-svg'), sel = $('.sk-sel');
-    PROBLEMS.forEach(function (p, i) { var o = document.createElement('option'); o.value = i; o.textContent = p.title; sel.appendChild(o); });
+    $('.sk-levels').innerHTML = LEVELS.map(function (l) { return '<button type="button" class="ghost-btn sk-level" data-lv="' + l.id + '">' + l.label + '</button>'; }).join('');
 
-    function start(pi) {
-      st.pi = pi; sel.value = pi;
-      var pr = PROBLEMS[pi].make();
+    function byId(id) { for (var i = 0; i < PROBLEMS.length; i++) if (PROBLEMS[i].id === id) return PROBLEMS[i]; return PROBLEMS[0]; }
+    function setLevel(lv) {
+      st.level = lv;
+      root.querySelectorAll('.sk-level').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-lv') === lv); });
+      sel.innerHTML = '';
+      PROBLEMS.filter(function (p) { return p.level === lv; }).forEach(function (p) { var o = document.createElement('option'); o.value = p.id; o.textContent = p.title; sel.appendChild(o); });
+      start(sel.value);
+    }
+    function start(pid) {
+      var def = byId(pid);
+      st.pid = def.id; sel.value = def.id;
+      var pr = def.make();
       st.prob = pr;
       st.objs = pr.objs.slice();
       st.history = [];
-      st.pick = null; st.lastR = 0; st.done = false;
-      $('.sk-title').textContent = '📐 ' + PROBLEMS[pi].title + 'を作図しよう！';
+      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null;
+      $('.sk-title').textContent = '📐 ' + def.title + 'を作図しよう！';
       $('.sk-hinttext').hidden = true;
       $('.sk-hinttext').textContent = pr.hint;
+      $('.sk-tool[data-t="answer"]').hidden = pr.target.kind !== 'point';
       setTool('compass');
       recompute();
-      msg('コンパスで円をかこう。まず、円の中心にする点をタップしてね。');
+      msg('コンパスで円をかこう。まず、円の中心にする点をタップしてね。' + (pr.ask ? '<br>' + pr.ask : ''));
     }
     function msg(t) { $('.sk-msg').innerHTML = t; }
     function setTool(t) {
       st.tool = t; st.pick = null;
       root.querySelectorAll('.sk-tool').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-t') === t); });
-      if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : '直線を引く1つめの点をタップしてね。');
+      if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。' : '答えだと思う点（作図してできた点）をタップしてね。');
       draw();
     }
-    // 吸いつく点(はじめからある点＋交点)を作りなおす
     function recompute() {
       var pts = st.prob.points.map(function (p) { return { x: p.x, y: p.y, label: p.label, given: true }; });
       st.prob.objs.forEach(function (o) { if (o.type === 'segment') { [o.p, o.q].forEach(function (e) { add(pts, e); }); } });
@@ -186,22 +333,21 @@
       var m = svg.getScreenCTM(); if (!m) return { x: 0, y: 0 };
       var r = pt.matrixTransform(m.inverse()); return { x: r.x, y: r.y };
     }
+    function correct(obj) {
+      st.done = true; st.correctObj = obj;
+      msg('⭕ <b>正解！</b>きれいに作図できたね！「🔄 別の図」で次の問題にチャレンジしよう。');
+      draw();
+      if (opts.onCorrect) try { var extra = opts.onCorrect(st.pid); if (extra) $('.sk-msg').innerHTML += '<br>' + extra; } catch (e) { }
+    }
     function push(o) {
       st.objs.push(o); st.history.push(o);
       recompute();
-      if (o.type === 'line') check(o);
-    }
-    function check(o) {
-      var L = lineOf(o), T = st.prob.target;
-      var cross = Math.abs(L.u.x * T.u.y - L.u.y * T.u.x);           // 向きのずれ(sin)
-      var off = Math.abs((T.p.x - L.p.x) * L.u.y - (T.p.y - L.p.y) * L.u.x); // 正解の点から線までの距離
-      if (cross < 0.02 && off < 2.5) {
-        st.done = true; st.correctLine = o;
-        msg('⭕ <b>正解！</b>きれいに作図できたね！「🔄 別の図」で次の問題にチャレンジしよう。');
-        draw();
-        if (opts.onCorrect) try { var extra = opts.onCorrect(PROBLEMS[st.pi].id); if (extra) $('.sk-msg').innerHTML +='<br>' + extra; } catch (e) { }
-      } else {
-        msg('❌ その直線は正しい作図の線ではないみたい。「↩️ 1つもどす」で消して、もう一度考えてみよう。');
+      var T = st.prob.target;
+      if (o.type === 'line' && T.kind === 'line') {
+        if (T.lines.some(function (t) { return lineMatches(o, t); })) correct(o);
+        else msg('❌ その直線は正しい作図の線ではないみたい。「↩️ 1つもどす」で消して、もう一度考えてみよう。');
+      } else if (o.type === 'circle' && T.kind === 'circle' && dist(o.c, T.c) < TOL && Math.abs(o.r - T.r) < TOL) {
+        correct(o);
       }
     }
 
@@ -221,31 +367,37 @@
           push({ type: 'circle', c: { x: c.x, y: c.y }, r: r });
           if (!st.done) msg('円をかいたよ。続けて、次の円の中心にする点をタップしてね（直線を引くときは「📏 定規」）。');
         }
-      } else {
+      } else if (st.tool === 'ruler') {
         if (!sn) { msg('定規は、点（●）の上をタップしてね。'); return; }
         if (!st.pick) { st.pick = sn; msg('2つめの点をタップしてね。'); draw(); return; }
         if (dist(st.pick, sn) < 1) { msg('ちがう点をタップしてね。'); return; }
         var a = st.pick; st.pick = null;
         push({ type: 'line', p: { x: a.x, y: a.y }, q: { x: sn.x, y: sn.y }, mine: true });
+        if (!st.done && st.prob.target.kind !== 'line') msg('直線を引いたよ。');
+      } else {
+        if (!sn) { msg('点（●）の上をタップしてね。'); return; }
+        if (dist(sn, st.prob.target.p) < TOL) { st.answerPt = sn; correct(null); }
+        else msg('❌ その点ではないみたい。作図を続けるか、ヒントを見てみよう。');
       }
     });
     root.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
-      if (b.classList.contains('sk-tool')) setTool(b.getAttribute('data-t'));
+      if (b.classList.contains('sk-level')) setLevel(b.getAttribute('data-lv'));
+      else if (b.classList.contains('sk-tool')) setTool(b.getAttribute('data-t'));
       else if (b.classList.contains('sk-same')) {
         if (st.tool === 'compass' && st.pick && st.lastR && !st.done) { var c = st.pick; st.pick = null; push({ type: 'circle', c: { x: c.x, y: c.y }, r: st.lastR }); if (!st.done) msg('同じ半径の円をかいたよ。'); }
       }
       else if (b.classList.contains('sk-undo')) {
         if (st.pick) { st.pick = null; draw(); return; }
         var o = st.history.pop(); if (!o) return;
-        st.objs.splice(st.objs.lastIndexOf(o), 1); st.done = false;
+        st.objs.splice(st.objs.lastIndexOf(o), 1); st.done = false; st.answerPt = null;
         recompute(); msg('1つもどしたよ。');
       }
-      else if (b.classList.contains('sk-reset')) start(st.pi);
-      else if (b.classList.contains('sk-new')) start(Number(sel.value) || 0);
+      else if (b.classList.contains('sk-reset')) start(st.pid);
+      else if (b.classList.contains('sk-new')) start(sel.value);
       else if (b.classList.contains('sk-hint')) $('.sk-hinttext').hidden = !$('.sk-hinttext').hidden;
     });
-    sel.addEventListener('change', function () { start(Number(sel.value) || 0); });
+    sel.addEventListener('change', function () { start(sel.value); });
 
     // ---- 描く ----
     function ext(o) {
@@ -255,26 +407,27 @@
     function draw() {
       var h = '';
       st.objs.forEach(function (o) {
+        var good = st.done && o === st.correctObj;
         if (o.type === 'circle') {
-          h += '<circle cx="' + o.c.x.toFixed(1) + '" cy="' + o.c.y.toFixed(1) + '" r="' + o.r.toFixed(1) + '" fill="none" stroke="#2f6fd6" stroke-width="1.2" opacity=".75"/>';
+          h += '<circle cx="' + o.c.x.toFixed(1) + '" cy="' + o.c.y.toFixed(1) + '" r="' + o.r.toFixed(1) + '" fill="none" stroke="' + (good ? '#18a058' : o.given ? '#1c2127' : '#2f6fd6') + '" stroke-width="' + (good ? 3 : o.given ? 2 : 1.2) + '" opacity="' + (o.given || good ? 1 : 0.75) + '"/>';
         } else {
-          var e = ext(o), good = st.done && o === st.correctLine;
+          var e = ext(o);
           h += '<line x1="' + e[0].toFixed(1) + '" y1="' + e[1].toFixed(1) + '" x2="' + e[2].toFixed(1) + '" y2="' + e[3].toFixed(1) + '" stroke="' + (good ? '#18a058' : o.mine ? '#c23b2e' : '#1c2127') + '" stroke-width="' + (good ? 3 : o.mine ? 1.6 : 2) + '"/>';
           if (o.label) h += '<text x="' + (o.q.x - 14).toFixed(1) + '" y="' + (o.q.y - 8).toFixed(1) + '" font-size="15" font-weight="bold">' + o.label + '</text>';
         }
       });
       st.points.forEach(function (p) {
         var on = st.pick && dist(st.pick, p) < 0.5;
-        h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + (on ? 7 : p.given ? 4.5 : 3.5) + '" fill="' + (on ? '#f59e0b' : p.given ? '#1c2127' : '#2f6fd6') + '"/>';
+        var ans = st.done && st.answerPt && dist(st.answerPt, p) < 0.5;
+        h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + (on || ans ? 7 : p.given ? 4.5 : 3.5) + '" fill="' + (ans ? '#18a058' : on ? '#f59e0b' : p.given ? '#1c2127' : '#2f6fd6') + '"/>';
         if (p.label) h += '<text x="' + (p.x + 7).toFixed(1) + '" y="' + (p.y - 7).toFixed(1) + '" font-size="15" font-weight="bold">' + p.label + '</text>';
       });
       svg.innerHTML = h;
-      var same = $('.sk-same');
-      same.hidden = !(st.tool === 'compass' && st.pick && st.lastR && !st.done);
+      $('.sk-same').hidden = !(st.tool === 'compass' && st.pick && st.lastR && !st.done);
     }
 
-    start(0);
+    setLevel('basic');
   }
 
-  window.Sakuzu = { mount: mount, PROBLEMS: PROBLEMS, _intersect: intersect };
+  window.Sakuzu = { mount: mount, PROBLEMS: PROBLEMS, _intersect: intersect, _lineMatches: lineMatches };
 })();

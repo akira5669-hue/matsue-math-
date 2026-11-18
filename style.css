@@ -2833,3 +2833,5 @@ body.notices-folded .world-launch-banner { display: none !important; }
 .sk-tool.is-on { outline: 3px solid #f59e0b; font-weight: 700; }
 .sk-msg { min-height: 2.8em; font-size: 14px; text-align: center; margin: 6px 0; }
 .sk-hinttext { font-size: 13px; background: var(--c-bg, #f6f7f9); border-radius: 8px; padding: 8px 10px; }
+.sk-levels { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+.sk-level.is-on { background: #2f6fd6; color: #fff; font-weight: 700; }

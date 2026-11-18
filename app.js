@@ -22656,7 +22656,7 @@
     var rpAdm = document.getElementById('rarePreviewAdmin'); if (rpAdm) rpAdm.hidden = !isAdminSession_();
     // 📐作図にチャレンジ(2026-11-18〜00001だけのプレビュー、2026-11-27から全員)
     renderSakuzuBanner_();
-    var szTg = document.getElementById('sakuzuToggle'); if (szTg) { szTg.hidden = !sakuzuVisible_(); var szBd = szTg.querySelector('.new-badge'); if (szBd) szBd.textContent = todayKey() >= SAKUZU_START_ ? 'NEW' : '準備中'; if (szTg.hidden) { var szPn = document.getElementById('sakuzuPanel'); if (szPn) szPn.setAttribute('hidden', ''); } }
+    var szTg = document.getElementById('sakuzuToggle'); if (szTg) { szTg.hidden = !sakuzuVisible_(); var szBd = szTg.querySelector('.new-badge'); if (szBd) szBd.textContent = SAKUZU_OPEN_ALL_ && todayKey() >= SAKUZU_START_ ? 'NEW' : '準備中'; if (szTg.hidden) { var szPn = document.getElementById('sakuzuPanel'); if (szPn) szPn.setAttribute('hidden', ''); } }
     // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)
     var skTg = document.getElementById('shikokuToggle'); if (skTg) { skTg.hidden = !isAdminSession_(); if (skTg.hidden) { var skPn = document.getElementById('shikokuPanel'); if (skPn) skPn.setAttribute('hidden', ''); } }
     // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
@@ -24394,15 +24394,17 @@
     }
   }
 
-  // 📐作図にチャレンジ：2026-11-27(金)から全員に公開(先生の指示)。告知は今日からSAKUZU_BANNER_END_まで(公開前は予告)。
+  // 📐作図にチャレンジ：2026-11-18 先生の指示で、いったん00001だけに公開(11/27の全員公開と告知は取りやめ)。
+  // 全員に出すときは SAKUZU_OPEN_ALL_ を true にし、SAKUZU_START_・SAKUZU_BANNER_END_ を決めなおす。
+  var SAKUZU_OPEN_ALL_ = false;
   var SAKUZU_START_ = '2026-11-27';
   var SAKUZU_BANNER_END_ = '2026-12-06';
-  function sakuzuVisible_() { return isAdminSession_() || todayKey() >= SAKUZU_START_; }
+  function sakuzuVisible_() { return isAdminSession_() || (SAKUZU_OPEN_ALL_ && todayKey() >= SAKUZU_START_); }
   function renderSakuzuBanner_() {
     var b = document.getElementById('sakuzuBanner');
     if (!b) return;
     var today = todayKey();
-    if (today > SAKUZU_BANNER_END_) { b.hidden = true; return; }
+    if (!SAKUZU_OPEN_ALL_ || today > SAKUZU_BANNER_END_) { b.hidden = true; return; }
     var started = today >= SAKUZU_START_;
     b.hidden = false;
     var t = document.getElementById('sakuzuBannerText');
