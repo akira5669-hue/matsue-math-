@@ -22653,6 +22653,8 @@
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
     // 新レアキャラのテストボタン(00001だけ)
     var rpAdm = document.getElementById('rarePreviewAdmin'); if (rpAdm) rpAdm.hidden = !isAdminSession_();
+    // 📐作図にチャレンジ(2026-11-18〜、今は00001だけのプレビュー)
+    var szTg = document.getElementById('sakuzuToggle'); if (szTg) { szTg.hidden = !isAdminSession_(); if (szTg.hidden) { var szPn = document.getElementById('sakuzuPanel'); if (szPn) szPn.setAttribute('hidden', ''); } }
     // 🙏四国88ヶ所めぐり(今は00001だけのプレビュー)
     var skTg = document.getElementById('shikokuToggle'); if (skTg) { skTg.hidden = !isAdminSession_(); if (skTg.hidden) { var skPn = document.getElementById('shikokuPanel'); if (skPn) skPn.setAttribute('hidden', ''); } }
     // 🍊かずのかんかく(2026-11-10〜、小学生だけ。先生(00001)も確認用に見える)
@@ -36357,6 +36359,23 @@
     tg.parentNode.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b && b !== tg) panel.setAttribute('hidden', '');
+    });
+  })();
+
+  /* ---------- 📐作図にチャレンジ(2026-11-18〜、00001だけのプレビュー。本体は sakuzu.js) ---------- */
+  (function () {
+    var tg = document.getElementById('sakuzuToggle'), panel = document.getElementById('sakuzuPanel');
+    if (!tg || !panel || !window.Sakuzu) return;
+    var mounted = false;
+    tg.addEventListener('click', function () {
+      if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel', 'numSensePanel', 'shikokuPanel',
+        'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'].forEach(function (pid) {
+        var p = document.getElementById(pid);
+        if (p) p.setAttribute('hidden', '');
+      });
+      panel.removeAttribute('hidden');
+      if (!mounted) { window.Sakuzu.mount(document.getElementById('sakuzuBody')); mounted = true; }
     });
   })();
 

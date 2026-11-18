@@ -2822,3 +2822,14 @@ body.notices-folded .world-launch-banner { display: none !important; }
 .necklace-offer { text-align: left; }
 .necklace-actions { margin-top: 8px; }
 .necklace-actions button { margin: 4px 4px 0 0; }
+
+/* 📐作図にチャレンジ(sakuzu.js) */
+.sk-top { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sk-sel { max-width: 100%; padding: 6px; border-radius: 8px; border: 1px solid var(--c-border, #ccc); font-size: 14px; }
+.sk-title { font-weight: 700; margin: 10px 0 6px; }
+.sk-svg { display: block; width: 100%; max-width: 440px; margin: 0 auto; background: #fff; border: 1px solid #d0d4da; border-radius: 10px; touch-action: manipulation; color: #1c2127; }
+.sk-svg text { fill: #1c2127; }
+.sk-tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 8px 0; }
+.sk-tool.is-on { outline: 3px solid #f59e0b; font-weight: 700; }
+.sk-msg { min-height: 2.8em; font-size: 14px; text-align: center; margin: 6px 0; }
+.sk-hinttext { font-size: 13px; background: var(--c-bg, #f6f7f9); border-radius: 8px; padding: 8px 10px; }
