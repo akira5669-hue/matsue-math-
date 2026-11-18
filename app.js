@@ -20210,7 +20210,7 @@
     gyoshi: {
       id: 'gyoshi', name: '漁師AKR', img: 'images/gyoshi_akr.jpg',
       lines: {
-        appear: '海の男は逃げも隠れもしねぇ！1問間違えるごとに、HPを2つもらっていくぜ！',
+        appear: '海の男は逃げも隠れもしねぇ！1問まちがえるごとに、HPを2つもらっていくぜ！',
         defeat: 'やるじゃねぇか！今日イチの大物はお前だったな！',
         miss: '🎣 いただき！',
       },
@@ -22983,6 +22983,9 @@
     if (isCorrect) {
       state.correct++;
       clearWrongQuestion(state.current);
+      // 県庁所在地クイズ(社会ボーナス)の正解は、敵をたおす連続正解数に入れない。入れると10問目がクイズのとき、
+      // クイズでは敵をたおせないので、クイズを全部解いたあとの13問目まで敵がたおれなかった(バグ報告#63)。
+      if (catId !== 'capitalQuizBonus') {
       if (state.streak === 0) { state.streakAboveGrade = true; state.streakRewardClass = streakRewardClass_(catId); state.streakMinGrade = categoryGrade[catId] || ''; state.streakClassCounts = {}; }
       else if (state.streakRewardClass !== streakRewardClass_(catId)) state.streakRewardClass = 'mixed';
       // 連続正解の中の種類ごとの問題数(10問のうち9問以上が同じ種類なら、その種類の報酬にする。2026-11-11 先生の指示)
@@ -22992,6 +22995,7 @@
       if (state.streak > 0 && state.streakMinGrade) { var g_ = categoryGrade[catId] || ''; if (!g_ || (GRADE_RANK[g_] || 0) < (GRADE_RANK[state.streakMinGrade] || 0)) state.streakMinGrade = g_; }
       state.streakAboveGrade = state.streakAboveGrade && isAboveOwnGrade(catId, ownGrade);
       state.streak++;
+      }
       state.wrongStreak = 0;
       // ボス戦は1問正解するごとに累積でダメージを与える(不正解で連続正解数が
       // 0に戻っても、ここまで削ったボスのHPは戻らない)。
@@ -24278,6 +24282,7 @@
     '🐞【バグを直しました㉔】問題に正解して経験値のバーがのびても、「次のLvまであと」の数が敵をたおすまで変わらなかったのを直しました。今はバーと同じように、正解するたびに数がへります（まちがえると元にもどります）。',
     '🐞【バグを直しました㉕】理科の「磁石につかない金属はどれ？」の問題で、答えになる金属が2つ以上まざっていたのを直しました。ごーまじ（20問連続正解）をたおしたときの経験値が10しかなかったのを、20にしました。理科から算数に切りかえたとき、世界一周のボスのセリフが出なかったのを直しました。',
     '🐞【バグを直しました㉖】野球ガチャの打率・勝率の計算問題で、答えが「0.340」のように最後に0がついていたのを、「0.34」のように0を消した書き方に直しました。',
+    '🐞【バグを直しました㉗】10問目に県庁所在地クイズが出ると、クイズを全部解いたあとの13問目まで敵がたおれなかったのを直しました。県庁所在地クイズの正解は、敵をたおす10問の数に入らないようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
