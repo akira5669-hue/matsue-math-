@@ -345,7 +345,13 @@
       var T = st.prob.target;
       if (o.type === 'line' && T.kind === 'line') {
         if (T.lines.some(function (t) { return lineMatches(o, t); })) correct(o);
-        else msg('❌ その直線は正しい作図の線ではないみたい。「↩️ 1つもどす」で消して、もう一度考えてみよう。');
+        else {
+          // 交点を結んだ2つの円の半径がちがうときは、その理由を出す
+          var ends = [o.p, o.q], radii = [];
+          st.objs.forEach(function (c2) { if (c2.type === 'circle' && ends.every(function (e) { return Math.abs(dist(c2.c, e) - c2.r) < 1.5; })) radii.push(c2.r); });
+          var diffR = radii.length >= 2 && Math.max.apply(null, radii) - Math.min.apply(null, radii) > 1;
+          msg('❌ その直線は正しい作図の線ではないみたい。' + (diffR ? '<b>2つの円の半径がちがう</b>よ。同じ半径の円でかこう（2つめの円は「⭕ 同じ半径でかく」を使うとかんたん）。' : '') + '「↩️ 1つもどす」で消して、もう一度考えてみよう。');
+        }
       } else if (o.type === 'circle' && T.kind === 'circle' && dist(o.c, T.c) < TOL && Math.abs(o.r - T.r) < TOL) {
         correct(o);
       }
@@ -361,11 +367,17 @@
           msg('次に、円の半径をきめる場所をタップしてね。' + (st.lastR ? '前と同じ半径なら「⭕ 同じ半径でかく」を押してね。' : ''));
           draw();
         } else {
-          var to = sn || p, r = dist(st.pick, to);
+          var to = sn || p, r = dist(st.pick, to), snapped = false;
           if (r < 8) { msg('半径が小さすぎます。もう少しはなれた場所をタップしてね。'); return; }
+          // 指で同じ大きさの円をかくのはむずかしいので、点の上でないときは、前にかいた円の半径に近ければその半径にそろえる(2026-11-19 先生「少しでもズレると不正解」)。
+          if (!sn) {
+            var bestR = 0, bestD = Infinity;
+            st.objs.forEach(function (o) { if (o.type === 'circle') { var d = Math.abs(o.r - r); if (d < bestD) { bestD = d; bestR = o.r; } } });
+            if (bestR && bestD <= Math.max(14, bestR * 0.15)) { r = bestR; snapped = true; }
+          }
           var c = st.pick; st.pick = null; st.lastR = r;
           push({ type: 'circle', c: { x: c.x, y: c.y }, r: r });
-          if (!st.done) msg('円をかいたよ。続けて、次の円の中心にする点をタップしてね（直線を引くときは「📏 定規」）。');
+          if (!st.done) msg((snapped ? '前の円と<b>同じ半径</b>にそろえて、' : '') + '円をかいたよ。続けて、次の円の中心にする点をタップしてね（直線を引くときは「📏 定規」）。');
         }
       } else if (st.tool === 'ruler') {
         if (!sn) { msg('定規は、点（●）の上をタップしてね。'); return; }
