@@ -29503,6 +29503,7 @@
   var USA_GACHA_SPINS_ = 3;
   var usaGachaBusy_ = false;
   function usaGachaLeft_() {
+    if (isAdminSession_()) return USA_GACHA_SPINS_; // 先生はテスト用に何回でも
     if ((Number(state.usaCrossingLaps) || 0) < 10) return 0;
     return Math.max(0, USA_GACHA_SPINS_ - (Number(state.usaGacha10Used) || 0));
   }
@@ -29510,12 +29511,12 @@
     var box = document.getElementById('usaGachaBox');
     if (!box) return;
     var laps = Number(state.usaCrossingLaps) || 0;
-    box.hidden = laps < 10;
+    box.hidden = laps < 10 && !isAdminSession_();
     if (box.hidden) return;
     var left = usaGachaLeft_();
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
-    if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 ガチャは全部まわしたよ'; }
+    if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 ガチャは全部まわしたよ'; }
     if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：🌈虹色・🥇金・🥈銀の宝箱、🗝️鍵、💎宝石、⚔️ドラゴンソード、🌱種や実、💪HP+500・HP+1000';
   }
   function applyUsaGachaPrize_(res) {
@@ -29574,7 +29575,7 @@
           if (out) out.innerHTML = res && res.error === 'no_spins' ? 'ガチャはもう全部まわしたよ。' : 'まわせませんでした。少したってから、もう一度ためしてね。';
           saveGameState(state); renderUsaGacha_(); return;
         }
-        state.usaGacha10Used = Number(res.used) || ((Number(state.usaGacha10Used) || 0) + 1);
+        if (!res.test) state.usaGacha10Used = Number(res.used) || ((Number(state.usaGacha10Used) || 0) + 1);
         var label = applyUsaGachaPrize_(res);
         var rare = res.prize === 'chestRainbow' || res.prize === 'dragonSword' || res.prize === 'hp1000';
         saveGameState(state);
