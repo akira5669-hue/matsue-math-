@@ -1,6 +1,6 @@
 /* 📐 作図にチャレンジ(2026-11-18〜、先生(00001)だけのプレビュー)
    コンパスと定規だけを使って、画面の上で本当に作図する。
-   - コンパス：中心にする点をタップ → 半径をきめる場所をタップ(点の近くなら点にぴったり)。「同じ半径」ボタンで前と同じ半径の円もかける。
+   - コンパス：中心にする点をタップ → 半径をきめる場所をタップ(点の近くなら点にぴったり)。「⭕ 同じ大きさの円」の道具で、点をタップするだけで1つ前の円と同じ半径の円がかける。
    - 定規：2つの点をタップすると、その2点を通る直線を引く。
    - 答えの点：答えが「点」の問題で、作図してできた点をタップして答える。
    - 点は、はじめからある点と、線や円が交わる点(交点)だけ。タップすると一番近い点に吸いつく。
@@ -273,7 +273,7 @@
       '<button type="button" class="ghost-btn sk-tool" data-t="compass">🧭 コンパス</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="ruler">📏 定規</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="answer" hidden>📍 答えの点</button>' +
-      '<button type="button" class="ghost-btn sk-same" hidden>⭕ 同じ半径でかく</button>' +
+      '<button type="button" class="ghost-btn sk-tool" data-t="same">⭕ 同じ大きさの円</button>' +
       '</div>' +
       '<p class="sk-msg"></p>' +
       '<div class="sk-tools"><button type="button" class="ghost-btn sk-undo">↩️ 1つもどす</button> <button type="button" class="ghost-btn sk-reset">🗑 はじめから</button> <button type="button" class="ghost-btn sk-hint">💡 ヒント</button></div>' +
@@ -310,7 +310,9 @@
     function setTool(t) {
       st.tool = t; st.pick = null;
       root.querySelectorAll('.sk-tool').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-t') === t); });
-      if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。' : '答えだと思う点（作図してできた点）をタップしてね。');
+      if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。'
+        : t === 'same' ? (st.lastR ? '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。' : 'まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。')
+        : '答えだと思う点（作図してできた点）をタップしてね。');
       draw();
     }
     function recompute() {
@@ -350,7 +352,7 @@
           var ends = [o.p, o.q], radii = [];
           st.objs.forEach(function (c2) { if (c2.type === 'circle' && ends.every(function (e) { return Math.abs(dist(c2.c, e) - c2.r) < 1.5; })) radii.push(c2.r); });
           var diffR = radii.length >= 2 && Math.max.apply(null, radii) - Math.min.apply(null, radii) > 1;
-          msg('❌ その直線は正しい作図の線ではないみたい。' + (diffR ? '<b>2つの円の半径がちがう</b>よ。同じ半径の円でかこう（2つめの円は「⭕ 同じ半径でかく」を使うとかんたん）。' : '') + '「↩️ 1つもどす」で消して、もう一度考えてみよう。');
+          msg('❌ その直線は正しい作図の線ではないみたい。' + (diffR ? '<b>2つの円の半径がちがう</b>よ。同じ半径の円でかこう（2つめの円は「⭕ 同じ大きさの円」を使うとかんたん）。' : '') + '「↩️ 1つもどす」で消して、もう一度考えてみよう。');
         }
       } else if (o.type === 'circle' && T.kind === 'circle' && dist(o.c, T.c) < TOL && Math.abs(o.r - T.r) < TOL) {
         correct(o);
@@ -364,7 +366,7 @@
         if (!st.pick) {
           if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
           st.pick = sn;
-          msg('次に、円の半径をきめる場所をタップしてね。' + (st.lastR ? '前と同じ半径なら「⭕ 同じ半径でかく」を押してね。' : ''));
+          msg('次に、円の半径をきめる場所をタップしてね。' + (st.lastR ? '1つ前の円と同じ大きさにしたいときは「⭕ 同じ大きさの円」を使ってね。' : ''));
           draw();
         } else {
           var to = sn || p, r = dist(st.pick, to), snapped = false;
@@ -386,6 +388,12 @@
         var a = st.pick; st.pick = null;
         push({ type: 'line', p: { x: a.x, y: a.y }, q: { x: sn.x, y: sn.y }, mine: true });
         if (!st.done && st.prob.target.kind !== 'line') msg('直線を引いたよ。');
+      } else if (st.tool === 'same') {
+        // ⭕ 同じ大きさの円(2026-11-19 先生の指示)：点をタップするだけで、1つ前にかいた円と同じ半径の円をかく
+        if (!st.lastR) { msg('まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。'); return; }
+        if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
+        push({ type: 'circle', c: { x: sn.x, y: sn.y }, r: st.lastR });
+        if (!st.done) msg('1つ前の円と同じ大きさの円をかいたよ。続けて点をタップすると、また同じ大きさの円がかけるよ。');
       } else {
         if (!sn) { msg('点（●）の上をタップしてね。'); return; }
         if (dist(sn, st.prob.target.p) < TOL) { st.answerPt = sn; correct(null); }
@@ -396,9 +404,6 @@
       var b = e.target.closest('button'); if (!b) return;
       if (b.classList.contains('sk-level')) setLevel(b.getAttribute('data-lv'));
       else if (b.classList.contains('sk-tool')) setTool(b.getAttribute('data-t'));
-      else if (b.classList.contains('sk-same')) {
-        if (st.tool === 'compass' && st.pick && st.lastR && !st.done) { var c = st.pick; st.pick = null; push({ type: 'circle', c: { x: c.x, y: c.y }, r: st.lastR }); if (!st.done) msg('同じ半径の円をかいたよ。'); }
-      }
       else if (b.classList.contains('sk-undo')) {
         if (st.pick) { st.pick = null; draw(); return; }
         var o = st.history.pop(); if (!o) return;
@@ -435,7 +440,7 @@
         if (p.label) h += '<text x="' + (p.x + 7).toFixed(1) + '" y="' + (p.y - 7).toFixed(1) + '" font-size="15" font-weight="bold">' + p.label + '</text>';
       });
       svg.innerHTML = h;
-      $('.sk-same').hidden = !(st.tool === 'compass' && st.pick && st.lastR && !st.done);
+      var sameBtn = root.querySelector('.sk-tool[data-t="same"]'); if (sameBtn) sameBtn.disabled = !st.lastR || st.done;
     }
 
     setLevel('basic');
