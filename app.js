@@ -414,7 +414,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), usaGacha10Used: s.usaGacha10Used, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), usaGachaUsed: s.usaGachaUsed, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -436,7 +436,7 @@
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
         mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, enemyIdx: s.enemyIdx, rareType: s.rareType, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
-        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), usaGacha10Used: s.usaGacha10Used, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
+        bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), usaGachaUsed: s.usaGachaUsed, capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
         fujiSummitReached: s.fujiSummitReached, yushaSwordCount: s.yushaSwordCount, yushaSwordObtained: s.yushaSwordObtained, fujiStation: s.fujiStation, fujiLegStreak: s.fujiLegStreak, fujiTimeAttackStartedAt: s.fujiTimeAttackStartedAt, fujiClimbStartedAt: s.fujiClimbStartedAt, fujiDescentStation: s.fujiDescentStation, fujiDescentLegStreak: s.fujiDescentLegStreak, fujiDescentCompleted: s.fujiDescentCompleted,
         streak7TitleEarned: s.streak7TitleEarned, streak15TitleEarned: s.streak15TitleEarned, streak30TitleEarned: s.streak30TitleEarned,
@@ -21165,7 +21165,7 @@
     usaCrossingLaps: Math.max(usaRunFrom_(savedProgress, savedGame).laps, ((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)) ? 1 : 0),
     // 謎のおばさんに渡した宝石の数(クリスマスにダイヤの指輪に変わるまで保留中の数)。
     usaLadyGiftPending: (savedProgress && Number(savedProgress.usaLadyGiftPending)) || (savedGame && Number(savedGame.usaLadyGiftPending)) || 0,
-    usaGacha10Used: Math.max((savedProgress && Number(savedProgress.usaGacha10Used)) || 0, (savedGame && Number(savedGame.usaGacha10Used)) || 0),
+    usaGachaUsed: Math.max((savedProgress && Number(savedProgress.usaGachaUsed)) || 0, (savedGame && Number(savedGame.usaGachaUsed)) || 0),
     // ダイヤの指輪の所持数。なんでも屋で2000MPに交換できる(購入不可)。
     diamondRingCount: (savedProgress && Number(savedProgress.diamondRingCount)) || (savedGame && Number(savedGame.diamondRingCount)) || 0,
     // アメリカ横断の成功は一度きり(成功したら再挑戦不可、失敗は何度でも再挑戦可)。
@@ -21957,16 +21957,10 @@
   // 10周目=ごほうびガチャ3回(2026-11-19 先生の指示)。11周目以降は考え中(ごほうびは州ごとの1MPとHP+1000だけ)。
   const USA_CROSSING_LAP_REWARDS_ = {
     1: { gem: true, chest: 'bronze' },
-    2: { gem: true, key: 'bronze' },
-    3: { key: 'silver', chest: 'silver' },
-    4: { gem: true, chest: 'gold' },
-    5: { key: 'gold', chest: 'rainbow' },
-    6: { gem: true, key: 'rainbow' },
-    7: { key: 'random', chest: 'random', seed: true },
-    8: { dragonSword: true, chest: 'random', key: 'random' },
-    9: { dragonSword: true, gem: true },
-    10: { gacha: true },
   };
+  // 2周目からは、周のごほうびがガチャ(2026-11-19 先生の指示)。まわせる回数：2周目2回・3周目3回・4周目4回・5周目からは5回。
+  function usaGachaSpinsForLap_(lap) { return lap >= 2 ? Math.min(lap, 5) : 0; }
+  function usaGachaGranted_(laps) { var t = 0; for (var L = 2; L <= laps; L++) t += usaGachaSpinsForLap_(L); return t; }
   const USA_CROSSING_GEM_IDS_ = ['gemRuby', 'gemEmerald', 'gemSapphire'];
   const USA_CROSSING_CHEST_TIERS_ = ['bronze', 'silver', 'gold', 'rainbow'];
   // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
@@ -24401,7 +24395,7 @@
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
         + '理科の問題に5問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
-        + '50州を制覇すると、最後にHP+1000と、宝石・宝箱・鍵・種や実などのごほうびがもらえるよ！何周でも挑戦できて、周を重ねるほどごほうびが豪華に（8周目・9周目はドラゴンソード！）。'
+        + '50州を制覇すると、最後にHP+1000と、宝石・宝箱・鍵・種や実などのごほうびがもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわなもあるので気をつけて！別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
@@ -29476,10 +29470,7 @@
       html += '<div class="item-gain-banner">⚔️ ドラゴンソードを手に入れた！（' + state.dragonSwordCount + '本）</div>';
     }
     if (rw.seed) usaCrossingSeedReward_();
-    if (rw.gacha) html += '<div class="item-gain-banner">🎰 10周目のごほうびは「ごほうびガチャ」3回！🇺🇸アメリカ横断のカードの「ガチャをまわす」から、まわしてね。</div>';
-    if (!USA_CROSSING_LAP_REWARDS_[lap]) {
-      html += '<div class="test-photo-hint">🎁 ' + lap + '周目のごほうびは準備中です（1州ごとの1MPとHPはもらえています）。</div>';
-    }
+    if (lap >= 2) html += '<div class="item-gain-banner">🎰 ' + lap + '周目のごほうびは「ごほうびガチャ」' + usaGachaSpinsForLap_(lap) + '回！🇺🇸アメリカ横断のカードの「ガチャをまわす」から、まわしてね。</div>';
     // 宝石をもらった周だけ、制覇した直後に謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
     // なくてもその場で消える(ペナルティなし)が、渡した場合はクリスマス(12/25)に
     // ダイヤの指輪になって返ってくる。
@@ -29499,25 +29490,23 @@
     return html;
   }
 
-  // 🎰 10周目のごほうびガチャ(2026-11-19 先生の指示)：3回まわせる。何が出るかはサーバー(usaCrossingGacha)で決める。
-  var USA_GACHA_SPINS_ = 3;
+  // 🎰 ごほうびガチャ(2026-11-19 先生の指示)：2周目からの周のごほうび。何が出るかはサーバー(usaCrossingGacha)で決める。
   var usaGachaBusy_ = false;
   function usaGachaLeft_() {
-    if (isAdminSession_()) return USA_GACHA_SPINS_; // 先生はテスト用に何回でも
-    if ((Number(state.usaCrossingLaps) || 0) < 10) return 0;
-    return Math.max(0, USA_GACHA_SPINS_ - (Number(state.usaGacha10Used) || 0));
+    if (isAdminSession_()) return 5; // 先生はテスト用に何回でも
+    return Math.max(0, usaGachaGranted_(Number(state.usaCrossingLaps) || 0) - (Number(state.usaGachaUsed) || 0));
   }
   function renderUsaGacha_() {
     var box = document.getElementById('usaGachaBox');
     if (!box) return;
     var laps = Number(state.usaCrossingLaps) || 0;
-    box.hidden = laps < 10 && !isAdminSession_();
+    box.hidden = laps < 2 && !isAdminSession_();
     if (box.hidden) return;
     var left = usaGachaLeft_();
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
-    if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 ガチャは全部まわしたよ'; }
-    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり';
+    if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 今まわせるガチャはないよ（次の周を達成するとまわせる）'; }
+    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -29539,7 +29528,14 @@
       var sameStar = GEM_ITEM_ALL_KEYS_.filter(function (k) { return GEM_DEFS_[k].star === star; });
       var g = sameStar[randInt(0, sameStar.length - 1)];
       state.gemItems[g] = (Number(state.gemItems[g]) || 0) + 1;
-      return GEM_DEFS_[g].emoji + ' ' + GEM_DEFS_[g].label + '（★' + star + '）';
+      var gemTxt = GEM_DEFS_[g].emoji + ' ' + GEM_DEFS_[g].label + '（★' + star + '）';
+      // 宝石が出たら、ほかの周と同じく謎のおばさんが現れる(渡すとクリスマスにダイヤの指輪)
+      if (window.confirm('🧙‍♀️ 謎のおばさんが現れた。「その' + GEM_DEFS_[g].label + 'を、わたしにおくれでないかい？」と頼まれている。渡しますか？（渡しても渡さなくても、おばさんはすぐに消えます）')) {
+        state.gemItems[g] = Math.max(0, (Number(state.gemItems[g]) || 0) - 1);
+        state.usaLadyGiftPending = (Number(state.usaLadyGiftPending) || 0) + 1;
+        gemTxt += '<br>🧙‍♀️ おばさんに渡した。（12月25日のクリスマスにダイヤの指輪がもらえるかも？）';
+      }
+      return gemTxt;
     }
     if (p === 'onigiri' || p === 'steak') {
       var food = p === 'onigiri' ? { label: '🍙 おにぎり', hp: ONIGIRI_HP_GAIN } : { label: '🥩 ステーキ', hp: STEAK_HP_GAIN };
@@ -29569,16 +29565,19 @@
     if (mach) { mach.classList.remove('is-spinning'); void mach.offsetWidth; mach.classList.add('is-spinning'); }
     if (out) out.innerHTML = 'ガチャ…ガチャ…';
     var started = Date.now();
-    apiPost('usaCrossingGacha', { id: session.id }).then(function (res) {
+    // 周を達成した直後でもサーバーが最新の周数を知っているように、先に同期してからまわす
+    apiPost('syncPoints', buildProgressSyncPayload(session.id)).then(applySyncedPoints_).catch(function () { }).then(function () {
+      return apiPost('usaCrossingGacha', { id: session.id });
+    }).then(function (res) {
       setTimeout(function () {
         if (mach) mach.classList.remove('is-spinning');
         if (!res || !res.ok) {
           usaGachaBusy_ = false;
-          if (res && res.error === 'no_spins') state.usaGacha10Used = USA_GACHA_SPINS_;
-          if (out) out.innerHTML = res && res.error === 'no_spins' ? 'ガチャはもう全部まわしたよ。' : 'まわせませんでした。少したってから、もう一度ためしてね。';
+          if (res && res.error === 'no_spins' && Number(res.used) > (Number(state.usaGachaUsed) || 0)) state.usaGachaUsed = Number(res.used);
+          if (out) out.innerHTML = res && res.error === 'no_spins' ? '今まわせるガチャはないよ。' : 'まわせませんでした。少したってから、もう一度ためしてね。';
           saveGameState(state); renderUsaGacha_(); return;
         }
-        if (!res.test) state.usaGacha10Used = Number(res.used) || ((Number(state.usaGacha10Used) || 0) + 1);
+        if (!res.test) state.usaGachaUsed = Number(res.used) || ((Number(state.usaGachaUsed) || 0) + 1);
         var label = applyUsaGachaPrize_(res);
         var rare = res.prize === 'gem5' || res.prize === 'gem4' || res.prize === 'gem3' || res.prize === 'chestRainbow' || res.prize === 'dragonSword';
         saveGameState(state);
@@ -29658,8 +29657,8 @@
     var n = usaRunNorm_(r);
     var lapsUp = n.laps > (Number(state.usaCrossingLaps) || 0);
     if (lapsUp) { state.usaCrossingLaps = n.laps; state.usaCrossingCompleted = true; }
-    var g10 = Math.max(0, Math.floor(Number(r.gacha10)) || 0);
-    if (g10 > (Number(state.usaGacha10Used) || 0)) { state.usaGacha10Used = g10; lapsUp = true; }
+    var g10 = Math.max(0, Math.floor(Number(r.gachaUsed)) || 0);
+    if (g10 > (Number(state.usaGachaUsed) || 0)) { state.usaGachaUsed = g10; lapsUp = true; }
     if (n.updatedAt <= (Number(state.usaCrossingUpdatedAt) || 0)) {
       if (lapsUp) { try { renderUsaCrossingCard_(); } catch (e) { } }
       return lapsUp;
@@ -29682,7 +29681,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦でき、周ごとのごほうび：1周目=宝石+銅の宝箱、2周目=宝石+銅の鍵、3周目=銀の鍵+銀の宝箱、4周目=宝石+金の宝箱、5周目=金の鍵+虹色の宝箱、6周目=宝石+虹色の鍵、7周目=鍵・宝箱・種や実(ランダム)、8周目=ドラゴンソード+宝箱+鍵(ランダム)、9周目=ドラゴンソード+宝石、10周目=ごほうびガチャ3回、11周目〜は準備中。宝石は★3(ルビー/エメラルド/サファイア)から1つ。宝石をもらった周は謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦でき、周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
