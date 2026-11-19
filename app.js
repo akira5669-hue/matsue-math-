@@ -434,7 +434,7 @@
         categoryDailyCounts: s.categoryDailyCounts, categoryDailyDate: s.categoryDailyDate, hp: s.hp, trainingActive: !!s.trainingActive, trainingDayKey: s.trainingDayKey, trainingDayGain: s.trainingDayGain, trainingSuper: !!s.trainingSuper, superTrainingDayKey: s.superTrainingDayKey, superTrainingDayGain: s.superTrainingDayGain,
         worldLap: s.worldLap, worldLapStartLevel: s.worldLapStartLevel, worldCountry: s.worldCountry,
         worldBossDefeated: s.worldBossDefeated, worldAllies: s.worldAllies, treasureItems: s.treasureItems, treasureRev: s.treasureRev, gemItems: s.gemItems,
-        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
+        mathGodTitleEarned: s.mathGodTitleEarned, cursed: s.cursed, enemyIdx: s.enemyIdx, rareType: s.rareType, zombified: s.zombified, fujiAltitudeSick: s.fujiAltitudeSick,
         enabledScience: Array.from(s.enabledScience), subject: s.subject, scienceExp: s.scienceExp,
         bakuretsuSolved: Array.from(s.bakuretsuSolved), speedSeedCount: s.speedSeedCount, shurikenCount: s.shurikenCount, dragonSwordCount: s.dragonSwordCount, ironWallCharges: s.ironWallCharges, steelArmorCharges: s.steelArmorCharges, iceSwordCharges: s.iceSwordCharges, skySpearCharges: s.skySpearCharges, raidenAxeCharges: s.raidenAxeCharges, usaLadyGiftPending: s.usaLadyGiftPending, diamondRingCount: s.diamondRingCount, usaCrossingCompleted: s.usaCrossingCompleted, usaCrossingRun: usaRunOf_(s), capitalQuizCorrectTotal: s.capitalQuizCorrectTotal,
         catStats: s.catStats, categoryRanks: s.categoryRanks,
@@ -24284,6 +24284,7 @@
     '🐞【バグを直しました㉖】野球ガチャの打率・勝率の計算問題で、答えが「0.340」のように最後に0がついていたのを、「0.34」のように0を消した書き方に直しました。',
     '🐞【バグを直しました㉗】10問目に県庁所在地クイズが出ると、クイズを全部解いたあとの13問目まで敵がたおれなかったのを直しました。県庁所在地クイズの正解は、敵をたおす10問の数に入らないようにしました。',
     '🐞【バグを直しました㉘】野球ガチャの計算問題で「0.200」と答えると、答えが「0.200」と出ているのに不正解になったのを直しました。「0.2」と「0.200」のように書き方がちがっても、同じ数なら正解になります。47都道府県制覇の題名から「特別夏バージョン」を消しました。',
+    '🐞【バグを直しました㉙】ログアウトしてログインし直すと、敵が最初のマチガールにもどって、ボン・ミスコやレアキャラをさけられたのを直しました。ログインし直しても、前と同じ敵が出ます。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -24747,6 +24748,9 @@
         // あったため、明示的に復元する(いずれも一度trueになったら治すまで持続する
         // 状態異常のため、OR方式ではなくprogress側の値をそのまま採用する)。
         state.cursed = progress.cursed !== undefined ? !!progress.cursed : state.cursed;
+        // 今の敵(enemyIdx・レアキャラ)も復元する。ログアウトすると最初のマチガールにもどり、ボン・ミスコなどをさけられた(バグ報告#69)。
+        if (typeof progress.enemyIdx === 'number' && progress.enemyIdx >= 0 && progress.enemyIdx < ENEMIES.length) state.enemyIdx = progress.enemyIdx;
+        if (progress.rareType === null || (progress.rareType && RARE_TYPES[progress.rareType])) state.rareType = progress.rareType;
         state.zombified = progress.zombified !== undefined ? !!progress.zombified : state.zombified;
         state.fujiAltitudeSick = progress.fujiAltitudeSick !== undefined ? !!progress.fujiAltitudeSick : state.fujiAltitudeSick;
         state.ironWallCharges = Number(progress.ironWallCharges) || state.ironWallCharges;
