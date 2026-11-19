@@ -29560,32 +29560,41 @@
     renderUsaGacha_();
     var out = document.getElementById('usaGachaResult');
     var cap = document.getElementById('usaGachaCapsule');
-    if (cap) { cap.textContent = '🎰'; cap.classList.add('is-spinning'); }
-    if (out) out.innerHTML = 'ガラガラ…';
+    var mach = document.getElementById('usaGachaMachine');
+    if (cap) { cap.className = 'gm-cap'; cap.textContent = ''; cap.style.removeProperty('--c'); }
+    if (mach) { mach.classList.remove('is-spinning'); void mach.offsetWidth; mach.classList.add('is-spinning'); }
+    if (out) out.innerHTML = 'ガチャ…ガチャ…';
     var started = Date.now();
     apiPost('usaCrossingGacha', { id: session.id }).then(function (res) {
       setTimeout(function () {
-        usaGachaBusy_ = false;
-        if (cap) cap.classList.remove('is-spinning');
+        if (mach) mach.classList.remove('is-spinning');
         if (!res || !res.ok) {
+          usaGachaBusy_ = false;
           if (res && res.error === 'no_spins') state.usaGacha10Used = USA_GACHA_SPINS_;
-          if (cap) cap.textContent = '🎰';
           if (out) out.innerHTML = res && res.error === 'no_spins' ? 'ガチャはもう全部まわしたよ。' : 'まわせませんでした。少したってから、もう一度ためしてね。';
           saveGameState(state); renderUsaGacha_(); return;
         }
         state.usaGacha10Used = Number(res.used) || ((Number(state.usaGacha10Used) || 0) + 1);
         var label = applyUsaGachaPrize_(res);
         var rare = res.prize === 'chestRainbow' || res.prize === 'dragonSword' || res.prize === 'hp1000';
-        if (cap) cap.textContent = rare ? '🌟' : '🎁';
-        if (out) out.innerHTML = (rare ? '🎉 <b>大当たり！</b> ' : '') + '<b>' + label + '</b> が出た！';
         saveGameState(state);
         syncPointsNow_(session.id);
         try { updateGameHud(); } catch (e) { }
-        renderUsaGacha_();
-      }, Math.max(0, 1200 - (Date.now() - started)));
+        // カプセルが取り出し口に落ちてきて、開くとごほうびが出る
+        var capColors = ['#7dd3fc', '#86efac', '#f9a8d4'];
+        if (cap) { cap.style.setProperty('--c', rare ? '#facc15' : capColors[randInt(0, capColors.length - 1)]); cap.classList.add('is-drop'); }
+        if (out) out.innerHTML = rare ? '✨ 金色のカプセルが出てきた！✨' : 'カプセルが出てきた！';
+        setTimeout(function () {
+          var icon = { chestRainbow: '🌈', chestGold: '🥇', chestSilver: '🥈', key: '🗝️', gem: '💎', dragonSword: '⚔️', seed: '🌱', hp500: '💪', hp1000: '💪' }[res.prize] || '🎁';
+          if (cap) { cap.textContent = icon; cap.classList.add('is-open'); }
+          if (out) out.innerHTML = (rare ? '🎉 <b>大当たり！</b> ' : '') + '<b>' + label + '</b> が出た！';
+          usaGachaBusy_ = false;
+          renderUsaGacha_();
+        }, 900);
+      }, Math.max(0, 1300 - (Date.now() - started)));
     }).catch(function () {
       usaGachaBusy_ = false;
-      if (cap) cap.classList.remove('is-spinning');
+      var m2 = document.getElementById('usaGachaMachine'); if (m2) m2.classList.remove('is-spinning');
       if (out) out.innerHTML = '通信に失敗しました。もう一度ためしてね（回数はへっていません）。';
       renderUsaGacha_();
     });

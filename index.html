@@ -710,7 +710,16 @@
         <button type="button" class="primary-btn" id="usaCrossingStartBtn" hidden>🇺🇸 アメリカ横断に挑戦する（無料）</button>
         <div class="usa-gacha" id="usaGachaBox" hidden>
           <p class="survey-label">🎰 10周目のごほうびガチャ</p>
-          <div class="usa-gacha-capsule" id="usaGachaCapsule">🎰</div>
+          <div class="gm" id="usaGachaMachine" aria-hidden="true">
+            <div class="gm-top"><span class="gm-lock"></span></div>
+            <div class="gm-dome"><span class="gm-ball" style="left:8px;top:58px;--c:#7dd3fc"></span><span class="gm-ball" style="left:46px;top:62px;--c:#86efac"></span><span class="gm-ball" style="left:86px;top:60px;--c:#f9a8d4"></span><span class="gm-ball" style="left:124px;top:56px;--c:#7dd3fc"></span><span class="gm-ball" style="left:22px;top:22px;--c:#86efac"></span><span class="gm-ball" style="left:62px;top:26px;--c:#f9a8d4"></span><span class="gm-ball" style="left:102px;top:20px;--c:#7dd3fc"></span><span class="gm-ball" style="left:140px;top:26px;--c:#86efac"></span></div>
+            <div class="gm-body">
+              <div class="gm-price">1回</div>
+              <div class="gm-out"><div class="gm-cap" id="usaGachaCapsule"></div></div>
+              <div class="gm-handle"><span></span></div>
+            </div>
+            <div class="gm-base"></div>
+          </div>
           <p class="test-photo-hint" id="usaGachaResult"></p>
           <button type="button" class="primary-btn" id="usaGachaBtn">🎰 ガチャをまわす</button>
           <p class="test-photo-hint" id="usaGachaInfo"></p>

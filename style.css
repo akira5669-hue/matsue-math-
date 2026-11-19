@@ -2838,6 +2838,24 @@ body.notices-folded .world-launch-banner { display: none !important; }
 
 /* 🎰 アメリカ横断10周目のごほうびガチャ */
 .usa-gacha { margin: 12px 0; padding: 12px; border: 2px dashed #f59e0b; border-radius: 14px; text-align: center; background: rgba(245, 158, 11, 0.06); }
-.usa-gacha-capsule { font-size: 56px; line-height: 1.2; margin: 6px 0; display: inline-block; }
-.usa-gacha-capsule.is-spinning { animation: usaGachaShake 0.25s infinite; }
-@keyframes usaGachaShake { 0% { transform: rotate(-12deg); } 50% { transform: rotate(12deg) scale(1.08); } 100% { transform: rotate(-12deg); } }
+/* カプセルのガチャガチャマシン(先生のイメージ写真をもとにCSSでかいたもの) */
+.gm { position: relative; width: 196px; margin: 8px auto 4px; }
+.gm-top { position: relative; height: 24px; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 12px 12px 4px 4px; }
+.gm-lock { position: absolute; left: 50%; top: 5px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #64748b; }
+.gm-dome { position: relative; height: 112px; margin: -2px 4px 0; background: linear-gradient(90deg, rgba(255,255,255,0.55), rgba(186,230,253,0.18) 40%, rgba(255,255,255,0.5)); border: 2px solid #cbd5e1; border-radius: 34px / 26px; overflow: hidden; }
+.gm-ball { position: absolute; width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(180deg, var(--c) 52%, #f8fafc 52%); border: 1.5px solid rgba(100,116,139,0.45); box-shadow: inset -5px -5px 8px rgba(0,0,0,0.08); }
+.gm-body { position: relative; height: 104px; margin-top: -2px; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; }
+.gm-price { position: absolute; left: 18px; top: 8px; padding: 0 6px; font-size: 11px; font-weight: 700; color: #1e293b; background: #fde68a; border: 1px solid #94a3b8; border-radius: 4px; }
+.gm-out { position: absolute; left: 16px; top: 30px; width: 60px; height: 62px; background: #1e293b; border-radius: 30px 30px 8px 8px; }
+.gm-cap { position: absolute; left: 10px; top: 14px; width: 40px; height: 40px; border-radius: 50%; opacity: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; background: linear-gradient(180deg, var(--c, #7dd3fc) 52%, #f8fafc 52%); border: 1.5px solid rgba(100,116,139,0.5); }
+.gm-cap.is-drop { animation: gmDrop 0.55s cubic-bezier(.4,1.6,.6,1) forwards; }
+.gm-cap.is-open { opacity: 1; background: #fff; border-color: var(--c, #7dd3fc); box-shadow: 0 0 0 4px var(--c, #7dd3fc); animation: gmPop 0.4s ease-out; z-index: 2; }
+.gm-handle { position: absolute; right: 22px; top: 22px; width: 58px; height: 58px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f1f5f9, #94a3b8); border: 2px solid #64748b; }
+.gm-handle span { position: absolute; left: 50%; top: 5px; width: 13px; height: 44px; margin-left: -6.5px; background: #475569; border-radius: 7px; }
+.gm-base { height: 34px; margin: -2px 8px 0; background: #f1f5f9; border: 2px solid #cbd5e1; border-top: none; clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); }
+.gm.is-spinning .gm-handle { animation: gmTurn 1.2s ease-in-out; }
+.gm.is-spinning .gm-ball { animation: gmJiggle 0.18s infinite alternate; }
+@keyframes gmTurn { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+@keyframes gmJiggle { 0% { transform: translate(-2px, 1px) rotate(-8deg); } 100% { transform: translate(2px, -2px) rotate(8deg); } }
+@keyframes gmDrop { 0% { transform: translateY(-34px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes gmPop { 0% { transform: scale(0.6); } 70% { transform: scale(1.5); } 100% { transform: scale(1.3); } }
