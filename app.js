@@ -29517,7 +29517,7 @@
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 ガチャは全部まわしたよ'; }
-    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：💎★5の宝石(1%)・★4の宝石(2%)・★3の宝石(3%)、🌈虹色の宝箱(3%)、⚔️ドラゴンソード(5%)、🥇金の宝箱(8%)、🌱種や実(10%)、🥈銀の宝箱(14%)、🗝️鍵(14%)、🥩ステーキ(15%)、🍙おにぎり(25%)';
+    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
