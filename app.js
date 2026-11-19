@@ -27909,9 +27909,14 @@
   // 'easy'(誰でも参加可、連続でなくても10問解けばOK)。進捗・地図・クリア報酬は
   // 完全に独立している。
   var CAPITAL_QUIZ_COUNT_FIELD_ = { normal: 'capitalQuizCorrectTotal', easy: 'capitalQuizEasyCorrectTotal' };
+  // 何周でもできる(2026-11-19 先生の指示)：累計(capitalQuizCorrectTotal)を47で割った余りが今の周で制覇した数、商+1が今の周。
   function capitalQuizUnlockedCount_(mode) {
     var field = CAPITAL_QUIZ_COUNT_FIELD_[mode] || 'capitalQuizCorrectTotal';
-    return Math.min(CAPITAL_QUIZ_ORDER_.length, Number(state[field]) || 0);
+    return (Number(state[field]) || 0) % (CAPITAL_QUIZ_ORDER_.length || 47);
+  }
+  function capitalQuizLap_(mode) {
+    var field = CAPITAL_QUIZ_COUNT_FIELD_[mode] || 'capitalQuizCorrectTotal';
+    return Math.floor((Number(state[field]) || 0) / (CAPITAL_QUIZ_ORDER_.length || 47)) + 1;
   }
   // 通常モード／イージーモードは画面上のボタンでどちらか一方だけを選択する
   // (同時進行ではない)。選択中のモードでなければどちらも条件を満たさない扱い。
@@ -27989,15 +27994,25 @@
     if (!q || q.category !== 'capitalQuizBonus' || q.capitalQuizStep !== q.capitalQuizTotal) return '';
     var mode = q.capitalQuizMode === 'easy' ? 'easy' : 'normal';
     var field = CAPITAL_QUIZ_COUNT_FIELD_[mode];
-    var prevUnlocked = capitalQuizUnlockedCount_(mode);
-    state[field] = (Number(state[field]) || 0) + 1;
-    var newUnlocked = capitalQuizUnlockedCount_(mode);
-    if (newUnlocked <= prevUnlocked) return '';
-    var newlyPref = CAPITAL_QUIZ_ORDER_[newUnlocked - 1];
+    var N_ = CAPITAL_QUIZ_ORDER_.length;
+    var prevTotal = Number(state[field]) || 0;
+    state[field] = prevTotal + 1;
+    var newlyPref = CAPITAL_QUIZ_ORDER_[prevTotal % N_];
     if (!newlyPref) return '';
+    var lapNo = Math.floor(prevTotal / N_) + 1;
+    var newUnlocked = prevTotal % N_ + 1;
     var modeLabel = mode === 'easy' ? 'イージーモード' : '通常モード';
-    var html = '<div class="prefecture-gain-banner">🏯「' + newlyPref.name + '」の県庁所在地クイズ（' + modeLabel + '）を制覇！（' + newUnlocked + '/' + CAPITAL_QUIZ_ORDER_.length + '）<br><span class="prefecture-trivia">' + newlyPref.trivia + '</span></div>';
-    if (newUnlocked === CAPITAL_QUIZ_ORDER_.length) {
+    var html = '<div class="prefecture-gain-banner">🏯「' + newlyPref.name + '」の県庁所在地クイズ（' + modeLabel + '）を制覇！（' + (lapNo > 1 ? lapNo + '周目・' : '') + newUnlocked + '/' + N_ + '）<br><span class="prefecture-trivia">' + newlyPref.trivia + '</span></div>';
+    if (newUnlocked === N_ && lapNo >= 2) {
+      // 2周目からは、制覇するたびにランダムな種類の宝箱を1個(ふつうの都道府県制覇と同じ。2026-11-19 先生の指示)
+      html += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズ（' + modeLabel + '）で' + lapNo + '周目の47都道府県制覇達成！おめでとう！🎉</div>';
+      var capLapTiers_ = ['bronze', 'silver', 'gold', 'rainbow'];
+      var capLapTier_ = capLapTiers_[randInt(0, capLapTiers_.length - 1)];
+      html += addTreasureChest_(capLapTier_)
+        ? '<div class="item-gain-banner">' + TREASURE_TIER_EMOJI_[capLapTier_] + ' ' + TREASURE_TIER_LABEL_[capLapTier_] + 'の宝箱を手に入れた！</div>'
+        : treasureChestFullHtml_();
+      html += '<div class="prefecture-gain-banner">🔁 ' + (lapNo + 1) + '周目スタート！また沖縄から制覇していこう。</div>';
+    } else if (newUnlocked === N_) {
       html += '<div class="prefecture-complete-banner">🎉 県庁所在地クイズ（' + modeLabel + '）で47都道府県制覇達成！おめでとう！🎉</div>';
       if (mode === 'easy') {
         // イージーモードの1周目達成のお祝いに、虹色の宝箱を1個。
@@ -28058,9 +28073,8 @@
   function renderCapitalQuizProgressFor_(mode, textEl, wrapEl) {
     if (!textEl) return;
     var unlocked = capitalQuizUnlockedCount_(mode);
-    textEl.textContent = unlocked >= CAPITAL_QUIZ_ORDER_.length
-      ? '🎉 ' + unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県すべて制覇しました！（沖縄スタート）'
-      : unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県を制覇・沖縄スタート（次は「' + (CAPITAL_QUIZ_ORDER_[unlocked] ? CAPITAL_QUIZ_ORDER_[unlocked].name : '') + '」）';
+    var lap = capitalQuizLap_(mode);
+    textEl.textContent = (lap > 1 ? lap + '周目：' : '') + unlocked + '/' + CAPITAL_QUIZ_ORDER_.length + ' 都道府県を制覇・沖縄スタート（次は「' + (CAPITAL_QUIZ_ORDER_[unlocked] ? CAPITAL_QUIZ_ORDER_[unlocked].name : '') + '」）' + (lap > 1 ? '　2周目からは制覇するたびにランダムな宝箱！' : '');
     renderCapitalQuizMapFor_(mode, wrapEl);
   }
   function renderCapitalQuizProgress_() {
