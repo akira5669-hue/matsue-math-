@@ -29517,7 +29517,7 @@
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 ガチャは全部まわしたよ'; }
-    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：🌈虹色・🥇金・🥈銀の宝箱、🗝️鍵、💎宝石（全種類のどれか）、⚔️ドラゴンソード、🌱種や実';
+    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：💎★5の宝石(1%)・★4の宝石(2%)・★3の宝石(3%)、🌈虹色の宝箱(3%)、⚔️ドラゴンソード(5%)、🥇金の宝箱(8%)、🌱種や実(10%)、🥈銀の宝箱(14%)、🗝️鍵(14%)、🥩ステーキ(15%)、🍙おにぎり(25%)';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -29533,11 +29533,18 @@
       state.treasureItems[kk] = (Number(state.treasureItems[kk]) || 0) + 1;
       return '🗝️ ' + TREASURE_TIER_EMOJI_[t] + ' ' + TREASURE_TIER_LABEL_[t] + 'の鍵';
     }
-    if (p === 'gem') {
-      // 宝石は全種類(★5のレッド・ブルー・ピンクダイヤモンド、★4ダイヤモンド、★3ルビー・エメラルド・サファイア)から同じ確率で
-      var g = GEM_ITEM_ALL_KEYS_[randInt(0, GEM_ITEM_ALL_KEYS_.length - 1)];
+    if (p === 'gem5' || p === 'gem4' || p === 'gem3') {
+      // ★の数はサーバーで決める(★5=1%・★4=2%・★3=3%)。同じ★の中の種類は同じ確率で。
+      var star = Number(p.slice(3));
+      var sameStar = GEM_ITEM_ALL_KEYS_.filter(function (k) { return GEM_DEFS_[k].star === star; });
+      var g = sameStar[randInt(0, sameStar.length - 1)];
       state.gemItems[g] = (Number(state.gemItems[g]) || 0) + 1;
-      return GEM_DEFS_[g].emoji + ' ' + GEM_DEFS_[g].label;
+      return GEM_DEFS_[g].emoji + ' ' + GEM_DEFS_[g].label + '（★' + star + '）';
+    }
+    if (p === 'onigiri' || p === 'steak') {
+      var food = p === 'onigiri' ? { label: '🍙 おにぎり', hp: ONIGIRI_HP_GAIN } : { label: '🥩 ステーキ', hp: STEAK_HP_GAIN };
+      state.hp = (Number(state.hp) || 0) + food.hp;
+      return food.label + '（その場で食べてHP+' + food.hp + '）';
     }
     if (p === 'dragonSword') {
       state.dragonSwordCount = (Number(state.dragonSwordCount) || 0) + 1;
@@ -29573,7 +29580,7 @@
         }
         if (!res.test) state.usaGacha10Used = Number(res.used) || ((Number(state.usaGacha10Used) || 0) + 1);
         var label = applyUsaGachaPrize_(res);
-        var rare = res.prize === 'chestRainbow' || res.prize === 'dragonSword';
+        var rare = res.prize === 'gem5' || res.prize === 'gem4' || res.prize === 'gem3' || res.prize === 'chestRainbow' || res.prize === 'dragonSword';
         saveGameState(state);
         syncPointsNow_(session.id);
         try { updateGameHud(); } catch (e) { }
@@ -29582,7 +29589,7 @@
         if (cap) { cap.style.setProperty('--c', rare ? '#facc15' : capColors[randInt(0, capColors.length - 1)]); cap.classList.add('is-drop'); }
         if (out) out.innerHTML = rare ? '✨ 金色のカプセルが出てきた！✨' : 'カプセルが出てきた！';
         setTimeout(function () {
-          var icon = { chestRainbow: '🌈', chestGold: '🥇', chestSilver: '🥈', key: '🗝️', gem: '💎', dragonSword: '⚔️', seed: '🌱' }[res.prize] || '🎁';
+          var icon = { chestRainbow: '🌈', chestGold: '🥇', chestSilver: '🥈', key: '🗝️', gem5: '💎', gem4: '💎', gem3: '💎', dragonSword: '⚔️', seed: '🌱', onigiri: '🍙', steak: '🥩' }[res.prize] || '🎁';
           if (cap) { cap.textContent = icon; cap.classList.add('is-open'); }
           if (out) out.innerHTML = (rare ? '🎉 <b>大当たり！</b> ' : '') + '<b>' + label + '</b> が出た！';
           usaGachaBusy_ = false;
