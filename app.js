@@ -21970,8 +21970,11 @@
   // 今は00001だけに見せる作成中プレビューなので、日付に関係なく管理者判定だけを見る。
   // 将来、一般公開するときはお鉢巡りと同じ「管理者は常にバイパス、それ以外は
   // 日付窓(USA_CROSSING_START_〜END_)」の判定に切り替える。
+  // 2026-11-19 先生の指示：12月1日〜31日は全員に公開(先生00001は日付に関係なくいつでも)。
   function usaCrossingCardActive_() {
-    return isAdminSession_();
+    if (isAdminSession_()) return true;
+    var today = todayKey();
+    return today >= USA_CROSSING_START_ && today <= USA_CROSSING_END_;
   }
 
   // 富士登山「お鉢巡り」：富士登山の成功者(fujiSummitReached)だけが挑戦できる
