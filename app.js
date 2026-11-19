@@ -23077,6 +23077,13 @@
         }
       }
       saveGameState(state);
+    } else if (catId === 'capitalQuizBonus') {
+      // 県庁所在地クイズはおまけ：まちがえても連続正解は途切れず、レアキャラも逃げない(2026-11-19 先生の指示。正解しても連続正解は増えない＝クイズの間はお休み)
+      missLineHtml = '<div class="item-gain-banner">🗾 県庁所在地クイズは、まちがえても連続正解は途切れないよ。</div>';
+      const capitalQuizPrefHtml_ = maybeAdvanceCapitalQuizPrefecture_(state.current);
+      if (capitalQuizPrefHtml_) missLineHtml += capitalQuizPrefHtml_;
+      saveGameState(state);
+      if (session && session.id) syncPointsNow_(session.id);
     } else {
       const enemyBeforeMiss = currentEnemyDisplay(state);
       if (enemyBeforeMiss.lines && enemyBeforeMiss.lines.miss) {
@@ -24284,6 +24291,7 @@
     '🐞【バグを直しました㉗】10問目に県庁所在地クイズが出ると、クイズを全部解いたあとの13問目まで敵がたおれなかったのを直しました。県庁所在地クイズの正解は、敵をたおす10問の数に入らないようにしました。',
     '🐞【バグを直しました㉘】野球ガチャの計算問題で「0.200」と答えると、答えが「0.200」と出ているのに不正解になったのを直しました。「0.2」と「0.200」のように書き方がちがっても、同じ数なら正解になります。47都道府県制覇の題名から「特別夏バージョン」を消しました。',
     '🐞【バグを直しました㉙】ログアウトしてログインし直すと、敵が最初のマチガールにもどって、ボン・ミスコやレアキャラをさけられたのを直しました。ログインし直しても、前と同じ敵が出ます。',
+    '🐞【直しました㉚】県庁所在地クイズでまちがえると、連続正解が0にもどっていたのをやめました。クイズは正解しても連続正解の数は増えませんが、まちがえても途切れません（クイズの間はお休み）。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
