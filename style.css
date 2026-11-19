@@ -2835,3 +2835,9 @@ body.notices-folded .world-launch-banner { display: none !important; }
 .sk-hinttext { font-size: 13px; background: var(--c-bg, #f6f7f9); border-radius: 8px; padding: 8px 10px; }
 .sk-levels { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
 .sk-level.is-on { background: #2f6fd6; color: #fff; font-weight: 700; }
+
+/* 🎰 アメリカ横断10周目のごほうびガチャ */
+.usa-gacha { margin: 12px 0; padding: 12px; border: 2px dashed #f59e0b; border-radius: 14px; text-align: center; background: rgba(245, 158, 11, 0.06); }
+.usa-gacha-capsule { font-size: 56px; line-height: 1.2; margin: 6px 0; display: inline-block; }
+.usa-gacha-capsule.is-spinning { animation: usaGachaShake 0.25s infinite; }
+@keyframes usaGachaShake { 0% { transform: rotate(-12deg); } 50% { transform: rotate(12deg) scale(1.08); } 100% { transform: rotate(-12deg); } }
