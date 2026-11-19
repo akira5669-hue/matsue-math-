@@ -30930,8 +30930,9 @@
   var TRAINING_OPEN_ALL_END_ = '2026-11-15';
   function trainingVisible_() { return isAdminSession_() || trainingOpenAll_(); }
   function trainingOpenAll_() { var t = todayKey(); return t >= TRAINING_OPEN_ALL_START_ && t <= TRAINING_OPEN_ALL_END_; }
-  function trainingOtherModeActive_() {
-    return !!(state.fujiActive || state.fujiDescentActive || state.ohachiActive || state.ohachiEasyActive || state.worldBossActiveStage || state.usaCrossingActive);
+  // allowUsa：超特訓部屋は、アメリカ横断の途中でも入れる(横断はお休みになり、部屋を出たら今の州から続き。2026-11-19 先生の指示)
+  function trainingOtherModeActive_(allowUsa) {
+    return !!(state.fujiActive || state.fujiDescentActive || state.ohachiActive || state.ohachiEasyActive || state.worldBossActiveStage || (state.usaCrossingActive && !allowUsa));
   }
 
   /* ---------- 超特訓部屋(2026-11-02〜) ----------
@@ -30996,7 +30997,7 @@
       window.alert('超特訓部屋は、HPが' + TRAINING_HP_MAX_ + 'より少ない人が入れる部屋です。');
       return;
     }
-    if (trainingOtherModeActive_()) {
+    if (trainingOtherModeActive_(true)) {
       window.alert('富士登山・お鉢巡り・ボス戦などの挑戦中は、超特訓部屋に入れません。');
       return;
     }
@@ -31014,7 +31015,9 @@
       + '・部屋の中ではHPが0になっても大丈夫\n'
       + '・MPは増えません\n'
       + '・特訓中は、キャラ（敵・レアキャラ）を倒すことはできません\n'
-      + '・HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと部屋から出られません\n\n入りますか？')) return;
+      + '・HPが' + TRAINING_EXIT_MIN_HP_ + '以上にならないと部屋から出られません\n'
+      + (state.usaCrossingActive ? '・🇺🇸アメリカ横断は部屋にいる間お休み。部屋を出ると、今の州（' + (Number(state.usaCrossingProgress) || 0) + '州）から続きができるよ\n' : '')
+      + '\n入りますか？')) return;
     state.trainingActive = true;
     state.trainingSuper = true;
     state.streak = 0;
@@ -31069,6 +31072,8 @@
     state.trainingActive = false;
     state.trainingSuper = false;
     state.streak = 0;
+    // アメリカ横断の途中で入っていたら、理科にもどして今の州から続き
+    if (state.usaCrossingActive && state.subject !== 'science') { state.subject = 'science'; try { syncSubjectUi_(); } catch (e) { } }
     saveGameState(state);
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
