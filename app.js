@@ -29517,7 +29517,7 @@
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 ガチャは全部まわしたよ'; }
-    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：🌈虹色・🥇金・🥈銀の宝箱、🗝️鍵、💎宝石、⚔️ドラゴンソード、🌱種や実、💪HP+500・HP+1000';
+    if (info) info.textContent = '10周目のごほうび。3回まわせるよ。出るもの：🌈虹色・🥇金・🥈銀の宝箱、🗝️鍵、💎宝石（全種類のどれか）、⚔️ドラゴンソード、🌱種や実';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -29534,7 +29534,8 @@
       return '🗝️ ' + TREASURE_TIER_EMOJI_[t] + ' ' + TREASURE_TIER_LABEL_[t] + 'の鍵';
     }
     if (p === 'gem') {
-      var g = USA_CROSSING_GEM_IDS_[randInt(0, USA_CROSSING_GEM_IDS_.length - 1)];
+      // 宝石は全種類(★5のレッド・ブルー・ピンクダイヤモンド、★4ダイヤモンド、★3ルビー・エメラルド・サファイア)から同じ確率で
+      var g = GEM_ITEM_ALL_KEYS_[randInt(0, GEM_ITEM_ALL_KEYS_.length - 1)];
       state.gemItems[g] = (Number(state.gemItems[g]) || 0) + 1;
       return GEM_DEFS_[g].emoji + ' ' + GEM_DEFS_[g].label;
     }
@@ -29546,11 +29547,6 @@
       var si = ZERO_DRAGON_SEED_INFO_[res.seedKind];
       state[si.key] = (Number(state[si.key]) || 0) + 1;
       return si.label + si.note;
-    }
-    if (p === 'hp500' || p === 'hp1000') {
-      var hp = p === 'hp500' ? 500 : 1000;
-      state.hp = (Number(state.hp) || 0) + hp;
-      return '💪 HP+' + hp + '（今のHP ' + state.hp + '）';
     }
     return '🎁 ごほうび';
   }
@@ -29577,7 +29573,7 @@
         }
         if (!res.test) state.usaGacha10Used = Number(res.used) || ((Number(state.usaGacha10Used) || 0) + 1);
         var label = applyUsaGachaPrize_(res);
-        var rare = res.prize === 'chestRainbow' || res.prize === 'dragonSword' || res.prize === 'hp1000';
+        var rare = res.prize === 'chestRainbow' || res.prize === 'dragonSword';
         saveGameState(state);
         syncPointsNow_(session.id);
         try { updateGameHud(); } catch (e) { }
@@ -29586,7 +29582,7 @@
         if (cap) { cap.style.setProperty('--c', rare ? '#facc15' : capColors[randInt(0, capColors.length - 1)]); cap.classList.add('is-drop'); }
         if (out) out.innerHTML = rare ? '✨ 金色のカプセルが出てきた！✨' : 'カプセルが出てきた！';
         setTimeout(function () {
-          var icon = { chestRainbow: '🌈', chestGold: '🥇', chestSilver: '🥈', key: '🗝️', gem: '💎', dragonSword: '⚔️', seed: '🌱', hp500: '💪', hp1000: '💪' }[res.prize] || '🎁';
+          var icon = { chestRainbow: '🌈', chestGold: '🥇', chestSilver: '🥈', key: '🗝️', gem: '💎', dragonSword: '⚔️', seed: '🌱' }[res.prize] || '🎁';
           if (cap) { cap.textContent = icon; cap.classList.add('is-open'); }
           if (out) out.innerHTML = (rare ? '🎉 <b>大当たり！</b> ' : '') + '<b>' + label + '</b> が出た！';
           usaGachaBusy_ = false;
