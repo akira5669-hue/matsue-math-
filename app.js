@@ -21161,6 +21161,7 @@
     usaCrossingProgress: usaRunFrom_(savedProgress, savedGame).progress,
     usaCrossingCorrect: usaRunFrom_(savedProgress, savedGame).correct, // 次の州までの正解数(5問で1州)
     usaCrossingUpdatedAt: usaRunFrom_(savedProgress, savedGame).updatedAt,
+    usaCrossingLastLapDay: usaRunFrom_(savedProgress, savedGame).lastLapDay, // 最後に周を達成した日(1日1周まで)
     // 達成した周回数(2026-11-16〜 周回制。1周目・2周目…でごほうびが変わる)。
     usaCrossingLaps: Math.max(usaRunFrom_(savedProgress, savedGame).laps, ((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)) ? 1 : 0),
     // 謎のおばさんに渡した宝石の数(クリスマスにダイヤの指輪に変わるまで保留中の数)。
@@ -29296,8 +29297,13 @@
 
   // 「挑戦する」ボタンの処理。参加料(USA_CROSSING_ENTRY_FEE_MP)をサーバー確定
   // 処理で払ってから、進行度を0に戻して理科モードで開始する。
+  // 1日に達成できるのは1周まで(2026-11-20 先生の指示)。今日1周したら、次の周は明日から。先生(00001)はテストのため制限なし。
+  function usaCrossingLapDoneToday_() {
+    return !isAdminSession_() && state.usaCrossingLastLapDay === todayKey();
+  }
   function startUsaCrossing_() {
     if (!usaCrossingCardActive_() || state.usaCrossingActive) return;
+    if (usaCrossingLapDoneToday_()) { window.alert('🇺🇸 アメリカ横断は1日1周までです。今日はもう1周したので、明日また挑戦してね！'); return; }
     if (USA_CROSSING_ENTRY_FEE_MP > 0 && (Number(state.points) || 0) < USA_CROSSING_ENTRY_FEE_MP) {
       window.alert('アメリカ横断には参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
       return;
@@ -29312,6 +29318,7 @@
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
         else if (res.error === 'forbidden') msg = '現在は00001限定のプレビュー中です。';
         else if (res.error === 'already_completed') msg = 'アメリカ横断は既に達成済みです。再挑戦はできません。';
+        else if (res.error === 'lap_today') { msg = '🇺🇸 アメリカ横断は1日1周までです。今日はもう1周したので、明日また挑戦してね！'; state.usaCrossingLastLapDay = todayKey(); try { renderUsaCrossingCard_(); } catch (e) { } }
         window.alert(msg);
         return;
       }
@@ -29448,6 +29455,7 @@
     touchUsaRun_();
     state.usaCrossingCompleted = true;
     state.usaCrossingLaps = (Number(state.usaCrossingLaps) || 0) + 1;
+    state.usaCrossingLastLapDay = todayKey();
     var lap = state.usaCrossingLaps;
     var rw = USA_CROSSING_LAP_REWARDS_[lap] || {};
     var pickTier = function (t) { return t === 'random' ? USA_CROSSING_CHEST_TIERS_[randInt(0, USA_CROSSING_CHEST_TIERS_.length - 1)] : t; };
@@ -29649,6 +29657,7 @@
       correct: Math.max(0, Math.min(4, Math.floor(Number(r.correct)) || 0)),
       updatedAt: Math.max(0, Number(r.updatedAt) || 0),
       laps: Math.max(0, Math.min(999, Math.floor(Number(r.laps)) || 0)),
+      lastLapDay: /^\d{4}-\d{2}-\d{2}$/.test(String(r.lastLapDay || '')) ? String(r.lastLapDay) : '',
     };
   }
   function usaRunFrom_(sp, sg) {
@@ -29656,7 +29665,7 @@
     return a.updatedAt >= b.updatedAt ? a : b;
   }
   function usaRunOf_(s) {
-    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0, laps: Number(s.usaCrossingLaps) || 0 };
+    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0, laps: Number(s.usaCrossingLaps) || 0, lastLapDay: s.usaCrossingLastLapDay || '' };
   }
   function touchUsaRun_() { state.usaCrossingUpdatedAt = Date.now(); }
   // r のほうが新しければ取り入れる(変わったらtrue)。挑戦中なら理科モードにする。
@@ -29665,6 +29674,7 @@
     var n = usaRunNorm_(r);
     var lapsUp = n.laps > (Number(state.usaCrossingLaps) || 0);
     if (lapsUp) { state.usaCrossingLaps = n.laps; state.usaCrossingCompleted = true; }
+    if (n.lastLapDay && n.lastLapDay > (state.usaCrossingLastLapDay || '')) { state.usaCrossingLastLapDay = n.lastLapDay; lapsUp = true; }
     var g10 = Math.max(0, Math.floor(Number(r.gachaUsed)) || 0);
     if (g10 > (Number(state.usaGachaUsed) || 0)) { state.usaGachaUsed = g10; lapsUp = true; }
     if (n.updatedAt <= (Number(state.usaCrossingUpdatedAt) || 0)) {
@@ -29689,18 +29699,20 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦でき、周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし1日1周まで。今日1周したら、次の周は明日から)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
       els.usaCrossingStatusText.textContent = state.usaCrossingActive
         ? (lapsDone + 1) + '周目に挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.usaCrossingProgress) || 0) + '/' + USA_CROSSING_GOAL_ + '州）'
+        : lapsDone > 0 && usaCrossingLapDoneToday_()
+        ? '✅ ' + lapsDone + '周達成！ アメリカ横断は1日1周まで。' + (lapsDone + 1) + '周目は明日から挑戦できます。'
         : lapsDone > 0
         ? '✅ ' + lapsDone + '周達成！ ' + (lapsDone + 1) + '周目に挑戦できます（参加料は無料）。'
         : '挑戦条件はありません。参加料は無料で、いつでも開始できます。';
     }
     if (els.usaCrossingStartBtn) {
-      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive;
+      els.usaCrossingStartBtn.hidden = !!state.usaCrossingActive || usaCrossingLapDoneToday_();
     }
     // テスト用ボタンは先生(00001)だけ
     if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.hidden = !isAdminSession_();
