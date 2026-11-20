@@ -287,7 +287,7 @@
       st.arcMode = !!on; st.pick = null;
       try { localStorage.setItem('sakuzuArcMode', on ? '1' : '0'); } catch (e) { }
       root.querySelectorAll('.sk-arcmode').forEach(function (b) { b.classList.toggle('is-on', (b.getAttribute('data-a') === '1') === st.arcMode); });
-      if (!st.done) msg(st.arcMode ? '◠ <b>3分の2の円</b>でかくよ。コンパスでは、半径をきめるためにタップした場所のほうに弧がかけるよ。' : '⭕ <b>円</b>でかくよ。');
+      if (!st.done) msg(st.arcMode ? '◠ <b>3分の2の円</b>でかくよ。コンパスでは、半径をきめるためにタップした場所のほうに弧がかけるよ。「◠ 同じ大きさの3分の2の円」では、中心の点 → 弧をかきたい側の順にタップしてね。' : '⭕ <b>円</b>でかくよ。');
       draw();
     }
 
@@ -339,7 +339,7 @@
       st.tool = t; st.pick = null;
       root.querySelectorAll('.sk-tool').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-t') === t); });
       if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。'
-        : t === 'same' ? (st.lastR ? '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。' : 'まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。')
+        : t === 'same' ? (st.lastR ? (st.arcMode ? '① 中心にする点をタップ → ② 弧をかきたい側をタップすると、<b>1つ前と同じ大きさの3分の2の円</b>がかけるよ。' : '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。') : 'まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。')
         : '答えだと思う点（作図してできた点）をタップしてね。');
       draw();
     }
@@ -423,7 +423,7 @@
           // 3分の2の円：①中心の点 → ②弧をかきたい側をタップ
           if (!st.pick) {
             if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
-            st.pick = sn; msg('次に、弧をかきたい側（どこでもよい）をタップしてね。'); draw(); return;
+            st.pick = sn; msg('点線が、1つ前と同じ大きさだよ。次に、<b>弧をかきたい側</b>（点線の上やその近く、どこでもよい）をタップしてね。'); draw(); return;
           }
           if (dist(st.pick, p) < 3) { msg('中心から少しはなれた場所をタップしてね。'); return; }
           var c2 = st.pick; st.pick = null;
@@ -477,6 +477,8 @@
           if (o.label) h += '<text x="' + (o.q.x - 14).toFixed(1) + '" y="' + (o.q.y - 8).toFixed(1) + '" font-size="15" font-weight="bold">' + o.label + '</text>';
         }
       });
+      // 3分の2の円で「同じ大きさ」：中心をえらんだら、かける大きさを点線で見せる(2026-11-20 先生の指示)
+      if (st.arcMode && st.tool === 'same' && st.pick && st.lastR) h += '<circle cx="' + st.pick.x.toFixed(1) + '" cy="' + st.pick.y.toFixed(1) + '" r="' + st.lastR.toFixed(1) + '" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5 5"/>';
       st.points.forEach(function (p) {
         var on = st.pick && dist(st.pick, p) < 0.5;
         var ans = st.done && st.answerPt && dist(st.answerPt, p) < 0.5;
@@ -484,7 +486,7 @@
         if (p.label) h += '<text x="' + (p.x + 7).toFixed(1) + '" y="' + (p.y - 7).toFixed(1) + '" font-size="15" font-weight="bold">' + p.label + '</text>';
       });
       svg.innerHTML = h;
-      var sameBtn = root.querySelector('.sk-tool[data-t="same"]'); if (sameBtn) sameBtn.disabled = !st.lastR || st.done;
+      var sameBtn = root.querySelector('.sk-tool[data-t="same"]'); if (sameBtn) { sameBtn.disabled = !st.lastR || st.done; sameBtn.textContent = st.arcMode ? '◠ 同じ大きさの3分の2の円' : '⭕ 同じ大きさの円'; }
     }
 
     setArcMode(st.arcMode);
