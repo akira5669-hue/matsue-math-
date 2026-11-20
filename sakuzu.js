@@ -157,6 +157,32 @@
         }
       },
     },
+    {
+      id: 'elemRhombus', level: 'elem', title: 'ひし形ABCDの頂点C（AB＝ADの2辺がかいてある）',
+      make: function () {
+        var A = { x: rnd(60, 90), y: rnd(250, 280), label: 'A' }, len = rnd(120, 150), d1 = rnd(-12, 0), d2 = d1 + rnd(50, 70);
+        var B = at(A, len, d1, 'B'), D = at(A, len, d2, 'D');
+        return {
+          points: [A, B, D], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: A, q: D }],
+          target: { kind: 'point', p: { x: B.x + D.x - A.x, y: B.y + D.y - A.y } },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: 'ひし形は4つの辺の長さがぜんぶ同じ。① コンパスで、点Bを中心にして点Aをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Dをタップする。③ 2つの円が交わった点のうち、Aではないほうが C。',
+        };
+      },
+    },
+    {
+      id: 'elemHexagon', level: 'elem', title: '円Oの周上に頂点がある正六角形ABCDEFの頂点C（Aから左回りに2つめ）',
+      make: function () {
+        var O = { x: rnd(170, 190), y: rnd(200, 220), label: 'O' }, r = rnd(100, 115), d = rnd(-20, 20);
+        var A = at(O, r, d, 'A');
+        return {
+          points: [O, A], objs: [{ type: 'circle', c: O, r: r, given: true }],
+          target: { kind: 'point', p: at(O, r, d + 120) },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: '正六角形の1辺の長さは、円の半径と同じ。① コンパスで、点Aを中心にして点Oをタップする（半径と同じ長さ）。② 円Oと交わった点のうち、左回り（上のほう）がB。③ 「⭕ 同じ大きさの円」で点Bをタップする。④ 円Oと交わった点のうち、Aではないほうが C。',
+        };
+      },
+    },
     // ===== 基本 =====
     {
       id: 'bisector', level: 'basic', title: '線分ABの垂直二等分線',
