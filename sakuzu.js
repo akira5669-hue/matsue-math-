@@ -5,7 +5,7 @@
    - 定規：2つの点をタップすると、その2点を通る直線を引く。
    - 答えの点：答えが「点」の問題で、作図してできた点をタップして答える。
    - 点は、はじめからある点と、線や円が交わる点(交点)だけ。タップすると一番近い点に吸いつく。
-   レベル：基本・標準・入試。答えの種類(target.kind)は line(直線)・point(点)・circle(円)。
+   レベル：小学生・基本・標準・入試。答えの種類(target.kind)は line(直線)・point(点)・circle(円)。
    app.js から window.Sakuzu.mount(要素, { onCorrect }) で使う。 */
 (function () {
   'use strict';
@@ -51,8 +51,115 @@
   function onLine(L, x) { return { x: x, y: L.p.y + (L.q.y - L.p.y) / (L.q.x - L.p.x) * (x - L.p.x) }; }
 
   // ---- 問題 ----
-  var LEVELS = [{ id: 'basic', label: '基本' }, { id: 'std', label: '標準' }, { id: 'exam', label: '入試' }];
+  var LEVELS = [{ id: 'elem', label: '小学生' }, { id: 'basic', label: '基本' }, { id: 'std', label: '標準' }, { id: 'exam', label: '入試' }];
+  // 長さを写すための線分PQ(図の上のほうに置く)。小学生の問題で使う。
+  function lenSeg(len, y, l1, l2) {
+    var x0 = rnd(30, Math.max(31, 330 - len));
+    return { p: { x: x0, y: y, label: l1 || 'P' }, q: { x: x0 + len, y: y, label: l2 || 'Q' } };
+  }
+  // 2つの円の交点のうち、画面で上にあるほう
+  function upperMeet(c1, r1, c2, r2) {
+    var X = interCC({ c: c1, r: r1 }, { c: c2, r: r2 });
+    return X[0].y < X[1].y ? X[0] : X[1];
+  }
   var PROBLEMS = [
+    // ===== 小学生(2026-11-21 先生の指示)：コンパスで長さを写す・三角形をかく =====
+    {
+      id: 'elemCircle', level: 'elem', title: '点Oを中心にして、半径が線分PQの長さの円',
+      make: function () {
+        var len = rnd(70, 100), s = lenSeg(len, rnd(15, 40));
+        var O = { x: rnd(140, 220), y: rnd(210, 250), label: 'O' };
+        return {
+          points: [O, s.p, s.q], objs: [{ type: 'segment', p: s.p, q: s.q }],
+          target: { kind: 'circle', c: O, r: len },
+          hint: '① コンパスで、点Pを中心にして点Qをタップすると、PQの長さの円がかける（これでコンパスがPQの長さになる）。② 「⭕ 同じ大きさの円」で点Oをタップする。',
+        };
+      },
+    },
+    {
+      id: 'elemCopy', level: 'elem', title: '直線ℓの上で、点Aから右へ、線分PQと同じ長さのところにある点B',
+      make: function () {
+        var L = lineAcross(rnd(250, 280), rnd(-0.06, 0.06));
+        var A = onLine(L, rnd(60, 100)); A.label = 'A';
+        var len = rnd(130, 180), s = lenSeg(len, rnd(15, 40));
+        var u = unit(L.q.x - L.p.x, L.q.y - L.p.y);
+        return {
+          points: [A, s.p, s.q], objs: [L, { type: 'segment', p: s.p, q: s.q }],
+          target: { kind: 'point', p: { x: A.x + len * u.x, y: A.y + len * u.y } },
+          ask: '作図してできた点Bを「📍 答えの点」でタップしてね。',
+          hint: 'コンパスは長さを写す道具。① コンパスで、点Pを中心にして点Qをタップする。② 「⭕ 同じ大きさの円」で点Aをタップする。③ 円と直線ℓが交わった点のうち、右のほうがB。',
+        };
+      },
+    },
+    {
+      id: 'elemEqTri', level: 'elem', title: '線分ABを1辺とする正三角形ABCの頂点C（ABの上側）',
+      make: function () {
+        var A = { x: rnd(80, 110), y: rnd(250, 280), label: 'A' }, len = rnd(150, 180), deg = rnd(-8, 8);
+        var B = at(A, len, deg, 'B');
+        return {
+          points: [A, B], objs: [{ type: 'segment', p: A, q: B }],
+          target: { kind: 'point', p: at(A, len, deg + 60) },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: '正三角形は3つの辺の長さが同じ。① コンパスで、点Aを中心にして点Bをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Bをタップする。③ 2つの円が交わった点のうち、上のほうがC。',
+        };
+      },
+    },
+    {
+      id: 'elemIso', level: 'elem', title: '底辺がABで、残りの2辺が線分PQと同じ長さの二等辺三角形ABCの頂点C（ABの上側）',
+      make: function () {
+        var A = { x: rnd(90, 120), y: rnd(270, 300), label: 'A' }, base = rnd(120, 150), deg = rnd(-6, 6);
+        var B = at(A, base, deg, 'B');
+        var len = rnd(base * 0.75, base * 0.95), s = lenSeg(len, rnd(15, 35));
+        return {
+          points: [A, B, s.p, s.q], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: s.p, q: s.q }],
+          target: { kind: 'point', p: upperMeet(A, len, B, len) },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: '二等辺三角形は2つの辺の長さが同じ。① コンパスで、点Pを中心にして点Qをタップする（PQの長さ）。② 「⭕ 同じ大きさの円」で点Aをタップ、続けて点Bもタップする。③ 2つの円が交わった点のうち、上のほうがC。',
+        };
+      },
+    },
+    {
+      id: 'elemTri3', level: 'elem', title: '3つの辺の長さがAB・PQ・RSの三角形ABCの頂点C（AC＝PQ、BC＝RS、ABの上側）',
+      make: function () {
+        var A = { x: rnd(70, 100), y: rnd(280, 310), label: 'A' }, base = rnd(160, 190), deg = rnd(-5, 5);
+        var B = at(A, base, deg, 'B');
+        var p, q;
+        do { p = rnd(base * 0.5, base * 0.85); q = rnd(base * 0.5, base * 0.85); } while (p + q < base + 40 || Math.abs(p - q) < 15);
+        var s1 = lenSeg(p, rnd(10, 25)), s2 = lenSeg(q, rnd(55, 70), 'R', 'S');
+        return {
+          points: [A, B, s1.p, s1.q, s2.p, s2.q], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: s1.p, q: s1.q }, { type: 'segment', p: s2.p, q: s2.q }],
+          target: { kind: 'point', p: upperMeet(A, p, B, q) },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: '① コンパスで、点Pを中心にして点Qをタップ（PQの長さ）。② 「⭕ 同じ大きさの円」で点Aをタップ。③ コンパスで、点Rを中心にして点Sをタップ（RSの長さ）。④ 「⭕ 同じ大きさの円」で点Bをタップ。⑤ Aの円とBの円が交わった点のうち、上のほうがC。（P・Rを中心にかいた円はじゃまなら気にしなくてよい）',
+        };
+      },
+    },
+    {
+      id: 'elemRhombus', level: 'elem', title: 'ひし形ABCDの頂点C（AB＝ADの2辺がかいてある）',
+      make: function () {
+        var A = { x: rnd(60, 90), y: rnd(250, 280), label: 'A' }, len = rnd(120, 150), d1 = rnd(-12, 0), d2 = d1 + rnd(50, 70);
+        var B = at(A, len, d1, 'B'), D = at(A, len, d2, 'D');
+        return {
+          points: [A, B, D], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: A, q: D }],
+          target: { kind: 'point', p: { x: B.x + D.x - A.x, y: B.y + D.y - A.y } },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: 'ひし形は4つの辺の長さがぜんぶ同じ。① コンパスで、点Bを中心にして点Aをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Dをタップする。③ 2つの円が交わった点のうち、Aではないほうが C。',
+        };
+      },
+    },
+    {
+      id: 'elemHexagon', level: 'elem', title: '円Oの周上に頂点がある正六角形ABCDEFの頂点C（Aから左回りに2つめ）',
+      make: function () {
+        var O = { x: rnd(170, 190), y: rnd(200, 220), label: 'O' }, r = rnd(100, 115), d = rnd(-20, 20);
+        var A = at(O, r, d, 'A');
+        return {
+          points: [O, A], objs: [{ type: 'circle', c: O, r: r, given: true }],
+          target: { kind: 'point', p: at(O, r, d + 120) },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          hint: '正六角形の1辺の長さは、円の半径と同じ。① コンパスで、点Aを中心にして点Oをタップする（半径と同じ長さ）。② 円Oと交わった点のうち、左回り（上のほう）がB。③ 「⭕ 同じ大きさの円」で点Bをタップする。④ 円Oと交わった点のうち、Aではないほうが C。',
+        };
+      },
+    },
     // ===== 基本 =====
     {
       id: 'bisector', level: 'basic', title: '線分ABの垂直二等分線',
