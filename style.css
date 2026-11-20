@@ -2839,26 +2839,39 @@ body.notices-folded .world-launch-banner { display: none !important; }
 /* 🎰 アメリカ横断10周目のごほうびガチャ */
 .usa-gacha { margin: 12px 0; padding: 12px; border: 2px dashed #f59e0b; border-radius: 14px; text-align: center; background: rgba(245, 158, 11, 0.06); }
 /* カプセルのガチャガチャマシン(先生のイメージ写真をもとにCSSでかいたもの) */
-.gm { position: relative; width: 196px; margin: 8px auto 4px; }
-.gm-top { position: relative; height: 24px; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 12px 12px 4px 4px; }
-.gm-lock { position: absolute; left: 50%; top: 5px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #64748b; }
-.gm-dome { position: relative; height: 112px; margin: -2px 4px 0; background: linear-gradient(90deg, rgba(255,255,255,0.55), rgba(186,230,253,0.18) 40%, rgba(255,255,255,0.5)); border: 2px solid #cbd5e1; border-radius: 34px / 26px; overflow: hidden; }
-.gm-ball { position: absolute; width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(180deg, var(--c) 52%, #f8fafc 52%); border: 1.5px solid rgba(100,116,139,0.45); box-shadow: inset -5px -5px 8px rgba(0,0,0,0.08); }
-.gm-body { position: relative; height: 104px; margin-top: -2px; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; }
-.gm-price { position: absolute; left: 18px; top: 8px; padding: 0 6px; font-size: 11px; font-weight: 700; color: #1e293b; background: #fde68a; border: 1px solid #94a3b8; border-radius: 4px; }
-.gm-out { position: absolute; left: 16px; top: 30px; width: 60px; height: 62px; background: #1e293b; border-radius: 30px 30px 8px 8px; }
+.gm { position: relative; width: 236px; margin: 10px auto 6px; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); }
+.gm-sign { position: relative; margin: 0 18px; padding: 6px 0 12px; text-align: center; background: linear-gradient(180deg, #ef4444, #b91c1c); border: 3px solid #facc15; border-bottom: none; border-radius: 16px 16px 0 0; }
+.gm-sign > span { font-size: 15px; font-weight: 900; letter-spacing: 2px; color: #fde047; text-shadow: 0 0 6px rgba(253,224,71,0.9), 0 2px 0 #7f1d1d; }
+.gm-lights { position: absolute; left: 8px; right: 8px; bottom: 2px; display: flex; justify-content: space-between; }
+.gm-lights i { width: 7px; height: 7px; border-radius: 50%; background: #fef08a; box-shadow: 0 0 6px #fde047; animation: gmBlink 1s var(--d, 0s) infinite; }
+.gm-top { position: relative; height: 20px; background: linear-gradient(180deg, #fde047, #ca8a04); border: 2px solid #a16207; border-radius: 10px 10px 4px 4px; }
+.gm-lock { position: absolute; left: 50%; top: 4px; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: #7f1d1d; }
+.gm-dome { position: relative; height: 122px; margin: -2px 6px 0; background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.75), rgba(186,230,253,0.35) 60%, rgba(125,211,252,0.3)); border: 3px solid #facc15; border-radius: 40px / 30px; overflow: hidden; box-shadow: inset 0 0 18px rgba(14,165,233,0.35); }
+.gm-shine { position: absolute; left: 14px; top: 8px; width: 34px; height: 92px; border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0)); transform: rotate(18deg); pointer-events: none; }
+.gm-ball { position: absolute; width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(180deg, var(--c) 52%, #f8fafc 52%); border: 1.5px solid rgba(100,116,139,0.45); box-shadow: inset -5px -5px 8px rgba(0,0,0,0.1), inset 4px 4px 6px rgba(255,255,255,0.6); }
+.gm-ball-rainbow { background: linear-gradient(180deg, transparent 52%, #f8fafc 52%), conic-gradient(#f87171, #fbbf24, #4ade80, #60a5fa, #a78bfa, #f87171); }
+.gm-body { position: relative; height: 112px; margin-top: -3px; background: linear-gradient(180deg, #ef4444, #b91c1c 70%, #991b1b); border: 3px solid #facc15; border-radius: 10px; }
+.gm-price { position: absolute; left: 20px; top: 8px; padding: 0 7px; font-size: 11px; font-weight: 800; color: #7f1d1d; background: linear-gradient(180deg, #fef08a, #facc15); border: 1px solid #a16207; border-radius: 4px; }
+.gm-out { position: absolute; left: 16px; top: 30px; width: 66px; height: 68px; background: radial-gradient(circle at 50% 30%, #334155, #0f172a); border: 3px solid #facc15; border-radius: 33px 33px 10px 10px; }
 .gm-cap { position: absolute; left: 10px; top: 14px; width: 40px; height: 40px; border-radius: 50%; opacity: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; background: linear-gradient(180deg, var(--c, #7dd3fc) 52%, #f8fafc 52%); border: 1.5px solid rgba(100,116,139,0.5); }
 .gm-cap.is-drop { animation: gmDrop 0.55s cubic-bezier(.4,1.6,.6,1) forwards; }
-.gm-cap.is-open { opacity: 1; background: #fff; border-color: var(--c, #7dd3fc); box-shadow: 0 0 0 4px var(--c, #7dd3fc); animation: gmPop 0.4s ease-out; z-index: 2; }
-.gm-handle { position: absolute; right: 22px; top: 22px; width: 58px; height: 58px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f1f5f9, #94a3b8); border: 2px solid #64748b; }
-.gm-handle span { position: absolute; left: 50%; top: 5px; width: 13px; height: 44px; margin-left: -6.5px; background: #475569; border-radius: 7px; }
-.gm-base { height: 34px; margin: -2px 8px 0; background: #f1f5f9; border: 2px solid #cbd5e1; border-top: none; clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); }
+.gm-cap.is-open { opacity: 1; background: #fff; border-color: var(--c, #7dd3fc); box-shadow: 0 0 0 4px var(--c, #7dd3fc), 0 0 22px 8px var(--c, #7dd3fc); animation: gmPop 0.4s ease-out; z-index: 2; }
+.gm-handle { position: absolute; right: 22px; top: 22px; width: 62px; height: 62px; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fef9c3, #facc15 55%, #a16207); border: 2px solid #854d0e; box-shadow: 0 3px 6px rgba(0,0,0,0.3); }
+.gm-handle span { position: absolute; left: 50%; top: 5px; width: 14px; height: 48px; margin-left: -7px; background: linear-gradient(90deg, #b91c1c, #ef4444, #b91c1c); border-radius: 7px; }
+.gm-slot { position: absolute; right: 44px; bottom: 8px; width: 18px; height: 5px; border-radius: 3px; background: #1f2937; box-shadow: 0 0 0 2px #facc15; }
+.gm-base { height: 36px; margin: -3px 10px 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #7f1d1d, #450a0a); border: 3px solid #facc15; border-top: none; clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); }
+.gm-base span { font-size: 12px; font-weight: 900; letter-spacing: 3px; color: #fde047; }
+.gm-spark { position: absolute; z-index: 3; font-size: 18px; animation: gmTwinkle 1.6s var(--d, 0s) infinite; pointer-events: none; }
+.gm.is-spinning { animation: gmShake 0.12s infinite alternate; }
 .gm.is-spinning .gm-handle { animation: gmTurn 1.2s ease-in-out; }
 .gm.is-spinning .gm-ball { animation: gmJiggle 0.18s infinite alternate; }
+.gm.is-spinning .gm-lights i { animation-duration: 0.25s; }
 @keyframes gmTurn { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
 @keyframes gmJiggle { 0% { transform: translate(-2px, 1px) rotate(-8deg); } 100% { transform: translate(2px, -2px) rotate(8deg); } }
 @keyframes gmDrop { 0% { transform: translateY(-34px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-@keyframes gmPop { 0% { transform: scale(0.6); } 70% { transform: scale(1.5); } 100% { transform: scale(1.3); } }
+@keyframes gmBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes gmTwinkle { 0%, 100% { opacity: 0.2; transform: scale(0.7) rotate(0); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
+@keyframes gmShake { 0% { transform: translateX(-1.5px) rotate(-0.6deg); } 100% { transform: translateX(1.5px) rotate(0.6deg); } }
 
 .sk-shape { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 8px 0 0; font-size: 0.92rem; }
 .sk-arcmode.is-on { background: #2f6fd6; color: #fff; border-color: #2f6fd6; }
