@@ -2941,6 +2941,7 @@
     { id: 'largeNum4',      label: '億・兆の大きな数（小4）',             gen: genLargeNum4,      defaultOff: true , addedDate: '2026-08-29' },
     { id: 'decAddSubMixed4', label: '小数のたし算・ひき算：発展（小4）',  gen: genDecAddSubMixed4, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'setSquareAngle4', label: '三角じょうぎの角度（小4）',           gen: genSetSquareAngle4, defaultOff: true , addedDate: '2026-08-02' },
+    { id: 'protractor4',     label: '分度器の使い方・角度の読み取り（小4）', gen: genProtractor4,   defaultOff: true , addedDate: '2026-11-21' },
     { id: 'timesWordProblem4', label: '倍の見方の文章題（小4）',           gen: genTimesWordProblem4, defaultOff: true , addedDate: '2026-08-02' },
     { id: 'divWordProblem4',   label: 'わり算の文章題（小4）',             gen: genDivWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
     { id: 'decWordProblem4',   label: '小数の文章題（小4）',               gen: genDecWordProblem4, defaultOff: true , addedDate: '2026-08-10' },
@@ -10793,6 +10794,102 @@
         : [`平行四辺形では、となり合う角の和が180°`, `180 − ${angleA} = ${answer}`];
       return { category: 'quadShapes4', question, answer, choices: buildChoices(answer, wrongs), steps };
     }
+  }
+
+  // 分度器の使い方・角度の読み取り（小4）(2026-11-21 先生の指示)
+  // ① 分度器をどこに置くか(正しい置き方をア〜エから選ぶ) ② 目もりを読んで何度か答える ③ 置き方のきまり(ことば)
+  // 分度器の図：中心(cx,cy)・半径R。rotは分度器を左回りに回す角度、flipは半円が下向き(置き方のまちがい)。
+  // nums=trueで目もりの数字(内側：右が0°、外側：左が0°)。
+  function protractorSvg_(cx, cy, R, o) {
+    o = o || {};
+    var tr = 'translate(' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ') rotate(' + (-(o.rot || 0)) + ')' + (o.flip ? ' scale(1 -1)' : '');
+    var h = '<g transform="' + tr + '">';
+    h += '<path d="M' + (-R) + ' 0 A' + R + ' ' + R + ' 0 0 1 ' + R + ' 0 Z" fill="rgba(56,189,248,0.18)" stroke="#0284c7" stroke-width="1.5"/>';
+    var step = o.nums ? 5 : 10;
+    for (var t = 0; t <= 180; t += step) {
+      var rad = t * Math.PI / 180, c = Math.cos(rad), s = Math.sin(rad), len = t % 10 === 0 ? R * 0.09 : R * 0.05;
+      h += '<line x1="' + (R * c).toFixed(1) + '" y1="' + (-R * s).toFixed(1) + '" x2="' + ((R - len) * c).toFixed(1) + '" y2="' + (-(R - len) * s).toFixed(1) + '" stroke="#0284c7" stroke-width="1"/>';
+      if (o.nums && t % 10 === 0) {
+        var ri = R * 0.68, ro = R * 0.83;
+        h += '<text x="' + (ri * c).toFixed(1) + '" y="' + (-ri * s + 3).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="#0369a1">' + t + '</text>';
+        h += '<text x="' + (ro * c).toFixed(1) + '" y="' + (-ro * s + 3).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="#7c2d12">' + (180 - t) + '</text>';
+      }
+    }
+    h += '<line x1="0" y1="0" x2="0" y2="' + (-R * 0.12).toFixed(1) + '" stroke="#0284c7" stroke-width="1.2"/><circle cx="0" cy="0" r="2.2" fill="#0284c7"/>';
+    return h + '</g>';
+  }
+  function angleRaysSvg_(vx, vy, d1, d2, len, arcR) {
+    function pt(d, r) { var t = d * Math.PI / 180; return (vx + r * Math.cos(t)).toFixed(1) + ' ' + (vy - r * Math.sin(t)).toFixed(1); }
+    var h = '<line x1="' + vx + '" y1="' + vy + '" x2="' + pt(d1, len).split(' ')[0] + '" y2="' + pt(d1, len).split(' ')[1] + '" stroke="#1c2127" stroke-width="2"/>';
+    h += '<line x1="' + vx + '" y1="' + vy + '" x2="' + pt(d2, len).split(' ')[0] + '" y2="' + pt(d2, len).split(' ')[1] + '" stroke="#1c2127" stroke-width="2"/>';
+    var lo = Math.min(d1, d2), hi = Math.max(d1, d2);
+    h += '<path d="M' + pt(lo, arcR) + ' A' + arcR + ' ' + arcR + ' 0 0 0 ' + pt(hi, arcR) + '" fill="none" stroke="#dc2626" stroke-width="1.8"/>';
+    return h;
+  }
+  function genProtractor4() {
+    const r = Math.random();
+    if (r < 0.35) {
+      // ① 置き方：4つの図から正しいものを選ぶ
+      const a = 5 * randInt(8, 26); // 40〜130°
+      const kinds = shuffle(['ok', 'shift', 'rot', 'flip']);
+      const labels = ['ア', 'イ', 'ウ', 'エ'];
+      let svg = '<svg width="320" height="280" viewBox="0 0 320 280" style="display:block;margin:0 auto 8px;max-width:100%">';
+      kinds.forEach(function (k, i) {
+        const px = (i % 2) * 160, py = Math.floor(i / 2) * 140;
+        const vx = px + 62, vy = py + 86, R = 48;
+        svg += '<rect x="' + (px + 2) + '" y="' + (py + 2) + '" width="156" height="136" rx="8" fill="none" stroke="#d0d4da"/>';
+        svg += '<text x="' + (px + 10) + '" y="' + (py + 20) + '" font-size="15" font-weight="bold" fill="#1c2127">' + labels[i] + '</text>';
+        if (k === 'ok') svg += protractorSvg_(vx, vy, R);
+        else if (k === 'shift') svg += protractorSvg_(vx + 20, vy, R);
+        else if (k === 'rot') svg += protractorSvg_(vx, vy, R, { rot: 22 });
+        else svg += protractorSvg_(vx, vy, R, { flip: true });
+        svg += angleRaysSvg_(vx, vy, 0, a, 66, 14);
+        svg += '<circle cx="' + vx + '" cy="' + vy + '" r="2.6" fill="#1c2127"/>';
+      });
+      svg += '</svg>';
+      const answer = labels[kinds.indexOf('ok')];
+      const why = { shift: '分度器の中心が、角の頂点からずれている', rot: '0°の線が、角の辺に重なっていない（分度器がかたむいている）', flip: '分度器が角と反対がわを向いていて、もう1つの辺に目もりがない' };
+      const question = '角の大きさをはかります。分度器の置き方が正しいのはどれですか。';
+      const steps = ['分度器の中心を、角の頂点にぴったり合わせる', '分度器の0°の線を、角の1つの辺に重ねる', '正しいのは「' + answer + '」'];
+      kinds.forEach(function (k, i) { if (k !== 'ok') steps.push('「' + labels[i] + '」は、' + why[k]); });
+      return { category: 'protractor4', question, questionHtml: svg + '<span style="display:block">' + question + '</span>', answer, choices: labels.slice(), steps };
+    }
+    if (r < 0.88) {
+      // ② 目もりの読み取り：右の辺が0°なら内側の目もり、左の辺が0°なら外側の目もり
+      const x = 5 * randInt(3, 33); // 15〜165°
+      const fromRight = Math.random() < 0.5;
+      const R = 130, cx = 160, cy = 165;
+      const d1 = fromRight ? 0 : 180, d2 = fromRight ? x : 180 - x;
+      let svg = '<svg width="320" height="180" viewBox="0 0 320 180" style="display:block;margin:0 auto 8px;max-width:100%">';
+      svg += protractorSvg_(cx, cy, R, { nums: true });
+      svg += angleRaysSvg_(cx, cy, d1, d2, 152, 24);
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#1c2127"/></svg>';
+      const question = '赤い印の角は何度ですか。';
+      const answer = x;
+      const wrongs = [180 - x, x + 10, x - 10, x + 5].filter(function (v) { return v !== x && v > 0 && v < 180; });
+      const steps = [
+        (fromRight ? '右' : '左') + 'の辺が0°の線に重なっているので、' + (fromRight ? '右' : '左') + 'の0°から数える目もり（' + (fromRight ? '内側' : '外側') + 'の目もり：0、10、20…と増えるほう）を読む',
+        'もう1つの辺が通る目もりは ' + x + '°',
+        x === 90 ? '90°は直角' : (x < 90 ? x + '°は直角より小さい角（反対の目もりの' + (180 - x) + '°ではない）' : x + '°は直角より大きい角（反対の目もりの' + (180 - x) + '°ではない）'),
+      ];
+      return { category: 'protractor4', question, questionHtml: svg + '<span style="display:block">' + question + '</span>', answer, choices: buildChoices(answer, wrongs), steps };
+    }
+    // ③ 置き方のきまり・180°より大きい角
+    const t = randInt(0, 2);
+    if (t === 0) {
+      const question = '分度器で角の大きさをはかるとき、分度器の中心は角のどこに合わせますか。';
+      const answer = '角の頂点';
+      return { category: 'protractor4', question, answer, choices: shuffle([answer, '辺のはし', '辺のまん中', '角の内がわならどこでもよい']), steps: ['分度器の中心を角の頂点に合わせる', '0°の線を角の1つの辺に重ねる', 'もう1つの辺が通る目もりを読む'] };
+    }
+    if (t === 1) {
+      const question = '分度器で角の大きさをはかるとき、分度器の0°の線はどこに重ねますか。';
+      const answer = '角の1つの辺';
+      return { category: 'protractor4', question, answer, choices: shuffle([answer, '角の2つの辺のまん中', '角の頂点だけに合わせればよい', 'どこでもよい']), steps: ['分度器の中心を角の頂点に合わせる', '0°の線を角の1つの辺に重ねる', 'もう1つの辺が通る目もりを読む'] };
+    }
+    const y = 5 * randInt(2, 30); // 180°をこえた分 10〜150°
+    const question = '180°より大きい角を分度器ではかったら、180°をこえた分が' + y + '°でした。この角は何度ですか。';
+    const answer = 180 + y;
+    return { category: 'protractor4', question, answer, choices: buildChoices(answer, [180 - y, 360 - y, y]), steps: ['分度器は180°（半回転）までしかはかれない', '180°と、こえた分を合わせる', '180 + ' + y + ' = ' + answer] };
   }
 
   // 三角じょうぎの角度（小4）：30-60-90と45-45-90の三角じょうぎの角を求める
