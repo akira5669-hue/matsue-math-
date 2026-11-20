@@ -29566,11 +29566,11 @@
   function usaRestaurantHtml_() {
     var session = loadSession();
     if (!session || !session.id) return '';
-    if (!window.confirm('🍽️ 25州目で、おいしそうなレストランを見つけた！\n\n入りますか？（どれも' + USA_RESTAURANT_MEAL_MP_ + 'MPで、HPが' + USA_RESTAURANT_HP_ + '増える）\n\nOK：入る\nキャンセル：入らない')) {
+    if (!window.confirm('🍽️ 25州目で、おいしそうなレストランを見つけた！\n\n入りますか？（食べられるのは1つだけ。どれも' + USA_RESTAURANT_MEAL_MP_ + 'MPで、HPが' + USA_RESTAURANT_HP_ + '増える）\n\nOK：入る\nキャンセル：入らない')) {
       return '<div class="item-gain-banner">🍽️ レストランには入らずに、先へ進んだ。</div>';
     }
     var menuTxt = USA_RESTAURANT_MENU_.map(function (m, i) { return (i + 1) + '：' + m.e + ' ' + m.n; }).join('\n');
-    var pick = window.prompt('🍽️ メニュー（どれも' + USA_RESTAURANT_MEAL_MP_ + 'MP）\n' + menuTxt + '\n\n食べたいものの番号（1〜4）を入れてね。', '1');
+    var pick = window.prompt('🍽️ メニュー（どれも' + USA_RESTAURANT_MEAL_MP_ + 'MP）\n' + menuTxt + '\n\n食べられるのは1つだけ。食べたいものの番号（1〜4）を1つ入れてね。', '1');
     var mi = Math.floor(Number(pick)) - 1;
     if (pick === null || !(mi >= 0 && mi < USA_RESTAURANT_MENU_.length)) return '<div class="item-gain-banner">🍽️ 何も注文せずに、レストランを出た。</div>';
     var item = USA_RESTAURANT_MENU_[mi];
