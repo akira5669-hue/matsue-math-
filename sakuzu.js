@@ -103,7 +103,17 @@
     var ru = rulerParts();
     return {
       points: [B, C].concat(ru.pts), objs: [{ type: 'segment', p: B, q: C }], deco: d + ru.deco, protractor: !!useProt,
-      target: { kind: 'point', p: A },
+      target: { kind: 'point', p: A, label: 'A' },
+      // 「答えを見る」で出す作図のあと：辺AB・ACと、コンパスの弧(長さがわかる辺)か、分度器で引いた直線(角がわかるとき)
+      sol: (function () {
+        var o = [{ type: 'seg', p: B, q: A }, { type: 'seg', p: C, q: A }];
+        function arcAt(c) { var a = Math.atan2(A.y - c.y, A.x - c.x) * 180 / Math.PI; o.push({ type: 'arc', c: c, r: dist(c, A), a0: a, span: 18 }); }
+        function rayAt(c) { var u = unit(A.x - c.x, A.y - c.y); o.push({ type: 'seg', p: c, q: { x: c.x + u.x * (dist(c, A) + 40), y: c.y + u.y * (dist(c, A) + 40) }, thin: true }); }
+        if (given.AB) arcAt(B); if (given.AC) arcAt(C);
+        if (given.angB) rayAt(B); if (given.angC) rayAt(C);
+        if (given.AB && given.angB) arcAt(B);
+        return o;
+      })(),
       ask: '下のものさし' + (useProt ? 'と「📐 分度器」' : '') + 'を使って作図し、できた頂点Aを「📍 答えの点」でタップしてね。',
     };
   }
@@ -435,7 +445,7 @@
       '<button type="button" class="ghost-btn sk-tool" data-t="same">⭕ 同じ大きさの円</button>' +
       '</div>' +
       '<p class="sk-msg"></p>' +
-      '<div class="sk-tools"><button type="button" class="ghost-btn sk-undo">↩️ 1つもどす</button> <button type="button" class="ghost-btn sk-reset">🗑 はじめから</button> <button type="button" class="ghost-btn sk-hint">💡 ヒント</button></div>' +
+      '<div class="sk-tools"><button type="button" class="ghost-btn sk-undo">↩️ 1つもどす</button> <button type="button" class="ghost-btn sk-reset">🗑 はじめから</button> <button type="button" class="ghost-btn sk-hint">💡 ヒント</button> <button type="button" class="ghost-btn sk-show">👀 答えを見る</button></div>' +
       '<p class="sk-hinttext" hidden></p>';
     var $ = function (c) { return root.querySelector(c); };
     var svg = $('.sk-svg'), sel = $('.sk-sel');
@@ -456,7 +466,7 @@
       st.prob = pr;
       st.objs = pr.objs.slice();
       st.history = [];
-      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null;
+      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null; st.showAns = false;
       $('.sk-title').textContent = '📐 ' + def.title + 'を作図しよう！';
       $('.sk-hinttext').hidden = true;
       $('.sk-hinttext').textContent = pr.hint;
@@ -609,6 +619,16 @@
       else if (b.classList.contains('sk-reset')) start(st.pid);
       else if (b.classList.contains('sk-new')) start(sel.value);
       else if (b.classList.contains('sk-hint')) $('.sk-hinttext').hidden = !$('.sk-hinttext').hidden;
+      else if (b.classList.contains('sk-show')) {
+        // 👀 答えを見る(2026-11-22 先生の指示)：かき方がわからないときに、できあがりの図と手順を見せる。見たらこの図ではMPなし。
+        if (st.showAns) return;
+        if (!st.done && !window.confirm('答えを見ると、この図ではMPがもらえません。答えを見ますか？')) return;
+        st.showAns = true; st.pick = null; st.protBase = null;
+        var wasDone = st.done; st.done = true;
+        $('.sk-hinttext').hidden = false;
+        if (!wasDone) msg('👀 答えの図を緑色で出したよ（下の手順もいっしょに見てね）。このとおりにかけるか、「🔄 別の図」で次の問題にチャレンジしよう。');
+        draw();
+      }
     });
     sel.addEventListener('change', function () { start(sel.value); });
 
@@ -627,6 +647,24 @@
         var o = protPoint_(pf, d, PROT_R), i = protPoint_(pf, d, PROT_R - (d % 10 ? 6 : 11));
         h += '<line x1="' + o.x.toFixed(1) + '" y1="' + o.y.toFixed(1) + '" x2="' + i.x.toFixed(1) + '" y2="' + i.y.toFixed(1) + '" stroke="#0284c7" stroke-width="1"/>';
         if (d % 10 === 0) { var tp = protPoint_(pf, d, PROT_R - 22); h += '<text x="' + tp.x.toFixed(1) + '" y="' + (tp.y + 3).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="#0369a1">' + d + '</text>'; }
+      }
+      return h;
+    }
+
+    function answerSvg_() {
+      var pr = st.prob, T = pr.target, h = '', G = '#16a34a';
+      (pr.sol || []).forEach(function (o) {
+        if (o.type === 'seg') h += '<line x1="' + o.p.x.toFixed(1) + '" y1="' + o.p.y.toFixed(1) + '" x2="' + o.q.x.toFixed(1) + '" y2="' + o.q.y.toFixed(1) + '" stroke="' + G + '" stroke-width="' + (o.thin ? 1.5 : 3) + '"' + (o.thin ? ' stroke-dasharray="6 4"' : '') + '/>';
+        else if (o.type === 'arc') {
+          var a0 = (o.a0 - o.span) * Math.PI / 180, a1 = (o.a0 + o.span) * Math.PI / 180;
+          h += '<path d="M' + (o.c.x + o.r * Math.cos(a0)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(a0)).toFixed(1) + ' A' + o.r.toFixed(1) + ' ' + o.r.toFixed(1) + ' 0 0 1 ' + (o.c.x + o.r * Math.cos(a1)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(a1)).toFixed(1) + '" fill="none" stroke="' + G + '" stroke-width="1.8" stroke-dasharray="6 4"/>';
+        }
+      });
+      if (T.kind === 'line') T.lines.forEach(function (L) { h += '<line x1="' + (L.p.x - 1000 * L.u.x).toFixed(1) + '" y1="' + (L.p.y - 1000 * L.u.y).toFixed(1) + '" x2="' + (L.p.x + 1000 * L.u.x).toFixed(1) + '" y2="' + (L.p.y + 1000 * L.u.y).toFixed(1) + '" stroke="' + G + '" stroke-width="3" opacity="0.85"/>'; });
+      else if (T.kind === 'circle') h += '<circle cx="' + T.c.x.toFixed(1) + '" cy="' + T.c.y.toFixed(1) + '" r="' + T.r.toFixed(1) + '" fill="none" stroke="' + G + '" stroke-width="3" opacity="0.85"/>';
+      else if (T.kind === 'point') {
+        h += '<circle cx="' + T.p.x.toFixed(1) + '" cy="' + T.p.y.toFixed(1) + '" r="8" fill="none" stroke="' + G + '" stroke-width="3"/><circle cx="' + T.p.x.toFixed(1) + '" cy="' + T.p.y.toFixed(1) + '" r="3.5" fill="' + G + '"/>';
+        h += '<text x="' + (T.p.x + 10).toFixed(1) + '" y="' + (T.p.y - 10).toFixed(1) + '" font-size="15" font-weight="bold" fill="' + G + '">' + (T.label || '答え') + '</text>';
       }
       return h;
     }
@@ -655,6 +693,7 @@
       // 3分の2の円で「同じ大きさ」：中心をえらんだら、かける大きさを点線で見せる(2026-11-20 先生の指示)
       if (st.arcMode && st.tool === 'same' && st.pick && st.lastR) h += '<circle cx="' + st.pick.x.toFixed(1) + '" cy="' + st.pick.y.toFixed(1) + '" r="' + st.lastR.toFixed(1) + '" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5 5"/>';
       if (st.tool === 'prot' && st.pick && st.protBase) h += protSvg_();
+      if (st.showAns) h += answerSvg_();
       st.points.forEach(function (p) {
         var on = st.pick && dist(st.pick, p) < 0.5;
         if (p.tick && !on) { h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.4" fill="#854d0e"/>'; return; }
