@@ -21953,9 +21953,9 @@
   const USA_CROSSING_CORRECT_PER_STATE_ = 5;
   const USA_CROSSING_HP_REWARD_ = 1000;
   const USA_CROSSING_STATE_MP_ = 1; // 1州進むごとのMP(1日の上限とは別)
-  // 周回ごとの達成のごほうび(2026-11-16 先生の指示)。HP+1000は毎周。宝石は★3(ルビー/エメラルド/サファイア)からランダムで、
+  // 周回ごとの達成のごほうび(2026-11-16 先生の指示)。HP+1000は1周目だけ(2026-11-21〜)。宝石は★3(ルビー/エメラルド/サファイア)からランダムで、
   // 宝石がもらえる周だけ謎のおばさんが出る。'random'はランク(銅/銀/金/虹色)ランダム。seed=種や実をランダムに1つ(サーバーで決める)。
-  // 10周目=ごほうびガチャ3回(2026-11-19 先生の指示)。11周目以降は考え中(ごほうびは州ごとの1MPとHP+1000だけ)。
+  // 10周目=ごほうびガチャ3回(2026-11-19 先生の指示)。(その後、2周目からはガチャに変更。HP+1000は1周目だけ)。
   const USA_CROSSING_LAP_REWARDS_ = {
     1: { gem: true, chest: 'bronze' },
   };
@@ -24409,7 +24409,7 @@
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
         + '理科の問題に5問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
-        + '50州を制覇すると、最後にHP+1000と、宝石・宝箱・鍵・種や実などのごほうびがもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。'
+        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわなもあるので気をつけて！別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
@@ -29450,7 +29450,7 @@
     return `<div class="item-gain-banner">😮‍💨 怪しい誘いを断った。先へ進もう。</div>`;
   }
 
-  // 50州すべて制覇したときの報酬処理：HP+1000、★3の宝石(ランダム)、宝箱
+  // 50州すべて制覇したときの報酬処理：HP+1000(1周目だけ)、★3の宝石(ランダム)、宝箱
   // (ランク問わずランダム)。成功は一度きり(富士登山・お鉢巡りと同じく、
   // 一度trueになったら戻らない実績フラグとして記録し、以後は再挑戦不可)。
   function finishUsaCrossing_() {
@@ -29464,9 +29464,10 @@
     var lap = state.usaCrossingLaps;
     var rw = USA_CROSSING_LAP_REWARDS_[lap] || {};
     var pickTier = function (t) { return t === 'random' ? USA_CROSSING_CHEST_TIERS_[randInt(0, USA_CROSSING_CHEST_TIERS_.length - 1)] : t; };
-    state.hp = (Number(state.hp) || 0) + USA_CROSSING_HP_REWARD_;
+    // HP+1000は1周目だけ(2026-11-21 先生の指示)。2周目からはごほうびガチャ。
+    if (lap === 1) state.hp = (Number(state.hp) || 0) + USA_CROSSING_HP_REWARD_;
     var html = '<div class="win-banner">🎉🇺🇸 アメリカ横断 ' + lap + '周目 達成！🎉</div>'
-      + '<div class="item-gain-banner">💪 HPが' + USA_CROSSING_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>';
+      + (lap === 1 ? '<div class="item-gain-banner">💪 HPが' + USA_CROSSING_HP_REWARD_ + '増えた！（現在HP: ' + state.hp + '）</div>' : '');
     state.gemItems = state.gemItems || {};
     state.treasureItems = state.treasureItems || {};
     var gemId = null, gemDef = null;
@@ -29704,7 +29705,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇するとHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし1日1周まで。今日1周したら、次の周は明日から)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし1日1周まで。今日1周したら、次の周は明日から)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
