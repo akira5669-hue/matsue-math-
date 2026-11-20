@@ -132,7 +132,7 @@
           if (ay < 1.5 || ay > 5.4) continue;
           var t = elemTri_(bc, ax, ay, { AB: c, AC: b, BC: bc });
           if (!t) continue;
-          t.hint = '① 「🧭 コンパス」で、ものさしの0の点をタップしてから、' + fmtCm(c) + 'の目もりをタップ（コンパスに' + fmtCm(c) + 'をとる）。② 「⭕ 同じ大きさの円」で点Bをタップ。③ 同じように、ものさしで' + fmtCm(b) + 'をとって、点Cを中心に円をかく。④ 2つの円が交わった点（上のほう）がA。';
+          t.hint = '① 「🧭 コンパス」で、ものさしの0の点をタップしてから、' + fmtCm(c) + 'の目もりをタップ（コンパスが' + fmtCm(c) + 'に開く。円はまだかかれない）。② 点Bをタップして円をかく。③ 同じように、コンパスでものさしの0→' + fmtCm(b) + 'をタップして、点Cをタップ。④ 2つの円が交わった点（上のほう）がA。';
           return t;
         }
       },
@@ -146,7 +146,7 @@
           if (ay < 1.5 || ay > 5.4) continue;
           var t = elemTri_(bc, ax, ay, { AB: c, BC: bc, angB: deg }, true);
           if (!t) continue;
-          t.hint = '① 「📐 分度器」で、点B（中心）→点C（0°の線）の順にタップして、' + deg + '°の目もりをタップして印をつける。② 「📏 定規」で、点Bと印を結ぶ。③ 「🧭 コンパス」で、ものさしの0の点→' + fmtCm(c) + 'の目もりをタップ。④ 「⭕ 同じ大きさの円」で点Bをタップ。⑤ 直線と円が交わった点がA。';
+          t.hint = '① 「📐 分度器」で、点B（中心）→点C（0°の線）の順にタップして、' + deg + '°の目もりをタップして印をつける。② 「📏 定規」で、点Bと印を結ぶ。③ 「🧭 コンパス」で、ものさしの0の点→' + fmtCm(c) + 'の目もりをタップ（コンパスが開く）。④ 点Bをタップして円をかく。⑤ 直線と円が交わった点がA。';
           return t;
         }
       },
@@ -539,8 +539,16 @@
         if (!st.pick) {
           if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
           st.pick = sn;
+          if (sn.tick) { msg('📏 ものさしで長さをはかるよ。次に、はかりたい長さの目もりをタップしてね（円はかかれないよ）。'); draw(); return; }
           msg('次に、円の半径をきめる場所をタップしてね。' + (st.lastR ? '1つ前の円と同じ大きさにしたいときは「⭕ 同じ大きさの円」を使ってね。' : ''));
           draw();
+        } else if (st.pick.tick) {
+          // ものさしで長さをとる(2026-11-22 先生「長さをとる前に勝手に円がかかれる」)：円はかかずに、コンパスをその長さに開くだけ。
+          if (!sn || !sn.tick || dist(sn, st.pick) < 1) { msg('ものさしの目もり（茶色の点）をタップしてね。'); return; }
+          var len = dist(sn, st.pick);
+          st.pick = null; st.lastR = len;
+          setTool('same');
+          msg('🧭 コンパスを<b>' + fmtCm(len / CM) + '</b>に開いたよ。次に、円の中心にする点（BやC）をタップしてね' + (st.arcMode ? '（そのあと、弧をかきたい側をタップ）' : '') + '。');
         } else {
           var to = sn || p, r = dist(st.pick, to), snapped = false;
           if (r < 8) { msg('半径が小さすぎます。もう少しはなれた場所をタップしてね。'); return; }
@@ -556,6 +564,7 @@
         }
       } else if (st.tool === 'ruler') {
         if (!sn) { msg('定規は、点（●）の上をタップしてね。'); return; }
+        if (sn.tick) { msg('ものさしの目もりは、コンパスで長さをはかるときに使うよ。定規は、三角形の点（●）をタップしてね。'); return; }
         if (!st.pick) { st.pick = sn; msg('2つめの点をタップしてね。'); draw(); return; }
         if (dist(st.pick, sn) < 1) { msg('ちがう点をタップしてね。'); return; }
         var a = st.pick; st.pick = null;
@@ -564,6 +573,7 @@
       } else if (st.tool === 'same') {
         // ⭕ 同じ大きさの円(2026-11-19 先生の指示)：点をタップするだけで、1つ前にかいた円と同じ半径の円をかく
         if (!st.lastR) { msg('まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。'); return; }
+        if (sn && sn.tick && !st.pick) { msg('円の中心は、三角形の点（BやC）をタップしてね。'); return; }
         if (st.arcMode) {
           // 3分の2の円：①中心の点 → ②弧をかきたい側をタップ
           if (!st.pick) {
