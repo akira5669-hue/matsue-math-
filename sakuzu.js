@@ -5,7 +5,7 @@
    - 定規：2つの点をタップすると、その2点を通る直線を引く。
    - 答えの点：答えが「点」の問題で、作図してできた点をタップして答える。
    - 点は、はじめからある点と、線や円が交わる点(交点)だけ。タップすると一番近い点に吸いつく。
-   レベル：小学生・基本・標準・入試。答えの種類(target.kind)は line(直線)・point(点)・circle(円)。
+   レベル：小学生(合同な三角形の作図。ものさし・分度器つき)・基本・標準・入試。答えの種類(target.kind)は line(直線)・point(点)・circle(円)。
    app.js から window.Sakuzu.mount(要素, { onCorrect }) で使う。 */
 (function () {
   'use strict';
@@ -62,102 +62,99 @@
     var X = interCC({ c: c1, r: r1 }, { c: c2, r: r2 });
     return X[0].y < X[1].y ? X[0] : X[1];
   }
+  // ---- 小学生の三角形の作図の道具 ----
+  var CM = 34, RULER_X = 28, RULER_Y = 412, RULER_CM = 9, BASE_Y = 300;
+  function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function fmtCm(v) { return (Math.round(v * 10) / 10) + 'cm'; }
+  // ものさし：0.5cmごとに点(目もり)をおく。コンパスの中心を0に、半径を目もりにタップして長さをとる。
+  function rulerParts() {
+    var pts = [], d = '<rect x="' + (RULER_X - 12) + '" y="' + (RULER_Y - 3) + '" width="' + (RULER_CM * CM + 24) + '" height="32" rx="4" fill="#fef9c3" stroke="#ca8a04"/>';
+    for (var i = 0; i <= RULER_CM * 2; i++) {
+      var x = RULER_X + i * CM / 2;
+      pts.push({ x: x, y: RULER_Y, tick: true });
+      d += '<line x1="' + x.toFixed(1) + '" y1="' + RULER_Y + '" x2="' + x.toFixed(1) + '" y2="' + (RULER_Y + (i % 2 ? 7 : 12)) + '" stroke="#854d0e" stroke-width="1"/>';
+      if (i % 2 === 0) d += '<text x="' + x.toFixed(1) + '" y="' + (RULER_Y + 25) + '" font-size="10" text-anchor="middle" fill="#854d0e">' + (i / 2) + '</text>';
+    }
+    d += '<text x="' + (RULER_X + RULER_CM * CM + 4) + '" y="' + (RULER_Y + 25) + '" font-size="9" fill="#854d0e">cm</text>';
+    return { pts: pts, deco: d };
+  }
+  // 見本の三角形(上に小さく)と、作図する辺BC。ax, ay は Bから見たAの位置(cm、上が+)。
+  function elemTri_(bc, ax, ay, given, useProt) {
+    var B = { x: (W - bc * CM) / 2 + rnd(-12, 12), y: BASE_Y, label: 'B' }, C = { x: 0, y: BASE_Y, label: 'C' };
+    C.x = B.x + bc * CM;
+    var A = { x: B.x + ax * CM, y: BASE_Y - ay * CM };
+    if (A.x < 14 || A.x > W - 14) return null;
+    // 見本(1cm=13px)
+    var s = 13, rb = { x: W / 2 - bc * s / 2, y: 22 }, rc = { x: W / 2 + bc * s / 2, y: 22 }, ra = { x: rb.x + ax * s, y: 22 - ay * s };
+    var g = { x: (ra.x + rb.x + rc.x) / 3, y: (ra.y + rb.y + rc.y) / 3 };
+    function lab(p, q, txt) { var m = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, u = unit(m.x - g.x, m.y - g.y); return '<text x="' + (m.x + u.x * 14).toFixed(1) + '" y="' + (m.y + u.y * 14 + 4).toFixed(1) + '" font-size="11" text-anchor="middle" fill="#1c2127">' + txt + '</text>'; }
+    function vlab(p, txt) { var u = unit(p.x - g.x, p.y - g.y); return '<text x="' + (p.x + u.x * 10).toFixed(1) + '" y="' + (p.y + u.y * 10 + 4).toFixed(1) + '" font-size="11" font-weight="bold" text-anchor="middle" fill="#1c2127">' + txt + '</text>'; }
+    function alab(p, q1, q2, txt) { var u1 = unit(q1.x - p.x, q1.y - p.y), u2 = unit(q2.x - p.x, q2.y - p.y), u = unit(u1.x + u2.x, u1.y + u2.y); return '<text x="' + (p.x + u.x * 22).toFixed(1) + '" y="' + (p.y + u.y * 22 + 4).toFixed(1) + '" font-size="10" text-anchor="middle" fill="#c2410c">' + txt + '</text>'; }
+    var d = '<text x="8" y="' + (VY + 16) + '" font-size="11" fill="#475569">見本（この三角形と合同な三角形をかこう）</text>';
+    d += '<path d="M' + ra.x.toFixed(1) + ' ' + ra.y.toFixed(1) + ' L' + rb.x.toFixed(1) + ' ' + rb.y.toFixed(1) + ' L' + rc.x.toFixed(1) + ' ' + rc.y.toFixed(1) + ' Z" fill="#f1f5f9" stroke="#475569" stroke-width="1.5"/>';
+    d += vlab(ra, 'A') + vlab(rb, 'B') + vlab(rc, 'C');
+    if (given.AB) d += lab(ra, rb, fmtCm(given.AB));
+    if (given.AC) d += lab(ra, rc, fmtCm(given.AC));
+    d += lab(rb, rc, fmtCm(bc));
+    if (given.angB) d += alab(rb, ra, rc, given.angB + '°');
+    if (given.angC) d += alab(rc, ra, rb, given.angC + '°');
+    d += '<line x1="0" y1="52" x2="' + W + '" y2="52" stroke="#cbd5e1" stroke-dasharray="4 4"/>';
+    d += '<text x="' + ((B.x + C.x) / 2).toFixed(1) + '" y="' + (BASE_Y + 20) + '" font-size="12" text-anchor="middle" fill="#1c2127">' + fmtCm(bc) + '</text>';
+    var ru = rulerParts();
+    return {
+      points: [B, C].concat(ru.pts), objs: [{ type: 'segment', p: B, q: C }], deco: d + ru.deco, protractor: !!useProt,
+      target: { kind: 'point', p: A },
+      ask: '下のものさし' + (useProt ? 'と「📐 分度器」' : '') + 'を使って作図し、できた頂点Aを「📍 答えの点」でタップしてね。',
+    };
+  }
   var PROBLEMS = [
-    // ===== 小学生(2026-11-21 先生の指示)：コンパスで長さを写す・三角形をかく =====
+    // ===== 小学生(2026-11-22 先生の指示で、合同な三角形の作図(小5)に変更) =====
+    // 辺BCはかいてある。ものさし(0.5cmごとの目もり)でコンパスに長さをとり、分度器で角をはかって、頂点Aをかく。
     {
-      id: 'elemCircle', level: 'elem', title: '点Oを中心にして、半径が線分PQの長さの円',
+      id: 'elemTri3', level: 'elem', title: '3つの辺の長さがわかる三角形ABC',
       make: function () {
-        var len = rnd(70, 100), s = lenSeg(len, rnd(15, 40));
-        var O = { x: rnd(140, 220), y: rnd(210, 250), label: 'O' };
-        return {
-          points: [O, s.p, s.q], objs: [{ type: 'segment', p: s.p, q: s.q }],
-          target: { kind: 'circle', c: O, r: len },
-          hint: '① コンパスで、点Pを中心にして点Qをタップすると、PQの長さの円がかける（これでコンパスがPQの長さになる）。② 「⭕ 同じ大きさの円」で点Oをタップする。',
-        };
+        for (var k = 0; k < 200; k++) {
+          var bc = 0.5 * randInt(10, 14), c = 0.5 * randInt(7, 13), b = 0.5 * randInt(7, 13);
+          if (Math.abs(b - c) < 0.5) continue;
+          var ax = (c * c - b * b + bc * bc) / (2 * bc), ay2 = c * c - ax * ax;
+          if (ay2 <= 0) continue;
+          var ay = Math.sqrt(ay2);
+          if (ay < 1.5 || ay > 5.4) continue;
+          var t = elemTri_(bc, ax, ay, { AB: c, AC: b, BC: bc });
+          if (!t) continue;
+          t.hint = '① 「🧭 コンパス」で、ものさしの0の点をタップしてから、' + fmtCm(c) + 'の目もりをタップ（コンパスに' + fmtCm(c) + 'をとる）。② 「⭕ 同じ大きさの円」で点Bをタップ。③ 同じように、ものさしで' + fmtCm(b) + 'をとって、点Cを中心に円をかく。④ 2つの円が交わった点（上のほう）がA。';
+          return t;
+        }
       },
     },
     {
-      id: 'elemCopy', level: 'elem', title: '直線ℓの上で、点Aから右へ、線分PQと同じ長さのところにある点B',
+      id: 'elemTriSAS', level: 'elem', title: '2つの辺とその間の角がわかる三角形ABC',
       make: function () {
-        var L = lineAcross(rnd(250, 280), rnd(-0.06, 0.06));
-        var A = onLine(L, rnd(60, 100)); A.label = 'A';
-        var len = rnd(130, 180), s = lenSeg(len, rnd(15, 40));
-        var u = unit(L.q.x - L.p.x, L.q.y - L.p.y);
-        return {
-          points: [A, s.p, s.q], objs: [L, { type: 'segment', p: s.p, q: s.q }],
-          target: { kind: 'point', p: { x: A.x + len * u.x, y: A.y + len * u.y } },
-          ask: '作図してできた点Bを「📍 答えの点」でタップしてね。',
-          hint: 'コンパスは長さを写す道具。① コンパスで、点Pを中心にして点Qをタップする。② 「⭕ 同じ大きさの円」で点Aをタップする。③ 円と直線ℓが交わった点のうち、右のほうがB。',
-        };
+        for (var k = 0; k < 200; k++) {
+          var bc = 0.5 * randInt(10, 14), deg = 5 * randInt(6, 14), c = 0.5 * randInt(7, 12);
+          var ax = c * Math.cos(deg * Math.PI / 180), ay = c * Math.sin(deg * Math.PI / 180);
+          if (ay < 1.5 || ay > 5.4) continue;
+          var t = elemTri_(bc, ax, ay, { AB: c, BC: bc, angB: deg }, true);
+          if (!t) continue;
+          t.hint = '① 「📐 分度器」で、点B（中心）→点C（0°の線）の順にタップして、' + deg + '°の目もりをタップして印をつける。② 「📏 定規」で、点Bと印を結ぶ。③ 「🧭 コンパス」で、ものさしの0の点→' + fmtCm(c) + 'の目もりをタップ。④ 「⭕ 同じ大きさの円」で点Bをタップ。⑤ 直線と円が交わった点がA。';
+          return t;
+        }
       },
     },
     {
-      id: 'elemEqTri', level: 'elem', title: '線分ABを1辺とする正三角形ABCの頂点C（ABの上側）',
+      id: 'elemTriASA', level: 'elem', title: '1つの辺とその両はしの角がわかる三角形ABC',
       make: function () {
-        var A = { x: rnd(80, 110), y: rnd(250, 280), label: 'A' }, len = rnd(150, 180), deg = rnd(-8, 8);
-        var B = at(A, len, deg, 'B');
-        return {
-          points: [A, B], objs: [{ type: 'segment', p: A, q: B }],
-          target: { kind: 'point', p: at(A, len, deg + 60) },
-          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
-          hint: '正三角形は3つの辺の長さが同じ。① コンパスで、点Aを中心にして点Bをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Bをタップする。③ 2つの円が交わった点のうち、上のほうがC。',
-        };
-      },
-    },
-    {
-      id: 'elemIso', level: 'elem', title: '底辺がABで、残りの2辺が線分PQと同じ長さの二等辺三角形ABCの頂点C（ABの上側）',
-      make: function () {
-        var A = { x: rnd(90, 120), y: rnd(270, 300), label: 'A' }, base = rnd(120, 150), deg = rnd(-6, 6);
-        var B = at(A, base, deg, 'B');
-        var len = rnd(base * 0.75, base * 0.95), s = lenSeg(len, rnd(15, 35));
-        return {
-          points: [A, B, s.p, s.q], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: s.p, q: s.q }],
-          target: { kind: 'point', p: upperMeet(A, len, B, len) },
-          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
-          hint: '二等辺三角形は2つの辺の長さが同じ。① コンパスで、点Pを中心にして点Qをタップする（PQの長さ）。② 「⭕ 同じ大きさの円」で点Aをタップ、続けて点Bもタップする。③ 2つの円が交わった点のうち、上のほうがC。',
-        };
-      },
-    },
-    {
-      id: 'elemTri3', level: 'elem', title: '3つの辺の長さがAB・PQ・RSの三角形ABCの頂点C（AC＝PQ、BC＝RS、ABの上側）',
-      make: function () {
-        var A = { x: rnd(70, 100), y: rnd(280, 310), label: 'A' }, base = rnd(160, 190), deg = rnd(-5, 5);
-        var B = at(A, base, deg, 'B');
-        var p, q;
-        do { p = rnd(base * 0.5, base * 0.85); q = rnd(base * 0.5, base * 0.85); } while (p + q < base + 40 || Math.abs(p - q) < 15);
-        var s1 = lenSeg(p, rnd(10, 25)), s2 = lenSeg(q, rnd(55, 70), 'R', 'S');
-        return {
-          points: [A, B, s1.p, s1.q, s2.p, s2.q], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: s1.p, q: s1.q }, { type: 'segment', p: s2.p, q: s2.q }],
-          target: { kind: 'point', p: upperMeet(A, p, B, q) },
-          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
-          hint: '① コンパスで、点Pを中心にして点Qをタップ（PQの長さ）。② 「⭕ 同じ大きさの円」で点Aをタップ。③ コンパスで、点Rを中心にして点Sをタップ（RSの長さ）。④ 「⭕ 同じ大きさの円」で点Bをタップ。⑤ Aの円とBの円が交わった点のうち、上のほうがC。（P・Rを中心にかいた円はじゃまなら気にしなくてよい）',
-        };
-      },
-    },
-    {
-      id: 'elemRhombus', level: 'elem', title: 'ひし形ABCDの頂点C（AB＝ADの2辺がかいてある）',
-      make: function () {
-        var A = { x: rnd(60, 90), y: rnd(250, 280), label: 'A' }, len = rnd(120, 150), d1 = rnd(-12, 0), d2 = d1 + rnd(50, 70);
-        var B = at(A, len, d1, 'B'), D = at(A, len, d2, 'D');
-        return {
-          points: [A, B, D], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: A, q: D }],
-          target: { kind: 'point', p: { x: B.x + D.x - A.x, y: B.y + D.y - A.y } },
-          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
-          hint: 'ひし形は4つの辺の長さがぜんぶ同じ。① コンパスで、点Bを中心にして点Aをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Dをタップする。③ 2つの円が交わった点のうち、Aではないほうが C。',
-        };
-      },
-    },
-    {
-      id: 'elemHexagon', level: 'elem', title: '円Oの周上に頂点がある正六角形ABCDEFの頂点C（Aから左回りに2つめ）',
-      make: function () {
-        var O = { x: rnd(170, 190), y: rnd(200, 220), label: 'O' }, r = rnd(100, 115), d = rnd(-20, 20);
-        var A = at(O, r, d, 'A');
-        return {
-          points: [O, A], objs: [{ type: 'circle', c: O, r: r, given: true }],
-          target: { kind: 'point', p: at(O, r, d + 120) },
-          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
-          hint: '正六角形の1辺の長さは、円の半径と同じ。① コンパスで、点Aを中心にして点Oをタップする（半径と同じ長さ）。② 円Oと交わった点のうち、左回り（上のほう）がB。③ 「⭕ 同じ大きさの円」で点Bをタップする。④ 円Oと交わった点のうち、Aではないほうが C。',
-        };
+        for (var k = 0; k < 200; k++) {
+          var bc = 0.5 * randInt(10, 14), db = 5 * randInt(6, 14), dc = 5 * randInt(6, 14);
+          if (db + dc > 140 || db === dc) continue;
+          var tb = Math.tan(db * Math.PI / 180), tc = Math.tan(dc * Math.PI / 180);
+          var ax = bc * tc / (tb + tc), ay = ax * tb;
+          if (ay < 1.5 || ay > 5.4) continue;
+          var t = elemTri_(bc, ax, ay, { BC: bc, angB: db, angC: dc }, true);
+          if (!t) continue;
+          t.hint = '① 「📐 分度器」で、点B（中心）→点C（0°の線）の順にタップして、' + db + '°の印をつける。② 「📏 定規」で点Bと印を結ぶ。③ 「📐 分度器」で、点C（中心）→点B（0°の線）の順にタップして、' + dc + '°の印をつける。④ 「📏 定規」で点Cと印を結ぶ。⑤ 2本の直線が交わった点がA。';
+          return t;
+        }
       },
     },
     // ===== 基本 =====
@@ -407,6 +404,7 @@
       '<div class="sk-tools">' +
       '<button type="button" class="ghost-btn sk-tool" data-t="compass">🧭 コンパス</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="ruler">📏 定規</button>' +
+      '<button type="button" class="ghost-btn sk-tool" data-t="prot" hidden>📐 分度器</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="answer" hidden>📍 答えの点</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="same">⭕ 同じ大きさの円</button>' +
       '</div>' +
@@ -437,23 +435,27 @@
       $('.sk-hinttext').hidden = true;
       $('.sk-hinttext').textContent = pr.hint;
       $('.sk-tool[data-t="answer"]').hidden = pr.target.kind !== 'point';
+      $('.sk-tool[data-t="prot"]').hidden = !pr.protractor;
       setTool('compass');
       recompute();
       msg('コンパスで円をかこう。まず、円の中心にする点をタップしてね。' + (pr.ask ? '<br>' + pr.ask : ''));
     }
     function msg(t) { $('.sk-msg').innerHTML = t; }
     function setTool(t) {
-      st.tool = t; st.pick = null;
+      st.tool = t; st.pick = null; st.protBase = null;
       root.querySelectorAll('.sk-tool').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-t') === t); });
       if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。'
         : t === 'same' ? (st.lastR ? (st.arcMode ? '① 中心にする点をタップ → ② 弧をかきたい側をタップすると、<b>1つ前と同じ大きさの3分の2の円</b>がかけるよ。' : '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。') : 'まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。')
+        : t === 'prot' ? '📐 分度器：まず、角の頂点（分度器の中心にする点）をタップしてね。'
         : '答えだと思う点（作図してできた点）をタップしてね。');
       draw();
     }
     function recompute() {
-      var pts = st.prob.points.map(function (p) { return { x: p.x, y: p.y, label: p.label, given: true }; });
+      var pts = st.prob.points.map(function (p) { return { x: p.x, y: p.y, label: p.label, given: true, tick: p.tick }; });
+      st.objs.forEach(function (o) { if (o.type === 'mark') add(pts, o.p); });
       st.prob.objs.forEach(function (o) { if (o.type === 'segment') { [o.p, o.q].forEach(function (e) { add(pts, e); }); } });
       for (var i = 0; i < st.objs.length; i++) for (var j = i + 1; j < st.objs.length; j++) {
+        if (st.objs[i].type === 'mark' || st.objs[j].type === 'mark') continue;
         intersect(st.objs[i], st.objs[j]).forEach(function (p) { if (p.x > -20 && p.x < W + 20 && p.y > VY - 20 && p.y < VY + VH + 20) add(pts, p); });
       }
       st.points = pts;
@@ -541,6 +543,26 @@
         if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
         push({ type: 'circle', c: { x: sn.x, y: sn.y }, r: st.lastR });
         if (!st.done) msg('1つ前の円と同じ大きさの円をかいたよ。続けて点をタップすると、また同じ大きさの円がかけるよ。');
+      } else if (st.tool === 'prot') {
+        // 📐 分度器(2026-11-22)：①頂点 ②0°の線を合わせる点 ③目もりをタップすると、その角度(5°ごと)の所に印をつける
+        if (!st.pick) {
+          if (!sn) { msg('分度器の中心は、点（●）の上をタップしてね。'); return; }
+          st.pick = sn; st.protBase = null; msg('次に、分度器の0°の線を合わせる辺の、もう一方のはしの点をタップしてね。'); draw(); return;
+        }
+        if (!st.protBase) {
+          if (!sn || dist(sn, st.pick) < 1) { msg('0°の線を合わせる点（●）をタップしてね。'); return; }
+          st.protBase = sn; msg('分度器を置いたよ。印をつけたい角度の目もりをタップしてね。'); draw(); return;
+        }
+        var pf = protFrame_();
+        var ang = Math.atan2(p.y - st.pick.y, p.x - st.pick.x) - pf.phi;
+        ang = pf.sgn * ang * 180 / Math.PI;
+        while (ang < -90) ang += 360; while (ang > 270) ang -= 360;
+        if (ang < 0 || ang > 180) { msg('分度器の上（半円の中）の目もりをタップしてね。'); return; }
+        var deg = Math.max(5, Math.min(175, Math.round(ang / 5) * 5));
+        var mp = protPoint_(pf, deg, PROT_R);
+        var v = st.pick; st.pick = null; st.protBase = null;
+        push({ type: 'mark', p: mp, deg: deg, v: { x: v.x, y: v.y } });
+        if (!st.done) msg(deg + '°のところに印をつけたよ。「📏 定規」で、頂点と印を結んでね。（ちがったら「↩️ 1つもどす」）');
       } else {
         if (!sn) { msg('点（●）の上をタップしてね。'); return; }
         if (dist(sn, st.prob.target.p) < TOL) { st.answerPt = sn; correct(null); }
@@ -553,7 +575,7 @@
       else if (b.classList.contains('sk-arcmode')) setArcMode(b.getAttribute('data-a') === '1');
       else if (b.classList.contains('sk-tool')) setTool(b.getAttribute('data-t'));
       else if (b.classList.contains('sk-undo')) {
-        if (st.pick) { st.pick = null; draw(); return; }
+        if (st.pick) { st.pick = null; st.protBase = null; draw(); return; }
         var o = st.history.pop(); if (!o) return;
         st.objs.splice(st.objs.lastIndexOf(o), 1); st.done = false; st.answerPt = null;
         recompute(); msg('1つもどしたよ。');
@@ -564,15 +586,35 @@
     });
     sel.addEventListener('change', function () { start(sel.value); });
 
+    // 分度器の向き：中心st.pick、0°の線はst.protBaseの方向。半円は画面の上がわ(三角形の頂点Aのある側)。
+    var PROT_R = 120;
+    function protFrame_() {
+      var phi = Math.atan2(st.protBase.y - st.pick.y, st.protBase.x - st.pick.x);
+      var sgn = Math.sin(phi - Math.PI / 2) < 0 ? -1 : 1;
+      return { phi: phi, sgn: sgn, c: st.pick };
+    }
+    function protPoint_(pf, deg, r) { var t = pf.phi + pf.sgn * deg * Math.PI / 180; return { x: pf.c.x + r * Math.cos(t), y: pf.c.y + r * Math.sin(t) }; }
+    function protSvg_() {
+      var pf = protFrame_(), h = '', a = protPoint_(pf, 0, PROT_R), b = protPoint_(pf, 180, PROT_R);
+      h += '<path d="M' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) + ' A' + PROT_R + ' ' + PROT_R + ' 0 0 ' + (pf.sgn > 0 ? 1 : 0) + ' ' + b.x.toFixed(1) + ' ' + b.y.toFixed(1) + ' Z" fill="rgba(56,189,248,0.16)" stroke="#0284c7" stroke-width="1.3"/>';
+      for (var d = 0; d <= 180; d += 5) {
+        var o = protPoint_(pf, d, PROT_R), i = protPoint_(pf, d, PROT_R - (d % 10 ? 6 : 11));
+        h += '<line x1="' + o.x.toFixed(1) + '" y1="' + o.y.toFixed(1) + '" x2="' + i.x.toFixed(1) + '" y2="' + i.y.toFixed(1) + '" stroke="#0284c7" stroke-width="1"/>';
+        if (d % 10 === 0) { var tp = protPoint_(pf, d, PROT_R - 22); h += '<text x="' + tp.x.toFixed(1) + '" y="' + (tp.y + 3).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="#0369a1">' + d + '</text>'; }
+      }
+      return h;
+    }
+
     // ---- 描く ----
     function ext(o) {
       var L = lineOf(o), a = o.type === 'line' ? -1000 : L.min, b = o.type === 'segment' ? L.max : 1000;
       return [L.p.x + a * L.u.x, L.p.y + a * L.u.y, L.p.x + b * L.u.x, L.p.y + b * L.u.y];
     }
     function draw() {
-      var h = '';
+      var h = (st.prob && st.prob.deco) || '';
       st.objs.forEach(function (o) {
         var good = st.done && o === st.correctObj;
+        if (o.type === 'mark') { h += '<text x="' + (o.p.x + 6).toFixed(1) + '" y="' + (o.p.y - 6).toFixed(1) + '" font-size="11" fill="#c2410c" font-weight="bold">' + o.deg + '°</text>'; return; }
         if (o.type === 'circle' && o.arc) {
           var s0 = o.a0 - ARC_HALF, s1 = o.a0 + ARC_HALF;
           h += '<path d="M' + (o.c.x + o.r * Math.cos(s0)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(s0)).toFixed(1) + ' A' + o.r.toFixed(1) + ' ' + o.r.toFixed(1) + ' 0 1 1 ' + (o.c.x + o.r * Math.cos(s1)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(s1)).toFixed(1) + '" fill="none" stroke="' + (good ? '#18a058' : '#2f6fd6') + '" stroke-width="' + (good ? 3 : 1.2) + '" opacity="' + (good ? 1 : 0.75) + '"/>';
@@ -586,8 +628,10 @@
       });
       // 3分の2の円で「同じ大きさ」：中心をえらんだら、かける大きさを点線で見せる(2026-11-20 先生の指示)
       if (st.arcMode && st.tool === 'same' && st.pick && st.lastR) h += '<circle cx="' + st.pick.x.toFixed(1) + '" cy="' + st.pick.y.toFixed(1) + '" r="' + st.lastR.toFixed(1) + '" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5 5"/>';
+      if (st.tool === 'prot' && st.pick && st.protBase) h += protSvg_();
       st.points.forEach(function (p) {
         var on = st.pick && dist(st.pick, p) < 0.5;
+        if (p.tick && !on) { h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.4" fill="#854d0e"/>'; return; }
         var ans = st.done && st.answerPt && dist(st.answerPt, p) < 0.5;
         h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + (on || ans ? 7 : p.given ? 4.5 : 3.5) + '" fill="' + (ans ? '#18a058' : on ? '#f59e0b' : p.given ? '#1c2127' : '#2f6fd6') + '"/>';
         if (p.label) h += '<text x="' + (p.x + 7).toFixed(1) + '" y="' + (p.y - 7).toFixed(1) + '" font-size="15" font-weight="bold">' + p.label + '</text>';
