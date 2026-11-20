@@ -21258,7 +21258,11 @@
     usaCrossingProgress: usaRunFrom_(savedProgress, savedGame).progress,
     usaCrossingCorrect: usaRunFrom_(savedProgress, savedGame).correct, // 次の州までの正解数(5問で1州)
     usaCrossingUpdatedAt: usaRunFrom_(savedProgress, savedGame).updatedAt,
-    usaCrossingLastLapDay: usaRunFrom_(savedProgress, savedGame).lastLapDay, // 最後に周を達成した日(1日1周まで)
+    usaCrossingLastLapDay: usaRunFrom_(savedProgress, savedGame).lastLapDay, // 最後に周を達成した日(平日1周・土日3周まで)
+    usaCrossingLapsOnDay: usaRunFrom_(savedProgress, savedGame).lapsOnDay,
+    usaMedalsDelivered: usaRunFrom_(savedProgress, savedGame).medalsDelivered,
+    usaMedalsKept: usaRunFrom_(savedProgress, savedGame).medalsKept,
+    usaMedalSpins: usaRunFrom_(savedProgress, savedGame).medalSpins,
     // 達成した周回数(2026-11-16〜 周回制。1周目・2周目…でごほうびが変わる)。
     usaCrossingLaps: Math.max(usaRunFrom_(savedProgress, savedGame).laps, ((savedProgress && savedProgress.usaCrossingCompleted) || (savedGame && savedGame.usaCrossingCompleted)) ? 1 : 0),
     // 謎のおばさんに渡した宝石の数(クリスマスにダイヤの指輪に変わるまで保留中の数)。
@@ -22047,7 +22051,7 @@
   const USA_CROSSING_ENTRY_FEE_MP = 0; // 2026-11-13〜 無料(先生の指示)
   const USA_CROSSING_GOAL_ = 50;
   const USA_CROSSING_MISS_HP_PENALTY_ = 5; // 2026-11-13 先生の指示で10→5(進み方を「5問連続」→「5問正解」にしたかわりに、まちがえるたびに減る)
-  const USA_CROSSING_CORRECT_PER_STATE_ = 5;
+  const USA_CROSSING_CORRECT_PER_STATE_ = 3; // 2026-11-22 先生の指示で5→3問正解で1州
   const USA_CROSSING_HP_REWARD_ = 1000;
   const USA_CROSSING_STATE_MP_ = 1; // 1州進むごとのMP(1日の上限とは別)
   // 周回ごとの達成のごほうび(2026-11-16 先生の指示)。HP+1000は1周目だけ(2026-11-21〜)。宝石は★3(ルビー/エメラルド/サファイア)からランダムで、
@@ -22570,6 +22574,7 @@
       // アメリカ横断・理科バトル中は、正解5問ごとに1州ずつ進む(連続でなくてよい。2026-11-13 先生の指示で5問連続→5問正解)。
       // (都道府県制覇と同じ「進むたびに名前と州の特色を表示」方式)。
       if (state.usaCrossingActive) {
+        winHtml += usaMedalFindHtml_();
         state.usaCrossingCorrect = (Number(state.usaCrossingCorrect) || 0) + 1;
         touchUsaRun_();
         if (state.usaCrossingCorrect >= USA_CROSSING_CORRECT_PER_STATE_) {
@@ -22600,7 +22605,7 @@
         // アメリカ横断中の不正解は州の後退はなし(正解の数もそのまま)、
         // HPのみ通常の-1HPルールとは別の専用ペナルティ(-10)が入る。挑戦自体は終わらない。
         state.hp = Math.max(0, (Number(state.hp) || 0) - USA_CROSSING_MISS_HP_PENALTY_);
-        winHtml = `<div class="enemy-quote-banner">💥 間違えた！HPが${USA_CROSSING_MISS_HP_PENALTY_}減った（現在地：${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}州）</div>`;
+        winHtml = `<div class="enemy-quote-banner">💥 間違えた！HPが${USA_CROSSING_MISS_HP_PENALTY_}減った（現在地：${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}州）</div>` + usaMedalFindHtml_();
         if (state.hp <= 0) {
           winHtml += `<div class="enemy-quote-banner">💥 HPが0になった…なんでも屋で薬草を買うか、ログアウトして再ログイン後に文章題に1問正解するまで、問題に答えられません。</div>`;
         }
@@ -24505,9 +24510,9 @@
       t.textContent = (today >= USA_CROSSING_START_
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
-        + '理科の問題に5問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
+        + '理科の問題に3問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
         + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。'
-        + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわなもあるので気をつけて！別の端末でも続きから挑戦できます。12月31日まで。';
+        + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわな、道に落ちているガチャのメダルも…！平日は1日1周、土日は1日3周まで。別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
 
@@ -29400,12 +29405,15 @@
   // 「挑戦する」ボタンの処理。参加料(USA_CROSSING_ENTRY_FEE_MP)をサーバー確定
   // 処理で払ってから、進行度を0に戻して理科モードで開始する。
   // 1日に達成できるのは1周まで(2026-11-20 先生の指示)。今日1周したら、次の周は明日から。先生(00001)はテストのため制限なし。
+  // 2026-11-22 先生の指示：平日は1日1周、土日は1日3周まで。
+  function usaLapLimitToday_() { var d = new Date().getDay(); return d === 0 || d === 6 ? 3 : 1; }
+  function usaLapLimitText_() { return 'アメリカ横断は、平日は1日1周、土日は1日3周までです。'; }
   function usaCrossingLapDoneToday_() {
-    return !isAdminSession_() && state.usaCrossingLastLapDay === todayKey();
+    return !isAdminSession_() && state.usaCrossingLastLapDay === todayKey() && (Number(state.usaCrossingLapsOnDay) || 1) >= usaLapLimitToday_();
   }
   function startUsaCrossing_() {
     if (!usaCrossingCardActive_() || state.usaCrossingActive) return;
-    if (usaCrossingLapDoneToday_()) { window.alert('🇺🇸 アメリカ横断は1日1周までです。今日はもう1周したので、明日また挑戦してね！'); return; }
+    if (usaCrossingLapDoneToday_()) { window.alert('🇺🇸 ' + usaLapLimitText_() + '今日の分はもう達成したので、明日また挑戦してね！'); return; }
     if (USA_CROSSING_ENTRY_FEE_MP > 0 && (Number(state.points) || 0) < USA_CROSSING_ENTRY_FEE_MP) {
       window.alert('アメリカ横断には参加料' + USA_CROSSING_ENTRY_FEE_MP + 'MPが必要です。MPが足りません。');
       return;
@@ -29420,7 +29428,7 @@
         if (res.error === 'insufficient_points') msg = 'MPが不足しています。';
         else if (res.error === 'forbidden') msg = '現在は00001限定のプレビュー中です。';
         else if (res.error === 'already_completed') msg = 'アメリカ横断は既に達成済みです。再挑戦はできません。';
-        else if (res.error === 'lap_today') { msg = '🇺🇸 アメリカ横断は1日1周までです。今日はもう1周したので、明日また挑戦してね！'; state.usaCrossingLastLapDay = todayKey(); try { renderUsaCrossingCard_(); } catch (e) { } }
+        else if (res.error === 'lap_today') { msg = '🇺🇸 ' + usaLapLimitText_() + '今日の分はもう達成したので、明日また挑戦してね！'; state.usaCrossingLastLapDay = todayKey(); state.usaCrossingLapsOnDay = Math.max(Number(state.usaCrossingLapsOnDay) || 0, usaLapLimitToday_()); try { renderUsaCrossingCard_(); } catch (e) { } }
         window.alert(msg);
         return;
       }
@@ -29542,7 +29550,7 @@
       state.usaCrossingProgress = 0;
       state.usaCrossingCorrect = 0;
       touchUsaRun_();
-      return `<div class="enemy-quote-banner">${t.caughtText}</div>`;
+      return `<div class="enemy-quote-banner">${t.caughtText}</div>` + usaMedalsAtTripEnd_(false);
     }
     return `<div class="item-gain-banner">😮‍💨 怪しい誘いを断った。先へ進もう。</div>`;
   }
@@ -29550,6 +29558,36 @@
   // 50州すべて制覇したときの報酬処理：HP+1000(1周目だけ)、★3の宝石(ランダム)、宝箱
   // (ランク問わずランダム)。成功は一度きり(富士登山・お鉢巡りと同じく、
   // 一度trueになったら戻らない実績フラグとして記録し、以後は再挑戦不可)。
+  // 🪙 ガチャのメダル(2026-11-22 先生の指示)：横断中、1問答えるごとに3%で道に落ちているメダルを拾う。
+  // 交番に届けると、周を達成したときに届けた枚数だけごほうびガチャがまわせる(落とし主からのお礼)。
+  // 届けずに持っておくと、旅の最後に落としてなくす。
+  var USA_MEDAL_CHANCE_ = 0.03;
+  function usaMedalFindHtml_() {
+    if (!state.usaCrossingActive || Math.random() >= USA_MEDAL_CHANCE_) return '';
+    var deliver = window.confirm('🪙 道に「ガチャのメダル」が落ちているのを見つけて、拾った！\n\n交番に届けますか？\n\nOK：交番に届ける\nキャンセル：そのまま持っておく');
+    if (deliver) state.usaMedalsDelivered = (Number(state.usaMedalsDelivered) || 0) + 1;
+    else state.usaMedalsKept = (Number(state.usaMedalsKept) || 0) + 1;
+    touchUsaRun_();
+    return deliver
+      ? '<div class="item-gain-banner">👮 ガチャのメダルを交番に届けた。おまわりさん「えらいね、ありがとう！」</div>'
+      : '<div class="item-gain-banner">🪙 ガチャのメダルを、そのままポケットに入れた…</div>';
+  }
+  // 旅の最後(completed=周を達成)：届けたメダルはガチャに、持っていたメダルは落としてなくす。
+  // 誘惑に負けて途中で終わったときは、持っていたメダルだけなくす(届けたメダルは次に周を達成したときに)。
+  function usaMedalsAtTripEnd_(completed) {
+    var html = '', d = Number(state.usaMedalsDelivered) || 0, k = Number(state.usaMedalsKept) || 0;
+    if (completed && d > 0) {
+      state.usaMedalSpins = (Number(state.usaMedalSpins) || 0) + d;
+      state.usaMedalsDelivered = 0;
+      html += '<div class="item-gain-banner">👮 交番に届けたガチャのメダル' + d + '枚の落とし主から、お礼のメダルが届いた！🎰「ごほうびガチャ」が' + d + '回よけいにまわせる！</div>';
+    }
+    if (k > 0) {
+      state.usaMedalsKept = 0;
+      html += '<div class="enemy-quote-banner">😢 ポケットに入れていたガチャのメダル' + k + '枚は、旅のとちゅうで落としてなくしてしまった…</div>';
+    }
+    if (html) touchUsaRun_();
+    return html;
+  }
   function finishUsaCrossing_() {
     state.usaCrossingActive = false;
     state.usaCrossingProgress = 0;
@@ -29557,6 +29595,7 @@
     touchUsaRun_();
     state.usaCrossingCompleted = true;
     state.usaCrossingLaps = (Number(state.usaCrossingLaps) || 0) + 1;
+    state.usaCrossingLapsOnDay = state.usaCrossingLastLapDay === todayKey() ? (Number(state.usaCrossingLapsOnDay) || 1) + 1 : 1;
     state.usaCrossingLastLapDay = todayKey();
     var lap = state.usaCrossingLaps;
     var rw = USA_CROSSING_LAP_REWARDS_[lap] || {};
@@ -29590,6 +29629,7 @@
     }
     if (rw.seed) usaCrossingSeedReward_();
     if (lap >= 2) html += '<div class="item-gain-banner">🎰 ' + lap + '周目のごほうびは「ごほうびガチャ」' + usaGachaSpinsForLap_(lap) + '回！🇺🇸アメリカ横断のカードの「ガチャをまわす」から、まわしてね。</div>';
+    html += usaMedalsAtTripEnd_(true);
     // 宝石をもらった周だけ、制覇した直後に謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
     // なくてもその場で消える(ペナルティなし)が、渡した場合はクリスマス(12/25)に
     // ダイヤの指輪になって返ってくる。
@@ -29613,19 +29653,19 @@
   var usaGachaBusy_ = false;
   function usaGachaLeft_() {
     if (isAdminSession_()) return 5; // 先生はテスト用に何回でも
-    return Math.max(0, usaGachaGranted_(Number(state.usaCrossingLaps) || 0) - (Number(state.usaGachaUsed) || 0));
+    return Math.max(0, usaGachaGranted_(Number(state.usaCrossingLaps) || 0) + (Number(state.usaMedalSpins) || 0) - (Number(state.usaGachaUsed) || 0));
   }
   function renderUsaGacha_() {
     var box = document.getElementById('usaGachaBox');
     if (!box) return;
     var laps = Number(state.usaCrossingLaps) || 0;
-    box.hidden = laps < 2 && !isAdminSession_();
+    box.hidden = laps < 2 && !isAdminSession_() && !(Number(state.usaMedalSpins) > 0);
     if (box.hidden) return;
     var left = usaGachaLeft_();
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 今まわせるガチャはないよ（次の周を達成するとまわせる）'; }
-    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり';
+    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。' + (Number(state.usaMedalSpins) > 0 ? '交番に届けたメダルのお礼で' + state.usaMedalSpins + '回ふえたよ。' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -29774,6 +29814,10 @@
       updatedAt: Math.max(0, Number(r.updatedAt) || 0),
       laps: Math.max(0, Math.min(999, Math.floor(Number(r.laps)) || 0)),
       lastLapDay: /^\d{4}-\d{2}-\d{2}$/.test(String(r.lastLapDay || '')) ? String(r.lastLapDay) : '',
+      lapsOnDay: Math.max(0, Math.min(3, Math.floor(Number(r.lapsOnDay)) || 0)), // lastLapDayに達成した周の数(土日は3周まで)
+      medalsDelivered: Math.max(0, Math.min(99, Math.floor(Number(r.medalsDelivered)) || 0)), // 拾って交番に届けたメダル(周の最後にガチャになる)
+      medalsKept: Math.max(0, Math.min(99, Math.floor(Number(r.medalsKept)) || 0)), // 拾って持っているメダル(旅の最後に落としてなくす)
+      medalSpins: Math.max(0, Math.floor(Number(r.medalSpins)) || 0), // メダルでもらったガチャの回数(合計)
     };
   }
   function usaRunFrom_(sp, sg) {
@@ -29781,7 +29825,7 @@
     return a.updatedAt >= b.updatedAt ? a : b;
   }
   function usaRunOf_(s) {
-    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0, laps: Number(s.usaCrossingLaps) || 0, lastLapDay: s.usaCrossingLastLapDay || '' };
+    return { active: !!s.usaCrossingActive, progress: Number(s.usaCrossingProgress) || 0, correct: Number(s.usaCrossingCorrect) || 0, updatedAt: Number(s.usaCrossingUpdatedAt) || 0, laps: Number(s.usaCrossingLaps) || 0, lastLapDay: s.usaCrossingLastLapDay || '', lapsOnDay: Number(s.usaCrossingLapsOnDay) || 0, medalsDelivered: Number(s.usaMedalsDelivered) || 0, medalsKept: Number(s.usaMedalsKept) || 0, medalSpins: Number(s.usaMedalSpins) || 0 };
   }
   function touchUsaRun_() { state.usaCrossingUpdatedAt = Date.now(); }
   // r のほうが新しければ取り入れる(変わったらtrue)。挑戦中なら理科モードにする。
@@ -29790,7 +29834,9 @@
     var n = usaRunNorm_(r);
     var lapsUp = n.laps > (Number(state.usaCrossingLaps) || 0);
     if (lapsUp) { state.usaCrossingLaps = n.laps; state.usaCrossingCompleted = true; }
-    if (n.lastLapDay && n.lastLapDay > (state.usaCrossingLastLapDay || '')) { state.usaCrossingLastLapDay = n.lastLapDay; lapsUp = true; }
+    if (n.lastLapDay && n.lastLapDay > (state.usaCrossingLastLapDay || '')) { state.usaCrossingLastLapDay = n.lastLapDay; state.usaCrossingLapsOnDay = n.lapsOnDay; lapsUp = true; }
+    else if (n.lastLapDay && n.lastLapDay === state.usaCrossingLastLapDay && n.lapsOnDay > (Number(state.usaCrossingLapsOnDay) || 0)) { state.usaCrossingLapsOnDay = n.lapsOnDay; lapsUp = true; }
+    if (n.medalSpins > (Number(state.usaMedalSpins) || 0)) { state.usaMedalSpins = n.medalSpins; lapsUp = true; }
     var g10 = Math.max(0, Math.floor(Number(r.gachaUsed)) || 0);
     if (g10 > (Number(state.usaGachaUsed) || 0)) { state.usaGachaUsed = g10; lapsUp = true; }
     if (n.updatedAt <= (Number(state.usaCrossingUpdatedAt) || 0)) {
@@ -29800,6 +29846,8 @@
     state.usaCrossingActive = n.active;
     state.usaCrossingProgress = n.progress;
     state.usaCrossingCorrect = n.correct;
+    state.usaMedalsDelivered = n.medalsDelivered;
+    state.usaMedalsKept = n.medalsKept;
     state.usaCrossingUpdatedAt = n.updatedAt;
     if (state.usaCrossingActive && state.subject !== 'science' && !(state.trainingActive && state.trainingSuper)) {
       state.subject = 'science';
@@ -29815,14 +29863,14 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし1日1周まで。今日1周したら、次の周は明日から)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
       els.usaCrossingStatusText.textContent = state.usaCrossingActive
         ? (lapsDone + 1) + '周目に挑戦中です。下の問題に答えて進めましょう！（現在地：' + (Number(state.usaCrossingProgress) || 0) + '/' + USA_CROSSING_GOAL_ + '州）'
         : lapsDone > 0 && usaCrossingLapDoneToday_()
-        ? '✅ ' + lapsDone + '周達成！ アメリカ横断は1日1周まで。' + (lapsDone + 1) + '周目は明日から挑戦できます。'
+        ? '✅ ' + lapsDone + '周達成！ ' + usaLapLimitText_() + (lapsDone + 1) + '周目は明日から挑戦できます。'
         : lapsDone > 0
         ? '✅ ' + lapsDone + '周達成！ ' + (lapsDone + 1) + '周目に挑戦できます（参加料は無料）。'
         : '挑戦条件はありません。参加料は無料で、いつでも開始できます。';
