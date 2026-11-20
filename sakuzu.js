@@ -1,6 +1,7 @@
 /* 📐 作図にチャレンジ(2026-11-18〜、先生(00001)だけのプレビュー)
    コンパスと定規だけを使って、画面の上で本当に作図する。
    - コンパス：中心にする点をタップ → 半径をきめる場所をタップ(点の近くなら点にぴったり)。「⭕ 同じ大きさの円」の道具で、点をタップするだけで1つ前の円と同じ半径の円がかける。
+   - 円の形：「⭕ 円」か「◠ 3分の2の円」(240°の弧。コンパスは半径をきめた場所の側、同じ大きさの円は2回目にタップした側にかく)をえらべる。
    - 定規：2つの点をタップすると、その2点を通る直線を引く。
    - 答えの点：答えが「点」の問題で、作図してできた点をタップして答える。
    - 点は、はじめからある点と、線や円が交わる点(交点)だけ。タップすると一番近い点に吸いつく。
@@ -9,6 +10,17 @@
 (function () {
   'use strict';
   var W = 360, H = 360, SNAP = 22, EPS = 1e-6, TOL = 2.5;
+  // 解答欄は縦に1.5倍(2026-11-20 先生「入らない」)：問題の図(0〜360)の上下に90ずつ広げて見せる
+  var VY = -90, VH = 540;
+  // 3分の2の円(弧)：コンパスの円を、向きをきめた240°の弧でかく(2026-11-20 先生「円だと交点が多くなる」)
+  var ARC_HALF = Math.PI * 2 / 3;
+  function onArc(o, p) {
+    if (!o.arc) return true;
+    var d = Math.atan2(p.y - o.c.y, p.x - o.c.x) - o.a0;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    return Math.abs(d) <= ARC_HALF + 0.01;
+  }
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function dist(p, q) { return Math.hypot(p.x - q.x, p.y - q.y); }
@@ -246,11 +258,12 @@
     return [{ x: mx - h * uy, y: my + h * ux }, { x: mx + h * uy, y: my - h * ux }];
   }
   function intersect(a, b) {
-    var la = a.type !== 'circle', lb = b.type !== 'circle';
+    var la = a.type !== 'circle', lb = b.type !== 'circle', out;
     if (la && lb) return interLL(a, b);
-    if (la) return interLC(a, b);
-    if (lb) return interLC(b, a);
-    return interCC(a, b);
+    if (la) out = interLC(a, b);
+    else if (lb) out = interLC(b, a);
+    else out = interCC(a, b);
+    return out.filter(function (p) { return onArc(a, p) && onArc(b, p); });
   }
   function lineMatches(o, T) {
     var L = lineOf(o);
@@ -262,13 +275,28 @@
   // ---- 画面 ----
   function mount(root, opts) {
     opts = opts || {};
-    var st = { level: 'basic', pid: 'bisector', prob: null, objs: [], points: [], tool: 'compass', pick: null, lastR: 0, done: false, history: [] };
+    var st = { level: 'basic', pid: 'bisector', prob: null, objs: [], points: [], tool: 'compass', pick: null, lastR: 0, done: false, history: [], arcMode: false };
+    try { st.arcMode = localStorage.getItem('sakuzuArcMode') === '1'; } catch (e) { }
+    // 円をつくる(3分の2の円のときは、dirの向きを真ん中にした240°の弧)
+    function makeCircle(c, r, dir) {
+      var o = { type: 'circle', c: { x: c.x, y: c.y }, r: r };
+      if (st.arcMode && dir && dist(c, dir) > 0.5) { o.arc = true; o.a0 = Math.atan2(dir.y - c.y, dir.x - c.x); }
+      return o;
+    }
+    function setArcMode(on) {
+      st.arcMode = !!on; st.pick = null;
+      try { localStorage.setItem('sakuzuArcMode', on ? '1' : '0'); } catch (e) { }
+      root.querySelectorAll('.sk-arcmode').forEach(function (b) { b.classList.toggle('is-on', (b.getAttribute('data-a') === '1') === st.arcMode); });
+      if (!st.done) msg(st.arcMode ? '◠ <b>3分の2の円</b>でかくよ。コンパスでは、半径をきめるためにタップした場所のほうに弧がかけるよ。' : '⭕ <b>円</b>でかくよ。');
+      draw();
+    }
 
     root.innerHTML =
       '<div class="sk-levels"></div>' +
       '<div class="sk-top"><select class="sk-sel"></select> <button type="button" class="ghost-btn sk-new">🔄 別の図</button></div>' +
       '<p class="sk-title"></p>' +
-      '<svg class="sk-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg"></svg>' +
+      '<svg class="sk-svg" viewBox="0 ' + VY + ' ' + W + ' ' + VH + '" xmlns="http://www.w3.org/2000/svg"></svg>' +
+      '<div class="sk-shape">円の形：<button type="button" class="ghost-btn sk-arcmode" data-a="0">⭕ 円</button><button type="button" class="ghost-btn sk-arcmode" data-a="1">◠ 3分の2の円</button></div>' +
       '<div class="sk-tools">' +
       '<button type="button" class="ghost-btn sk-tool" data-t="compass">🧭 コンパス</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="ruler">📏 定規</button>' +
@@ -319,7 +347,7 @@
       var pts = st.prob.points.map(function (p) { return { x: p.x, y: p.y, label: p.label, given: true }; });
       st.prob.objs.forEach(function (o) { if (o.type === 'segment') { [o.p, o.q].forEach(function (e) { add(pts, e); }); } });
       for (var i = 0; i < st.objs.length; i++) for (var j = i + 1; j < st.objs.length; j++) {
-        intersect(st.objs[i], st.objs[j]).forEach(function (p) { if (p.x > -20 && p.x < W + 20 && p.y > -20 && p.y < H + 20) add(pts, p); });
+        intersect(st.objs[i], st.objs[j]).forEach(function (p) { if (p.x > -20 && p.x < W + 20 && p.y > VY - 20 && p.y < VY + VH + 20) add(pts, p); });
       }
       st.points = pts;
       draw();
@@ -378,7 +406,7 @@
             if (bestR && bestD <= Math.max(14, bestR * 0.15)) { r = bestR; snapped = true; }
           }
           var c = st.pick; st.pick = null; st.lastR = r;
-          push({ type: 'circle', c: { x: c.x, y: c.y }, r: r });
+          push(makeCircle(c, r, to));
           if (!st.done) msg((snapped ? '前の円と<b>同じ半径</b>にそろえて、' : '') + '円をかいたよ。続けて、次の円の中心にする点をタップしてね（直線を引くときは「📏 定規」）。');
         }
       } else if (st.tool === 'ruler') {
@@ -391,6 +419,18 @@
       } else if (st.tool === 'same') {
         // ⭕ 同じ大きさの円(2026-11-19 先生の指示)：点をタップするだけで、1つ前にかいた円と同じ半径の円をかく
         if (!st.lastR) { msg('まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。'); return; }
+        if (st.arcMode) {
+          // 3分の2の円：①中心の点 → ②弧をかきたい側をタップ
+          if (!st.pick) {
+            if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
+            st.pick = sn; msg('次に、弧をかきたい側（どこでもよい）をタップしてね。'); draw(); return;
+          }
+          if (dist(st.pick, p) < 3) { msg('中心から少しはなれた場所をタップしてね。'); return; }
+          var c2 = st.pick; st.pick = null;
+          push(makeCircle(c2, st.lastR, p));
+          if (!st.done) msg('1つ前の円と同じ大きさの弧をかいたよ。続けて、次の中心の点をタップしてね。');
+          return;
+        }
         if (!sn) { msg('円の中心は、点（●）の上をタップしてね。'); return; }
         push({ type: 'circle', c: { x: sn.x, y: sn.y }, r: st.lastR });
         if (!st.done) msg('1つ前の円と同じ大きさの円をかいたよ。続けて点をタップすると、また同じ大きさの円がかけるよ。');
@@ -403,6 +443,7 @@
     root.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       if (b.classList.contains('sk-level')) setLevel(b.getAttribute('data-lv'));
+      else if (b.classList.contains('sk-arcmode')) setArcMode(b.getAttribute('data-a') === '1');
       else if (b.classList.contains('sk-tool')) setTool(b.getAttribute('data-t'));
       else if (b.classList.contains('sk-undo')) {
         if (st.pick) { st.pick = null; draw(); return; }
@@ -425,7 +466,10 @@
       var h = '';
       st.objs.forEach(function (o) {
         var good = st.done && o === st.correctObj;
-        if (o.type === 'circle') {
+        if (o.type === 'circle' && o.arc) {
+          var s0 = o.a0 - ARC_HALF, s1 = o.a0 + ARC_HALF;
+          h += '<path d="M' + (o.c.x + o.r * Math.cos(s0)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(s0)).toFixed(1) + ' A' + o.r.toFixed(1) + ' ' + o.r.toFixed(1) + ' 0 1 1 ' + (o.c.x + o.r * Math.cos(s1)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(s1)).toFixed(1) + '" fill="none" stroke="' + (good ? '#18a058' : '#2f6fd6') + '" stroke-width="' + (good ? 3 : 1.2) + '" opacity="' + (good ? 1 : 0.75) + '"/>';
+        } else if (o.type === 'circle') {
           h += '<circle cx="' + o.c.x.toFixed(1) + '" cy="' + o.c.y.toFixed(1) + '" r="' + o.r.toFixed(1) + '" fill="none" stroke="' + (good ? '#18a058' : o.given ? '#1c2127' : '#2f6fd6') + '" stroke-width="' + (good ? 3 : o.given ? 2 : 1.2) + '" opacity="' + (o.given || good ? 1 : 0.75) + '"/>';
         } else {
           var e = ext(o);
@@ -443,6 +487,7 @@
       var sameBtn = root.querySelector('.sk-tool[data-t="same"]'); if (sameBtn) sameBtn.disabled = !st.lastR || st.done;
     }
 
+    setArcMode(st.arcMode);
     setLevel('basic');
   }
 
