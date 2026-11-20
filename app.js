@@ -23545,7 +23545,8 @@
       // 5問で倒す敵(中2・中3だけ選んでいる時)は経験値も5(1問あたり1のまま)。10にするとサーバーの
       // 経験値上限(正解数×1.4+500)を超えてレベルが戻されるため。
       // ごーまじは20問連続正解で倒すので経験値も20(1問あたり1。バグ報告#60)
-      state.exp += wasRareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : (!wasRareType && requiredStreak === NORMAL_ENEMY_STREAK_UPPER_) ? 5 : 10;
+      const expGainedThisWin_ = wasRareType === 'goumaji' ? GOUMAJI_REQUIRED_STREAK : (!wasRareType && requiredStreak === NORMAL_ENEMY_STREAK_UPPER_) ? 5 : 10;
+      state.exp += expGainedThisWin_;
       // レベルは算数・数学の経験値(exp)と理科の経験値(scienceExp)を合算して決まる。
       // 経験値そのものは科目ごとに別集計だが、レベルは1つに統一する。
       const newLevel = Math.min(MAX_LEVEL, Math.floor((state.exp + state.scienceExp) / EXP_PER_LEVEL) + 1);
@@ -23760,7 +23761,7 @@
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+10exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+${expGainedThisWin_}exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -24293,6 +24294,10 @@
     '🐞【バグを直しました㉘】野球ガチャの計算問題で「0.200」と答えると、答えが「0.200」と出ているのに不正解になったのを直しました。「0.2」と「0.200」のように書き方がちがっても、同じ数なら正解になります。47都道府県制覇の題名から「特別夏バージョン」を消しました。',
     '🐞【バグを直しました㉙】ログアウトしてログインし直すと、敵が最初のマチガールにもどって、ボン・ミスコやレアキャラをさけられたのを直しました。ログインし直しても、前と同じ敵が出ます。',
     '🐞【直しました㉚】県庁所在地クイズでまちがえると、連続正解が0にもどっていたのをやめました。クイズは正解しても連続正解の数は増えませんが、まちがえても途切れません（クイズの間はお休み）。',
+    '🐞【直しました㉛】中2・中3の問題で、5問で倒す敵を倒したとき「+10exp」と出ていたのを、本当にもらえる「+5exp」と出るように直しました。',
+    '🐞【直しました㉜】無料公開の漫画が、ログアウトしたあとなどに1日2作品読めてしまうことがあったのを直しました（読んだかどうかはサーバーの記録で決めます）。',
+    '🐞【直しました㉝】魔法の書「暗黒波」の絵が新月🌑になっていたのを、🌀に変えました。',
+    '🐞【直しました㉞】使い方マニュアルに⚾野球ガチャのことを書きました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -28402,7 +28407,7 @@
     { id: 'rock', label: '岩石弾', emoji: '🪨', dmg: 50, selfDmg: 10, cost: 10, stageId: 4, subIndex: 0, fx: '#a16207', target: 'ステージ4の1体目（大地系）' },
     { id: 'quake', label: '大地震', emoji: '🌋', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 0, fx: '#b45309', target: 'ステージ4の1体目（大地系）' },
     { id: 'darkchain', label: '闇の鎖', emoji: '⛓️', dmg: 50, selfDmg: 10, cost: 10, stageId: 4, subIndex: 1, fx: '#8b5cf6', target: 'ステージ4の2体目（光系）' },
-    { id: 'darkwave', label: '暗黒波', emoji: '🌑', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 1, fx: '#7c3aed', target: 'ステージ4の2体目（光系）' },
+    { id: 'darkwave', label: '暗黒波', emoji: '🌀', dmg: 100, selfDmg: 10, cost: 20, stageId: 4, subIndex: 1, fx: '#7c3aed', target: 'ステージ4の2体目（光系）' },
     { id: 'darkdragon', label: '闇龍', emoji: '🐉', dmg: 150, selfDmg: 10, cost: 30, stageId: 4, subIndex: 1, fx: '#6d28d9', target: 'ステージ4の2体目（光系）' },
     { id: 'demonwave', label: '魔王の波動', emoji: '👹', dmg: 200, selfDmg: 10, cost: 40, stageId: 4, subIndex: 1, fx: '#a21caf', target: 'ステージ4の2体目（光系）' },
     { id: 'darkcollapse', label: '暗黒崩壊', emoji: '💥', dmg: 300, selfDmg: 10, cost: 50, stageId: 4, subIndex: 1, fx: '#c026d3', target: 'ステージ4の2体目（光系）' },
@@ -31273,7 +31278,8 @@
   // 無料公開の作品を読めるか：先生、サーバーに読んだ記録がある、またはこの端末で前に読んだ(2026-11-09より前の記録)。
   function mangaFreeUnlocked_(mangaId) {
     var st = mangaStatusCache_ || {};
-    return isAdminSession_() || (st.freeRead || []).indexOf(mangaId) !== -1 || mangaFreeRead_(mangaId);
+    // 端末の記録(mangaFreeRead_)だけでは読めるようにしない：ログアウト/別IDの切りかえなどで1日2作品読めてしまったため(2026-11-20 バグ報告#72)。読んだかどうかはサーバーの記録(読んだ作品・いいねした作品)で決める。
+    return isAdminSession_() || (st.freeRead || []).indexOf(mangaId) !== -1;
   }
 
   // いいねボタン(読んだ作品だけ押せる)。❤️はいいね済み、🤍はまだ。数字はみんなのいいねの数。
