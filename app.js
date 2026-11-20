@@ -29648,12 +29648,8 @@
       var g = sameStar[randInt(0, sameStar.length - 1)];
       state.gemItems[g] = (Number(state.gemItems[g]) || 0) + 1;
       var gemTxt = GEM_DEFS_[g].emoji + ' ' + GEM_DEFS_[g].label + '（★' + star + '）';
-      // 宝石が出たら、ほかの周と同じく謎のおばさんが現れる(渡すとクリスマスにダイヤの指輪)
-      if (window.confirm('🧙‍♀️ 謎のおばさんが現れた。「その' + GEM_DEFS_[g].label + 'を、わたしにおくれでないかい？」と頼まれている。渡しますか？（渡しても渡さなくても、おばさんはすぐに消えます）')) {
-        state.gemItems[g] = Math.max(0, (Number(state.gemItems[g]) || 0) - 1);
-        state.usaLadyGiftPending = (Number(state.usaLadyGiftPending) || 0) + 1;
-        gemTxt += '<br>🧙‍♀️ おばさんに渡した。（12月25日のクリスマスにダイヤの指輪がもらえるかも？）';
-      }
+      // 宝石が出たら謎のおばさんが現れる(渡すとクリスマスにダイヤの指輪)。カプセルが開いて宝石を見せてから出す(2026-11-22 先生の指示)
+      usaGachaLadyGem_ = g;
       return gemTxt;
     }
     if (p === 'onigiri' || p === 'steak') {
@@ -29671,6 +29667,20 @@
       return si.label + si.note;
     }
     return '🎁 ごほうび';
+  }
+  var usaGachaLadyGem_ = null;
+  function usaGachaLadyAsk_(out, session) {
+    var g = usaGachaLadyGem_; usaGachaLadyGem_ = null;
+    if (!g || !GEM_DEFS_[g]) return;
+    if (!window.confirm('🧙‍♀️ 謎のおばさんが現れた。「その' + GEM_DEFS_[g].label + 'を、わたしにおくれでないかい？」と頼まれている。渡しますか？（渡しても渡さなくても、おばさんはすぐに消えます）')) {
+      if (out) out.innerHTML += '<br>🧙‍♀️ おばさんは消えていった。';
+      return;
+    }
+    state.gemItems[g] = Math.max(0, (Number(state.gemItems[g]) || 0) - 1);
+    state.usaLadyGiftPending = (Number(state.usaLadyGiftPending) || 0) + 1;
+    saveGameState(state);
+    if (session && session.id) syncPointsNow_(session.id);
+    if (out) out.innerHTML += '<br>🧙‍♀️ おばさんに渡した。（12月25日のクリスマスにダイヤの指輪がもらえるかも？）';
   }
   function spinUsaGacha_() {
     var session = loadSession();
@@ -29697,6 +29707,7 @@
           saveGameState(state); renderUsaGacha_(); return;
         }
         if (!res.test) state.usaGachaUsed = Number(res.used) || ((Number(state.usaGachaUsed) || 0) + 1);
+        usaGachaLadyGem_ = null;
         var label = applyUsaGachaPrize_(res);
         var rare = res.prize === 'gem5' || res.prize === 'gem4' || res.prize === 'gem3' || res.prize === 'chestRainbow' || res.prize === 'dragonSword';
         saveGameState(state);
@@ -29712,6 +29723,8 @@
           if (out) out.innerHTML = (rare ? '🎉 <b>大当たり！</b> ' : '') + '<b>' + label + '</b> が出た！';
           usaGachaBusy_ = false;
           renderUsaGacha_();
+          // 宝石を見せてから、おばさんが現れる
+          if (usaGachaLadyGem_) setTimeout(function () { usaGachaLadyAsk_(out, session); }, 1200);
         }, 900);
       }, Math.max(0, 1300 - (Date.now() - started)));
     }).catch(function () {
