@@ -2890,3 +2890,10 @@ body.notices-folded .world-launch-banner { display: none !important; }
 .sk-demo-cap { min-height: 3.4em; font-size: 15px; font-weight: 700; text-align: center; margin: 8px 0; line-height: 1.5; }
 .sk-demo-no { display: inline-block; margin-right: 6px; padding: 0 8px; border-radius: 999px; background: #2f6fd6; color: #fff; font-size: 12px; }
 .sk-demo-ctl { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+/* ⚾ 野球ガチャ：タイミングでフルスイング・ゴールデンバット(2026-11-22) */
+.bb-live { touch-action: manipulation; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.bb-scene.bb-live .bb-ball { transition: none !important; }
+.bb-swing-btn { display: block; width: 100%; max-width: 340px; margin: 6px auto; font-size: 1.35em; padding: 16px 10px; touch-action: manipulation; }
+.bb-bats .pk-btn { line-height: 1.3; }
+.bb-bats .pk-btn.is-on { outline: 3px solid #f59e0b; background: #fef3c7; color: #78350f; }
+.bb-bats .pk-btn small { font-size: 0.78em; font-weight: 700; }
