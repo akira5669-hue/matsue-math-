@@ -29559,14 +29559,14 @@
   // 50州すべて制覇したときの報酬処理：HP+1000(1周目だけ)、★3の宝石(ランダム)、宝箱
   // (ランク問わずランダム)。成功は一度きり(富士登山・お鉢巡りと同じく、
   // 一度trueになったら戻らない実績フラグとして記録し、以後は再挑戦不可)。
-  // 🍔 25州目のレストラン(2026-11-22 先生の指示)：入るかどうか・メニュー・チップ(1〜100MP、払わなくてもよい)を選ぶ。
+  // 🍔 26州目のレストラン(2026-11-22 先生の指示)：入るかどうか・メニュー・チップ(1〜100MP、払わなくてもよい)を選ぶ。
   // どれも10MPでHP+50。チップが5MP未満(払わないときも)だと、HPは半分の+25だけ。MPはサーバー(usaRestaurant)で引く。
-  var USA_RESTAURANT_STATE_ = 25, USA_RESTAURANT_MEAL_MP_ = 10, USA_RESTAURANT_HP_ = 50, USA_RESTAURANT_TIP_OK_ = 5;
+  var USA_RESTAURANT_STATE_ = 26, USA_RESTAURANT_MEAL_MP_ = 10, USA_RESTAURANT_HP_ = 50, USA_RESTAURANT_TIP_OK_ = 5;
   var USA_RESTAURANT_MENU_ = [{ e: '🍔', n: 'ハンバーガー' }, { e: '🍟', n: 'ポテト' }, { e: '🍕', n: 'ピザ' }, { e: '🍗', n: 'フライドチキン' }];
   function usaRestaurantHtml_() {
     var session = loadSession();
     if (!session || !session.id) return '';
-    if (!window.confirm('🍽️ 25州目で、おいしそうなレストランを見つけた！\n\n入りますか？（食べられるのは1つだけ。どれも' + USA_RESTAURANT_MEAL_MP_ + 'MPで、HPが' + USA_RESTAURANT_HP_ + '増える）\n\nOK：入る\nキャンセル：入らない')) {
+    if (!window.confirm('🍽️ 26州目で、おいしそうなレストランを見つけた！\n\n入りますか？（食べられるのは1つだけ。どれも' + USA_RESTAURANT_MEAL_MP_ + 'MPで、HPが' + USA_RESTAURANT_HP_ + '増える）\n\nOK：入る\nキャンセル：入らない')) {
       return '<div class="item-gain-banner">🍽️ レストランには入らずに、先へ進んだ。</div>';
     }
     var menuTxt = USA_RESTAURANT_MENU_.map(function (m, i) { return (i + 1) + '：' + m.e + ' ' + m.n; }).join('\n');
@@ -29906,7 +29906,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。25州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
