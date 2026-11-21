@@ -413,6 +413,234 @@
   }
 
   // ---- 画面 ----
+  // ===== 🧭 コンパスの絵(2026-11-22 先生「コンパスの絵があるとイメージしやすい」) =====
+  // c＝針の先、pen＝えんぴつの先。2本の足は同じ長さで、つまみ(持つところ)は上がわ。
+  function compassSvg(c, pen, opa) {
+    var d = dist(c, pen), L = Math.max(62, d / 2 + 28), m = { x: (c.x + pen.x) / 2, y: (c.y + pen.y) / 2 };
+    var u = d > 0.5 ? unit(pen.x - c.x, pen.y - c.y) : { x: 1, y: 0 };
+    var n = { x: u.y, y: -u.x }; if (n.y > 0 || (Math.abs(n.y) < 1e-6 && n.x > 0)) n = { x: -n.x, y: -n.y };
+    var hh = Math.sqrt(Math.max(0, L * L - d * d / 4)), H = { x: m.x + n.x * hh, y: m.y + n.y * hh };
+    var a = unit(H.x - c.x, H.y - c.y), b = unit(H.x - pen.x, H.y - pen.y);
+    function P(o, v, k) { return { x: o.x + v.x * k, y: o.y + v.y * k }; }
+    function ln(p, q, col, w) { return '<line x1="' + p.x.toFixed(1) + '" y1="' + p.y.toFixed(1) + '" x2="' + q.x.toFixed(1) + '" y2="' + q.y.toFixed(1) + '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round"/>'; }
+    var h = '<g opacity="' + (opa || 0.95) + '" pointer-events="none">';
+    h += ln(c, P(c, a, 12), '#111827', 1.6);                                   // 針
+    h += ln(P(c, a, 11), H, '#64748b', 5.5) + ln(P(c, a, 13), P(H, a, -8), '#e2e8f0', 1.4); // 針がわの足(金属)
+    h += ln(P(pen, b, 4), P(pen, b, 11), '#fcd9a5', 5) + ln(pen, P(pen, b, 5), '#1f2937', 2.6); // えんぴつの先
+    h += ln(P(pen, b, 11), P(pen, b, 26), '#facc15', 6);                        // えんぴつ
+    h += ln(P(pen, b, 26), H, '#64748b', 5.5) + ln(P(pen, b, 28), P(H, b, -8), '#e2e8f0', 1.4); // えんぴつがわの足
+    h += ln(H, P(H, n, 18), '#334155', 6.5);                                   // つまみ
+    h += '<circle cx="' + H.x.toFixed(1) + '" cy="' + H.y.toFixed(1) + '" r="6.5" fill="#cbd5e1" stroke="#475569" stroke-width="1.6"/>';
+    return h + '</g>';
+  }
+  // 分度器の絵(中心c、0°の向きphi、sgn：角度をはかる向き)
+  function protDraw(c, phi, sgn, R, opa) {
+    function pt(deg, rr) { var t = phi + sgn * deg * Math.PI / 180; return { x: c.x + rr * Math.cos(t), y: c.y + rr * Math.sin(t) }; }
+    var h = '<g opacity="' + (opa == null ? 1 : opa) + '">', a = pt(0, R), b = pt(180, R);
+    h += '<path d="M' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) + ' A' + R + ' ' + R + ' 0 0 ' + (sgn > 0 ? 1 : 0) + ' ' + b.x.toFixed(1) + ' ' + b.y.toFixed(1) + ' Z" fill="rgba(56,189,248,0.16)" stroke="#0284c7" stroke-width="1.3"/>';
+    for (var d = 0; d <= 180; d += 5) {
+      var o = pt(d, R), i = pt(d, R - (d % 10 ? 6 : 11));
+      h += '<line x1="' + o.x.toFixed(1) + '" y1="' + o.y.toFixed(1) + '" x2="' + i.x.toFixed(1) + '" y2="' + i.y.toFixed(1) + '" stroke="#0284c7" stroke-width="1"/>';
+      if (d % 10 === 0) { var tp = pt(d, R - 22); h += '<text x="' + tp.x.toFixed(1) + '" y="' + (tp.y + 3).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="#0369a1">' + d + '</text>'; }
+    }
+    return h + '</g>';
+  }
+  function protFrameOf(c, base) { var phi = Math.atan2(base.y - c.y, base.x - c.x); return { phi: phi, sgn: Math.sin(phi - Math.PI / 2) < 0 ? -1 : 1 }; }
+
+  // ===== 🎬 かき方の動画(2026-11-22 先生「最初に動画で書き方の説明。5パターンぐらい」) =====
+  function dpt(O, r, deg, label) { var t = deg * Math.PI / 180, p = { x: O.x + r * Math.cos(t), y: O.y + r * Math.sin(t) }; if (label) p.label = label; return p; } // 画面の角度(下向きが＋)
+  var DRX = 30, DRY = 356, DCM = 34;
+  var DEMOS = (function () {
+    var R0 = { x: DRX, y: DRY };
+    var B = { x: 95, y: 280, label: 'B' }, C = { x: 265, y: 280, label: 'C' };
+    var A1 = { x: 203.8, y: 198.4, label: 'A' };
+    var A2 = dpt(B, 136, -50, 'A');
+    var A3 = { x: 195.7, y: 160.0, label: 'A' };
+    var PA = { x: 70, y: 230, label: 'A' }, PB = { x: 290, y: 230, label: 'B' };
+    var O5 = { x: 60, y: 300, label: 'O' }, P5 = dpt(O5, 110, 0), Q5 = dpt(O5, 110, -60), R5 = dpt(O5, 178.8, -30);
+    var P6 = { x: 180, y: 120, label: 'P' }, A6 = { x: 60, y: 280 }, B6 = { x: 300, y: 280 }, Q6 = { x: 180, y: 370 };
+    function rl(cm) { return { x: DRX + cm * DCM, y: DRY }; }
+    return [
+      { name: '3つの辺', title: '3つの辺の長さがわかる三角形（小学生）', ruler: true, segs: [[B, C, '5cm']], pts: [B, C], steps: [
+        { t: 'say', say: '辺BC（5cm）は、もうかいてあるよ。AB＝4cm、AC＝3cmの三角形をかこう。' },
+        { t: 'open', c: R0, to: rl(4), say: 'コンパスの針をものさしの0に合わせて、えんぴつの先を4cmまで開く。' },
+        { t: 'move', c: B, r: 136, a: -55, say: '開いたまま（4cmのまま）、コンパスの針を点Bにさす。' },
+        { t: 'arc', c: B, r: 136, a0: -55, a1: -18, say: '頂点Aがありそうなところに、くるっと弧をかく。' },
+        { t: 'open', c: R0, to: rl(3), say: 'こんどは、ものさしでコンパスを3cmに開く。' },
+        { t: 'move', c: C, r: 102, a: -150, say: '開いたまま（3cmのまま）、針を点Cにさす。' },
+        { t: 'arc', c: C, r: 102, a0: -150, a1: -104, say: 'さっきの弧と交わるように、弧をかく。' },
+        { t: 'pt', p: [A1], say: '2つの弧が交わった点が、頂点Aだよ。' },
+        { t: 'line', p: A1, q: B, say: '定規で、点Aと点Bを結ぶ。' },
+        { t: 'line', p: A1, q: C, say: '点Aと点Cも結んだら、できあがり！' },
+      ] },
+      { name: '2つの辺と間の角', title: '2つの辺とその間の角がわかる三角形（小学生）', ruler: true, segs: [[B, C, '5cm']], pts: [B, C], steps: [
+        { t: 'say', say: '辺BC（5cm）はかいてあるよ。∠B＝50°、AB＝4cmの三角形をかこう。' },
+        { t: 'prot', c: B, base: C, deg: 50, say: '分度器の中心を点Bに、0°の線を辺BCに合わせて、50°のところに印をつける。' },
+        { t: 'line', p: B, q: dpt(B, 230, -50), say: '定規で、点Bと印を結んで、長めに線をひく。' },
+        { t: 'open', c: R0, to: rl(4), say: 'コンパスの針をものさしの0に合わせて、4cmに開く。' },
+        { t: 'move', c: B, r: 136, a: -66, say: '開いたまま、針を点Bにさす。' },
+        { t: 'arc', c: B, r: 136, a0: -66, a1: -34, say: 'ひいた線と交わるように、弧をかく。' },
+        { t: 'pt', p: [A2], say: '線と弧が交わった点が、頂点Aだよ。' },
+        { t: 'line', p: A2, q: C, say: '点Aと点Cを結んだら、できあがり！' },
+      ] },
+      { name: '1つの辺と両はしの角', title: '1つの辺とその両はしの角がわかる三角形（小学生）', ruler: true, segs: [[B, C, '5cm']], pts: [B, C], steps: [
+        { t: 'say', say: '辺BC（5cm）はかいてあるよ。∠B＝50°、∠C＝60°の三角形をかこう。' },
+        { t: 'prot', c: B, base: C, deg: 50, say: '分度器の中心を点Bに合わせて、50°のところに印をつける。' },
+        { t: 'line', p: B, q: dpt(B, 230, -50), say: '点Bと印を結んで、長めに線をひく。' },
+        { t: 'prot', c: C, base: B, deg: 60, say: 'こんどは、分度器の中心を点Cに合わせて、60°のところに印をつける。' },
+        { t: 'line', p: C, q: dpt(C, 190, -120), say: '点Cと印を結んで、長めに線をひく。' },
+        { t: 'pt', p: [A3], say: '2本の線が交わった点が、頂点Aだよ。できあがり！' },
+      ] },
+      { name: '垂直二等分線', title: '線分ABの垂直二等分線（中学1年）', segs: [[PA, PB]], pts: [PA, PB], steps: [
+        { t: 'say', say: '線分ABの垂直二等分線をかこう。' },
+        { t: 'open', c: PA, to: dpt(PA, 140, -58), say: 'コンパスの針を点Aにさして、ABの半分より大きく開く。' },
+        { t: 'arc', c: PA, r: 140, a0: -58, a1: 58, say: '線分ABの上と下にとどくように、弧をかく。' },
+        { t: 'move', c: PB, r: 140, a: -122, say: '開いたまま（同じ大きさで）、針を点Bにさす。' },
+        { t: 'arc', c: PB, r: 140, a0: -122, a1: -238, say: '同じように、上と下に弧をかく。' },
+        { t: 'pt', p: [{ x: 180, y: 143.4 }, { x: 180, y: 316.6 }], say: '弧が交わった点が、上と下に2つできたね。' },
+        { t: 'line', p: { x: 180, y: 105 }, q: { x: 180, y: 345 }, say: '2つの点を定規で結ぶと、垂直二等分線のできあがり！' },
+      ] },
+      { name: '角の二等分線', title: '∠XOYの二等分線（中学1年）', lines: [[O5, dpt(O5, 280, 0), 'X'], [O5, dpt(O5, 260, -60), 'Y']], pts: [O5], steps: [
+        { t: 'say', say: '∠XOYを半分に分ける、角の二等分線をかこう。' },
+        { t: 'open', c: O5, to: dpt(O5, 110, 12), say: 'コンパスの針を、角の頂点Oにさす。' },
+        { t: 'arc', c: O5, r: 110, a0: 12, a1: -72, say: '2つの辺と交わるように、弧をかく。' },
+        { t: 'pt', p: [P5, Q5], say: '辺と交わった2つの点ができたね。' },
+        { t: 'move', c: P5, r: 100, a: -88, say: '1つめの点に針をさす。' },
+        { t: 'arc', c: P5, r: 100, a0: -88, a1: -40, say: '角の内がわに、弧をかく。' },
+        { t: 'move', c: Q5, r: 100, a: -22, say: '開いたまま（同じ大きさで）、もう1つの点に針をさす。' },
+        { t: 'arc', c: Q5, r: 100, a0: -22, a1: 26, say: 'さっきの弧と交わるように、弧をかく。' },
+        { t: 'pt', p: [R5], say: '2つの弧が交わった点ができたね。' },
+        { t: 'line', p: O5, q: dpt(O5, 285, -30), say: '頂点Oと交わった点を結ぶと、角の二等分線のできあがり！' },
+      ] },
+      { name: '垂線', title: '点Pを通る、直線ℓの垂線（中学1年）', lines: [[{ x: 15, y: 280 }, { x: 345, y: 280 }, 'ℓ']], pts: [P6], steps: [
+        { t: 'say', say: '点Pを通って、直線ℓに垂直な線（垂線）をかこう。' },
+        { t: 'open', c: P6, to: dpt(P6, 200, 145), say: 'コンパスの針を点Pにさして、直線ℓをこえるくらい大きく開く。' },
+        { t: 'arc', c: P6, r: 200, a0: 145, a1: 35, say: '直線ℓと2か所で交わるように、弧をかく。' },
+        { t: 'pt', p: [A6, B6], say: '直線ℓと交わった2つの点ができたね。' },
+        { t: 'move', c: A6, r: 150, a: 18, say: '左の点に針をさす。' },
+        { t: 'arc', c: A6, r: 150, a0: 18, a1: 56, say: '直線ℓの下に、弧をかく。' },
+        { t: 'move', c: B6, r: 150, a: 162, say: '開いたまま（同じ大きさで）、右の点に針をさす。' },
+        { t: 'arc', c: B6, r: 150, a0: 162, a1: 124, say: 'さっきの弧と交わるように、弧をかく。' },
+        { t: 'pt', p: [Q6], say: '2つの弧が交わった点ができたね。' },
+        { t: 'line', p: { x: 180, y: 100 }, q: { x: 180, y: 390 }, say: '点Pと交わった点を結ぶと、垂線のできあがり！' },
+      ] },
+    ];
+  })();
+  var DEMO_DUR = { say: 1600, open: 1900, move: 1300, arc: 1700, line: 1300, prot: 2600, pt: 1100 }, DEMO_HOLD = 1300;
+  function ease(k) { return k * k * (3 - 2 * k); }
+  function lerpP(p, q, k) { return { x: p.x + (q.x - p.x) * k, y: p.y + (q.y - p.y) * k }; }
+  function arcPath(c, r, a0, a1, col, w) {
+    var p0 = dpt(c, r, a0), p1 = dpt(c, r, a1);
+    return '<path d="M' + p0.x.toFixed(1) + ' ' + p0.y.toFixed(1) + ' A' + r + ' ' + r + ' 0 ' + (Math.abs(a1 - a0) > 180 ? 1 : 0) + ' ' + (a1 > a0 ? 1 : 0) + ' ' + p1.x.toFixed(1) + ' ' + p1.y.toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + w + '"/>';
+  }
+  function lineSvg(p, q, col, w) { return '<line x1="' + p.x.toFixed(1) + '" y1="' + p.y.toFixed(1) + '" x2="' + q.x.toFixed(1) + '" y2="' + q.y.toFixed(1) + '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round"/>'; }
+  function txt(x, y, t, o) { o = o || {}; return '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + (o.fs || 14) + '"' + (o.b === false ? '' : ' font-weight="bold"') + ' fill="' + (o.col || '#1c2127') + '"' + (o.mid ? ' text-anchor="middle"' : '') + '>' + t + '</text>'; }
+  function demoRulerSvg() {
+    var h = '<rect x="' + (DRX - 12) + '" y="' + DRY + '" width="' + (9 * DCM + 24) + '" height="34" rx="3" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.3"/>';
+    for (var k = 0; k <= 18; k++) { var x = DRX + k * DCM / 2; h += lineSvg({ x: x, y: DRY }, { x: x, y: DRY + (k % 2 ? 7 : 12) }, '#854d0e', 1); if (k % 2 === 0) h += txt(x, DRY + 26, String(k / 2), { fs: 10, b: false, mid: true, col: '#713f12' }); }
+    return h;
+  }
+  function demoFrame(D, t) {
+    var h = D.ruler ? demoRulerSvg() : '';
+    (D.segs || []).forEach(function (s2) { h += lineSvg(s2[0], s2[1], '#1c2127', 2.2); if (s2[2]) h += txt((s2[0].x + s2[1].x) / 2, s2[0].y + 20, s2[2], { fs: 12, b: false, mid: true }); });
+    (D.lines || []).forEach(function (l) { h += lineSvg(l[0], l[1], '#1c2127', 2.2); if (l[2]) h += txt(l[1].x - 14, l[1].y - 8, l[2], { fs: 15 }); });
+    var n = D.steps.length, acc = 0, i = n - 1, local = DEMO_DUR[D.steps[n - 1].t] + DEMO_HOLD, end = true;
+    for (var j = 0; j < n; j++) { var span = DEMO_DUR[D.steps[j].t] + DEMO_HOLD; if (t < acc + span) { i = j; local = t - acc; end = false; break; } acc += span; }
+    var pose = null, show = false, over = '';
+    for (j = 0; j <= i; j++) {
+      var S = D.steps[j], k = ease(Math.min(1, (j < i ? 1e9 : local) / DEMO_DUR[S.t]));
+      if (S.t === 'open') {
+        var u = unit(S.to.x - S.c.x, S.to.y - S.c.y), full = dist(S.c, S.to);
+        if (pose) {
+          var pr = Math.min(dist(pose.c, pose.pen), full), mid = { c: S.c, pen: { x: S.c.x + u.x * pr, y: S.c.y + u.y * pr } };
+          pose = k < 0.4 ? { c: lerpP(pose.c, mid.c, k / 0.4), pen: lerpP(pose.pen, mid.pen, k / 0.4) } : { c: S.c, pen: lerpP(mid.pen, S.to, (k - 0.4) / 0.6) };
+        } else pose = { c: S.c, pen: lerpP({ x: S.c.x + u.x * 14, y: S.c.y + u.y * 14 }, S.to, k) };
+        show = true;
+        if (j === i && D.ruler && S.c.y === DRY && k > 0.4) over += txt(pose.pen.x, DRY - 8, (Math.round(dist(S.c, pose.pen) / DCM * 2) / 2) + 'cm', { fs: 13, col: '#c2410c', mid: true });
+      } else if (S.t === 'move') {
+        var tgt = { c: S.c, pen: dpt(S.c, S.r, S.a) };
+        pose = pose ? { c: lerpP(pose.c, tgt.c, k), pen: lerpP(pose.pen, tgt.pen, k) } : tgt; show = true;
+      } else if (S.t === 'arc') {
+        var a = S.a0 + (S.a1 - S.a0) * k;
+        if (Math.abs(a - S.a0) > 0.3) h += arcPath(S.c, S.r, S.a0, a, '#2f6fd6', 1.8);
+        pose = { c: S.c, pen: dpt(S.c, S.r, a) }; show = true;
+      } else if (S.t === 'line') {
+        var q = lerpP(S.p, S.q, k); h += lineSvg(S.p, q, '#c23b2e', 2);
+        if (j === i && k < 1) { var ang = Math.atan2(S.q.y - S.p.y, S.q.x - S.p.x) * 180 / Math.PI, len = dist(S.p, S.q); over += '<g transform="translate(' + S.p.x.toFixed(1) + ' ' + S.p.y.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')" opacity="0.8"><rect x="-14" y="2" width="' + (len + 28).toFixed(1) + '" height="18" rx="3" fill="#fef08a" stroke="#ca8a04"/></g>'; }
+        show = false;
+      } else if (S.t === 'prot') {
+        var pf = protFrameOf(S.c, S.base), mk = dpt(S.c, 85, pf.phi * 180 / Math.PI + pf.sgn * S.deg);
+        if (j === i && k < 1) over += protDraw(S.c, pf.phi, pf.sgn, 85, Math.min(1, k * 4));
+        if (k > 0.5) { h += '<circle cx="' + mk.x.toFixed(1) + '" cy="' + mk.y.toFixed(1) + '" r="3.5" fill="#c2410c"/>' + txt(mk.x + 6, mk.y - 6, S.deg + '°', { fs: 12, col: '#c2410c' }); }
+        show = false;
+      } else if (S.t === 'pt') {
+        S.p.forEach(function (p) {
+          if (j === i && k < 1) h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + (6 + 14 * (1 - k)).toFixed(1) + '" fill="none" stroke="#16a34a" stroke-width="2" opacity="' + (1 - k * 0.6).toFixed(2) + '"/>';
+          h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="5" fill="#16a34a"/>';
+          if (p.label) h += txt(p.x + 8, p.y - 8, p.label, { fs: 16, col: '#16a34a' });
+        });
+        show = false;
+      } else show = false;
+    }
+    D.pts.forEach(function (p) { h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4.5" fill="#1c2127"/>' + (p.label ? txt(p.x + 7, p.y - 7, p.label, { fs: 15 }) : ''); });
+    h += over;
+    if (show && pose) h += compassSvg(pose.c, pose.pen, 0.97);
+    return { svg: h, i: i, end: end };
+  }
+  var demoEl = null, demo = null;
+  function openDemo(idx) {
+    if (!demoEl) {
+      demoEl = document.createElement('div'); demoEl.className = 'sk-demo';
+      demoEl.innerHTML = '<div class="sk-demo-card"><div class="sk-demo-head"><b>🎬 作図のかき方</b><button type="button" class="ghost-btn sk-demo-close">✖ とじる</button></div>' +
+        '<div class="sk-demo-tabs">' + DEMOS.map(function (d, i) { return '<button type="button" class="ghost-btn sk-demo-tab" data-i="' + i + '">' + (i + 1) + '. ' + d.name + '</button>'; }).join('') + '</div>' +
+        '<p class="sk-demo-title"></p><svg class="sk-demo-svg" viewBox="0 0 360 400" xmlns="http://www.w3.org/2000/svg"></svg><p class="sk-demo-cap"></p>' +
+        '<div class="sk-demo-ctl"><button type="button" class="ghost-btn sk-demo-pause">⏸ 止める</button><button type="button" class="ghost-btn sk-demo-again">🔁 もう一度</button><button type="button" class="ghost-btn sk-demo-next">次の動画 ▶</button></div></div>';
+      document.body.appendChild(demoEl);
+      demoEl.addEventListener('click', function (e) {
+        if (e.target === demoEl) return closeDemo();
+        var b = e.target.closest('button'); if (!b) return;
+        if (b.classList.contains('sk-demo-close')) closeDemo();
+        else if (b.classList.contains('sk-demo-tab')) playDemo(+b.getAttribute('data-i'));
+        else if (b.classList.contains('sk-demo-again')) playDemo(demo.idx);
+        else if (b.classList.contains('sk-demo-next')) playDemo((demo.idx + 1) % DEMOS.length);
+        else if (b.classList.contains('sk-demo-pause')) { if (demo.end) return playDemo(demo.idx); demo.paused = !demo.paused; b.textContent = demo.paused ? '▶ 続ける' : '⏸ 止める'; if (!demo.paused) { demo.last = 0; loop(); } }
+      });
+    }
+    demoEl.hidden = false;
+    playDemo(idx || 0);
+  }
+  function closeDemo() { if (demoEl) demoEl.hidden = true; if (demo) demo.stop = true; }
+  function playDemo(idx) {
+    if (demo) demo.stop = true;
+    demo = { idx: idx, t: 0, last: 0, paused: false, end: false };
+    var D = DEMOS[idx];
+    demoEl.querySelectorAll('.sk-demo-tab').forEach(function (b) { b.classList.toggle('is-on', +b.getAttribute('data-i') === idx); });
+    demoEl.querySelector('.sk-demo-title').textContent = D.title;
+    demoEl.querySelector('.sk-demo-pause').textContent = '⏸ 止める';
+    loop();
+  }
+  function loop() {
+    var me = demo;
+    function tick(now) {
+      if (me.stop || me.paused || me !== demo) return;
+      if (me.last) me.t += Math.min(100, now - me.last);
+      me.last = now;
+      renderDemo(me);
+      if (!me.end) window.requestAnimationFrame(tick);
+    }
+    if (window.requestAnimationFrame) window.requestAnimationFrame(tick); else renderDemo(me);
+  }
+  function renderDemo(me) {
+    var D = DEMOS[me.idx], f = demoFrame(D, me.t), n = D.steps.length;
+    demoEl.querySelector('.sk-demo-svg').innerHTML = f.svg;
+    demoEl.querySelector('.sk-demo-cap').innerHTML = '<span class="sk-demo-no">' + (f.i + 1) + ' / ' + n + '</span>' + D.steps[f.i].say + (f.end ? ' 🎉' : '');
+    if (f.end) { me.end = true; demoEl.querySelector('.sk-demo-pause').textContent = '🔁 はじめから'; }
+  }
+  function demoIdxFor(pid) {
+    var m = { elemTri3: 0, elemTriSAS: 1, elemTriASA: 2, bisector: 3, angle: 4, perpOut: 5, perpOn: 5 };
+    return m[pid] != null ? m[pid] : (/^elem/.test(pid) ? 0 : 3);
+  }
+
   function mount(root, opts) {
     opts = opts || {};
     var st = { level: 'basic', pid: 'bisector', prob: null, objs: [], points: [], tool: 'compass', pick: null, lastR: 0, done: false, history: [], arcMode: false };
@@ -433,7 +661,7 @@
 
     root.innerHTML =
       '<div class="sk-levels"></div>' +
-      '<div class="sk-top"><select class="sk-sel"></select> <button type="button" class="ghost-btn sk-new">🔄 別の図</button></div>' +
+      '<div class="sk-top"><select class="sk-sel"></select> <button type="button" class="ghost-btn sk-new">🔄 別の図</button> <button type="button" class="ghost-btn sk-demo-btn">🎬 かき方の動画</button></div>' +
       '<p class="sk-title"></p>' +
       '<svg class="sk-svg" viewBox="0 ' + VY + ' ' + W + ' ' + VH + '" xmlns="http://www.w3.org/2000/svg"></svg>' +
       '<div class="sk-shape">円の形：<button type="button" class="ghost-btn sk-arcmode" data-a="0">⭕ 円</button><button type="button" class="ghost-btn sk-arcmode" data-a="1">◠ 3分の2の円</button></div>' +
@@ -466,7 +694,7 @@
       st.prob = pr;
       st.objs = pr.objs.slice();
       st.history = [];
-      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null; st.showAns = false;
+      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null; st.showAns = false; st.anim = null; st.parked = null; st.hover = null;
       $('.sk-title').textContent = '📐 ' + def.title + 'を作図しよう！';
       $('.sk-hinttext').hidden = true;
       $('.sk-hinttext').textContent = pr.hint;
@@ -478,7 +706,7 @@
     }
     function msg(t) { $('.sk-msg').innerHTML = t; }
     function setTool(t) {
-      st.tool = t; st.pick = null; st.protBase = null;
+      st.tool = t; st.pick = null; st.protBase = null; st.parked = null; st.hover = null;
       root.querySelectorAll('.sk-tool').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-t') === t); });
       if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。'
         : t === 'same' ? (st.lastR ? (st.arcMode ? '① 中心にする点をタップ → ② 弧をかきたい側をタップすると、<b>1つ前と同じ大きさの3分の2の円</b>がかけるよ。' : '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。') : 'まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。')
@@ -514,7 +742,10 @@
       draw();
       if (opts.onCorrect) try { var extra = opts.onCorrect(st.pid); if (extra) $('.sk-msg').innerHTML += '<br>' + extra; } catch (e) { }
     }
+    // 🧭 円をかくとき、コンパスがくるっと回って線がのびていく(2026-11-22 先生「コンパスを使っているイメージができるように」)
+    function animate(a) { if (!window.requestAnimationFrame) return; a.t0 = Date.now(); st.anim = a; }
     function push(o) {
+      if (o.type === 'circle') { animate({ obj: o, dur: o.arc ? 650 : 850 }); st.parked = null; }
       st.objs.push(o); st.history.push(o);
       recompute();
       var T = st.prob.target;
@@ -546,8 +777,10 @@
           // ものさしで長さをとる(2026-11-22 先生「長さをとる前に勝手に円がかかれる」)：円はかかずに、コンパスをその長さに開くだけ。
           if (!sn || !sn.tick || dist(sn, st.pick) < 1) { msg('ものさしの目もり（茶色の点）をタップしてね。'); return; }
           var len = dist(sn, st.pick);
-          st.pick = null; st.lastR = len;
+          var r0 = st.pick; st.pick = null; st.lastR = len;
           setTool('same');
+          st.parked = { c: { x: r0.x, y: r0.y }, pen: { x: sn.x, y: sn.y } };
+          animate({ open: true, c: st.parked.c, to: st.parked.pen, dur: 600 }); draw();
           msg('🧭 コンパスを<b>' + fmtCm(len / CM) + '</b>に開いたよ。次に、円の中心にする点（BやC）をタップしてね' + (st.arcMode ? '（そのあと、弧をかきたい側をタップ）' : '') + '。');
         } else {
           var to = sn || p, r = dist(st.pick, to), snapped = false;
@@ -615,8 +848,15 @@
         else msg('❌ その点ではないみたい。作図を続けるか、ヒントを見てみよう。');
       }
     });
+    var hoverRaf = 0;
+    svg.addEventListener('pointermove', function (ev) {
+      if (st.done || !st.pick || !(st.tool === 'compass' || (st.tool === 'same' && st.arcMode))) return;
+      st.hover = toSvg(ev);
+      if (!hoverRaf && window.requestAnimationFrame) hoverRaf = window.requestAnimationFrame(function () { hoverRaf = 0; draw(); });
+    });
     root.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('sk-demo-btn')) return openDemo(demoIdxFor(st.pid));
       if (b.classList.contains('sk-level')) setLevel(b.getAttribute('data-lv'));
       else if (b.classList.contains('sk-arcmode')) setArcMode(b.getAttribute('data-a') === '1');
       else if (b.classList.contains('sk-tool')) setTool(b.getAttribute('data-t'));
@@ -651,16 +891,9 @@
     }
     function protPoint_(pf, deg, r) { var t = pf.phi + pf.sgn * deg * Math.PI / 180; return { x: pf.c.x + r * Math.cos(t), y: pf.c.y + r * Math.sin(t) }; }
     function protSvg_() {
-      var pf = protFrame_(), h = '', a = protPoint_(pf, 0, PROT_R), b = protPoint_(pf, 180, PROT_R);
-      h += '<path d="M' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) + ' A' + PROT_R + ' ' + PROT_R + ' 0 0 ' + (pf.sgn > 0 ? 1 : 0) + ' ' + b.x.toFixed(1) + ' ' + b.y.toFixed(1) + ' Z" fill="rgba(56,189,248,0.16)" stroke="#0284c7" stroke-width="1.3"/>';
-      for (var d = 0; d <= 180; d += 5) {
-        var o = protPoint_(pf, d, PROT_R), i = protPoint_(pf, d, PROT_R - (d % 10 ? 6 : 11));
-        h += '<line x1="' + o.x.toFixed(1) + '" y1="' + o.y.toFixed(1) + '" x2="' + i.x.toFixed(1) + '" y2="' + i.y.toFixed(1) + '" stroke="#0284c7" stroke-width="1"/>';
-        if (d % 10 === 0) { var tp = protPoint_(pf, d, PROT_R - 22); h += '<text x="' + tp.x.toFixed(1) + '" y="' + (tp.y + 3).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="#0369a1">' + d + '</text>'; }
-      }
-      return h;
+      var pf = protFrame_();
+      return protDraw(pf.c, pf.phi, pf.sgn, PROT_R);
     }
-
     function answerSvg_() {
       var pr = st.prob, T = pr.target, h = '', G = '#16a34a';
       (pr.sol || []).forEach(function (o) {
@@ -686,8 +919,18 @@
     }
     function draw() {
       var h = (st.prob && st.prob.deco) || '';
+      var A = st.anim, prog = 1, now = Date.now();
+      if (A) { prog = Math.min(1, (now - A.t0) / A.dur); prog = prog * prog * (3 - 2 * prog); if (!A.open && st.objs.indexOf(A.obj) < 0) { A = st.anim = null; prog = 1; } }
+      var compass = '';
       st.objs.forEach(function (o) {
         var good = st.done && o === st.correctObj;
+        if (A && o === A.obj && prog < 1) {
+          var sw = o.arc ? 2 * ARC_HALF : 2 * Math.PI, sa = o.arc ? o.a0 - ARC_HALF : 0, ang = sa + sw * prog, len = o.r * sw;
+          var p0 = { x: o.c.x + o.r * Math.cos(sa), y: o.c.y + o.r * Math.sin(sa) };
+          h += '<path d="M' + p0.x.toFixed(1) + ' ' + p0.y.toFixed(1) + ' A' + o.r.toFixed(1) + ' ' + o.r.toFixed(1) + ' 0 ' + (sw * prog > Math.PI ? 1 : 0) + ' 1 ' + (o.c.x + o.r * Math.cos(ang)).toFixed(1) + ' ' + (o.c.y + o.r * Math.sin(ang)).toFixed(1) + '" fill="none" stroke="#2f6fd6" stroke-width="1.6"/>';
+          compass = compassSvg(o.c, { x: o.c.x + o.r * Math.cos(ang), y: o.c.y + o.r * Math.sin(ang) });
+          return;
+        }
         if (o.type === 'mark') { h += '<text x="' + (o.p.x + 6).toFixed(1) + '" y="' + (o.p.y - 6).toFixed(1) + '" font-size="11" fill="#c2410c" font-weight="bold">' + o.deg + '°</text>'; return; }
         if (o.type === 'circle' && o.arc) {
           var s0 = o.a0 - ARC_HALF, s1 = o.a0 + ARC_HALF;
@@ -704,6 +947,17 @@
       if (st.arcMode && st.tool === 'same' && st.pick && st.lastR) h += '<circle cx="' + st.pick.x.toFixed(1) + '" cy="' + st.pick.y.toFixed(1) + '" r="' + st.lastR.toFixed(1) + '" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5 5"/>';
       if (st.tool === 'prot' && st.pick && st.protBase) h += protSvg_();
       if (st.showAns) h += answerSvg_();
+      // 🧭 コンパスの絵：かいている途中・ものさしで開いたとき・中心をえらんだとき
+      if (!compass && !st.done) {
+        if (A && A.open && prog < 1) compass = compassSvg(A.c, { x: A.c.x + (A.to.x - A.c.x) * prog, y: A.c.y + (A.to.y - A.c.y) * prog });
+        else if (st.parked && st.tool === 'same' && !st.pick) compass = compassSvg(st.parked.c, st.parked.pen, 0.85);
+        else if (st.pick && (st.tool === 'compass' || (st.tool === 'same' && st.arcMode))) {
+          var pen = st.hover && dist(st.hover, st.pick) > 8 ? st.hover : null;
+          if (st.tool === 'same' && st.lastR) { var hv = pen || { x: st.pick.x + 1, y: st.pick.y - 1 }, uu = unit(hv.x - st.pick.x, hv.y - st.pick.y); pen = { x: st.pick.x + uu.x * st.lastR, y: st.pick.y + uu.y * st.lastR }; }
+          if (!pen) pen = st.pick.tick ? { x: st.pick.x + 18, y: st.pick.y } : { x: st.pick.x + (st.lastR || 60) * 0.87, y: st.pick.y - (st.lastR || 60) * 0.5 };
+          compass = compassSvg(st.pick, pen, 0.9);
+        }
+      }
       st.points.forEach(function (p) {
         var on = st.pick && dist(st.pick, p) < 0.5;
         if (p.tick && !on) { h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.4" fill="#854d0e"/>'; return; }
@@ -711,13 +965,16 @@
         h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + (on || ans ? 7 : p.given ? 4.5 : 3.5) + '" fill="' + (ans ? '#18a058' : on ? '#f59e0b' : p.given ? '#1c2127' : '#2f6fd6') + '"/>';
         if (p.label) h += '<text x="' + (p.x + 7).toFixed(1) + '" y="' + (p.y - 7).toFixed(1) + '" font-size="15" font-weight="bold">' + p.label + '</text>';
       });
-      svg.innerHTML = h;
+      svg.innerHTML = h + compass;
+      if (A) { if (prog < 1) window.requestAnimationFrame(draw); else st.anim = null; }
       var sameBtn = root.querySelector('.sk-tool[data-t="same"]'); if (sameBtn) { sameBtn.disabled = !st.lastR || st.done; sameBtn.textContent = st.arcMode ? '◠ 同じ大きさの3分の2の円' : '⭕ 同じ大きさの円'; }
     }
 
     setArcMode(st.arcMode);
     setLevel('basic');
+    // はじめて作図を開いたときは、かき方の動画を自動で見せる
+    try { if (!localStorage.getItem('sakuzuDemoSeen')) { localStorage.setItem('sakuzuDemoSeen', '1'); openDemo(demoIdxFor(st.pid)); } } catch (e) { }
   }
 
-  window.Sakuzu = { mount: mount, PROBLEMS: PROBLEMS, _intersect: intersect, _lineMatches: lineMatches };
+  window.Sakuzu = { mount: mount, PROBLEMS: PROBLEMS, _intersect: intersect, _lineMatches: lineMatches, _demoFrame: demoFrame, _DEMOS: DEMOS, _compass: compassSvg };
 })();
