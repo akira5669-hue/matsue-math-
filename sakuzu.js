@@ -141,7 +141,7 @@
       id: 'elemTriSAS', level: 'elem', title: '2つの辺とその間の角がわかる三角形ABC',
       make: function () {
         for (var k = 0; k < 200; k++) {
-          var bc = 0.5 * randInt(10, 14), deg = 5 * randInt(6, 14), c = 0.5 * randInt(7, 12);
+          var bc = 0.5 * randInt(10, 14), deg = 10 * randInt(3, 7), c = 0.5 * randInt(7, 12);
           var ax = c * Math.cos(deg * Math.PI / 180), ay = c * Math.sin(deg * Math.PI / 180);
           if (ay < 1.5 || ay > 5.4) continue;
           var t = elemTri_(bc, ax, ay, { AB: c, BC: bc, angB: deg }, true);
@@ -155,7 +155,7 @@
       id: 'elemTriASA', level: 'elem', title: '1つの辺とその両はしの角がわかる三角形ABC',
       make: function () {
         for (var k = 0; k < 200; k++) {
-          var bc = 0.5 * randInt(10, 14), db = 5 * randInt(6, 14), dc = 5 * randInt(6, 14);
+          var bc = 0.5 * randInt(10, 14), db = 10 * randInt(3, 7), dc = 10 * randInt(3, 7);
           if (db + dc > 140 || db === dc) continue;
           var tb = Math.tan(db * Math.PI / 180), tc = Math.tan(dc * Math.PI / 180);
           var ax = bc * tc / (tb + tc), ay = ax * tb;
@@ -590,7 +590,7 @@
         push({ type: 'circle', c: { x: sn.x, y: sn.y }, r: st.lastR });
         if (!st.done) msg('1つ前の円と同じ大きさの円をかいたよ。続けて点をタップすると、また同じ大きさの円がかけるよ。');
       } else if (st.tool === 'prot') {
-        // 📐 分度器(2026-11-22)：①頂点 ②0°の線を合わせる点 ③目もりをタップすると、その角度(5°ごと)の所に印をつける
+        // 📐 分度器(2026-11-22)：①頂点 ②0°の線を合わせる点 ③目もりをタップすると、その角度(10°ごと。2026-11-22 先生の指示)の所に印をつける
         if (!st.pick) {
           if (!sn) { msg('分度器の中心は、点（●）の上をタップしてね。'); return; }
           st.pick = sn; st.protBase = null; msg('次に、分度器の0°の線を合わせる辺の、もう一方のはしの点をタップしてね。'); draw(); return;
@@ -604,7 +604,7 @@
         ang = pf.sgn * ang * 180 / Math.PI;
         while (ang < -90) ang += 360; while (ang > 270) ang -= 360;
         if (ang < 0 || ang > 180) { msg('分度器の上（半円の中）の目もりをタップしてね。'); return; }
-        var deg = Math.max(5, Math.min(175, Math.round(ang / 5) * 5));
+        var deg = Math.max(10, Math.min(170, Math.round(ang / 10) * 10));
         var mp = protPoint_(pf, deg, PROT_R);
         var v = st.pick; st.pick = null; st.protBase = null;
         push({ type: 'mark', p: mp, deg: deg, v: { x: v.x, y: v.y } });
