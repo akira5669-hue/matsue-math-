@@ -37399,6 +37399,7 @@
     ifly: { t: '内野フライでアウト…', out: true },
     iliner: { t: '内野ライナーでアウト…', out: true },
     grounder: { t: '内野ゴロでアウト…', out: true },
+    ihit: { t: '内野ゴロ…でも瞬足でセーフ！内野安打！', out: false },
     k: { t: '空振り三振…', out: true },
     strike: { t: '空振りストライク！', out: false },
     ball: { t: 'ボール！', out: false },
@@ -37617,12 +37618,16 @@
       renderGacha_();
     }).catch(function () { bqBusy_ = false; renderGacha_(); });
   }
-  // 2026-11-22〜 ゴールデンバット(試合の前に選ぶ。gacha.jsのBB_BATSと揃える)。HPを払うと、当たったときのヒットの出やすさがx倍。
+  // 2026-11-22 先生の指示：バットと瞬足スパイク(試合の前に選ぶ。gacha.jsのBB_BATS・BB_SPIKE_HPと揃える)。
+  // バットは当たったときの打率(ふつう.358)がup/1000上がる。スパイクは内野ゴロでもセーフ(内野安打)。
+  var BB_BASE_AVG_ = 358;
   var BB_BATS_ = {
-    chozetsu: { n: '✨ 超絶ゴールデンバット', hp: 25, x: 2, col: '#fde047', glow: '#fffbeb' },
-    bakuretsu: { n: '🔥 爆裂ゴールデンバット', hp: 50, x: 3, col: '#f59e0b', glow: '#ef4444' }
+    metal: { n: '🔩 金属バット', hp: 30, up: 100, w: '1割', col: '#cbd5e1', glow: '#64748b' },
+    chozetsu: { n: '✨ 超絶バット', hp: 50, up: 200, w: '2割', col: '#fde047', glow: '#fffbeb' },
+    bakuretsu: { n: '🔥 爆裂バット', hp: 100, up: 300, w: '3割', col: '#f59e0b', glow: '#ef4444' }
   };
-  var bbBat_ = '';
+  var BB_SPIKE_HP_ = 50;
+  var bbBat_ = '', bbSpike_ = false;
   function bbBatOf_(st) { return (typeof BB_BATS_ === 'object' && BB_BATS_ && st && BB_BATS_[st.bat]) || null; }
   // 2026-11-22〜 タイミングでフルスイング：ボールがバッターの前に来た瞬間とのずれがBB_TIMING_WIN_ミリ秒以内なら当たる(gacha.jsと揃える)
   var BB_TIMING_WIN_ = 120;
@@ -37644,20 +37649,28 @@
     }
     var first = !(t && t.result);
     var st = first ? bbNewGame_() : t.result;
-    if (first) st.bat = bbBat_;
+    if (first) { st.bat = bbBat_; st.spike = bbSpike_; }
     var last = st.pitches && st.pitches[st.pitches.length - 1];
     out.innerHTML = (last ? '<div class="gacha-line">' + bbEvText_(last, st) + '</div>' : '') + bbHistHtml_(st.pitches) + bbSceneHtml_(st, 'bb-ready', false)
       + ((Number(t && t.mp) || 0) > 0 ? '<div class="gacha-mp">ここまで +' + t.mp + 'MP</div>' : '');
     var h = '';
     if (first) {
       var hp = Number(state.hp) || 0;
-      h += '<div class="gacha-line"><b>🏏 バットを選ぼう</b>（この試合のあいだずっと使えるよ）</div><div class="pk-btns bb-bats">'
-        + ['', 'chozetsu', 'bakuretsu'].map(function (k) {
+      var spHp = bbSpike_ ? BB_SPIKE_HP_ : 0, btHp = BB_BATS_[bbBat_] ? BB_BATS_[bbBat_].hp : 0;
+      h += '<div class="gacha-line"><b>🏏 バットとスパイクを選ぼう</b>（この試合のあいだずっと使えるよ。打率は、バットに当たったときにヒットになる割合）</div><div class="pk-btns bb-bats">'
+        + ['', 'metal', 'chozetsu', 'bakuretsu'].map(function (k) {
           var b = BB_BATS_[k];
-          return '<button type="button" class="ghost-btn pk-btn' + (bbBat_ === k ? ' is-on' : '') + '" data-bbbat="' + k + '"' + (b && hp <= b.hp ? ' disabled' : '') + '>'
-            + (b ? b.n + '<br><small>HP-' + b.hp + '・打率' + b.x + '倍</small>' : '🏏 ふつうのバット<br><small>HPは使わない</small>') + '</button>';
-        }).join('') + '</div>';
-    } else if (st.bat && BB_BATS_[st.bat]) h += '<div class="gacha-line">' + BB_BATS_[st.bat].n + 'を使っているよ（打率' + BB_BATS_[st.bat].x + '倍）</div>';
+          return '<button type="button" class="ghost-btn pk-btn' + (bbBat_ === k ? ' is-on' : '') + '" data-bbbat="' + k + '"' + (b && hp <= b.hp + spHp ? ' disabled' : '') + '>'
+            + (b ? b.n + '<br><small>HP-' + b.hp + '・打率' + b.w + 'アップ（' + bbAvgText_(BB_BASE_AVG_ + b.up) + '）</small>' : '🪵 木製バット<br><small>ふつう・HPは使わない（打率' + bbAvgText_(BB_BASE_AVG_) + '）</small>') + '</button>';
+        }).join('')
+        + '<button type="button" class="ghost-btn pk-btn' + (bbSpike_ ? ' is-on' : '') + '" data-bbspike="1"' + (!bbSpike_ && hp <= BB_SPIKE_HP_ + btHp ? ' disabled' : '') + '>👟 瞬足スパイク' + (bbSpike_ ? '（はく）' : '') + '<br><small>HP-' + BB_SPIKE_HP_ + '・内野ゴロでもセーフ！</small></button></div>'
+        + ((btHp + spHp) ? '<div class="gacha-line">使うHP：<b>' + (btHp + spHp) + '</b>（今のHP ' + hp + '）</div>' : '');
+    } else {
+      var gear = [];
+      if (st.bat && BB_BATS_[st.bat]) gear.push(BB_BATS_[st.bat].n + '（打率' + BB_BATS_[st.bat].w + 'アップ）');
+      if (st.spike) gear.push('👟 瞬足スパイク（内野ゴロでもセーフ）');
+      if (gear.length) h += '<div class="gacha-line">' + gear.join('と') + 'を使っているよ</div>';
+    }
     h += '<div class="gacha-line"><b>第' + st.ab + '打席 ' + bbBatter_(st.ab) + '（' + st.balls + 'ボール ' + st.strikes + 'ストライク）</b><br>ボールがバッターの前に来た瞬間に「💥 フルスイング！」を押そう。タイミングが合えばバットに当たる！ボール球は見のがそう。</div>'
       + '<button type="button" class="primary-btn gacha-btn" data-bbgo="1"' + (bbBusy_ ? ' disabled' : '') + '>⚾ ' + (first ? 'プレイボール！' : 'ピッチャーが投げる！') + '</button>';
     ch.innerHTML = h;
@@ -37679,10 +37692,10 @@
     var done = function (msg) { bbLive_ = null; out.removeAttribute('data-anim'); bbBusy_ = false; renderGacha_(); if (msg) ch.insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
     if (cur && cur.result && cur.result.pend) { bbLiveStart_(cur.result, card, done); return; }
     ch.innerHTML = '<div class="test-photo-hint">…</div>';
-    apiPost('gachaDraw', { id: session.id, kind: 'baseball', step: 'throw', bat: first ? bbBat_ : '' }).then(function (res) {
+    apiPost('gachaDraw', { id: session.id, kind: 'baseball', step: 'throw', bat: first ? bbBat_ : '', spike: first && bbSpike_ }).then(function (res) {
       if (res && typeof res.hp === 'number') { state.hp = res.hp; saveGameState(state); updateGameHud(); }
-      if (res && res.ok && res.result && res.result.pend) { gacha_.today.baseball = { result: res.result, mp: res.mp }; bbBat_ = ''; bbLiveStart_(res.result, card, done); }
-      else if (res && res.error === 'insufficient_hp') done('HPが足りません（このバットはHP' + ((Number(res.need) || 0) + 1) + '以上で使えるよ）。');
+      if (res && res.ok && res.result && res.result.pend) { gacha_.today.baseball = { result: res.result, mp: res.mp }; bbBat_ = ''; bbSpike_ = false; bbLiveStart_(res.result, card, done); }
+      else if (res && res.error === 'insufficient_hp') done('HPが足りません（HP' + ((Number(res.need) || 0) + 1) + '以上あると使えるよ）。');
       else if (res && res.error === 'bb_locked') { gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.sakuzuCorrect = Number(res.sakuzuCorrect) || 0; done('🔒 🔬自分の学年以上の理科を今日' + (Number(res.bbUnlock) || 10) + '問、または📐作図を' + (Number(res.bbSakuzuUnlock) || 15) + '問正解するとできるよ。'); }
       else if (res && res.prev && res.prev.result) { gacha_.today.baseball = res.prev; done(''); }
       else done('できませんでした。もう一度お試しください。');
@@ -37945,6 +37958,8 @@
       if (bqb) { bbQuizAnswer_(bqb.getAttribute('data-bq')); return; }
       var bbt = e.target.closest('[data-bbbat]');
       if (bbt) { if (!bbBusy_ && !bbt.disabled) { bbBat_ = bbt.getAttribute('data-bbbat'); renderGacha_(); } return; }
+      var bbsp = e.target.closest('[data-bbspike]');
+      if (bbsp) { if (!bbBusy_ && !bbsp.disabled) { bbSpike_ = !bbSpike_; renderGacha_(); } return; }
       if (e.target.closest('[data-bbgo]')) { bbThrow_(); return; }
       if (e.target.closest('[data-bbswing]')) { if (bbLive_ && bbLive_.swing) bbLive_.swing(); return; }
       if (card && e.target.closest('.gacha-btn')) drawGacha_(card.getAttribute('data-gacha'));
