@@ -37447,15 +37447,16 @@
   }
   function bbLamps_(n, max, col) { var s = ''; for (var i = 0; i < max; i++) s += '<tspan fill="' + (i < n ? col : '#64748b') + '">' + (i < n ? '●' : '○') + '</tspan>'; return s; }
   // st：表示する試合のようす(カウント・ランナー・点)。cls：場面のクラス(動き)。
-  function bbSceneHtml_(st, cls, still) {
+  // pm(ピッチャー編)のときは、守り(ピッチャー大谷笑平)が青の松江、バッターとランナーが赤の川越。pm.batterはバッターの名前。
+  function bbSceneHtml_(st, cls, still, pm) {
     st = st || bbNewGame_();
     var crowd = '', cc = ['#f87171', '#60a5fa', '#fbbf24', '#f9fafb', '#a78bfa', '#34d399', '#fb923c'];
     for (var i = 0; i < 46; i++) crowd += '<circle cx="' + (4 + i * 6.5) + '" cy="' + (6 + (i % 3) * 7) + '" r="2.8" fill="' + cc[(i * 3) % cc.length] + '"/>';
-    var home = '#2563eb', away = '#dc2626', b = st.bases || [0, 0, 0];
+    var home = pm ? '#dc2626' : '#2563eb', away = pm ? '#2563eb' : '#dc2626', b = st.bases || [0, 0, 0];
     var runnerPos = [[230, 158], [158, 108], [70, 158]], runners = '', baseTxt = [];
     for (var j = 0; j < 3; j++) if (b[j]) runners += bbPerson_(runnerPos[j][0], runnerPos[j][1], home, 0.9);
     var full = b[0] && b[1] && b[2];
-    var lefty = !!BB_LEFTY_[bbBatter_(st.ab)];
+    var lefty = !!BB_LEFTY_[pm ? pm.batter : bbBatter_(st.ab)];
     return '<div class="bb-scene' + (still ? ' bb-noanim' : '') + (lefty ? ' bb-lefty' : '') + ' ' + (cls || 'bb-ready') + '"><svg viewBox="0 0 300 220" role="img" aria-label="野球の場面">'
       + '<rect width="300" height="40" fill="#334155"/>' + crowd
       + '<path d="M0 44 Q150 8 300 44 L300 220 L0 220Z" fill="#15803d"/>'
@@ -37489,12 +37490,15 @@
       + '</g>'
       // スコアボード
       + '<g><rect x="4" y="4" width="142" height="46" rx="4" fill="#0f172a" opacity="0.92"/>'
-      + '<text x="10" y="15" font-size="8.5" font-weight="800" fill="#fca5a5">' + BB_AWAY_TEAM_ + '</text><text x="140" y="15" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.away) || 3) + '</text>'
-      + '<text x="10" y="27" font-size="8.5" font-weight="800" fill="#93c5fd">' + BB_HOME_TEAM_ + '</text><text x="140" y="27" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.home) || 0) + '</text>'
+      + (pm
+        ? '<text x="10" y="15" font-size="8.5" font-weight="800" fill="#93c5fd">' + BB_HOME_TEAM_ + '</text><text x="140" y="15" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.us) || 0) + '</text>'
+        + '<text x="10" y="27" font-size="8.5" font-weight="800" fill="#fca5a5">' + BB_AWAY_TEAM_ + '</text><text x="140" y="27" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.opp) || 0) + '</text>'
+        : '<text x="10" y="15" font-size="8.5" font-weight="800" fill="#fca5a5">' + BB_AWAY_TEAM_ + '</text><text x="140" y="15" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.away) || 3) + '</text>'
+        + '<text x="10" y="27" font-size="8.5" font-weight="800" fill="#93c5fd">' + BB_HOME_TEAM_ + '</text><text x="140" y="27" font-size="9.5" font-weight="900" fill="#fff" text-anchor="end">' + (Number(st.home) || 0) + '</text>')
       + '<text x="10" y="44" font-size="8.5" font-weight="800" fill="#fde047">9回裏' + (full ? ' 満塁' : '') + ' <tspan fill="#fff">B' + bbLamps_(st.balls, 3, '#22c55e') + ' S' + bbLamps_(st.strikes, 2, '#facc15') + ' O' + bbLamps_(2, 2, '#ef4444') + '</tspan></text></g>'
       + '<text x="' + (lefty ? 175 : 125) + '" y="184" font-size="10" font-weight="900" fill="#fff" text-anchor="middle">1</text>'
-      + '<text x="' + (lefty ? 190 : 66) + '" y="172" class="pk-tag">' + bbBatter_(st.ab) + '</text>'
-      + '<text x="163" y="132" class="pk-tag bb-ptag">' + BB_PITCHER_ + '</text>'
+      + '<text x="' + (lefty ? 190 : 66) + '" y="172" class="pk-tag">' + (pm ? pm.batter : bbBatter_(st.ab)) + '</text>'
+      + '<text x="163" y="132" class="pk-tag bb-ptag">' + (pm ? '大谷笑平' : BB_PITCHER_) + '</text>'
       + '<text x="150" y="72" class="bb-hrtext" text-anchor="middle">HOME RUN!!</text>'
       + '</svg></div>';
   }
@@ -37770,6 +37774,102 @@
       setTimeout(function () { L.done(''); }, st.done ? 2600 : ev.contact ? 2400 : 1600);
     }).catch(function () { L.done('通信に失敗しました。「⚾ ピッチャーが投げる！」でもう一度。'); });
   }
+  // ⚾ 野球ガチャ・ピッチャー編(2026-11-22〜 先生だけのプレビュー。gacha.jsのptPitch_と揃える)
+  var PT_BATTERS_ = ['赤井剛', '黒田翔', '白石大', '緑川陸'];
+  var PT_PITCH_ = {
+    fast: { n: '🔥 ストレート' }, curve: { n: '🌈 カーブ' }, fork: { n: '⬇️ フォーク' }, slider: { n: '↪️ スライダー' },
+    knuckle: { n: '🌀 ナックルボール', hp: 30, d: '7割で空振り・3割はボール（押し出し）' },
+    vanish: { n: '👻 消える魔球', hp: 50, d: '9割で空振り！' }
+  };
+  var PT_END_ = { save: { t: '🎉 ゲームセット！大谷笑平が抑えて勝利！！', mp: 10 }, tie: { t: '😮 ゲームセット…同点で引き分け', mp: 5 }, lose: { t: '😣 逆転サヨナラ負け…', mp: 0 } };
+  var ptBusy_ = false;
+  function ptBatter_(ab) { return PT_BATTERS_[((Number(ab) || 1) - 1) % PT_BATTERS_.length]; }
+  function ptNewGame_() { return { ab: 1, n: 0, balls: 3, strikes: 0, bases: [1, 1, 1], us: 4, opp: 3, pitches: [], done: false, end: '' }; }
+  function ptEvText_(ev, st) {
+    var who = ptBatter_(ev.ab), t;
+    if (ev.res === 'walk') t = 'ナックルがボールに…フォアボール！押し出しで1点…';
+    else if (ev.res === 'strike') t = (ev.pitch === 'vanish' ? 'ボールが消えた！' : '') + '空振りストライク！（' + st.strikes + 'ストライク）';
+    else if (ev.res === 'k') t = (ev.pitch === 'vanish' ? 'ボールが消えた！' : '') + '空振り三振！！';
+    else if (BB_RES_[ev.res] && BB_RES_[ev.res].out) t = who + 'は' + BB_RES_[ev.res].t.replace('アウト…', 'アウト！');
+    else t = who + 'に' + (BB_RES_[ev.res] ? BB_RES_[ev.res].t.replace('！', 'を打たれた！') : '打たれた！') + (ev.runs ? ev.runs + '点入った…' : '');
+    if (st.done && PT_END_[st.end]) t += ' ' + PT_END_[st.end].t;
+    else if (ev.res === 'walk' || (ev.contact && !(BB_RES_[ev.res] || {}).out)) t += ' 次のバッター ' + ptBatter_(st.ab) + '！';
+    return t;
+  }
+  function ptHistHtml_(list) {
+    var out = [], ab = 0, k = 0;
+    (list || []).forEach(function (p) {
+      if (p.ab !== ab) { ab = p.ab; k = 0; out.push('<b>' + ab + '人目 ' + ptBatter_(ab) + '</b>'); }
+      k++;
+      var info = BB_RES_[p.res];
+      out.push(k + '球目：' + (PT_PITCH_[p.pitch] ? PT_PITCH_[p.pitch].n : '') + '→'
+        + (p.res === 'walk' ? 'ボール（押し出し1点）' : p.res === 'strike' ? '空振りストライク' : p.res === 'k' ? '空振り三振' : (info ? info.t : '') + (p.runs ? '（' + p.runs + '点）' : '')));
+    });
+    return out.length ? '<div class="gacha-line">' + out.join('<br>') + '</div>' : '';
+  }
+  function ptCls_(ev, st) {
+    return 'bb-go bb-pt-' + ev.pitch + ' bb-p-' + (ev.res === 'walk' ? 'ball' : 'mid') + (ev.res === 'walk' ? '' : ' bb-swing');
+  }
+  function ptHitCls_(ev) { return ev.contact ? 'bb-r-' + ev.res : ev.res === 'walk' ? 'bb-r-ball' : 'bb-r-k'; }
+  function ptRender_(card) {
+    var out = card.querySelector('.gacha-out'), ch = card.querySelector('.pt-choices');
+    if (out.getAttribute('data-anim')) { ch.innerHTML = ''; return; }
+    var t = gacha_.today.pitcher, st = t && t.result ? t.result : ptNewGame_();
+    var last = st.pitches && st.pitches[st.pitches.length - 1];
+    var pm = { batter: ptBatter_(last && st.done ? last.ab : st.ab) };
+    out.innerHTML = (last ? '<div class="gacha-line">' + ptEvText_(last, st) + '</div>' : '') + ptHistHtml_(st.pitches)
+      + bbSceneHtml_(st, st.done && last ? ptCls_(last, st) + ' ' + ptHitCls_(last) : 'bb-ready', !!st.done, pm);
+    if (st.done) {
+      ch.innerHTML = '<div class="pk-big ' + (st.end === 'lose' ? 'pk-lose' : 'pk-win') + '">' + (PT_END_[st.end] || {}).t + ' ' + st.us + '−' + st.opp + '</div>'
+        + '<div class="gacha-mp">' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
+        + '<button type="button" class="ghost-btn" data-gacha-again="pitcher">🔁 もう一度（先生だけ）</button>';
+      return;
+    }
+    var hp = Number(state.hp) || 0;
+    ch.innerHTML = '<div class="gacha-line"><b>' + st.ab + '人目 ' + ptBatter_(st.ab) + '（' + st.strikes + 'ストライク）</b>　何を投げる？</div><div class="pk-btns bb-bats">'
+      + Object.keys(PT_PITCH_).map(function (k) {
+        var p = PT_PITCH_[k];
+        return '<button type="button" class="ghost-btn pk-btn" data-pt="' + k + '"' + (ptBusy_ || (p.hp && hp <= p.hp) ? ' disabled' : '') + '>' + p.n + (p.hp ? '<br><small>HP-' + p.hp + '・' + p.d + '</small>' : '') + '</button>';
+      }).join('') + '</div>';
+  }
+  function ptPlay_(pitch) {
+    var session = loadSession();
+    var cur = gacha_.today.pitcher;
+    if (!session || !session.id || ptBusy_ || (cur && cur.result && cur.result.done) || !isAdminSession_()) return;
+    ptBusy_ = true;
+    var before = cur && cur.result ? cur.result : ptNewGame_();
+    var card = els.gachaPanel.querySelector('[data-gacha="pitcher"]');
+    var out = card.querySelector('.gacha-out'), ch = card.querySelector('.pt-choices');
+    out.setAttribute('data-anim', '1');
+    out.innerHTML = '<div class="pk-big">⚾ 大谷笑平、' + PT_PITCH_[pitch].n.replace(/^\S+ /, '') + 'を…ふりかぶって…</div>' + bbSceneHtml_(before, 'bb-ready', false, { batter: ptBatter_(before.ab) });
+    ch.innerHTML = '';
+    var started = Date.now();
+    var done = function (msg) { out.removeAttribute('data-anim'); ptBusy_ = false; renderGacha_(); if (msg) ch.insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
+    apiPost('gachaDraw', { id: session.id, kind: 'pitcher', pitch: pitch }).then(function (res) {
+      if (res && typeof res.hp === 'number') { state.hp = res.hp; saveGameState(state); updateGameHud(); }
+      if (res && res.ok && res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
+      if (!(res && res.ok && res.last)) {
+        if (res && res.prev) gacha_.today.pitcher = res.prev;
+        done(res && res.error === 'insufficient_hp' ? 'HPが足りません（HP' + ((Number(res.need) || 0) + 1) + '以上で投げられるよ）。' : res && res.prev ? '' : 'できませんでした。もう一度お試しください。');
+        return;
+      }
+      gacha_.today.pitcher = { result: res.result, mp: res.mp };
+      var ev = res.last, st = res.result;
+      setTimeout(function () {
+        var sc = out.querySelector('.bb-scene');
+        if (!sc) { done(''); return; }
+        sc.classList.remove('bb-ready');
+        void sc.offsetWidth;
+        ptCls_(ev, st).split(' ').forEach(function (c) { if (c !== 'bb-swing') sc.classList.add(c); });
+        if (ev.res !== 'walk') setTimeout(function () { sc.classList.add('bb-swing'); }, 430);
+        setTimeout(function () {
+          ptHitCls_(ev).split(' ').forEach(function (c) { sc.classList.add(c); });
+          out.insertAdjacentHTML('beforeend', '<div class="pk-big ' + (st.end === 'lose' ? 'pk-lose' : (ev.res === 'strike' || ev.res === 'k' || st.end === 'save') ? 'pk-win' : '') + '">' + ptEvText_(ev, st) + '</div>');
+        }, 650);
+        setTimeout(function () { done(''); }, st.done ? 2800 : ev.contact ? 2400 : 1600);
+      }, Math.max(0, 800 - (Date.now() - started)));
+    }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
+  }
   // 🛸UFOキャッチャーガチャ(ドラゴン専用、2026-11-11〜、lib/handlers/zeroDragon.js)：ゼロドラゴンを倒すたびに1回。
   // 左右に動くUFOを魔法の書の真上で止めるとキャッチ。どの書かはサーバーで決め、冊数は端末で+1して同期で保存する。
   var UFO_HIT_RANGE_ = 3.5; // UFOと書の中心のずれ(枠の幅の%)がこれ以内ならキャッチ(2026-11-11 先生の指示で、大きさ半分・速さ2倍にしてむずかしく。7→3.5)
@@ -37870,6 +37970,7 @@
       if (card.hidden) return;
       if (kind === 'pk') { pkRender_(card); return; }
       if (kind === 'baseball') { bbRender_(card); return; }
+      if (kind === 'pitcher') { ptRender_(card); return; }
       var done = gacha_.today[kind];
       var btn = card.querySelector('.gacha-btn');
       var out = card.querySelector('.gacha-out');
@@ -37956,6 +38057,8 @@
       if (dqb) { diceQuizAnswer_(dqb.getAttribute('data-dq')); return; }
       var bqb = e.target.closest('[data-bq]');
       if (bqb) { bbQuizAnswer_(bqb.getAttribute('data-bq')); return; }
+      var ptb = e.target.closest('[data-pt]');
+      if (ptb) { if (!ptb.disabled) ptPlay_(ptb.getAttribute('data-pt')); return; }
       var bbt = e.target.closest('[data-bbbat]');
       if (bbt) { if (!bbBusy_ && !bbt.disabled) { bbBat_ = bbt.getAttribute('data-bbbat'); renderGacha_(); } return; }
       var bbsp = e.target.closest('[data-bbspike]');
