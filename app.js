@@ -24519,9 +24519,10 @@
 
   // 📐作図にチャレンジ：2026-11-18 先生の指示で、いったん00001だけに公開(11/27の全員公開と告知は取りやめ)。
   // 全員に出すときは SAKUZU_OPEN_ALL_ を true にし、SAKUZU_START_・SAKUZU_BANNER_END_ を決めなおす。
-  var SAKUZU_OPEN_ALL_ = false;
-  var SAKUZU_START_ = '2026-11-27';
-  var SAKUZU_BANNER_END_ = '2026-12-06';
+  // 2026-11-21 先生「本番オッケー」で全員に公開。
+  var SAKUZU_OPEN_ALL_ = true;
+  var SAKUZU_START_ = '2026-11-21';
+  var SAKUZU_BANNER_END_ = '2026-11-30';
   function sakuzuVisible_() { return isAdminSession_() || (SAKUZU_OPEN_ALL_ && todayKey() >= SAKUZU_START_); }
   function renderSakuzuBanner_() {
     var b = document.getElementById('sakuzuBanner');
@@ -24532,7 +24533,7 @@
     b.hidden = false;
     var t = document.getElementById('sakuzuBannerText');
     if (t) t.textContent = (started ? '📐 新機能「作図にチャレンジ」スタート！' : '📐【予告】11月27日(金)から、新機能「作図にチャレンジ」がスタート！')
-      + 'アプリの中のコンパスと定規を使って、本当に作図ができるよ。垂直二等分線・角の二等分線・垂線を作図して、正しい線が引けたら正解で、1問1MP（1日10MPまで。ほかのMPの1日の上限とは別にもらえる）！まちがえても「1つもどす」でやり直せるし、ヒントもあるよ。中1で習う作図の練習にぴったり！';
+      + 'アプリの中のコンパス・定規・分度器を使って、本当に作図ができるよ。小学生は三角形・ひし形・正六角形、中学生は垂直二等分線・角の二等分線・垂線から入試レベルまで。正しく作図できたら1問1MP（1日10MPまで。ほかのMPの1日の上限とは別にもらえる）！「🎬 かき方の動画」でコンパスの使い方が見られるし、わからないときは「🎬 答えの動画」でかき方を動画で解説するよ。';
     var btn = document.getElementById('sakuzuBannerBtn');
     if (btn) btn.hidden = !started;
   }

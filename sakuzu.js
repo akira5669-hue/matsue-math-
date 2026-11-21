@@ -115,8 +115,100 @@
         return o;
       })(),
       ask: '下のものさし' + (useProt ? 'と「📐 分度器」' : '') + 'を使って作図し、できた頂点Aを「📍 答えの点」でタップしてね。',
+      video: (function () {
+        var R0 = { x: RULER_X, y: RULER_Y }, v = [{ t: 'say', say: '辺BC（' + fmtCm(bc) + '）は、もうかいてあるよ。見本と同じ三角形をかこう。' }];
+        function ro(len) { return { t: 'open', c: R0, to: { x: RULER_X + len * CM, y: RULER_Y }, cm: true, say: 'コンパスの針をものさしの0に合わせて、えんぴつの先を' + fmtCm(len) + 'まで開く。' }; }
+        function ray(P, Q, deg) {
+          v.push({ t: 'prot', c: P, base: Q, deg: deg, R: 100, say: '分度器の中心を点' + P.label + 'に、0°の線を辺BCに合わせて、' + deg + '°のところに印をつける。' });
+          v.push(vLine(P, addP(P, unit(A.x - P.x, A.y - P.y), dist(P, A) + 45), '定規で、点' + P.label + 'と印を結んで、長めに線をひく。'));
+        }
+        function arcAt(P, len) { var a = arcOver(P, dist(P, A), A, A, 16, '頂点Aがありそうなところに、弧をかく。'); v.push(ro(len), moveTo(a, '開いたまま（' + fmtCm(len) + 'のまま）、コンパスの針を点' + P.label + 'にさす。'), a); }
+        if (given.angB) ray(B, C, given.angB);
+        if (given.angC) ray(C, B, given.angC);
+        if (given.AB) arcAt(B, given.AB);
+        if (given.AC) arcAt(C, given.AC);
+        v.push({ t: 'pt', p: [lbl(A, 'A')], say: (given.angB && given.angC ? '2本の線' : given.angB ? '線と弧' : '2つの弧') + 'が交わった点が、頂点Aだよ。' + (given.angB && given.angC ? 'できあがり！' : '') });
+        if (!given.angB) v.push(vLine(A, B, '定規で、点Aと点Bを結ぶ。'));
+        if (!given.angC) v.push(vLine(A, C, '点Aと点Cを結んだら、できあがり！'));
+        return v;
+      })(),
     };
   }
+  // ===== 🎬 答えの動画の手順をつくる道具(2026-11-22 先生「答えは、全て動画解説で」) =====
+  // 角度は画面の向き(右が0°、下向きが＋)。手順の形は「かき方の動画」と同じ。
+  function angOf(c, p) { return Math.atan2(p.y - c.y, p.x - c.x) * 180 / Math.PI; }
+  function nrm(a) { while (a > 180) a -= 360; while (a <= -180) a += 360; return a; }
+  function addP(p, v, k) { return { x: p.x + v.x * k, y: p.y + v.y * k }; }
+  function vpt(c, r, deg) { var t = deg * Math.PI / 180; return { x: c.x + r * Math.cos(t), y: c.y + r * Math.sin(t) }; }
+  // 中心cから見て、点p1〜p2をまたぐ弧(padは両はしの余白°)
+  function arcOver(c, r, p1, p2, pad, say) { var a = angOf(c, p1), d = nrm(angOf(c, p2) - a), sg = d >= 0 ? 1 : -1; return { t: 'arc', c: c, r: r, a0: a - sg * pad, a1: a + d + sg * pad, say: say }; }
+  function moveTo(a, say) { return { t: 'move', c: a.c, r: a.r, a: a.a0, say: say }; }
+  function openTo(a, say) { return { t: 'open', c: a.c, to: vpt(a.c, a.r, a.a0), say: say }; }
+  function vLine(p, q, say) { return { t: 'line', p: p, q: q, say: say }; }
+  function nm(p) { return p && p.label ? '点' + p.label : 'その点'; }
+  function lbl(p, l) { return { x: p.x, y: p.y, label: l }; }
+  // 線分ABの垂直二等分線
+  function vPerpBis(A, B, lab) {
+    var d = dist(A, B), r = d * 0.68, M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, n = unit(-(B.y - A.y), B.x - A.x), h = Math.sqrt(r * r - d * d / 4);
+    var X1 = addP(M, n, h), X2 = addP(M, n, -h), u = unit(X2.x - X1.x, X2.y - X1.y);
+    var a1 = arcOver(A, r, X1, X2, 14, nm(A) + 'を中心に、線分' + lab + 'の両がわにとどく弧をかく。'), a2 = arcOver(B, r, X1, X2, 14, '同じように、両がわに弧をかく。');
+    return { X1: X1, X2: X2, u: u, steps: [
+      openTo(a1, 'コンパスの針を' + nm(A) + 'にさして、' + lab + 'の半分より大きく開く。'), a1,
+      moveTo(a2, '開いたまま（同じ大きさで）、針を' + nm(B) + 'にさす。'), a2,
+      { t: 'pt', p: [X1, X2], say: '弧が交わった点が、2つできたね。' },
+      vLine(addP(X1, u, -30), addP(X2, u, 30), '2つの点を定規で結ぶと、' + lab + 'の垂直二等分線！'),
+    ] };
+  }
+  // ∠AOBの二等分線(r1：Oの弧の半径)
+  function vAngBis(O, A, B, r1, finalSay, ext) {
+    var E1 = addP(O, unit(A.x - O.x, A.y - O.y), r1), E2 = addP(O, unit(B.x - O.x, B.y - O.y), r1);
+    var r2 = Math.max(r1 * 0.9, dist(E1, E2) * 0.75);
+    var X = interCC({ c: E1, r: r2 }, { c: E2, r: r2 }), R = dist(X[0], O) > dist(X[1], O) ? X[0] : X[1];
+    var a0 = arcOver(O, r1, E1, E2, 12, '角の2つの辺と交わるように、弧をかく。');
+    var b1 = arcOver(E1, r2, R, R, 20, '角の内がわに、弧をかく。'), b2 = arcOver(E2, r2, R, R, 20, 'さっきの弧と交わるように、弧をかく。');
+    var w = unit(R.x - O.x, R.y - O.y);
+    return { R: R, E1: E1, E2: E2, steps: [
+      openTo(a0, 'コンパスの針を、角の頂点' + (O.label ? O.label : '') + 'にさす。'), a0,
+      { t: 'pt', p: [E1, E2], say: '辺と交わった点が2つできたね。' },
+      openTo(b1, '1つめの点に針をさす。'), b1,
+      moveTo(b2, '開いたまま（同じ大きさで）、もう1つの点に針をさす。'), b2,
+      { t: 'pt', p: [R], say: '2つの弧が交わった点ができたね。' },
+      vLine(O, addP(O, w, ext || dist(O, R) + 60), finalSay || '頂点と交わった点を結ぶと、角の二等分線！'),
+    ] };
+  }
+  // 直線(向きu)上の点Pを通る垂線。sideの点があれば、そちらがわに作る
+  function vPerpOn(P, u, r1, r2, side, finalSay, back, fwd) {
+    var E1 = addP(P, u, r1), E2 = addP(P, u, -r1), n = { x: -u.y, y: u.x };
+    if (side ? (side.x - P.x) * n.x + (side.y - P.y) * n.y < 0 : n.y > 0) n = { x: -n.x, y: -n.y };
+    var X = addP(P, n, Math.sqrt(r2 * r2 - r1 * r1));
+    var a1 = arcOver(P, r1, E1, E1, 18, '直線と交わるように、弧をかく。'), a2 = arcOver(P, r1, E2, E2, 18, '反対がわにも、弧をかく。');
+    var b1 = arcOver(E1, r2, X, X, 18, '弧をかく。'), b2 = arcOver(E2, r2, X, X, 18, 'さっきの弧と交わるように、弧をかく。');
+    return { X: X, n: n, E1: E1, E2: E2, steps: [
+      openTo(a1, 'コンパスの針を' + nm(P) + 'にさす。'), a1, moveTo(a2, '開いたまま、反対がわへ。'), a2,
+      { t: 'pt', p: [E1, E2], say: nm(P) + 'から同じ距離の点が、直線の上に2つできたね。' },
+      openTo(b1, '1つめの点に針をさして、さっきより大きく開く。'), b1,
+      moveTo(b2, '開いたまま（同じ大きさで）、もう1つの点に針をさす。'), b2,
+      { t: 'pt', p: [X], say: '2つの弧が交わった点ができたね。' },
+      vLine(addP(P, n, -(back == null ? 50 : back)), addP(P, n, fwd || dist(P, X) + 40), finalSay || nm(P) + 'と交わった点を結ぶと、垂線！'),
+    ] };
+  }
+  // 直線LpLqの外の点Pを通る垂線
+  function vPerpOut(P, Lp, Lq, finalSay) {
+    var u = unit(Lq.x - Lp.x, Lq.y - Lp.y), Fo = foot(P, Lp, Lq), d = dist(P, Fo), r1 = d * 1.15, half = Math.sqrt(r1 * r1 - d * d);
+    var E1 = addP(Fo, u, half), E2 = addP(Fo, u, -half), n = unit(Fo.x - P.x, Fo.y - P.y), r2 = half * 1.2;
+    var X = addP(Fo, n, Math.sqrt(r2 * r2 - half * half));
+    var a1 = arcOver(P, r1, E1, E2, 6, '直線と2か所で交わるように、弧をかく。');
+    var b1 = arcOver(E1, r2, X, X, 18, '直線の反対がわに、弧をかく。'), b2 = arcOver(E2, r2, X, X, 18, 'さっきの弧と交わるように、弧をかく。');
+    return { X: X, F: Fo, steps: [
+      openTo(a1, 'コンパスの針を' + nm(P) + 'にさして、直線をこえるくらいに開く。'), a1,
+      { t: 'pt', p: [E1, E2], say: '直線と交わった点が2つできたね。' },
+      openTo(b1, '1つめの点に針をさす。'), b1,
+      moveTo(b2, '開いたまま（同じ大きさで）、もう1つの点に針をさす。'), b2,
+      { t: 'pt', p: [X], say: '2つの弧が交わった点ができたね。' },
+      vLine(addP(P, n, -25), addP(P, n, Math.max(dist(P, X), 2 * d) + 25), finalSay || nm(P) + 'と交わった点を結ぶと、垂線！'),
+    ] };
+  }
+
   var PROBLEMS = [
     // ===== 小学生(2026-11-22 先生の指示で、合同な三角形の作図(小5)に変更) =====
     // 辺BCはかいてある。ものさし(0.5cmごとの目もり)でコンパスに長さをとり、分度器で角をはかって、頂点Aをかく。
@@ -176,6 +268,19 @@
           points: [A, B, D], objs: [{ type: 'segment', p: A, q: B }, { type: 'segment', p: A, q: D }],
           target: { kind: 'point', p: { x: B.x + D.x - A.x, y: B.y + D.y - A.y } },
           ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          video: (function () {
+            var Cc = { x: B.x + D.x - A.x, y: B.y + D.y - A.y }, a1 = angOf(B, A), a2 = angOf(D, A);
+            var s1 = nrm(angOf(B, Cc) - a1), s2 = nrm(angOf(D, Cc) - a2);
+            return [
+              { t: 'say', say: 'ひし形は、4つの辺の長さがぜんぶ同じだよ。' },
+              { t: 'open', c: B, to: A, say: 'コンパスの針を点Bにさして、えんぴつを点Aまで開く（ABの長さ）。' },
+              { t: 'arc', c: B, r: len, a0: a1, a1: a1 + s1 + (s1 > 0 ? 14 : -14), say: 'Cがありそうなところまで、弧をかく。' },
+              { t: 'open', c: D, to: A, say: '開いたまま（同じ長さで）、針を点Dにさす。' },
+              { t: 'arc', c: D, r: len, a0: a2, a1: a2 + s2 + (s2 > 0 ? 14 : -14), say: 'さっきの弧と交わるまで、弧をかく。' },
+              { t: 'pt', p: [lbl(Cc, 'C')], say: '2つの弧が交わった点が、頂点Cだよ。' },
+              vLine(B, Cc, '定規で、点Bと点Cを結ぶ。'), vLine(D, Cc, '点Dと点Cも結んだら、ひし形のできあがり！'),
+            ];
+          })(),
           hint: 'ひし形は4つの辺の長さがぜんぶ同じ。① コンパスで、点Bを中心にして点Aをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Dをタップする。③ 2つの円が交わった点のうち、Aではないほうが C。',
         };
       },
@@ -189,6 +294,19 @@
           points: [O, A], objs: [{ type: 'circle', c: O, r: r, given: true }],
           target: { kind: 'point', p: at(O, r, d + 120) },
           ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          video: (function () {
+            var Bp = at(O, r, d + 60), Cp = at(O, r, d + 120), a1 = angOf(A, O), a2 = angOf(Bp, O);
+            var s1 = nrm(angOf(A, Bp) - a1), s2 = nrm(angOf(Bp, Cp) - a2);
+            return [
+              { t: 'say', say: '正六角形の1辺の長さは、円の半径と同じだよ。' },
+              { t: 'open', c: A, to: O, say: 'コンパスの針を点Aにさして、えんぴつを点Oまで開く（半径の長さ）。' },
+              { t: 'arc', c: A, r: r, a0: a1, a1: a1 + s1 + (s1 > 0 ? 14 : -14), say: '円Oと交わるまで、弧をかく。' },
+              { t: 'pt', p: [lbl(Bp, 'B')], say: '円と交わった点が、となりの頂点Bだよ。' },
+              { t: 'open', c: Bp, to: O, say: '開いたまま（同じ長さで）、針を点Bにさす。' },
+              { t: 'arc', c: Bp, r: r, a0: a2, a1: a2 + s2 + (s2 > 0 ? 14 : -14), say: '同じように、円Oと交わるまで弧をかく。' },
+              { t: 'pt', p: [lbl(Cp, 'C')], say: '円と交わった点が、頂点Cだよ！' },
+            ];
+          })(),
           hint: '正六角形の1辺の長さは、円の半径と同じ。① コンパスで、点Aを中心にして点Oをタップする（半径と同じ長さ）。② 円Oと交わった点のうち、左回り（上のほう）がB。③ 「⭕ 同じ大きさの円」で点Bをタップする。④ 円Oと交わった点のうち、Aではないほうが C。',
         };
       },
@@ -201,6 +319,7 @@
         return {
           points: [A, B], objs: [{ type: 'segment', p: A, q: B }],
           target: { kind: 'line', lines: [{ p: { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, u: unit(-(B.y - A.y), B.x - A.x) }] },
+          video: [{ t: 'say', say: '線分ABの垂直二等分線をかこう。' }].concat(vPerpBis(A, B, 'AB').steps),
           hint: '① 点Aを中心に円をかく（半径はABの半分より大きく）。② 点Bを中心に、同じ半径の円をかく。③ 2つの円の交点2つを定規で結ぶ。',
         };
       },
@@ -213,6 +332,7 @@
         return {
           points: [O, A, B], objs: [{ type: 'ray', p: O, q: A }, { type: 'ray', p: O, q: B }],
           target: { kind: 'line', lines: [{ p: O, u: dirDeg((d1 + d2) / 2) }] },
+          video: [{ t: 'say', say: '∠AOBを半分に分ける、角の二等分線をかこう。' }].concat(vAngBis(O, A, B, 90, '頂点Oと交わった点を結ぶと、∠AOBの二等分線！', 230).steps),
           hint: '① 点Oを中心に円をかき、辺OA・辺OBとの交点をつくる。② その2つの交点を中心に、同じ半径の円をそれぞれかく。③ その2つの円の交点と、点Oを定規で結ぶ。',
         };
       },
@@ -224,6 +344,7 @@
         var P = onLine(L, rnd(150, 210)); P.y -= rnd(110, 150); P.label = 'P';
         return {
           points: [P], objs: [L], target: { kind: 'line', lines: [{ p: P, u: { x: -u.y, y: u.x } }] },
+          video: [{ t: 'say', say: '点Pを通って、直線ℓに垂直な線（垂線）をかこう。' }].concat(vPerpOut(P, L.p, L.q).steps),
           hint: '① 点Pを中心に、直線ℓと2点で交わる円をかく。② その2つの交点を中心に、同じ半径の円をそれぞれかく。③ その2つの円の交点と、点Pを定規で結ぶ。',
         };
       },
@@ -235,6 +356,7 @@
         var P = onLine(L, rnd(160, 200)); P.label = 'P';
         return {
           points: [P], objs: [L], target: { kind: 'line', lines: [{ p: P, u: { x: -u.y, y: u.x } }] },
+          video: [{ t: 'say', say: '直線ℓ上の点Pを通って、ℓに垂直な線をかこう。' }].concat(vPerpOn(P, u, 55, 95, null, '点Pと交わった点を結ぶと、垂線！', 60).steps),
           hint: '① 点Pを中心に円をかき、直線ℓとの交点を2つつくる。② その2つの交点を中心に、①より大きい同じ半径の円をそれぞれかく。③ その2つの円の交点と、点Pを定規で結ぶ。',
         };
       },
@@ -247,6 +369,8 @@
         return {
           points: t, objs: triObjs(t[0], t[1], t[2]), target: { kind: 'point', p: circumcenter(t[0], t[1], t[2]) },
           ask: '作図してできた中心Oを「📍 答えの点」でタップしてね。',
+          video: [{ t: 'say', say: '円の中心は、A・B・Cのどれからも同じ距離。2本の垂直二等分線でさがそう。' }].concat(vPerpBis(t[0], t[1], t[0].label + t[1].label).steps, vPerpBis(t[1], t[2], t[1].label + t[2].label).steps,
+            [{ t: 'pt', p: [lbl(circumcenter(t[0], t[1], t[2]), 'O')], say: '2本の垂直二等分線が交わった点が、円の中心Oだよ！' }]),
           hint: '円の中心は、A・B・Cのどれからも同じ距離にある点。① 辺ABの垂直二等分線をひく。② 辺BCの垂直二等分線をひく。③ 2本の交点が中心O。',
         };
       },
@@ -260,6 +384,11 @@
         return {
           points: [O, A], objs: [{ type: 'circle', c: O, r: r, given: true }],
           target: { kind: 'line', lines: [{ p: A, u: dirDeg(deg + 90) }] },
+          video: (function () {
+            var u = unit(A.x - O.x, A.y - O.y);
+            return [{ t: 'say', say: '接線は、接点Aを通って、半径OAに垂直な直線だよ。' }, vLine(O, addP(A, u, 70), 'まず、定規で点Oと点Aを結んで、長めに線をひく。')]
+              .concat(vPerpOn(A, u, 35, 62, null, '点Aと交わった点を結ぶと、接線のできあがり！', 70).steps);
+          })(),
           hint: '接線は、接点Aを通る半径OAに垂直な直線。① 定規で直線OAをひく。② 直線OA上の点Aを通る垂線を作図する（基本の「直線上の点を通る垂線」と同じ）。',
         };
       },
@@ -276,6 +405,12 @@
             return {
               points: [A, B], objs: [L], target: { kind: 'point', p: P },
               ask: '作図してできた点Pを「📍 答えの点」でタップしてね。',
+              video: (function () {
+                var pb = vPerpBis(A, B, 'AB'), far = dist(pb.X1, P) > dist(pb.X2, P) ? pb.X1 : pb.X2, w = unit(P.x - far.x, P.y - far.y);
+                return [{ t: 'say', say: 'AとBから同じ距離にある点は、線分ABの垂直二等分線の上にあるよ。' }].concat(pb.steps.slice(0, -1), [
+                  vLine(addP(far, w, -25), addP(P, w, 25), '2つの点を定規で結んで、直線ℓまでのばす。'),
+                  { t: 'pt', p: [lbl(P, 'P')], say: '直線ℓと交わった点がPだよ！' }]);
+              })(),
               hint: 'AとBから等しい距離にある点は、線分ABの垂直二等分線の上にある。① 線分ABの垂直二等分線をひく。② それと直線ℓの交点がP。',
             };
           }
@@ -290,6 +425,10 @@
         return {
           points: [O, X], objs: [{ type: 'line', p: at(O, 100, d0 + 180), q: X }],
           target: { kind: 'line', lines: [{ p: O, u: dirDeg(d0 + 45) }, { p: O, u: dirDeg(d0 - 45) }] },
+          video: (function () {
+            var po = vPerpOn(O, dirDeg(d0), 50, 85, null, 'Oを通る垂線がひけた。これで90°の角ができたよ。', 20), G = addP(O, po.n, 60);
+            return [{ t: 'say', say: '45°は90°の半分。まず90°をつくって、それを半分にしよう。' }].concat(po.steps, vAngBis(O, X, G, 60, '頂点Oと交わった点を結ぶと、90°の半分で45°！', 200).steps);
+          })(),
           hint: '45°は90°の半分。① 直線OX上の点Oを通る垂線をひいて90°をつくる。② その90°の角の二等分線をひく。',
         };
       },
@@ -301,6 +440,14 @@
         return {
           points: [O, X], objs: [{ type: 'ray', p: O, q: X }],
           target: { kind: 'line', lines: [{ p: O, u: dirDeg(d0 + 30) }, { p: O, u: dirDeg(d0 - 30) }] },
+          video: (function () {
+            var rr = 90, E = at(O, rr, d0), Fp = at(O, rr, d0 + 60);
+            var a = arcOver(O, rr, E, Fp, 12, '半直線OXと交わるところから、上のほうまで弧をかく。'), b = arcOver(E, rr, Fp, Fp, 16, 'さっきの弧と交わるように、弧をかく。');
+            var ab = vAngBis(O, E, Fp, rr, '頂点Oと交わった点を結ぶと、60°の半分で30°！', 230);
+            return [{ t: 'say', say: '30°は60°の半分。60°は正三角形の角だよ。' }, openTo(a, 'コンパスの針を点Oにさす。'), a,
+              { t: 'pt', p: [E], say: '半直線OXと交わった点ができたね。' }, moveTo(b, '開いたまま（同じ大きさで）、その点に針をさす。'), b,
+              { t: 'pt', p: [Fp], say: '交わった点とOを結ぶと正三角形になるので、ここの角は60°だよ。' }].concat(ab.steps.slice(3));
+          })(),
           hint: '30°は60°の半分。60°は正三角形の角。① 点Oを中心に円をかき、半直線OXとの交点Eをつくる。② 点Eを中心に、同じ半径の円をかく（交点Fと、O・Eで正三角形）。③ ∠EOF(60°)の二等分線をひく。',
         };
       },
@@ -313,6 +460,13 @@
         return {
           points: t, objs: triObjs(t[0], t[1], t[2]), target: { kind: 'point', p: incenter(t[0], t[1], t[2]) },
           ask: '作図してできた点Iを「📍 答えの点」でタップしてね。',
+          video: (function () {
+            var A = t[0], B = t[1], C = t[2], I = incenter(A, B, C), rA = Math.min(dist(A, B), dist(A, C)) * 0.35, rB = Math.min(dist(B, A), dist(B, C)) * 0.35;
+            return [{ t: 'say', say: '3辺から同じ距離の点は、角の二等分線の上にあるよ。2つの角の二等分線をかこう。' }]
+              .concat(vAngBis(A, B, C, rA, '点' + A.label + 'と交わった点を結ぶと、∠' + A.label + 'の二等分線。', dist(A, I) * 1.3).steps,
+                vAngBis(B, A, C, rB, '点' + B.label + 'と交わった点を結ぶと、∠' + B.label + 'の二等分線。', dist(B, I) * 1.3).steps,
+                [{ t: 'pt', p: [lbl(I, 'I')], say: '2本の線が交わった点が、Iだよ！' }]);
+          })(),
           hint: '2辺から等しい距離にある点は、角の二等分線の上にある。① ∠Aの二等分線をひく。② ∠Bの二等分線をひく。③ 2本の交点がI。',
         };
       },
@@ -329,6 +483,14 @@
             return {
               points: [A, B], objs: [L], target: { kind: 'point', p: P },
               ask: '作図してできた点Pを「📍 答えの点」でタップしてね。',
+              video: (function () {
+                var po = vPerpOut(A, L.p, L.q, '点Aからℓに、垂線がひけた。'), c = arcOver(po.F, dist(po.F, A), A2, A2, 16, 'ℓの反対がわに、弧をかく。');
+                return [{ t: 'say', say: 'ℓについてAと対称な点A′をつくると、AP＝A′P。A′とBをまっすぐ結べばいちばん短いよ。' }].concat(po.steps, [
+                  openTo(c, '垂線とℓが交わった点に針をさして、点Aまでの長さに開く。'), c,
+                  { t: 'pt', p: [lbl(A2, 'A′')], say: '垂線と弧が交わった点が、A′だよ。' },
+                  vLine(A2, addP(B, unit(B.x - A2.x, B.y - A2.y), 20), '定規で、点A′と点Bを結ぶ。'),
+                  { t: 'pt', p: [lbl(P, 'P')], say: 'ℓと交わった点がPだよ！' }]);
+              })(),
               hint: '直線ℓについて点Aと対称な点A′をつくると、AP＝A′P。① 点Aから直線ℓに垂線をひく。② ℓとの交点を中心に、Aを通る円をかいて、垂線の反対側にA′をつくる。③ A′とBを定規で結ぶ。④ その直線とℓの交点がP。',
             };
           }
@@ -344,6 +506,13 @@
         var F = foot(A, L.p, L.q);
         return {
           points: [A], objs: [L], target: { kind: 'circle', c: A, r: dist(A, F) },
+          video: (function () {
+            var po = vPerpOut(A, L.p, L.q, '点Aからℓに、垂線がひけた。'), a0 = angOf(A, F);
+            return [{ t: 'say', say: '接する円の半径は、点Aから直線ℓまでの距離（垂線の長さ）だよ。' }].concat(po.steps, [
+              { t: 'pt', p: [lbl(F, 'H')], say: '垂線とℓが交わった点をHとするよ。' },
+              { t: 'open', c: A, to: F, say: 'コンパスの針を点Aにさして、点Hまで開く。' },
+              { t: 'arc', c: A, r: dist(A, F), a0: a0, a1: a0 + 359, say: 'くるっと1周、円をかいたらできあがり！' }]);
+          })(),
           hint: '接する円の半径は、中心Aから直線ℓまでの距離（垂線の長さ）。① 点Aから直線ℓに垂線をひく。② 垂線とℓの交点Hを通るように、Aを中心に円をかく。',
         };
       },
@@ -356,6 +525,14 @@
         return {
           points: [O, A], objs: [],
           target: { kind: 'point', p: at(O, r, d + 90) },
+          video: (function () {
+            var u = unit(A.x - O.x, A.y - O.y), A2 = at(O, r, d + 90), a0 = angOf(O, A);
+            return [{ t: 'say', say: '回転させても、Oからの距離は同じ。OAに垂直な線と、Aを通る円を使おう。' }, vLine(addP(O, u, -80), addP(A, u, 30), 'まず、定規で直線OAをひく。')]
+              .concat(vPerpOn(O, u, 40, 70, A2, '点Oと交わった点を結ぶと、OAに垂直な線。', 60, r + 30).steps, [
+                { t: 'open', c: O, to: A, say: 'コンパスの針を点Oにさして、点Aまで開く。' },
+                { t: 'arc', c: O, r: r, a0: a0, a1: a0 - 100, say: '点Aから、左回りに弧をかく。' },
+                { t: 'pt', p: [lbl(A2, 'A′')], say: '垂直な線と弧が交わった点が、A′だよ！' }]);
+          })(),
           ask: '作図してできた点A′を「📍 答えの点」でタップしてね。',
           hint: '回転させても、Oからの距離は同じ。① 定規で直線OAをひく。② 直線OA上の点Oを通る垂線をひく。③ Oを中心に、Aを通る円をかく。④ 円と垂線の交点のうち、左回りに90°のほうがA′。',
         };
@@ -541,7 +718,7 @@
     return h;
   }
   function demoFrame(D, t) {
-    var h = D.ruler ? demoRulerSvg() : '';
+    var h = (D.base || '') + (D.ruler ? demoRulerSvg() : '');
     (D.segs || []).forEach(function (s2) { h += lineSvg(s2[0], s2[1], '#1c2127', 2.2); if (s2[2]) h += txt((s2[0].x + s2[1].x) / 2, s2[0].y + 20, s2[2], { fs: 12, b: false, mid: true }); });
     (D.lines || []).forEach(function (l) { h += lineSvg(l[0], l[1], '#1c2127', 2.2); if (l[2]) h += txt(l[1].x - 14, l[1].y - 8, l[2], { fs: 15 }); });
     var n = D.steps.length, acc = 0, i = n - 1, local = DEMO_DUR[D.steps[n - 1].t] + DEMO_HOLD, end = true;
@@ -556,7 +733,7 @@
           pose = k < 0.4 ? { c: lerpP(pose.c, mid.c, k / 0.4), pen: lerpP(pose.pen, mid.pen, k / 0.4) } : { c: S.c, pen: lerpP(mid.pen, S.to, (k - 0.4) / 0.6) };
         } else pose = { c: S.c, pen: lerpP({ x: S.c.x + u.x * 14, y: S.c.y + u.y * 14 }, S.to, k) };
         show = true;
-        if (j === i && D.ruler && S.c.y === DRY && k > 0.4) over += txt(pose.pen.x, DRY - 8, (Math.round(dist(S.c, pose.pen) / DCM * 2) / 2) + 'cm', { fs: 13, col: '#c2410c', mid: true });
+        if (j === i && (S.cm || (D.ruler && S.c.y === DRY)) && k > 0.4) over += txt(pose.pen.x, S.c.y - 8, (Math.round(dist(S.c, pose.pen) / DCM * 2) / 2) + 'cm', { fs: 13, col: '#c2410c', mid: true });
       } else if (S.t === 'move') {
         var tgt = { c: S.c, pen: dpt(S.c, S.r, S.a) };
         pose = pose ? { c: lerpP(pose.c, tgt.c, k), pen: lerpP(pose.pen, tgt.pen, k) } : tgt; show = true;
@@ -569,8 +746,8 @@
         if (j === i && k < 1) { var ang = Math.atan2(S.q.y - S.p.y, S.q.x - S.p.x) * 180 / Math.PI, len = dist(S.p, S.q); over += '<g transform="translate(' + S.p.x.toFixed(1) + ' ' + S.p.y.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')" opacity="0.8"><rect x="-14" y="2" width="' + (len + 28).toFixed(1) + '" height="18" rx="3" fill="#fef08a" stroke="#ca8a04"/></g>'; }
         show = false;
       } else if (S.t === 'prot') {
-        var pf = protFrameOf(S.c, S.base), mk = dpt(S.c, 85, pf.phi * 180 / Math.PI + pf.sgn * S.deg);
-        if (j === i && k < 1) over += protDraw(S.c, pf.phi, pf.sgn, 85, Math.min(1, k * 4));
+        var PR = S.R || 85, pf = protFrameOf(S.c, S.base), mk = dpt(S.c, PR, pf.phi * 180 / Math.PI + pf.sgn * S.deg);
+        if (j === i && k < 1) over += protDraw(S.c, pf.phi, pf.sgn, PR, Math.min(1, k * 4));
         if (k > 0.5) { h += '<circle cx="' + mk.x.toFixed(1) + '" cy="' + mk.y.toFixed(1) + '" r="3.5" fill="#c2410c"/>' + txt(mk.x + 6, mk.y - 6, S.deg + '°', { fs: 12, col: '#c2410c' }); }
         show = false;
       } else if (S.t === 'pt') {
@@ -582,13 +759,25 @@
         show = false;
       } else show = false;
     }
-    D.pts.forEach(function (p) { h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4.5" fill="#1c2127"/>' + (p.label ? txt(p.x + 7, p.y - 7, p.label, { fs: 15 }) : ''); });
+    (D.pts || []).forEach(function (p) { h += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4.5" fill="#1c2127"/>' + (p.label ? txt(p.x + 7, p.y - 7, p.label, { fs: 15 }) : ''); });
     h += over;
     if (show && pose) h += compassSvg(pose.c, pose.pen, 0.97);
     return { svg: h, i: i, end: end };
   }
-  var demoEl = null, demo = null;
-  function openDemo(idx) {
+  var demoEl = null, demo = null, demoList = DEMOS;
+  function openDemo(idx) { openPlayer(DEMOS, idx || 0, true); }
+  // 1つの問題の答えの動画
+  function openVideo(D) { openPlayer([D], 0, false); }
+  function openPlayer(list, idx, tabs) {
+    if (!demoEl) buildDemoEl();
+    demoList = list;
+    demoEl.querySelector('.sk-demo-tabs').hidden = !tabs;
+    demoEl.querySelector('.sk-demo-next').hidden = !tabs;
+    demoEl.querySelector('.sk-demo-head b').textContent = tabs ? '🎬 作図のかき方' : '🎬 答えの動画';
+    demoEl.hidden = false;
+    playDemo(idx);
+  }
+  function buildDemoEl() {
     if (!demoEl) {
       demoEl = document.createElement('div'); demoEl.className = 'sk-demo';
       demoEl.innerHTML = '<div class="sk-demo-card"><div class="sk-demo-head"><b>🎬 作図のかき方</b><button type="button" class="ghost-btn sk-demo-close">✖ とじる</button></div>' +
@@ -602,18 +791,17 @@
         if (b.classList.contains('sk-demo-close')) closeDemo();
         else if (b.classList.contains('sk-demo-tab')) playDemo(+b.getAttribute('data-i'));
         else if (b.classList.contains('sk-demo-again')) playDemo(demo.idx);
-        else if (b.classList.contains('sk-demo-next')) playDemo((demo.idx + 1) % DEMOS.length);
+        else if (b.classList.contains('sk-demo-next')) playDemo((demo.idx + 1) % demoList.length);
         else if (b.classList.contains('sk-demo-pause')) { if (demo.end) return playDemo(demo.idx); demo.paused = !demo.paused; b.textContent = demo.paused ? '▶ 続ける' : '⏸ 止める'; if (!demo.paused) { demo.last = 0; loop(); } }
       });
     }
-    demoEl.hidden = false;
-    playDemo(idx || 0);
   }
   function closeDemo() { if (demoEl) demoEl.hidden = true; if (demo) demo.stop = true; }
   function playDemo(idx) {
     if (demo) demo.stop = true;
     demo = { idx: idx, t: 0, last: 0, paused: false, end: false };
-    var D = DEMOS[idx];
+    var D = demoList[idx];
+    demoEl.querySelector('.sk-demo-svg').setAttribute('viewBox', D.vb || '0 0 360 400');
     demoEl.querySelectorAll('.sk-demo-tab').forEach(function (b) { b.classList.toggle('is-on', +b.getAttribute('data-i') === idx); });
     demoEl.querySelector('.sk-demo-title').textContent = D.title;
     demoEl.querySelector('.sk-demo-pause').textContent = '⏸ 止める';
@@ -631,7 +819,7 @@
     if (window.requestAnimationFrame) window.requestAnimationFrame(tick); else renderDemo(me);
   }
   function renderDemo(me) {
-    var D = DEMOS[me.idx], f = demoFrame(D, me.t), n = D.steps.length;
+    var D = demoList[me.idx], f = demoFrame(D, me.t), n = D.steps.length;
     demoEl.querySelector('.sk-demo-svg').innerHTML = f.svg;
     demoEl.querySelector('.sk-demo-cap').innerHTML = '<span class="sk-demo-no">' + (f.i + 1) + ' / ' + n + '</span>' + D.steps[f.i].say + (f.end ? ' 🎉' : '');
     if (f.end) { me.end = true; demoEl.querySelector('.sk-demo-pause').textContent = '🔁 はじめから'; }
@@ -673,7 +861,7 @@
       '<button type="button" class="ghost-btn sk-tool" data-t="same">⭕ 同じ大きさの円</button>' +
       '</div>' +
       '<p class="sk-msg"></p>' +
-      '<div class="sk-tools"><button type="button" class="ghost-btn sk-undo">↩️ 1つもどす</button> <button type="button" class="ghost-btn sk-reset">🗑 はじめから</button> <button type="button" class="ghost-btn sk-hint">💡 ヒント</button> <button type="button" class="ghost-btn sk-show">👀 答えを見る</button></div>' +
+      '<div class="sk-tools"><button type="button" class="ghost-btn sk-undo">↩️ 1つもどす</button> <button type="button" class="ghost-btn sk-reset">🗑 はじめから</button> <button type="button" class="ghost-btn sk-hint">💡 ヒント</button> <button type="button" class="ghost-btn sk-show">🎬 答えの動画</button></div>' +
       '<p class="sk-hinttext" hidden></p>';
     var $ = function (c) { return root.querySelector(c); };
     var svg = $('.sk-svg'), sel = $('.sk-sel');
@@ -871,13 +1059,15 @@
       else if (b.classList.contains('sk-hint')) $('.sk-hinttext').hidden = !$('.sk-hinttext').hidden;
       else if (b.classList.contains('sk-show')) {
         // 👀 答えを見る(2026-11-22 先生の指示)：かき方がわからないときに、できあがりの図と手順を見せる。見たらこの図ではMPなし。
-        if (st.showAns) return;
-        if (!st.done && !window.confirm('答えを見ると、この図ではMPがもらえません。答えを見ますか？')) return;
+        // 2026-11-22 先生「答えは、全て動画解説で」：その問題の図のまま、かき方を動画で見せる。
+        if (st.showAns) { playAnswerVideo_(); return; }
+        if (!st.done && !window.confirm('答えの動画を見ると、この図ではMPがもらえません。見ますか？')) return;
         st.showAns = true; st.pick = null; st.protBase = null;
         var wasDone = st.done; st.done = true;
         $('.sk-hinttext').hidden = false;
-        if (!wasDone) msg('👀 答えの図を緑色で出したよ（下の手順もいっしょに見てね）。このとおりにかけるか、「🔄 別の図」で次の問題にチャレンジしよう。');
+        if (!wasDone) msg('🎬 答えの動画を見たね。答えの図を緑色で出したよ。もう一度見るときは「🎬 答えの動画」。次は「🔄 別の図」でチャレンジしよう。');
         draw();
+        playAnswerVideo_();
       }
     });
     sel.addEventListener('change', function () { start(sel.value); });
@@ -893,6 +1083,22 @@
     function protSvg_() {
       var pf = protFrame_();
       return protDraw(pf.c, pf.phi, pf.sgn, PROT_R);
+    }
+    // 答えの動画：問題の図(見本・ものさし・はじめからある線と点)の上で、かき方を動かして見せる
+    function probBaseSvg_(pr) {
+      var h = pr.deco || '';
+      pr.objs.forEach(function (o) {
+        if (o.type === 'circle') { h += '<circle cx="' + o.c.x.toFixed(1) + '" cy="' + o.c.y.toFixed(1) + '" r="' + o.r.toFixed(1) + '" fill="none" stroke="#1c2127" stroke-width="2"/>'; return; }
+        var e = ext(o);
+        h += '<line x1="' + e[0].toFixed(1) + '" y1="' + e[1].toFixed(1) + '" x2="' + e[2].toFixed(1) + '" y2="' + e[3].toFixed(1) + '" stroke="#1c2127" stroke-width="2"/>';
+        if (o.label) h += '<text x="' + (o.q.x - 14).toFixed(1) + '" y="' + (o.q.y - 8).toFixed(1) + '" font-size="15" font-weight="bold" fill="#1c2127">' + o.label + '</text>';
+      });
+      return h;
+    }
+    function playAnswerVideo_() {
+      var pr = st.prob;
+      if (!pr.video) return;
+      openVideo({ title: '答え：' + byId(st.pid).title, base: probBaseSvg_(pr), vb: '0 ' + VY + ' ' + W + ' ' + VH, steps: pr.video, pts: pr.points.filter(function (p) { return !p.tick; }) });
     }
     function answerSvg_() {
       var pr = st.prob, T = pr.target, h = '', G = '#16a34a';
@@ -976,5 +1182,5 @@
     try { if (!localStorage.getItem('sakuzuDemoSeen')) { localStorage.setItem('sakuzuDemoSeen', '1'); openDemo(demoIdxFor(st.pid)); } } catch (e) { }
   }
 
-  window.Sakuzu = { mount: mount, PROBLEMS: PROBLEMS, _intersect: intersect, _lineMatches: lineMatches, _demoFrame: demoFrame, _DEMOS: DEMOS, _compass: compassSvg };
+  window.Sakuzu = { mount: mount, PROBLEMS: PROBLEMS, _demoList: function () { return demoList; }, _intersect: intersect, _lineMatches: lineMatches, _demoFrame: demoFrame, _DEMOS: DEMOS, _compass: compassSvg };
 })();
