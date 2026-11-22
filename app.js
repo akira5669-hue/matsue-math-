@@ -449,7 +449,39 @@
         capitalQuizSelectedMode: s.capitalQuizSelectedMode, capitalQuizEasyCorrectTotal: s.capitalQuizEasyCorrectTotal,
         capitalQuizBonusQueue: ((s.current && s.current.category === 'capitalQuizBonus' && !s.answered) ? [s.current] : []).concat(s.capitalQuizBonusQueue || []),
       });
+      saveBossResume_(sess.id, s);
     }
+  }
+  // ボス戦の途中の様子(挑戦中のボス・与えたダメージ・何体目か・使った剣や魔法の結果待ち)を、アカウントごとに端末に保存する。
+  // 前は「端末セッション限定」でアプリを閉じると消えていたため、氷の剣などを使ったあとに閉じるとダメージもアイテムも
+  // むだになっていた(バグ報告#75、2026-11-22 先生の指示で保存するように)。同じ周回の、まだ倒していないボスのときだけ続きから。
+  function bossResumeKey_(id) { return 'matsue-math-boss-' + (id || 'guest'); }
+  function saveBossResume_(id, s) {
+    try {
+      var sub = s.worldBossSubIndex || {};
+      if (!s.worldBossActiveStage && !Object.keys(sub).length) { localStorage.removeItem(bossResumeKey_(id)); return; }
+      localStorage.setItem(bossResumeKey_(id), JSON.stringify({
+        lap: Number(s.worldLap) || 1, stage: s.worldBossActiveStage || null, elig: s.worldBossEligibleIds_ || null, sub: sub,
+        dmg: Number(s.worldBossDamage) || 0, spell: s.worldPendingSpell || null, sword: !!s.worldPendingSword, ice: !!s.worldPendingIceSword,
+        sky: !!s.worldPendingSkySpear, axe: !!s.worldPendingRaidenAxe
+      }));
+    } catch (e) { }
+  }
+  function restoreBossResume_(id, s) {
+    try {
+      var r = JSON.parse(localStorage.getItem(bossResumeKey_(id)) || 'null');
+      if (!r || (Number(r.lap) || 1) !== (Number(s.worldLap) || 1)) return;
+      var defeated = s.worldBossDefeated || {};
+      var sub = {};
+      Object.keys(r.sub || {}).forEach(function (k) { if (!defeated[k]) sub[k] = Math.max(0, Math.floor(Number(r.sub[k]) || 0)); });
+      s.worldBossSubIndex = sub;
+      if (!r.stage || defeated[r.stage]) return;
+      s.worldBossActiveStage = r.stage;
+      s.worldBossEligibleIds_ = Array.isArray(r.elig) ? r.elig : null;
+      s.worldBossDamage = Math.max(0, Number(r.dmg) || 0);
+      s.worldPendingSpell = r.spell || null;
+      s.worldPendingSword = !!r.sword; s.worldPendingIceSword = !!r.ice; s.worldPendingSkySpear = !!r.sky; s.worldPendingRaidenAxe = !!r.axe;
+    } catch (e) { }
   }
 
   /* ---------- 基本ユーティリティ ---------- */
@@ -21316,6 +21348,7 @@
     yushaSwordObtained: !!((savedProgress && savedProgress.yushaSwordObtained) || (savedGame && savedGame.yushaSwordObtained)),
   };
   applyWorldDataForLap_(state.worldLap);
+  restoreBossResume_((loadSession() || {}).id, state);
 
   // 旧バージョン(matsue-math-gameのみ)からアカウント別の進捗ストレージへの移行を
   // 確実にするため、セッションが既にある場合はページ読み込み時に一度、無条件で
@@ -24403,6 +24436,7 @@
     '🐞【直しました㉞】使い方マニュアルに⚾野球ガチャのことを書きました。',
     '🐞【直しました㉟】📐作図で正解したあと「↩️ 1つもどす」でかき直すと、同じ図でまた正解になってMPと正解の数が増えていたのを直しました。1つの図でもらえるのは1回だけです。',
     '🐞【直しました㊱】⚾打率クイズで「何割何分何厘？」と聞いているのに「〇分〇毛」の選択肢が出ていたのを直しました。',
+    '🐞【直しました㊲】🌍世界一周のボス戦のとちゅうでアプリを閉じると、与えたダメージや使った氷の剣などがむだになっていたのを直しました。閉じても、次に開いたときに続きから戦えます。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -25981,6 +26015,12 @@
       state.treasureItems[k] = (Number(state.treasureItems[k]) || 0) + n;
       names.push(TREASURE_TIER_LABEL_[tier] + 'の鍵' + (n > 1 ? '×' + n : ''));
     });
+    // 氷の剣(2026-11-22〜、バグ報告#75)。1個だけ持てるので、合わせて最大3回分
+    var ice = Math.max(0, Math.floor(Number(grant.iceSwordCharges) || 0));
+    if (ice) {
+      state.iceSwordCharges = Math.min(3, (Number(state.iceSwordCharges) || 0) + ice);
+      names.push('🧊氷の剣（残り' + state.iceSwordCharges + '回分）');
+    }
     if (!names.length) return;
     saveGameState(state);
     updateGameHud();
@@ -38146,7 +38186,7 @@
   if (existingSession) {
     showApp(existingSession.name, !!existingSession.guest);
     if (existingSession.id) {
-      apiPost('getPoints', { id: existingSession.id, keyGrantV1: true }).then(function (res) {
+      apiPost('getPoints', { id: existingSession.id, keyGrantV1: true, keyGrantV2: true }).then(function (res) {
         if (res && res.error === 'trial_expired') {
           window.alert('体験期間が終わりました。続けて使いたいときは、先生に聞いてください。');
           finishLogout();
