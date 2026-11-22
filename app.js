@@ -29967,6 +29967,7 @@
     // テスト用ボタンは先生(00001)だけ
     if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.hidden = !isAdminSession_();
     renderUsaGacha_();
+    if (typeof ptRenderUsa_ === 'function') ptRenderUsa_();
     if (els.usaCrossingStateList) {
       var progress = Number(state.usaCrossingProgress) || 0;
       els.usaCrossingStateList.innerHTML = USA_STATE_DATA.slice(0, progress).map(function (st) {
@@ -37874,19 +37875,44 @@
         return '<button type="button" class="ghost-btn pk-btn" data-pt="' + k + '"' + (ptBusy_ || (p.hp && hp <= p.hp) ? ' disabled' : '') + '>' + p.n + (p.hp ? '<br><small>HP-' + p.hp + '・' + p.d + '</small>' : '') + '</button>';
       }).join('') + '</div>';
   }
+  // ピッチャー編は🇺🇸アメリカ横断のカードの中にある(2026-11-22 先生の指示。ガチャの画面からうつした)。00001だけ。
+  var ptLoaded_ = false;
+  function ptRenderUsa_() {
+    var card = document.getElementById('usaPitcherBox');
+    if (!card || typeof gacha_ === 'undefined' || !gacha_) return;  // 起動の途中(ガチャの準備前)は何もしない
+    card.hidden = !isAdminSession_();
+    if (card.hidden) return;
+    ptRender_(card);
+    var session = loadSession();
+    if (ptLoaded_ || !session || !session.id) return;
+    ptLoaded_ = true;
+    apiPost('gachaStatus', { id: session.id }).then(function (res) {
+      if (res && res.ok && res.today && !ptBusy_) { gacha_.today.pitcher = res.today.pitcher; ptRender_(card); }
+    }).catch(function () { ptLoaded_ = false; });
+  }
+  (function () {
+    var card = document.getElementById('usaPitcherBox');
+    if (!card) return;
+    card.addEventListener('click', function (e) {
+      var ptb = e.target.closest('[data-pt]');
+      if (ptb) { if (!ptb.disabled) ptPlay_(ptb.getAttribute('data-pt')); return; }
+      if (e.target.closest('[data-gacha-again]') && isAdminSession_() && !ptBusy_) { delete gacha_.today.pitcher; ptRenderUsa_(); }
+    });
+  })();
   function ptPlay_(pitch) {
     var session = loadSession();
     var cur = gacha_.today.pitcher;
     if (!session || !session.id || ptBusy_ || (cur && cur.result && cur.result.done) || !isAdminSession_()) return;
     ptBusy_ = true;
     var before = cur && cur.result ? cur.result : ptNewGame_();
-    var card = els.gachaPanel.querySelector('[data-gacha="pitcher"]');
+    var card = document.getElementById('usaPitcherBox');
+    if (!card) { ptBusy_ = false; return; }
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.pt-choices');
     out.setAttribute('data-anim', '1');
     out.innerHTML = '<div class="pk-big">⚾ 大谷笑平、' + PT_PITCH_[pitch].n.replace(/^\S+ /, '') + 'を…ふりかぶって…</div>' + bbSceneHtml_(before, 'bb-ready', false, { batter: ptBatter_(before.ab) });
     ch.innerHTML = '';
     var started = Date.now();
-    var done = function (msg) { out.removeAttribute('data-anim'); ptBusy_ = false; renderGacha_(); if (msg) ch.insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
+    var done = function (msg) { out.removeAttribute('data-anim'); ptBusy_ = false; ptRenderUsa_(); if (msg) ch.insertAdjacentHTML('afterbegin', '<div class="test-photo-hint">' + msg + '</div>'); };
     apiPost('gachaDraw', { id: session.id, kind: 'pitcher', pitch: pitch }).then(function (res) {
       if (res && typeof res.hp === 'number') { state.hp = res.hp; saveGameState(state); updateGameHud(); }
       if (res && res.ok && res.newTotalPoints != null) { state.points = res.newTotalPoints; saveGameState(state); updateGameHud(); }
