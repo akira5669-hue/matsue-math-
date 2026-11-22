@@ -37634,7 +37634,7 @@
   var bbBat_ = '', bbSpike_ = false;
   function bbBatOf_(st) { return (typeof BB_BATS_ === 'object' && BB_BATS_ && st && BB_BATS_[st.bat]) || null; }
   // 2026-11-22〜 タイミングでフルスイング：ボールがバッターの前に来た瞬間とのずれがBB_TIMING_WIN_ミリ秒以内なら当たる(gacha.jsと揃える)
-  var BB_TIMING_WIN_ = 150; // 2026-11-22 先生の指示で0.12秒→0.15秒
+  var BB_TIMING_WIN_ = 250; // 2026-11-22 先生の指示で0.12秒→0.15秒→前後0.25秒
   var bbLive_ = null;
   function bbTimingWord_(off) {
     if (Math.abs(off) <= BB_TIMING_WIN_) return 'ジャスト！';
