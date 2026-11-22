@@ -882,7 +882,7 @@
       st.prob = pr;
       st.objs = pr.objs.slice();
       st.history = [];
-      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null; st.showAns = false; st.anim = null; st.parked = null; st.hover = null;
+      st.pick = null; st.lastR = 0; st.done = false; st.correctObj = null; st.showAns = false; st.rewarded = false; st.anim = null; st.parked = null; st.hover = null;
       $('.sk-title').textContent = '📐 ' + def.title + 'を作図しよう！';
       $('.sk-hinttext').hidden = true;
       $('.sk-hinttext').textContent = pr.hint;
@@ -928,6 +928,10 @@
       st.done = true; st.correctObj = obj;
       msg('⭕ <b>正解！</b>きれいに作図できたね！「🔄 別の図」で次の問題にチャレンジしよう。');
       draw();
+      // バグ報告#77：正解のあと「↩️ 1つもどす」でかき直すと、同じ図でまた正解になってMPと正解数が増えていた。
+      // 1つの図でごほうび(MP・野球ガチャの正解数)は1回だけ。答えの動画を見た図も、もどしてかき直してもごほうびなし。
+      if (st.rewarded || st.showAns) { $('.sk-msg').innerHTML += '<br>（' + (st.rewarded ? 'この図ではもうMPをもらったよ' : '答えの動画を見た図なのでMPはなし') + '。「🔄 別の図」でチャレンジしよう）'; return; }
+      st.rewarded = true;
       if (opts.onCorrect) try { var extra = opts.onCorrect(st.pid); if (extra) $('.sk-msg').innerHTML += '<br>' + extra; } catch (e) { }
     }
     // 🧭 円をかくとき、コンパスがくるっと回って線がのびていく(2026-11-22 先生「コンパスを使っているイメージができるように」)
