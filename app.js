@@ -22623,6 +22623,7 @@
             winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）+${USA_CROSSING_STATE_MP_}MP<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
           }
           winHtml += checkUsaCrossingTemptation_();
+          if (state.usaCrossingActive && state.usaCrossingProgress === USA_PARTY_STATE_) winHtml += usaHomePartyHtml_();
           if (state.usaCrossingActive && state.usaCrossingProgress === USA_RESTAURANT_STATE_) winHtml += usaRestaurantHtml_();
           if (state.usaCrossingActive) winHtml += necklaceOfferHtml_();
           if (state.usaCrossingActive && state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
@@ -29606,6 +29607,73 @@
   // どれも10MPでHP+50。チップが5MP未満(払わないときも)だと、HPは半分の+25だけ。MPはサーバー(usaRestaurant)で引く。
   var USA_RESTAURANT_STATE_ = 26, USA_RESTAURANT_MEAL_MP_ = 10, USA_RESTAURANT_HP_ = 50, USA_RESTAURANT_TIP_OK_ = 5;
   var USA_RESTAURANT_MENU_ = [{ e: '🍔', n: 'ハンバーガー' }, { e: '🍟', n: 'ポテト' }, { e: '🍕', n: 'ピザ' }, { e: '🍗', n: 'フライドチキン' }];
+  // 🏠 13州目のホームパーティー(2026-11-22 先生の指示)：参加するかどうかを選ぶ。参加料10MP(サーバーusaHomePartyで引く)。
+  // お菓子をもらってHP+50。友達(アメリカ横断をしているほかの生徒。名前はニックネーム)が1人ふえる。1周の旅で1回まで。
+  // 友達がいると、1周達成するたびに友達1人につき10MPのお祝い(100MPまで。usaFriendCelebrate)。友達のMPは減らない。
+  var USA_PARTY_STATE_ = 13, USA_PARTY_MP_ = 10, USA_PARTY_HP_ = 50, USA_FRIEND_MP_ = 10, USA_FRIEND_MAX_ = 10;
+  var usaFriends_ = null; // 友達のニックネーム(サーバーから読んだもの)
+  function usaHomePartyHtml_() {
+    var session = loadSession();
+    if (!session || !session.id) return '';
+    if (!window.confirm('🏠 13州目で、近所の家のホームパーティーに呼ばれた！\n\n参加しますか？（参加料' + USA_PARTY_MP_ + 'MP。お菓子がもらえてHPが' + USA_PARTY_HP_ + '増える。友達が1人ふえる！）\n\nOK：イエス（参加する）\nキャンセル：ノー（参加しない）')) {
+      return '<div class="item-gain-banner">🏠 ホームパーティーには参加せずに、先へ進んだ。</div>';
+    }
+    if ((Number(state.points) || 0) < USA_PARTY_MP_) return '<div class="enemy-quote-banner">😢 MPが足りなかった（' + USA_PARTY_MP_ + 'MP必要）。ホームパーティーには参加できなかった。</div>';
+    var fail = function (msg) { if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', '<div class="enemy-quote-banner">😢 ' + msg + '</div>'); };
+    apiPost('usaHomeParty', { id: session.id }).then(function (res) {
+      if (!res || !res.ok) {
+        fail(res && res.error === 'insufficient_points' ? 'MPが足りなかった。ホームパーティーには参加できなかった。'
+          : res && res.error === 'already_joined' ? 'この旅のホームパーティーには、もう参加したよ。' : '通信に失敗した。ホームパーティーには参加できなかった。');
+        return;
+      }
+      state.points = Number(res.points) || 0;
+      state.hp = (Number(state.hp) || 0) + USA_PARTY_HP_;
+      saveGameState(state);
+      syncPointsNow_(session.id);
+      try { updateGameHud(); } catch (e) { }
+      var n = Number(res.friends) || 0;
+      var txt = '<div class="item-gain-banner">🍪🧁 お菓子をもらった！ HP+' + USA_PARTY_HP_ + '（参加料' + USA_PARTY_MP_ + 'MP）</div>';
+      if (res.friend) {
+        if (usaFriends_) usaFriends_.push(res.friend);
+        txt += '<div class="item-gain-banner">🤝 パーティーで「<b>' + escHtml(res.friend) + '</b>」と友達になった！（友達 ' + n + '人）<br>1周達成するたびに、友達からお祝いが' + (Math.min(n, USA_FRIEND_MAX_) * USA_FRIEND_MP_) + 'MPとどくよ！</div>';
+      } else {
+        txt += '<div class="enemy-quote-banner">🙂 楽しいパーティーだったけど、新しい友達はできなかった…（友達 ' + n + '人）</div>';
+      }
+      if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', txt);
+      try { renderUsaFriends_(); } catch (e) { }
+    }).catch(function () { fail('通信に失敗した。ホームパーティーには参加できなかった。'); });
+    return '<div class="item-gain-banner">🏠 ホームパーティーに参加した…</div>';
+  }
+  // 1周達成したときの友達からのお祝い(サーバーでMPを足す)
+  function usaFriendCelebrate_(lap) {
+    var session = loadSession();
+    if (!session || !session.id) return;
+    apiPost('usaFriendCelebrate', { id: session.id, lap: lap }).then(function (res) {
+      if (!res || !res.ok || !(Number(res.mp) > 0)) return;
+      if (res.points != null) { state.points = Number(res.points) || 0; saveGameState(state); try { updateGameHud(); } catch (e) { } }
+      if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', '<div class="item-gain-banner">🎊 友達' + res.friends + '人から「アメリカ横断' + lap + '周おめでとう！」のお祝い！ +' + res.mp + 'MP</div>');
+    }).catch(function () { });
+  }
+  // カードに友達の一覧を出す
+  function renderUsaFriends_() {
+    var box = document.getElementById('usaFriendsBox');
+    if (!box) return;
+    var draw = function () {
+      var list = usaFriends_ || [];
+      box.innerHTML = '<p class="survey-label">🤝 アメリカ横断の友達（' + list.length + '人）</p>'
+        + (list.length ? '<p class="test-photo-hint">' + list.map(function (n) { return escHtml(n); }).join('・') + '</p>'
+          + '<p class="test-photo-hint">1周達成するたびに、友達からお祝いが <b>' + (Math.min(list.length, USA_FRIEND_MAX_) * USA_FRIEND_MP_) + 'MP</b>（友達1人につき' + USA_FRIEND_MP_ + 'MP、' + (USA_FRIEND_MAX_ * USA_FRIEND_MP_) + 'MPまで）</p>'
+          : '<p class="test-photo-hint">13州目のホームパーティーに参加すると友達ができるよ。友達1人につき、1周ごとに' + USA_FRIEND_MP_ + 'MPのお祝いがとどく！</p>');
+    };
+    draw();
+    if (usaFriends_) return;
+    var session = loadSession();
+    if (!session || !session.id) return;
+    usaFriends_ = [];
+    apiPost('usaFriends', { id: session.id }).then(function (res) {
+      if (res && res.ok && Array.isArray(res.friends)) { usaFriends_ = res.friends; draw(); } else usaFriends_ = null;
+    }).catch(function () { usaFriends_ = null; });
+  }
   function usaRestaurantHtml_() {
     var session = loadSession();
     if (!session || !session.id) return '';
@@ -29716,6 +29784,7 @@
     if (rw.seed) usaCrossingSeedReward_();
     if (lap >= 2) html += '<div class="item-gain-banner">🎰 ' + lap + '周目のごほうびは「ごほうびガチャ」' + usaGachaSpinsForLap_(lap) + '回！🇺🇸アメリカ横断のカードの「ガチャをまわす」から、まわしてね。</div>';
     html += usaMedalsAtTripEnd_(true);
+    usaFriendCelebrate_(lap);
     // 宝石をもらった周だけ、制覇した直後に謎のおばさんが現れて今もらった宝石をねだる。渡しても渡さ
     // なくてもその場で消える(ペナルティなし)が、渡した場合はクリスマス(12/25)に
     // ダイヤの指輪になって返ってくる。
@@ -29949,7 +30018,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
@@ -29967,6 +30036,7 @@
     // テスト用ボタンは先生(00001)だけ
     if (els.usaCrossingTestTemptationBtn) els.usaCrossingTestTemptationBtn.hidden = !isAdminSession_();
     renderUsaGacha_();
+    try { renderUsaFriends_(); } catch (e) { }
     if (typeof ptRenderUsa_ === 'function') ptRenderUsa_();
     if (els.usaCrossingStateList) {
       var progress = Number(state.usaCrossingProgress) || 0;
