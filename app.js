@@ -23894,11 +23894,16 @@
         : wasRareType === 'marubatsukun' ? ('<span class="rare-badge">⭕レア撃破！+' + MARUBATSUKUN_HP_GAIN_ + 'HP✨</span>')
         : (wasRareType && RARE_TYPES[wasRareType] && RARE_TYPES[wasRareType].isWarlord) ? ('<span class="rare-badge">⚔️' + RARE_TYPES[wasRareType].name + '撃破！⚔️</span>')
         : '';
+      // レアキャラのMP(rareMpBonus)は1日のMP上限の中に入る。上限で入らなかったときに「+10MP」と出ていたので、本当にもらえた分を書く(バグ報告#78)
+      let rareTagShown_ = rareTag;
+      if (rareMpBonus > 0 && pointsToAdd < basePoints) {
+        rareTagShown_ = rareTag.replace(/\+\d+MP/, pointsToAdd > 0 ? '（今日のMP上限まで）' : '（今日のMP上限なのでMPはなし）');
+      }
       const defeatQuoteHtml = (wasRareType && RARE_TYPES[wasRareType].lines && RARE_TYPES[wasRareType].lines.defeat)
         ? `<div class="enemy-quote-banner">${RARE_TYPES[wasRareType].lines.defeat}</div>` : '';
       const rareNextTag = state.rareType ? `<span class="rare-badge">✨${RARE_TYPES[state.rareType].name}出現！✨</span>` : '';
       const ptText = pointsToAdd > 0 ? `+${pointsToAdd}MP${bonusTag} ` : '(本日のMP上限に到達) ';
-      winHtml = `<div class="win-banner">${lvlMsg}${rareTag}${eIcon(prevEnemy)} 倒した！ ${ptText}+${expGainedThisWin_}exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
+      winHtml = `<div class="win-banner">${lvlMsg}${rareTagShown_}${eIcon(prevEnemy)} 倒した！ ${ptText}+${expGainedThisWin_}exp${hpBonusHtml}<br>次の敵: ${eIcon(nextEnemy)} ${nextEnemy.name}${rareNextTag}</div>${defeatQuoteHtml}${dragonSwordHtml_}${itemGainedHtml}${doubleGainedHtml}${collectionGainedHtml}${treasureChestGainedHtml}${superAkirametalKeyHtml}${prefectureGainedHtml}${worldDiceHtml}${worldGainedHtml}`;
     }
 
     let missionHtml = '';
@@ -24438,6 +24443,9 @@
     '🐞【直しました㉟】📐作図で正解したあと「↩️ 1つもどす」でかき直すと、同じ図でまた正解になってMPと正解の数が増えていたのを直しました。1つの図でもらえるのは1回だけです。',
     '🐞【直しました㊱】⚾打率クイズで「何割何分何厘？」と聞いているのに「〇分〇毛」の選択肢が出ていたのを直しました。',
     '🐞【直しました㊲】🌍世界一周のボス戦のとちゅうでアプリを閉じると、与えたダメージや使った氷の剣などがむだになっていたのを直しました。閉じても、次に開いたときに続きから戦えます。',
+    '🐞【直しました㊳】今日のMP上限に届いているときにレアキャラを倒すと、MPは入らないのに「+10MP」と出ていたのを、「今日のMP上限なのでMPはなし」と出るように直しました。',
+    '🐞【直しました㊴】💥爆裂想像力クイズを開いたあと、ほかの画面を開いても爆裂想像力クイズが消えなかったのを直しました。',
+    '🐞【直しました㊵】⚾打率クイズで「1割50厘」のような、正しい答えと同じ大きさの選択肢が出ていたのを直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -37671,7 +37679,7 @@
     if (d[1] !== d[2]) cand.push(bbAvgReading_(d[0] * 100 + d[2] * 10 + d[1]));
     if (d[1] === 0) cand.push(d[0] + '割' + d[2] + '分');
     if (d[2] === 0) cand.push(d[0] + '割' + d[1] + '厘');
-    cand.push(d[0] + '割' + (d[1] * 10 + d[2]) + '厘');
+    // (「3割45厘」のような選択肢は、3割4分5厘と同じ大きさで正解とも言えるのでやめた。バグ報告#80)
     cand.push(bbAvgReading_(((d[0] % 3) + 1) * 100 + d[1] * 10 + d[2]));
     var choices = [ans];
     cand.forEach(function (c) { if (c && choices.length < 4 && choices.indexOf(c) === -1) choices.push(c); });
@@ -38248,6 +38256,11 @@
   }
 
   if (els.bakuretsuQuizToggle) els.bakuretsuQuizToggle.addEventListener('click', toggleBakuretsuQuiz);
+  // ほかのボタンで別の画面を開いたら、爆裂想像力クイズは閉じる(週替わり重要ワードを開いても残っていた。バグ報告#79)
+  if (els.bakuretsuQuizToggle && els.bakuretsuQuizPanel) els.bakuretsuQuizToggle.parentNode.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (b && b !== els.bakuretsuQuizToggle) els.bakuretsuQuizPanel.setAttribute('hidden', '');
+  });
   if (els.teamEventToggle) els.teamEventToggle.addEventListener('click', toggleTeamEvent);
   if (els.teamEventBannerBtn) els.teamEventBannerBtn.addEventListener('click', toggleTeamEvent);
   els.withdrawToggle.addEventListener('click', toggleWithdraw);
