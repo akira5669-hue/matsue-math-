@@ -25515,6 +25515,7 @@
           showRegisterNameDup_(true);
           return;
         }
+        if (res.error === 'register_closed') { showFieldError(els.registerError, '新規登録はできなくなりました。IDを忘れた場合や新しく登録が必要な場合は、齋藤先生に連絡してください。'); return; }
         var msg = '登録に失敗しました。もう一度お試しください。';
         if (res.error === 'missing_fields') msg = 'お名前とパスワードを入力してください。';
         else if (res.error === 'invalid_password') msg = 'パスワードは英数字4桁で入力してください。';

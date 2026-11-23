@@ -43,11 +43,12 @@
     <p class="login-hint" id="loginGateNotice" hidden>📢 8月10日から、ログイン時に文章題を3問連続正解する必要があります（達成で+5MP）。</p>
     <div class="login-tabs" role="tablist">
       <button type="button" class="login-tab is-active" id="tabLogin" role="tab" aria-selected="true">ログイン</button>
-      <button type="button" class="login-tab" id="tabRegister" role="tab" aria-selected="false">新規登録</button>
+      <button type="button" class="login-tab" id="tabRegister" role="tab" aria-selected="false" hidden>新規登録</button>
     </div>
 
     <form id="loginForm" class="login-form">
       <p class="login-hint">発行されたIDと、設定したパスワードを入力してください。生徒本人・保護者どちらでもログインできます。</p>
+      <p class="login-notice">📢 <b>IDを忘れた場合</b>や、<b>新しく登録が必要な場合</b>は、<b>齋藤先生</b>に連絡してください。（アプリからの新規登録はできなくなりました。新しくIDを作らずに、今までのIDを使ってください）</p>
 
       <label class="login-label" for="loginId">生徒ID</label>
       <input class="login-input" id="loginId" name="id" type="text" autocomplete="username" required />
@@ -129,7 +130,7 @@
   </section>
 
   <section class="login-card" id="guardianCard" hidden>
-    <p class="login-hint">保護者の方の登録です。お子様がすでに新規登録してIDを発行済みである必要があります（先に生徒本人のご登録をお願いします）。ログインは今まで通り、お子様のIDとパスワードで行います。ここでは保護者としての控えを登録します。</p>
+    <p class="login-hint">保護者の方の登録です。お子様のIDが発行済みである必要があります（IDがわからないときは齋藤先生にご連絡ください）。ログインは今まで通り、お子様のIDとパスワードで行います。ここでは保護者としての控えを登録します。</p>
 
     <form id="guardianForm" class="login-form">
       <label class="login-label" for="guardianName">保護者名</label>
