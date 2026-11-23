@@ -24446,6 +24446,8 @@
     '🐞【直しました㊳】今日のMP上限に届いているときにレアキャラを倒すと、MPは入らないのに「+10MP」と出ていたのを、「今日のMP上限なのでMPはなし」と出るように直しました。',
     '🐞【直しました㊴】💥爆裂想像力クイズを開いたあと、ほかの画面を開いても爆裂想像力クイズが消えなかったのを直しました。',
     '🐞【直しました㊵】⚾打率クイズで「1割50厘」のような、正しい答えと同じ大きさの選択肢が出ていたのを直しました。',
+    '🐞【直しました㊶】🌍世界一周で、ボスを倒す前にサイコロをふると「〇ヵ国分すすんだ！」と出ていたのに、実際はボスの先へは進めていませんでした。ボスの手前で止まっているときは、そのことが出るように直しました。',
+    '🐞【直しました㊷】📐作図の説明に「コンパスと定規だけ」と書いてあったのを、小学生のレベルでは分度器も使うことがわかるように直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -30625,8 +30627,12 @@
     var before = Number(state.worldCountry) || 0;
     var floor = worldCountryFloor_();
     var after = Math.max(floor, Math.min((typeof WORLD_DATA !== 'undefined' ? WORLD_DATA.length : 100), before + die));
+    // 画面の上で本当に進んだ国の数(まだ倒していないボスの先へは進めない)。バグ報告#81
+    var shownBefore = worldCountForLevel(state.level);
     state.worldCountry = after;
-    enqueueWorldDiceRoll_({ die: die, before: before, after: after });
+    var shownAfter = worldCountForLevel(state.level);
+    var last = typeof WORLD_DATA !== 'undefined' && shownAfter + 1 >= WORLD_DATA.length;
+    enqueueWorldDiceRoll_({ die: die, before: before, after: after, shownBefore: shownBefore, shownAfter: shownAfter, blocked: shownAfter - shownBefore < after - before || (shownAfter === shownBefore && after === before && !!currentChallengeableBossStage()), last: last });
   }
   // サイコロを振った結果を1件ずつ順番に見せるためのキュー。1回のレベルアップで
   // 複数回サイコロを振ることがあるため(例: 一気に20レベル上がった等)、
@@ -30637,6 +30643,11 @@
     worldDiceRollQueue_.push(info);
   }
   function worldDiceResultText_(info) {
+    if (info.blocked) {
+      var moved = Math.max(0, (Number(info.shownAfter) || 0) - (Number(info.shownBefore) || 0));
+      return `出た目：${info.die}\n${moved ? moved + 'ヵ国分すすんだ！\n' : ''}`
+        + (info.last ? '👑 最後のボスを倒すまで、これより先へは進めない！（世界一周はボスのところでゴール）' : '👑 ボスを倒すまで、先へは進めない！（出た目の分はとっておいて、ボスを倒したら進むよ）');
+    }
     return `出た目：${info.die}\n${info.after - info.before}ヵ国分すすんだ！`;
   }
   var WORLD_DICE_FACES_ = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
