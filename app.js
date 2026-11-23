@@ -24448,6 +24448,7 @@
     '🐞【直しました㊵】⚾打率クイズで「1割50厘」のような、正しい答えと同じ大きさの選択肢が出ていたのを直しました。',
     '🐞【直しました㊶】🌍世界一周で、ボスを倒す前にサイコロをふると「〇ヵ国分すすんだ！」と出ていたのに、実際はボスの先へは進めていませんでした。ボスの手前で止まっているときは、そのことが出るように直しました。',
     '🐞【直しました㊷】📐作図の説明に「コンパスと定規だけ」と書いてあったのを、小学生のレベルでは分度器も使うことがわかるように直しました。',
+    '🐞【直しました㊸】🏫高校受験問題で、正解したのに正解数が「0問」のままに見えることがありました（画面を開いた直後にすぐ答えたときなど）。正しく数えて表示するように直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -36039,6 +36040,8 @@
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     // 解いた数も、高校受験問題は図形・中学受験問題と別に数える(2026-11-09〜)
+    zukei_.seq = (Number(zukei_.seq) || 0) + 1; // 答えた順番(古い返事で数を戻さないため。バグ報告#83)
+    var mySeq = zukei_.seq;
     if (zukei_.mode === 'koko') zukei_.kokoAnsweredToday++; else zukei_.answeredToday++;
     if (ok) { if (zukei_.mode === 'koko') zukei_.kokoCorrectToday++; else zukei_.correctToday++; }
     renderZukei_();
@@ -36053,6 +36056,8 @@
       zukeiInFlight_ = Promise.all([zukeiInFlight_, pr.catch(function () {})]);
       pr.then(function (res) {
         if (!res || !res.ok) { if (retry) setTimeout(function () { send(false); }, 2500); return; }
+        // あとに答えた問題の返事がまだなら、この(古い)返事で数を上書きしない(バグ報告#83)
+        if (mySeq !== zukei_.seq && res.counted !== false) return;
         zukei_.answeredToday = Number(res.answeredToday) || 0;
         if (typeof res.correctToday === 'number') zukei_.correctToday = res.correctToday;
         if (typeof res.kokoCorrectToday === 'number') zukei_.kokoCorrectToday = res.kokoCorrectToday;
@@ -36130,7 +36135,10 @@
     renderZukei_();
     var session = loadSession();
     if (session && session.id) {
+      var stSeq = Number(zukei_.seq) || 0;
       apiPost('zukeiStatus', { id: session.id }).then(function (res) {
+        // 読み込み中に1問答えていたら、この読み込み結果は古い(正解したのに0問に戻っていた。バグ報告#83)
+        if ((Number(zukei_.seq) || 0) !== stSeq) return;
         if (res && res.ok) { zukei_.answeredToday = Number(res.answeredToday) || 0; zukei_.correctToday = Number(res.correctToday) || 0; zukei_.kokoCorrectToday = Number(res.kokoCorrectToday) || 0; zukei_.kokoAnsweredToday = Number(res.kokoAnsweredToday) || 0; renderZukei_(); }
       }).catch(function () {});
     }
