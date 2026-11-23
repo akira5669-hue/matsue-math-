@@ -10862,7 +10862,7 @@
     const r = Math.random();
     if (r < 0.35) {
       // ① 置き方：4つの図から正しいものを選ぶ
-      const a = 5 * randInt(8, 26); // 40〜130°
+      const a = 10 * randInt(4, 13); // 40〜130°(10°きざみ。2026-11-23 先生の指示)
       const kinds = shuffle(['ok', 'shift', 'rot', 'flip']);
       const labels = ['ア', 'イ', 'ウ', 'エ'];
       let svg = '<svg width="320" height="280" viewBox="0 0 320 280" style="display:block;margin:0 auto 8px;max-width:100%">';
@@ -10888,7 +10888,7 @@
     }
     if (r < 0.88) {
       // ② 目もりの読み取り：右の辺が0°なら内側の目もり、左の辺が0°なら外側の目もり
-      const x = 5 * randInt(3, 33); // 15〜165°
+      const x = 10 * randInt(2, 16); // 20〜160°(10°きざみ。2026-11-23 先生の指示)
       const fromRight = Math.random() < 0.5;
       const R = 130, cx = 160, cy = 165;
       const d1 = fromRight ? 0 : 180, d2 = fromRight ? x : 180 - x;
@@ -10898,7 +10898,7 @@
       svg += '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#1c2127"/></svg>';
       const question = '赤い印の角は何度ですか。';
       const answer = x;
-      const wrongs = [180 - x, x + 10, x - 10, x + 5].filter(function (v) { return v !== x && v > 0 && v < 180; });
+      const wrongs = [180 - x, x + 10, x - 10, x + 20, x - 20].filter(function (v) { return v !== x && v > 0 && v < 180; });
       const steps = [
         (fromRight ? '右' : '左') + 'の辺が0°の線に重なっているので、' + (fromRight ? '右' : '左') + 'の0°から数える目もり（' + (fromRight ? '内側' : '外側') + 'の目もり：0、10、20…と増えるほう）を読む',
         'もう1つの辺が通る目もりは ' + x + '°',
@@ -10918,10 +10918,10 @@
       const answer = '角の1つの辺';
       return { category: 'protractor4', question, answer, choices: shuffle([answer, '角の2つの辺のまん中', '角の頂点だけに合わせればよい', 'どこでもよい']), steps: ['分度器の中心を角の頂点に合わせる', '0°の線を角の1つの辺に重ねる', 'もう1つの辺が通る目もりを読む'] };
     }
-    const y = 5 * randInt(2, 30); // 180°をこえた分 10〜150°
+    const y = 10 * randInt(1, 15); // 180°をこえた分 10〜150°(10°きざみ)
     const question = '180°より大きい角を分度器ではかったら、180°をこえた分が' + y + '°でした。この角は何度ですか。';
     const answer = 180 + y;
-    return { category: 'protractor4', question, answer, choices: buildChoices(answer, [180 - y, 360 - y, y]), steps: ['分度器は180°（半回転）までしかはかれない', '180°と、こえた分を合わせる', '180 + ' + y + ' = ' + answer] };
+    return { category: 'protractor4', question, answer, choices: buildChoices(answer, [180 - y, 360 - y, y, answer + 10, answer - 10]), steps: ['分度器は180°（半回転）までしかはかれない', '180°と、こえた分を合わせる', '180 + ' + y + ' = ' + answer] };
   }
 
   // 三角じょうぎの角度（小4）：30-60-90と45-45-90の三角じょうぎの角を求める
