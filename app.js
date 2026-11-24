@@ -24449,6 +24449,7 @@
     '🐞【直しました㊶】🌍世界一周で、ボスを倒す前にサイコロをふると「〇ヵ国分すすんだ！」と出ていたのに、実際はボスの先へは進めていませんでした。ボスの手前で止まっているときは、そのことが出るように直しました。',
     '🐞【直しました㊷】📐作図の説明に「コンパスと定規だけ」と書いてあったのを、小学生のレベルでは分度器も使うことがわかるように直しました。',
     '🐞【直しました㊸】🏫高校受験問題で、正解したのに正解数が「0問」のままに見えることがありました（画面を開いた直後にすぐ答えたときなど）。正しく数えて表示するように直しました。',
+    '🐞【直しました㊹】📐「作図にチャレンジ」を開いたあと、ショップなどほかの画面を開いても作図が消えずに残っていました。ほかの画面を開いたら作図は閉じるように直しました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -36963,6 +36964,18 @@
       panel.removeAttribute('hidden');
       if (!mounted) { window.Sakuzu.mount(document.getElementById('sakuzuBody'), { onCorrect: giveMp_ }); mounted = true; }
     });
+    // ほかの画面(ショップなど)を開いたら、作図は閉じる。ほかの画面のボタンは作図を閉じるのを知らないので、
+    // 「ほかの画面が開いた」ことを見て閉じる(バグ報告#84)
+    if (window.MutationObserver) {
+      var szOthers = ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel', 'numSensePanel', 'shikokuPanel',
+        'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel'];
+      var szObs = new MutationObserver(function (list) {
+        for (var i = 0; i < list.length; i++) {
+          if (!list[i].target.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+        }
+      });
+      szOthers.forEach(function (pid) { var p = document.getElementById(pid); if (p) szObs.observe(p, { attributes: true, attributeFilter: ['hidden'] }); });
+    }
   })();
 
   /* ---------- 🙏四国88ヶ所めぐり(2027年1月か2月に予定。今は00001だけのプレビュー、2026-11-11〜) ----------
