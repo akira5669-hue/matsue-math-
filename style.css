@@ -2915,3 +2915,7 @@ body.notices-folded .world-launch-banner { display: none !important; }
 
 /* ログイン画面のお知らせ(2026-11-23 新規登録の停止) */
 .login-notice { margin: 0 0 10px; padding: 10px 12px; border: 2px solid #f59e0b; border-radius: 10px; background: #fffbeb; color: #92400e; font-size: 0.9rem; line-height: 1.6; }
+
+/* レアキャラコレクションの撃破回数(バグ報告#86) */
+.badge-count { display: block; font-size: 0.72rem; color: #92400e; margin-top: 2px; line-height: 1.3; }
+@media (prefers-color-scheme: dark) { .badge-count { color: #fcd34d; } }

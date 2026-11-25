@@ -4692,12 +4692,12 @@
       choices = shuffle([answer, '消化酵素をつくるだけ', '食物をくだくだけ', '水分を排出するだけ']);
       steps = ['柔毛は小腸の表面積を広げ、効率よく養分を吸収できるようにしている'];
     } else if (pat === 15) {
-      question = '柔毛から吸収されたブドウ糖とアミノ酸は、柔毛の中のどちらの管に入りますか。';
+      question = '柔毛から吸収されたブドウ糖とアミノ酸は、柔毛の中の何という管に入りますか。';
       answer = '毛細血管';
       choices = shuffle(['毛細血管', 'リンパ管', '気管', '食道']);
       steps = ['ブドウ糖とアミノ酸は柔毛の毛細血管に入る'];
     } else if (pat === 16) {
-      question = '柔毛から吸収された脂肪酸とモノグリセリドは、柔毛の細胞内で再び脂肪になったあと、どちらの管に入りますか。';
+      question = '柔毛から吸収された脂肪酸とモノグリセリドは、柔毛の細胞内で再び脂肪になったあと、何という管に入りますか。';
       answer = 'リンパ管';
       choices = shuffle(['リンパ管', '毛細血管', '気管', '食道']);
       steps = ['脂肪酸とモノグリセリドは、柔毛の細胞内で再び脂肪になったあとリンパ管に入る'];
@@ -24450,6 +24450,8 @@
     '🐞【直しました㊷】📐作図の説明に「コンパスと定規だけ」と書いてあったのを、小学生のレベルでは分度器も使うことがわかるように直しました。',
     '🐞【直しました㊸】🏫高校受験問題で、正解したのに正解数が「0問」のままに見えることがありました（画面を開いた直後にすぐ答えたときなど）。正しく数えて表示するように直しました。',
     '🐞【直しました㊹】📐「作図にチャレンジ」を開いたあと、ショップなどほかの画面を開いても作図が消えずに残っていました。ほかの画面を開いたら作図は閉じるように直しました。',
+    '🐞【直しました㊺】🔬理科の「柔毛から吸収された養分は、どちらの管に入りますか」は選択肢が4つあるのに「どちら」になっていたので、「何という管」に直しました。',
+    '🐞【直しました㊻】🎖️学習記録のレアキャラコレクションに、それぞれのレアキャラを何回撃破したかを出すようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -26096,7 +26098,10 @@
       } else {
         title = `あと${Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount)}回撃破でゲット`;
       }
-      return `<div class="${cls}" title="${title}"><span class="badge-icon">${iconHtml}</span><span class="badge-name">${label}</span></div>`;
+      // 撃破した回数を見えるようにする(titleはスマホでは見えない。バグ報告#86)
+      let countHtml = '';
+      if (defeatCount > 0) countHtml = `<span class="badge-count">${defeatCount}回撃破${!collected && id !== 'thinker' && WORLD_BOSS_COLLECTIBLE_IDS.indexOf(id) === -1 ? '（あと' + Math.max(0, RARE_COLLECTION_THRESHOLD - defeatCount) + '回）' : ''}</span>`;
+      return `<div class="${cls}" title="${title}"><span class="badge-icon">${iconHtml}</span><span class="badge-name">${label}</span>${countHtml}</div>`;
     }).join('');
   }
 
