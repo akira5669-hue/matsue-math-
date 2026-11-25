@@ -36923,6 +36923,189 @@
     });
   })();
 
+  /* ---------- 👹チームボス戦(2026-11-25 先生の指示。本番は12/26〜31、サーバーは lib/handlers/teamBoss.js) ----------
+     「参加する」で申しこみ(12/1から)。期間中の毎日7:00〜22:30に、1人1日1回攻撃できる。
+     攻撃：武器を選ぶ → 自分の学年の計算問題を1問。正解でダメージ(素手100・武器は最大1000)、不正解はHPが減る。
+     倒したら、その日にそのボスへ正解で攻撃した人でMPを山分け。先生(00001)はいつでもテストできる(本番とは別のボス)。 */
+  (function () {
+    var tg = document.getElementById('teamBossToggle'), panel = document.getElementById('teamBossPanel'), body = document.getElementById('teamBossBody');
+    if (!tg || !panel || !body) return;
+    var TB_SHOW_FROM_ = '2026-12-01', TB_SHOW_TO_ = '2026-12-31';
+    // 武器(サーバーのTB_WEAPONS_と揃える)
+    var TB_WEAPONS_ = [
+      { key: 'none', name: '素手', icon: '✊', dmg: 100 },
+      { key: 'skySpear', name: '天空の槍', icon: '🔱', dmg: 200, field: 'skySpearCharges' },
+      { key: 'raidenAxe', name: '雷電の斧', icon: '⚡', dmg: 300, field: 'raidenAxeCharges' },
+      { key: 'iceSword', name: '氷の剣', icon: '🧊', dmg: 500, field: 'iceSwordCharges' },
+      { key: 'dragonSword', name: 'ドラゴンソード', icon: '⚔️', dmg: 700, field: 'dragonSwordCount' },
+      { key: 'yushaSword', name: '勇者の剣', icon: '🗡️', dmg: 1000, field: 'yushaSwordCount' },
+    ];
+    var st = { data: null, weapon: 'none', att: null, q: null, busy: false, result: '' };
+    function visible_() {
+      if (isAdminSession_()) return true;
+      var t = todayKey();
+      return t >= TB_SHOW_FROM_ && t <= TB_SHOW_TO_;
+    }
+    function refreshBtn_() { tg.hidden = !visible_(); if (tg.hidden) panel.setAttribute('hidden', ''); }
+    refreshBtn_();
+    setInterval(refreshBtn_, 60000);
+    function lvText_(t) { return t.maxLv ? 'Lv.' + t.minLv + '〜' + t.maxLv : 'Lv.' + t.minLv + '以上'; }
+    function owned_(w) { return !w.field || (Number(state[w.field]) || 0) > 0; }
+    function fmtDay_(d) { var m = /^(?:test-)?\d{4}-(\d{2})-(\d{2})$/.exec(d || ''); return m ? Number(m[1]) + '/' + Number(m[2]) + (d.indexOf('test-') === 0 ? '(テスト)' : '') : d; }
+    // 自分の学年の計算問題(文章題はのぞく)
+    function makeQuestion_() {
+      var s = loadSession(), g = s && s.grade;
+      var cats = CATEGORIES.filter(function (c) { return categoryGrade[c.id] === g && WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) === -1; });
+      if (!cats.length) cats = CATEGORIES.filter(function (c) { return categoryGrade[c.id] && WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) === -1; });
+      for (var i = 0; i < 30; i++) {
+        var c = cats[randInt(0, cats.length - 1)];
+        try {
+          var q = c.gen();
+          if (q && !q.proofFillSet && Array.isArray(q.choices) && q.choices.length >= 2) { q.category = q.category || c.id; return q; }
+        } catch (e) { }
+      }
+      return null;
+    }
+    function render_() {
+      var d = st.data;
+      if (!d) { body.innerHTML = '<p class="history-summary">読み込み中…</p>'; return; }
+      var my = d.tiers[d.tier];
+      var h = '<p class="history-summary">みんなで力を合わせてボスを倒そう！ <b>12月26日〜31日</b>の毎日 <b>午前7時〜午後10時30分</b>に、1人<b>1日1回</b>攻撃できる。毎日7時に新しいボスが出るよ（倒したらその日は終わり）。</p>';
+      h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の計算問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
+        + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
+        + '<li>ボスを倒したら、<b>その日に正解で攻撃した人</b>でMPを山分け！</li>'
+        + '<li>攻撃のボタンを押したら、その日の1回を使うよ（問題を見てからやめても、もう一度はできない）。</li></ul>';
+      h += '<div class="tb-tiers">' + d.tiers.map(function (t) {
+        var b = (d.bosses || [])[t.tier];
+        var bar = b ? '<div class="tb-bar"><span style="width:' + Math.max(0, Math.min(100, b.hp / b.max * 100)).toFixed(1) + '%"></span></div><div class="tb-small">HP ' + b.hp + ' / ' + b.max + (b.defeated ? '　🎉 倒した！' : '') + '　正解で攻撃した人 ' + b.hitters + '人</div>' : '';
+        return '<div class="tb-tier' + (t.tier === d.tier ? ' tb-mine' : '') + '"><div class="tb-name">' + t.name + (t.tier === d.tier ? '　<span class="tb-you">あなたのボス</span>' : '') + '</div>'
+          + '<div class="tb-small">' + lvText_(t) + '　HP' + t.hp + '　山分け' + t.mp + 'MP　不正解でHP-' + t.penalty + '</div>' + bar + '</div>';
+      }).join('') + '</div>';
+      h += '<p class="history-summary">あなた：Lv.' + d.level + '（' + my.name + 'と戦う）　参加を申しこんだ人：' + d.entries + '人</p>';
+      if (!d.signedUp) {
+        h += d.canSignup ? '<button type="button" class="primary-btn" data-tb="signup">👹 チームボス戦に参加する！</button>' : '<p class="history-summary">参加の申しこみは12月1日からだよ。</p>';
+      } else if (st.q && st.att) {
+        h += '<div class="tb-quiz"><p class="tb-name">' + escHtml(TB_WEAPONS_.filter(function (w) { return w.key === st.att.weapon; })[0].name) + 'で攻撃！ 正解で ' + st.att.dmg + 'ダメージ</p>'
+          + '<div class="question-text">' + (st.q.questionHtml || escHtml(st.q.question)) + '</div>'
+          + '<div class="tb-choices">' + st.q.choices.map(function (c, i) { return '<button type="button" class="choice-btn" data-tb-ans="' + i + '">' + stepToHtml(String(c)) + '</button>'; }).join('') + '</div></div>';
+      } else {
+        h += '<p class="history-summary">✅ 参加を申しこみ済み！' + (d.test ? '（先生のテスト：本番とは別のボス。何回でも攻撃できる）' : '') + '</p>';
+        if (st.result) h += '<div class="tb-result">' + st.result + '</div>';
+        if (d.canAttack) {
+          var b = (d.bosses || [])[d.tier];
+          if (b && b.defeated) h += '<p class="history-summary">🎉 今日のボスはもう倒されたよ。また明日！</p>';
+          else {
+            h += '<p class="survey-label">武器を選んで攻撃（武器は1回分へるよ）</p><div class="tb-weapons">' + TB_WEAPONS_.map(function (w) {
+              var n = w.field ? (Number(state[w.field]) || 0) : null;
+              return '<label class="tb-weapon' + (owned_(w) ? '' : ' tb-off') + '"><input type="radio" name="tbWeapon" value="' + w.key + '"' + (owned_(w) ? '' : ' disabled') + (st.weapon === w.key ? ' checked' : '') + '> ' + w.icon + ' ' + w.name + '（' + w.dmg + 'ダメージ' + (n !== null ? '・持っている：' + n : '') + '）</label>';
+            }).join('') + '</div><button type="button" class="primary-btn" data-tb="attack">⚔️ 攻撃する！（今日の1回）</button>';
+          }
+        } else if (d.myToday) {
+          h += '<p class="history-summary">今日はもう攻撃したよ（' + (d.myToday.correct ? '正解！ ' + d.myToday.dmg + 'ダメージ' : d.myToday.answered ? '不正解' : '答えなかった') + '）。また明日！</p>';
+        } else if (d.eventDay) {
+          h += '<p class="history-summary">⏰ 攻撃できるのは、午前7時〜午後10時30分だよ。</p>';
+        } else {
+          h += '<p class="history-summary">📅 12月26日の午前7時から攻撃できるよ。お楽しみに！</p>';
+        }
+      }
+      if (d.payouts && d.payouts.length) h += '<p class="survey-label">🏆 山分けでもらったMP</p><p class="tb-small">' + d.payouts.map(function (p) { return fmtDay_(p.day) + ' ' + d.tiers[p.tier].name + '：' + p.mp + 'MP'; }).join('<br>') + '</p>';
+      body.innerHTML = h;
+    }
+    function load_() {
+      var s = loadSession();
+      if (!s || !s.id) return;
+      apiPost('teamBossStatus', { id: s.id }).then(function (res) {
+        if (res && res.ok) { st.data = res; render_(); } else body.innerHTML = '<p class="history-summary">読み込みに失敗しました。</p>';
+      }).catch(function () { body.innerHTML = '<p class="history-summary">通信に失敗しました。</p>'; });
+    }
+    var TB_OTHERS_ = ['giftPanel', 'shopPanel', 'rankingPanel', 'teamEventPanel', 'prefecturePanel', 'worldPanel', 'halloweenPanel', 'mangaPanel', 'fujiPanel', 'answer10Panel', 'zukeiPanel', 'surveyPanel', 'gachaPanel', 'kenPanel', 'bugPanel', 'numSensePanel', 'shikokuPanel',
+      'grantPanel', 'testPhotoPanel', 'weeklyQuizPanel', 'bakuretsuQuizPanel', 'withdrawPanel', 'avatarPanel', 'historyPanel', 'sakuzuPanel'];
+    tg.addEventListener('click', function () {
+      if (!panel.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      TB_OTHERS_.forEach(function (pid) { var p = document.getElementById(pid); if (p) p.setAttribute('hidden', ''); });
+      panel.removeAttribute('hidden');
+      st.result = '';
+      if (!st.q) load_(); else render_();
+    });
+    // ほかの画面が開いたら閉じる
+    if (window.MutationObserver) {
+      var obs = new MutationObserver(function (list) {
+        for (var i = 0; i < list.length; i++) if (!list[i].target.hasAttribute('hidden')) { panel.setAttribute('hidden', ''); return; }
+      });
+      TB_OTHERS_.forEach(function (pid) { var p = document.getElementById(pid); if (p) obs.observe(p, { attributes: true, attributeFilter: ['hidden'] }); });
+    }
+    body.addEventListener('change', function (e) { if (e.target && e.target.name === 'tbWeapon') st.weapon = e.target.value; });
+    body.addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn || st.busy) return;
+      var s = loadSession();
+      if (!s || !s.id) return;
+      var act = btn.getAttribute('data-tb');
+      if (act === 'signup') {
+        st.busy = true;
+        apiPost('teamBossSignup', { id: s.id }).then(function (res) {
+          st.busy = false;
+          if (res && res.ok) { st.result = '🎉 参加を申しこんだよ！ 12月26日の午前7時から攻撃できる！'; load_(); }
+          else window.alert('申しこみができませんでした。');
+        }).catch(function () { st.busy = false; window.alert('通信に失敗しました。'); });
+        return;
+      }
+      if (act === 'attack') {
+        var w = TB_WEAPONS_.filter(function (x) { return x.key === st.weapon; })[0] || TB_WEAPONS_[0];
+        if (!owned_(w)) { window.alert(w.name + 'を持っていないよ。'); return; }
+        var q = makeQuestion_();
+        if (!q) { window.alert('問題を作れませんでした。'); return; }
+        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（今日の1回を使うよ。' + (w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
+        st.busy = true;
+        apiPost('teamBossStart', { id: s.id, weapon: w.key }).then(function (res) {
+          st.busy = false;
+          if (!res || !res.ok) {
+            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前7時〜午後10時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', already_attacked: '今日はもう攻撃したよ。また明日！' };
+            st.result = '😢 ' + ((res && m[res.error]) || '攻撃できませんでした。');
+            load_();
+            return;
+          }
+          if (w.field) { state[w.field] = Math.max(0, (Number(state[w.field]) || 0) - 1); saveGameState(state); syncPointsNow_(s.id); try { updateGameHud(); } catch (e2) { } }
+          st.att = res; st.q = q;
+          render_();
+        }).catch(function () { st.busy = false; window.alert('通信に失敗しました。もう一度押してね。'); });
+        return;
+      }
+      var ai = btn.getAttribute('data-tb-ans');
+      if (ai !== null && st.q && st.att) {
+        var q2 = st.q, att = st.att;
+        var ok = String(q2.choices[Number(ai)]) === String(q2.answer);
+        st.busy = true;
+        var send = function (retry) {
+          apiPost('teamBossAnswer', { id: s.id, aid: att.aid, correct: ok }).then(function (res) {
+            st.busy = false;
+            if (!res || !res.ok) {
+              if (retry && !(res && res.error === 'already_answered')) { setTimeout(function () { send(false); }, 2000); return; }
+              st.q = null; st.att = null; st.result = '😢 答えを送れませんでした。'; load_(); return;
+            }
+            st.q = null; st.att = null;
+            var r = ok ? '<div class="win-banner">⭕ 正解！' : '<div class="enemy-quote-banner">❌ ざんねん！ 正解は「' + escHtml(String(q2.answer)) + '」。';
+            if (!ok) {
+              state.hp = Number(res.hp) || 0; saveGameState(state); try { updateGameHud(); } catch (e3) { }
+              r += 'HPが' + res.penalty + '減った…</div>';
+            } else if (res.already) {
+              r += ' でも、答えている間にボスはほかの人に倒されていた！</div>' + (res.mp ? '<div class="item-gain-banner">💰 正解したので山分けに入ったよ！ +' + res.mp + 'MP</div>' : '');
+            } else {
+              r += ' ボスに ' + res.dmg + 'ダメージ！（のこりHP ' + res.bossHp + '）</div>';
+              if (res.defeated) r += '<div class="item-gain-banner">🎉 とどめをさした！ ボスを倒したよ！ 正解で攻撃した' + res.hitters + '人で山分け → +' + res.share + 'MP！</div>';
+            }
+            if (res.points != null) { state.points = Number(res.points) || 0; saveGameState(state); try { updateGameHud(); } catch (e4) { } }
+            st.result = r;
+            load_();
+          }).catch(function () {
+            if (retry) { setTimeout(function () { send(false); }, 2000); return; }
+            st.busy = false; st.q = null; st.att = null; st.result = '😢 通信に失敗しました。'; load_();
+          });
+        };
+        send(true);
+      }
+    });
+  })();
   /* ---------- 📐作図にチャレンジ(2026-11-18〜00001だけのプレビュー、2026-11-27から全員。本体は sakuzu.js) ---------- */
   (function () {
     var tg = document.getElementById('sakuzuToggle'), panel = document.getElementById('sakuzuPanel');
