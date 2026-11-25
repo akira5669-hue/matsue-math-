@@ -36950,7 +36950,13 @@
     refreshBtn_();
     setInterval(refreshBtn_, 60000);
     function lvText_(t) { return t.maxLv ? 'Lv.' + t.minLv + '〜' + t.maxLv : 'Lv.' + t.minLv + '以上'; }
-    function owned_(w) { return !w.field || (Number(state[w.field]) || 0) > 0; }
+    // 📖 魔法の書(2026-11-26〜)：どの書もどのボスに効く。ダメージは素手100＋書のダメージ。詠唱で自分のHP-10。持っている書だけ出す。
+    function allWeapons_() {
+      return TB_WEAPONS_.concat(SPELLBOOKS_.map(function (b) { return { key: 'book:' + b.id, name: '魔法の書「' + b.label + '」', icon: b.emoji, dmg: 100 + b.dmg, book: b.id, selfDmg: b.selfDmg }; }));
+    }
+    function weaponByKey_(k) { return allWeapons_().filter(function (w) { return w.key === k; })[0] || TB_WEAPONS_[0]; }
+    function count_(w) { return w.book ? (Number((state.spellbooks || {})[w.book]) || 0) : w.field ? (Number(state[w.field]) || 0) : null; }
+    function owned_(w) { var n = count_(w); return n === null || n > 0; }
     function fmtDay_(d) { var m = /^(?:test-)?\d{4}-(\d{2})-(\d{2})$/.exec(d || ''); return m ? Number(m[1]) + '/' + Number(m[2]) + (d.indexOf('test-') === 0 ? '(テスト)' : '') : d; }
     // 自分の学年の問題(計算・図形・文章題など、自分の学年の単元ぜんぶ)か、前にまちがえた問題(3回に1回くらい)
     function makeQuestion_() {
@@ -36975,6 +36981,7 @@
       var my = d.tiers[d.tier];
       var h = '<p class="history-summary">みんなで力を合わせてボスを倒そう！ <b>12月26日〜31日</b>の毎日 <b>午前7時〜午後10時30分</b>に、1人<b>1日3回（3問）</b>攻撃できる。毎日7時に新しいボスが出るよ（倒したらその日は終わり）。</p>';
       h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の問題（計算・図形・文章題など）か、前にまちがえた問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
+        + '<li>📖 <b>魔法の書</b>も使える！ どの書もどのボスに効く。ダメージは100＋書のダメージ（聖光爆発・暗黒崩壊なら400）。詠唱すると自分のHPが10減る。</li>'
         + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
         + '<li>ボスを倒したら、<b>その日に正解で攻撃した人</b>でMPを山分け！</li>'
         + '<li>攻撃のボタンを押したら、1回分を使うよ（問題を見てからやめても、その1回はもどらない）。</li></ul>';
@@ -36989,7 +36996,7 @@
       if (!d.signedUp) {
         h += d.canSignup ? '<button type="button" class="primary-btn" data-tb="signup">👹 チームボス戦に参加する！</button>' : '<p class="history-summary">参加の申しこみは12月1日からだよ。</p>';
       } else if (st.q && st.att) {
-        h += '<div class="tb-quiz"><p class="tb-name">' + (st.att.n ? '【今日の' + st.att.n + '問目】' : '') + escHtml(TB_WEAPONS_.filter(function (w) { return w.key === st.att.weapon; })[0].name) + 'で攻撃！ 正解で ' + st.att.dmg + 'ダメージ' + (st.q.tbWrong ? '<br><span class="tb-small">📕 前にまちがえた問題だよ！</span>' : '') + '</p>'
+        h += '<div class="tb-quiz"><p class="tb-name">' + (st.att.n ? '【今日の' + st.att.n + '問目】' : '') + escHtml(weaponByKey_(st.att.weapon).name) + 'で攻撃！ 正解で ' + st.att.dmg + 'ダメージ' + (st.q.tbWrong ? '<br><span class="tb-small">📕 前にまちがえた問題だよ！</span>' : '') + '</p>'
           + '<div class="question-text">' + (st.q.questionHtml || escHtml(st.q.question)) + '</div>'
           + '<div class="tb-choices">' + st.q.choices.map(function (c, i) { return '<button type="button" class="choice-btn" data-tb-ans="' + i + '">' + stepToHtml(String(c)) + '</button>'; }).join('') + '</div></div>';
       } else {
@@ -36999,8 +37006,8 @@
           var b = (d.bosses || [])[d.tier];
           if (b && b.defeated) h += '<p class="history-summary">🎉 今日のボスはもう倒されたよ。また明日！</p>';
           else {
-            h += '<p class="survey-label">武器を選んで攻撃（武器は1回分へるよ）</p><div class="tb-weapons">' + TB_WEAPONS_.map(function (w) {
-              var n = w.field ? (Number(state[w.field]) || 0) : null;
+            h += '<p class="survey-label">武器か魔法の書を選んで攻撃（1回分・1冊へるよ。魔法の書は、詠唱すると自分のHPが10減る）</p><div class="tb-weapons">' + allWeapons_().filter(function (w) { return !w.book || owned_(w); }).map(function (w) {
+              var n = count_(w);
               return '<label class="tb-weapon' + (owned_(w) ? '' : ' tb-off') + '"><input type="radio" name="tbWeapon" value="' + w.key + '"' + (owned_(w) ? '' : ' disabled') + (st.weapon === w.key ? ' checked' : '') + '> ' + w.icon + ' ' + w.name + '（' + w.dmg + 'ダメージ' + (n !== null ? '・持っている：' + n : '') + '）</label>';
             }).join('') + '</div><button type="button" class="primary-btn" data-tb="attack">⚔️ 攻撃する！' + (d.test ? '' : '（今日のこり' + d.left + '回）') + '</button>';
           }
@@ -37055,11 +37062,11 @@
         return;
       }
       if (act === 'attack') {
-        var w = TB_WEAPONS_.filter(function (x) { return x.key === st.weapon; })[0] || TB_WEAPONS_[0];
+        var w = weaponByKey_(st.weapon);
         if (!owned_(w)) { window.alert(w.name + 'を持っていないよ。'); return; }
         var q = makeQuestion_();
         if (!q) { window.alert('問題を作れませんでした。'); return; }
-        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（1回分を使うよ。' + (w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
+        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（1回分を使うよ。' + (w.book ? '魔法の書は1冊へって、自分のHPが' + w.selfDmg + '減る。' : w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
         st.busy = true;
         apiPost('teamBossStart', { id: s.id, weapon: w.key }).then(function (res) {
           st.busy = false;
@@ -37070,6 +37077,11 @@
             return;
           }
           if (w.field) { state[w.field] = Math.max(0, (Number(state[w.field]) || 0) - 1); saveGameState(state); syncPointsNow_(s.id); try { updateGameHud(); } catch (e2) { } }
+          if (w.book) {
+            state.spellbooks[w.book] = Math.max(0, (Number(state.spellbooks[w.book]) || 0) - 1);
+            state.hp = Math.max(0, (Number(state.hp) || 0) - w.selfDmg);
+            saveGameState(state); syncPointsNow_(s.id); try { updateGameHud(); } catch (e6) { }
+          }
           st.att = res; st.q = q;
           render_();
         }).catch(function () { st.busy = false; window.alert('通信に失敗しました。もう一度押してね。'); });
