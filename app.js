@@ -36981,9 +36981,10 @@
       h += '<div class="tb-tiers">' + d.tiers.map(function (t) {
         var b = (d.bosses || [])[t.tier];
         var bar = b ? '<div class="tb-bar"><span style="width:' + Math.max(0, Math.min(100, b.hp / b.max * 100)).toFixed(1) + '%"></span></div><div class="tb-small">HP ' + b.hp + ' / ' + b.max + (b.defeated ? '　🎉 倒した！' : '') + '　正解で攻撃した人 ' + b.hitters + '人</div>' : '';
-        return '<div class="tb-tier' + (t.tier === d.tier ? ' tb-mine' : '') + '"><div class="tb-name">' + t.name + (t.tier === d.tier ? '　<span class="tb-you">あなたのボス</span>' : '') + '</div>'
-          + '<div class="tb-small">' + lvText_(t) + '　HP' + t.hp + '　山分け' + t.mp + 'MP　不正解でHP-' + t.penalty + '</div>' + bar + '</div>';
+        return '<div class="tb-tier' + (t.tier === d.tier ? ' tb-mine' : '') + '"><img class="tb-thumb" src="images/tboss_' + t.tier + '.jpg" alt=""><div class="tb-info"><div class="tb-name">' + t.name + (t.tier === d.tier ? '　<span class="tb-you">あなたのボス</span>' : '') + '</div>'
+          + '<div class="tb-small">' + lvText_(t) + '　HP' + t.hp + '　山分け' + t.mp + 'MP　不正解でHP-' + t.penalty + '</div>' + bar + '</div></div>';
       }).join('') + '</div>';
+      h += '<img class="tb-big" src="images/tboss_' + d.tier + '.jpg" alt="' + escHtml(my.name) + '">';
       h += '<p class="history-summary">あなた：Lv.' + d.level + '（' + my.name + 'と戦う）　参加を申しこんだ人：' + d.entries + '人</p>';
       if (!d.signedUp) {
         h += d.canSignup ? '<button type="button" class="primary-btn" data-tb="signup">👹 チームボス戦に参加する！</button>' : '<p class="history-summary">参加の申しこみは12月1日からだよ。</p>';
