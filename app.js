@@ -36924,8 +36924,8 @@
   })();
 
   /* ---------- 👹チームボス戦(2026-11-25 先生の指示。本番は12/26〜31、サーバーは lib/handlers/teamBoss.js) ----------
-     「参加する」で申しこみ(12/1から)。期間中の毎日7:00〜22:30に、1人1日1回攻撃できる。
-     攻撃：武器を選ぶ → 自分の学年の計算問題を1問。正解でダメージ(素手100・武器は最大1000)、不正解はHPが減る。
+     「参加する」で申しこみ(12/1から)。期間中の毎日7:00〜22:30に、1人1日3回(3問)攻撃できる(2026-11-26 先生の指示)。
+     攻撃：武器を選ぶ → 自分の学年の問題(計算・図形・文章題など)か、前にまちがえた問題を1問。正解でダメージ(素手100・武器は最大1000)、不正解はHPが減る。
      倒したら、その日にそのボスへ正解で攻撃した人でMPを山分け。先生(00001)はいつでもテストできる(本番とは別のボス)。 */
   (function () {
     var tg = document.getElementById('teamBossToggle'), panel = document.getElementById('teamBossPanel'), body = document.getElementById('teamBossBody');
@@ -36952,11 +36952,14 @@
     function lvText_(t) { return t.maxLv ? 'Lv.' + t.minLv + '〜' + t.maxLv : 'Lv.' + t.minLv + '以上'; }
     function owned_(w) { return !w.field || (Number(state[w.field]) || 0) > 0; }
     function fmtDay_(d) { var m = /^(?:test-)?\d{4}-(\d{2})-(\d{2})$/.exec(d || ''); return m ? Number(m[1]) + '/' + Number(m[2]) + (d.indexOf('test-') === 0 ? '(テスト)' : '') : d; }
-    // 自分の学年の計算問題(文章題はのぞく)
+    // 自分の学年の問題(計算・図形・文章題など、自分の学年の単元ぜんぶ)か、前にまちがえた問題(3回に1回くらい)
     function makeQuestion_() {
+      if (Math.random() < 1 / 3) {
+        try { var wq = pickPercentKunQuestion(); if (wq && Array.isArray(wq.choices) && wq.choices.length >= 2) { wq.tbWrong = true; return wq; } } catch (e0) { }
+      }
       var s = loadSession(), g = s && s.grade;
-      var cats = CATEGORIES.filter(function (c) { return categoryGrade[c.id] === g && WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) === -1; });
-      if (!cats.length) cats = CATEGORIES.filter(function (c) { return categoryGrade[c.id] && WORD_PROBLEM_CATEGORY_IDS.indexOf(c.id) === -1; });
+      var cats = CATEGORIES.filter(function (c) { return categoryGrade[c.id] === g; });
+      if (!cats.length) cats = CATEGORIES.filter(function (c) { return categoryGrade[c.id]; });
       for (var i = 0; i < 30; i++) {
         var c = cats[randInt(0, cats.length - 1)];
         try {
@@ -36970,11 +36973,11 @@
       var d = st.data;
       if (!d) { body.innerHTML = '<p class="history-summary">読み込み中…</p>'; return; }
       var my = d.tiers[d.tier];
-      var h = '<p class="history-summary">みんなで力を合わせてボスを倒そう！ <b>12月26日〜31日</b>の毎日 <b>午前7時〜午後10時30分</b>に、1人<b>1日1回</b>攻撃できる。毎日7時に新しいボスが出るよ（倒したらその日は終わり）。</p>';
-      h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の計算問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
+      var h = '<p class="history-summary">みんなで力を合わせてボスを倒そう！ <b>12月26日〜31日</b>の毎日 <b>午前7時〜午後10時30分</b>に、1人<b>1日3回（3問）</b>攻撃できる。毎日7時に新しいボスが出るよ（倒したらその日は終わり）。</p>';
+      h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の問題（計算・図形・文章題など）か、前にまちがえた問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
         + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
         + '<li>ボスを倒したら、<b>その日に正解で攻撃した人</b>でMPを山分け！</li>'
-        + '<li>攻撃のボタンを押したら、その日の1回を使うよ（問題を見てからやめても、もう一度はできない）。</li></ul>';
+        + '<li>攻撃のボタンを押したら、1回分を使うよ（問題を見てからやめても、その1回はもどらない）。</li></ul>';
       h += '<div class="tb-tiers">' + d.tiers.map(function (t) {
         var b = (d.bosses || [])[t.tier];
         var bar = b ? '<div class="tb-bar"><span style="width:' + Math.max(0, Math.min(100, b.hp / b.max * 100)).toFixed(1) + '%"></span></div><div class="tb-small">HP ' + b.hp + ' / ' + b.max + (b.defeated ? '　🎉 倒した！' : '') + '　正解で攻撃した人 ' + b.hitters + '人</div>' : '';
@@ -36985,7 +36988,7 @@
       if (!d.signedUp) {
         h += d.canSignup ? '<button type="button" class="primary-btn" data-tb="signup">👹 チームボス戦に参加する！</button>' : '<p class="history-summary">参加の申しこみは12月1日からだよ。</p>';
       } else if (st.q && st.att) {
-        h += '<div class="tb-quiz"><p class="tb-name">' + escHtml(TB_WEAPONS_.filter(function (w) { return w.key === st.att.weapon; })[0].name) + 'で攻撃！ 正解で ' + st.att.dmg + 'ダメージ</p>'
+        h += '<div class="tb-quiz"><p class="tb-name">' + (st.att.n ? '【今日の' + st.att.n + '問目】' : '') + escHtml(TB_WEAPONS_.filter(function (w) { return w.key === st.att.weapon; })[0].name) + 'で攻撃！ 正解で ' + st.att.dmg + 'ダメージ' + (st.q.tbWrong ? '<br><span class="tb-small">📕 前にまちがえた問題だよ！</span>' : '') + '</p>'
           + '<div class="question-text">' + (st.q.questionHtml || escHtml(st.q.question)) + '</div>'
           + '<div class="tb-choices">' + st.q.choices.map(function (c, i) { return '<button type="button" class="choice-btn" data-tb-ans="' + i + '">' + stepToHtml(String(c)) + '</button>'; }).join('') + '</div></div>';
       } else {
@@ -36998,10 +37001,10 @@
             h += '<p class="survey-label">武器を選んで攻撃（武器は1回分へるよ）</p><div class="tb-weapons">' + TB_WEAPONS_.map(function (w) {
               var n = w.field ? (Number(state[w.field]) || 0) : null;
               return '<label class="tb-weapon' + (owned_(w) ? '' : ' tb-off') + '"><input type="radio" name="tbWeapon" value="' + w.key + '"' + (owned_(w) ? '' : ' disabled') + (st.weapon === w.key ? ' checked' : '') + '> ' + w.icon + ' ' + w.name + '（' + w.dmg + 'ダメージ' + (n !== null ? '・持っている：' + n : '') + '）</label>';
-            }).join('') + '</div><button type="button" class="primary-btn" data-tb="attack">⚔️ 攻撃する！（今日の1回）</button>';
+            }).join('') + '</div><button type="button" class="primary-btn" data-tb="attack">⚔️ 攻撃する！' + (d.test ? '' : '（今日のこり' + d.left + '回）') + '</button>';
           }
-        } else if (d.myToday) {
-          h += '<p class="history-summary">今日はもう攻撃したよ（' + (d.myToday.correct ? '正解！ ' + d.myToday.dmg + 'ダメージ' : d.myToday.answered ? '不正解' : '答えなかった') + '）。また明日！</p>';
+        } else if (d.myToday && d.myToday.length) {
+          h += '<p class="history-summary">今日の3回はもう攻撃したよ（' + d.myToday.map(function (a) { return a.correct ? '⭕' + a.dmg : a.answered ? '❌' : '－'; }).join('・') + '）。また明日！</p>';
         } else if (d.eventDay) {
           h += '<p class="history-summary">⏰ 攻撃できるのは、午前7時〜午後10時30分だよ。</p>';
         } else {
@@ -37055,12 +37058,12 @@
         if (!owned_(w)) { window.alert(w.name + 'を持っていないよ。'); return; }
         var q = makeQuestion_();
         if (!q) { window.alert('問題を作れませんでした。'); return; }
-        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（今日の1回を使うよ。' + (w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
+        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（1回分を使うよ。' + (w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
         st.busy = true;
         apiPost('teamBossStart', { id: s.id, weapon: w.key }).then(function (res) {
           st.busy = false;
           if (!res || !res.ok) {
-            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前7時〜午後10時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', already_attacked: '今日はもう攻撃したよ。また明日！' };
+            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前7時〜午後10時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', already_attacked: '今日の3回はもう攻撃したよ。また明日！' };
             st.result = '😢 ' + ((res && m[res.error]) || '攻撃できませんでした。');
             load_();
             return;
@@ -37075,6 +37078,7 @@
       if (ai !== null && st.q && st.att) {
         var q2 = st.q, att = st.att;
         var ok = String(q2.choices[Number(ai)]) === String(q2.answer);
+        try { if (ok) { if (q2.tbWrong) clearWrongQuestion(q2); } else recordWrongQuestion(q2); saveGameState(state); } catch (e5) { }
         st.busy = true;
         var send = function (retry) {
           apiPost('teamBossAnswer', { id: s.id, aid: att.aid, correct: ok }).then(function (res) {
