@@ -20805,8 +20805,8 @@
   const FUJI_ALTITUDE_SICKNESS_DRAIN_ = 10;
   const OXYGEN_CAN_COST_MP = 100;
   const FUJI_ALTITUDE_SICKNESS_STATION_ = 8;
-  // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。500MP。
-  const SHARPEN_SWORD_COST_MP = 500;
+  // 刀を研ぐ：使用済みで壊れた勇者の剣を、再び1回使えるように直す。100MP(2026-11-26〜、前は500MP)。
+  const SHARPEN_SWORD_COST_MP = 100; // 2026-11-26 先生の指示で500→100MP
   // おにぎり・ステーキの半額キャンペーン共通期間(2026-10-08〜10-12、10-13以降は
   // 通常価格に戻る)。実際の課金判定はサーバー側の日付で行うので、ここでの判定は
   // 表示用(今いくらで買えるかの案内)にすぎない。
