@@ -36926,7 +36926,7 @@
   /* ---------- 👹チームボス戦(2026-11-25 先生の指示。本番は12/26〜31、サーバーは lib/handlers/teamBoss.js) ----------
      「参加する」で申しこみ(12/1から)。期間中の毎日7:00〜22:30に、1人1日3回(3問)攻撃できる(2026-11-26 先生の指示)。
      攻撃：武器を選ぶ → 自分の学年の問題(計算・図形・文章題など)か、前にまちがえた問題を1問。正解でダメージ(素手100・武器は最大1000)、不正解はHPが減る。
-     倒したら、その日にそのボスへ2問以上正解した人(3問中2問以上)でMPを山分け(2026-11-26 先生の指示)。先生(00001)はいつでもテストできる(本番とは別のボス)。 */
+     倒したら、その日にそのボスへ与えたダメージの合計に比例してMPを分ける(2026-11-26 先生の指示)。先生(00001)はいつでもテストできる(本番とは別のボス)。 */
   (function () {
     var tg = document.getElementById('teamBossToggle'), panel = document.getElementById('teamBossPanel'), body = document.getElementById('teamBossBody');
     if (!tg || !panel || !body) return;
@@ -36983,11 +36983,11 @@
       h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の問題（計算・図形・文章題など）か、前にまちがえた問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
         + '<li>📖 <b>魔法の書</b>も使える！ どの書もどのボスに効く。ダメージは100＋書のダメージ（聖光爆発・暗黒崩壊なら400）。詠唱すると自分のHPが10減る。</li>'
         + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
-        + '<li>ボスを倒したら、<b>その日そのボスに3問中2問以上正解した人</b>でMPを山分け！（倒された時点で2問以上正解している人。<b>とどめをさした人</b>は、正解が1問でも入れる）</li>'
+        + '<li>ボスを倒したら、<b>その日そのボスに与えたダメージの多さ</b>に合わせてMPを分ける！ たくさんダメージを与えた人ほど、たくさんもらえる（1問正解で1000ダメージの人は、3問正解で300ダメージの人より多い）。</li>'
         + '<li>攻撃のボタンを押したら、1回分を使うよ（問題を見てからやめても、その1回はもどらない）。</li></ul>';
       h += '<div class="tb-tiers">' + d.tiers.map(function (t) {
         var b = (d.bosses || [])[t.tier];
-        var bar = b ? '<div class="tb-bar"><span style="width:' + Math.max(0, Math.min(100, b.hp / b.max * 100)).toFixed(1) + '%"></span></div><div class="tb-small">HP ' + b.hp + ' / ' + b.max + (b.defeated ? '　🎉 倒した！' : '') + '　2問以上正解した人 ' + b.hitters + '人</div>' : '';
+        var bar = b ? '<div class="tb-bar"><span style="width:' + Math.max(0, Math.min(100, b.hp / b.max * 100)).toFixed(1) + '%"></span></div><div class="tb-small">HP ' + b.hp + ' / ' + b.max + (b.defeated ? '　🎉 倒した！' : '') + '　ダメージを与えた人 ' + b.hitters + '人</div>' : '';
         return '<div class="tb-tier' + (t.tier === d.tier ? ' tb-mine' : '') + '"><img class="tb-thumb" src="images/tboss_' + t.tier + '.jpg" alt=""><div class="tb-info"><div class="tb-name">' + t.name + (t.tier === d.tier ? '　<span class="tb-you">あなたのボス</span>' : '') + '</div>'
           + '<div class="tb-small">' + lvText_(t) + '　HP' + t.hp + '　山分け' + t.mp + 'MP　不正解でHP-' + t.penalty + '</div>' + bar + '</div></div>';
       }).join('') + '</div>';
@@ -37106,10 +37106,10 @@
               state.hp = Number(res.hp) || 0; saveGameState(state); try { updateGameHud(); } catch (e3) { }
               r += 'HPが' + res.penalty + '減った…</div>';
             } else if (res.already) {
-              r += ' でも、答えている間にボスはほかの人に倒されていた！</div>' + (res.mp ? '<div class="item-gain-banner">💰 2問以上正解したので山分けに入ったよ！ +' + res.mp + 'MP</div>' : '<div class="enemy-quote-banner">今日の正解が2問に届かなかったので、山分けには入れなかった…</div>');
+              r += ' でも、答えている間にボスはほかの人に倒されていた！</div>' + (res.mp ? '<div class="item-gain-banner">💰 それまでに与えたダメージの分で、+' + res.mp + 'MP入ったよ！</div>' : '<div class="enemy-quote-banner">このボスにはまだダメージを与えていなかったので、MPはもらえなかった…</div>');
             } else {
               r += ' ボスに ' + res.dmg + 'ダメージ！（のこりHP ' + res.bossHp + '）</div>';
-              if (res.defeated) r += '<div class="item-gain-banner">🎉 とどめをさした！ ボスを倒したよ！ ' + res.hitters + '人で山分け → +' + res.mp + 'MP！</div>';
+              if (res.defeated) r += '<div class="item-gain-banner">🎉 とどめをさした！ ボスを倒したよ！ ' + res.hitters + '人で倒した。あなたのダメージは合計' + res.myDmg + '（みんなの' + (res.totalDmg ? Math.round(res.myDmg / res.totalDmg * 1000) / 10 : 0) + '%） → +' + res.mp + 'MP！</div>';
             }
             if (res.points != null) { state.points = Number(res.points) || 0; saveGameState(state); try { updateGameHud(); } catch (e4) { } }
             st.result = r;
