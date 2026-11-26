@@ -24600,7 +24600,7 @@
     b.hidden = false;
     var t = document.getElementById('sakuzuBannerText');
     if (t) t.textContent = (started ? '📐 新機能「作図にチャレンジ」スタート！' : '📐【予告】11月27日(金)から、新機能「作図にチャレンジ」がスタート！')
-      + 'アプリの中のコンパス・定規・分度器を使って、本当に作図ができるよ。小学生は三角形・ひし形・正六角形、中学生は垂直二等分線・角の二等分線・垂線から入試レベルまで。正しく作図できたら1問1MP（1日10MPまで。ほかのMPの1日の上限とは別にもらえる）！1日15問正解すると⚾野球ガチャもできる！「🎬 かき方の動画」でコンパスの使い方が見られるし、わからないときは「🎬 答えの動画」でかき方を動画で解説するよ。';
+      + 'アプリの中のコンパス・定規・分度器を使って、本当に作図ができるよ。小学生は三角形・ひし形・正六角形、中学生は垂直二等分線・角の二等分線・垂線・中点・正三角形・正方形・接線から入試レベルまで。正しく作図できたら1問1MP（1日10MPまで。ほかのMPの1日の上限とは別にもらえる）！1日10問正解すると⚾野球ガチャもできる！「🎬 かき方の動画」でコンパスの使い方が見られるし、わからないときは「🎬 答えの動画」でかき方を動画で解説するよ。';
     var btn = document.getElementById('sakuzuBannerBtn');
     if (btn) btn.hidden = !started;
   }
@@ -37166,7 +37166,7 @@
     // ごほうび(先生の指示 2026-11-18)：1問正解で1MP、1日SAKUZU_MP_DAILY_まで。ほかのMPの1日の上限とは別枠(pointsTodaySakuzu)。
     // サーバー(sync.js、points_today_sakuzu)でも1日10MPまでにして端末どうしで大きい方にそろえるので、何台使っても10MPまで。
     var SAKUZU_MP_DAILY_ = 10;
-    // 2026-11-22〜 作図で1日15問正解すると⚾野球ガチャができる。正解の数はサーバー(sakuzuCorrect)で数える。
+    // 2026-11-22〜 作図で1日10問正解すると⚾野球ガチャができる。正解の数はサーバー(sakuzuCorrect)で数える。
     var SAKUZU_BB_UNLOCK_ = 15;
     function countCorrect_(id) {
       apiPost('sakuzuCorrect', { id: id }).then(function (res) {
@@ -37524,7 +37524,7 @@
   var GACHA_LUCKY_SUBJECT_ = ['計算', '図形', '文章題', '割合', '速さ', '方程式', '関数', '理科（生物）', '理科（化学）', '理科（物理）', '理科（地学）', '単位'];
   var GACHA_LUCKY_ITEM_ = ['消しゴム', '定規', 'コンパス', '赤ペン', '青ペン', 'ノート', 'ふせん', '分度器', '水とう', 'えんぴつ', '時計', 'ハンカチ'];
   var GACHA_LUCKY_COLOR_ = ['赤', '青', '黄色', '緑', 'オレンジ', 'むらさき', 'ピンク', '水色', '白', '金色'];
-  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20, kokoCorrect: 0, pkUnlock: 10, sciCorrect: 0, bbUnlock: 10, sakuzuCorrect: 0, bbSakuzuUnlock: 15 };
+  var gacha_ = { today: {}, busy: false, zukeiCorrect: 0, diceUnlock: 20, kokoCorrect: 0, pkUnlock: 10, sciCorrect: 0, bbUnlock: 10, sakuzuCorrect: 0, bbSakuzuUnlock: 10 };
   function gachaVisible_() { return isAdminSession_() || GACHA_OPEN_ALL_; }
   function gachaResultHtml_(kind, r, mp) {
     var res = (r && r.result) || {};

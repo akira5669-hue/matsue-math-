@@ -361,6 +361,61 @@
         };
       },
     },
+
+    // ----- 2026-11-27 先生の指示「コンパスの作図問題を増やして」で追加(基本) -----
+    {
+      id: 'midpoint', level: 'basic', title: '線分ABの中点M',
+      make: function () {
+        var A = { x: rnd(60, 100), y: rnd(200, 250), label: 'A' }, B = { x: rnd(260, 300), y: rnd(150, 210), label: 'B' };
+        var M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+        return {
+          points: [A, B], objs: [{ type: 'segment', p: A, q: B }], target: { kind: 'point', p: M, label: 'M' },
+          ask: '作図してできた中点Mを「📍 答えの点」でタップしてね。',
+          video: [{ t: 'say', say: '中点は、線分ABの垂直二等分線と、線分ABが交わる点だよ。' }].concat(vPerpBis(A, B, 'AB').steps,
+            [{ t: 'pt', p: [lbl(M, 'M')], say: '垂直二等分線と線分ABが交わった点が、中点Mだよ！' }]),
+          hint: '中点は、線分ABの垂直二等分線と線分ABの交点。① 点Aを中心に円をかく（半径はABの半分より大きく）。② 「⭕ 同じ大きさの円」で点Bをタップする。③ 2つの円の交点2つを定規で結ぶ。④ その直線と線分ABの交点がM。',
+        };
+      },
+    },
+    {
+      id: 'equilateral', level: 'basic', title: '線分ABを1辺とする正三角形ABCの頂点C（ABの上がわ）',
+      make: function () {
+        var A = { x: rnd(80, 110), y: rnd(240, 270), label: 'A' }, len = rnd(150, 175), d = rnd(-8, 8);
+        var B = at(A, len, d, 'B'), C = at(A, len, d + 60);
+        return {
+          points: [A, B], objs: [{ type: 'segment', p: A, q: B }], target: { kind: 'point', p: C, label: 'C' },
+          ask: '作図してできた点Cを「📍 答えの点」でタップしてね。',
+          video: (function () {
+            var a1 = arcOver(A, len, C, C, 16, 'Cがありそうな上のほうに、弧をかく。'), a2 = arcOver(B, len, C, C, 16, 'さっきの弧と交わるように、弧をかく。');
+            return [{ t: 'say', say: '正三角形は、3つの辺の長さがぜんぶ同じだよ。ABの長さをコンパスで写そう。' },
+              { t: 'open', c: A, to: B, say: 'コンパスの針を点Aにさして、えんぴつを点Bまで開く（ABの長さ）。' }, a1,
+              moveTo(a2, '開いたまま（同じ長さで）、針を点Bにさす。'), a2,
+              { t: 'pt', p: [lbl(C, 'C')], say: '2つの弧が交わった点が、頂点Cだよ。' },
+              vLine(A, C, '定規で、点Aと点Cを結ぶ。'), vLine(B, C, '点Bと点Cも結んだら、正三角形のできあがり！')];
+          })(),
+          hint: '正三角形は3つの辺の長さが同じ。① コンパスで、点Aを中心にして点Bをタップする（半径AB）。② 「⭕ 同じ大きさの円」で点Bをタップする。③ 2つの円が交わった点のうち、上のほうがC。',
+        };
+      },
+    },
+    {
+      id: 'angle60', level: 'basic', title: '∠XOA＝60°となる直線OA',
+      make: function () {
+        var O = { x: rnd(70, 100), y: rnd(270, 300), label: 'O' }, d0 = rnd(-6, 6), X = at(O, 250, d0, 'X');
+        return {
+          points: [O, X], objs: [{ type: 'ray', p: O, q: X }],
+          target: { kind: 'line', lines: [{ p: O, u: dirDeg(d0 + 60) }, { p: O, u: dirDeg(d0 - 60) }] },
+          video: (function () {
+            var rr = 100, E = at(O, rr, d0), Fp = at(O, rr, d0 + 60);
+            var a = arcOver(O, rr, E, Fp, 12, '半直線OXと交わるところから、上のほうまで弧をかく。'), b = arcOver(E, rr, Fp, Fp, 16, 'さっきの弧と交わるように、弧をかく。');
+            return [{ t: 'say', say: '60°は正三角形の角。コンパスで正三角形をつくろう。' }, openTo(a, 'コンパスの針を点Oにさす。'), a,
+              { t: 'pt', p: [E], say: '半直線OXと交わった点ができたね。' }, moveTo(b, '開いたまま（同じ大きさで）、その点に針をさす。'), b,
+              { t: 'pt', p: [Fp], say: '2つの弧が交わった点ができたね。Oとこの点を結ぶと、正三角形の角で60°だよ。' },
+              vLine(O, at(O, 240, d0 + 60), '点Oと交わった点を結ぶと、∠XOA＝60°の直線！')];
+          })(),
+          hint: '60°は正三角形の角。① 点Oを中心に円をかき、半直線OXとの交点Eをつくる。② 「⭕ 同じ大きさの円」で点Eをタップする。③ 2つの円の交点（上のほう）と点Oを定規で結ぶ。',
+        };
+      },
+    },
     // ===== 標準 =====
     {
       id: 'circum', level: 'std', title: '3点A、B、Cを通る円の中心O',
@@ -452,6 +507,40 @@
         };
       },
     },
+
+    // ----- 2026-11-27 追加(標準) -----
+    {
+      id: 'square', level: 'std', title: '線分ABを1辺とする正方形ABCDの頂点D（ABの上がわ）',
+      make: function () {
+        var A = { x: rnd(100, 130), y: rnd(265, 285), label: 'A' }, len = rnd(120, 140), d = rnd(-8, 8);
+        var B = at(A, len, d, 'B'), D = at(A, len, d + 90);
+        return {
+          points: [A, B], objs: [{ type: 'line', p: at(A, 85, d + 180), q: at(A, len + 70, d) }],
+          target: { kind: 'point', p: D, label: 'D' },
+          ask: '作図してできた点Dを「📍 答えの点」でタップしてね。',
+          video: (function () {
+            var u = dirDeg(d), po = vPerpOn(A, u, 50, 85, D, '点Aと交わった点を結ぶと、ABに垂直な線。', 30, len + 30), a0 = angOf(A, B);
+            return [{ t: 'say', say: '正方形は、4つの角が直角で、4つの辺が同じ長さ。まず点AにABと垂直な線をひこう。' }].concat(po.steps, [
+              { t: 'open', c: A, to: B, say: 'コンパスの針を点Aにさして、点Bまで開く（ABの長さ）。' },
+              { t: 'arc', c: A, r: len, a0: a0, a1: a0 - 100, say: '点Bから、垂直な線と交わるまで弧をかく。' },
+              { t: 'pt', p: [lbl(D, 'D')], say: '垂直な線と弧が交わった点が、頂点Dだよ！' }]);
+          })(),
+          hint: '正方形は、角が直角で辺の長さが同じ。① 点Aを中心に円をかき、直線ABとの交点を2つつくる。② その2つの交点を中心に、①より大きい同じ半径の円をそれぞれかき、交点と点Aを結ぶ（Aを通る垂線）。③ 点Aを中心に、点Bを通る円をかく。④ 垂線と円の交点のうち、上のほうがD。',
+        };
+      },
+    },
+    {
+      id: 'altitude', level: 'std', title: '△ABCの頂点Cから辺ABにひいた垂線',
+      make: function () {
+        // 辺ABを長めにして、Cを中心にした円が辺ABと2か所で交わりやすくする
+        var A = { x: rnd(25, 45), y: rnd(225, 250), label: 'A' }, B = { x: rnd(315, 335), y: rnd(215, 250), label: 'B' }, C = { x: rnd(150, 210), y: rnd(80, 115), label: 'C' }, t = [A, B, C], u = unit(B.x - A.x, B.y - A.y);
+        return {
+          points: t, objs: triObjs(A, B, C), target: { kind: 'line', lines: [{ p: C, u: { x: -u.y, y: u.x } }] },
+          video: [{ t: 'say', say: '頂点Cから辺ABに、垂直な線（垂線）をひこう。三角形の高さになる線だよ。' }].concat(vPerpOut(C, A, B, '点Cと交わった点を結ぶと、辺ABへの垂線！').steps),
+          hint: '「直線の外の点を通る垂線」と同じ。① 点Cを中心に、辺ABと2点で交わる円をかく。② その2つの交点を中心に、同じ半径の円をそれぞれかく。③ その2つの円の交点（ABの下がわ）と、点Cを定規で結ぶ。',
+        };
+      },
+    },
     // ===== 入試 =====
     {
       id: 'incenter', level: 'exam', title: '△ABCの3辺から等しい距離にある点I（内心）',
@@ -535,6 +624,47 @@
           })(),
           ask: '作図してできた点A′を「📍 答えの点」でタップしてね。',
           hint: '回転させても、Oからの距離は同じ。① 定規で直線OAをひく。② 直線OA上の点Oを通る垂線をひく。③ Oを中心に、Aを通る円をかく。④ 円と垂線の交点のうち、左回りに90°のほうがA′。',
+        };
+      },
+    },
+
+    // ----- 2026-11-27 追加(入試) -----
+    {
+      id: 'circleCenter', level: 'exam', title: '円周上の3点A、B、Cを使って、円の中心Oを見つける',
+      make: function () {
+        var O = { x: rnd(170, 190), y: rnd(195, 215) }, r = rnd(110, 125);
+        var A = at(O, r, rnd(195, 225), 'A'), B = at(O, r, rnd(-45, -15), 'B'), C = at(O, r, rnd(75, 105), 'C');
+        return {
+          points: [A, B, C], objs: [{ type: 'circle', c: O, r: r, given: true }], target: { kind: 'point', p: O, label: 'O' },
+          ask: '作図してできた中心Oを「📍 答えの点」でタップしてね。',
+          video: [{ t: 'say', say: '円の中心は、円周上のどの点からも同じ距離。弦の垂直二等分線は、かならず中心を通るよ。' }].concat(
+            vPerpBis(A, C, 'AC').steps, vPerpBis(C, B, 'CB').steps,
+            [{ t: 'pt', p: [lbl(O, 'O')], say: '2本の垂直二等分線が交わった点が、円の中心Oだよ！' }]),
+          hint: '弦の垂直二等分線は、円の中心を通る。① 点Aと点Cの垂直二等分線をひく（Aを中心に円 → 「⭕ 同じ大きさの円」でC → 交点2つを結ぶ）。② 点Cと点Bの垂直二等分線も同じようにひく。③ 2本の交点がO。',
+        };
+      },
+    },
+    {
+      id: 'tangentOut', level: 'exam', title: '円Oの外の点Pから円Oにひいた接線',
+      make: function () {
+        var O = { x: rnd(100, 125), y: rnd(215, 240), label: 'O' }, r = rnd(58, 68);
+        var P = at(O, rnd(175, 195), rnd(15, 30), 'P');
+        var M = { x: (O.x + P.x) / 2, y: (O.y + P.y) / 2 }, h = dist(O, P) / 2;
+        var X = interCC({ c: O, r: r }, { c: M, r: h });
+        return {
+          points: [O, P], objs: [{ type: 'circle', c: O, r: r, given: true }],
+          target: { kind: 'line', lines: X.map(function (T) { return { p: P, u: unit(T.x - P.x, T.y - P.y) }; }) },
+          video: (function () {
+            var u = unit(P.x - O.x, P.y - O.y), T = X[0].y < X[1].y ? X[0] : X[1], a0 = angOf(M, O);
+            return [{ t: 'say', say: '接線は、接点を通る半径に垂直。OPを直径とする円をかくと、その円の上の点からOとPを見た角は90°になるよ。' },
+              vLine(addP(O, u, -30), addP(P, u, 30), 'まず、定規で点Oと点Pを結ぶ。')].concat(vPerpBis(O, P, 'OP').steps, [
+              { t: 'pt', p: [lbl(M, 'M')], say: '垂直二等分線と直線OPが交わった点が、OPの中点Mだよ。' },
+              { t: 'open', c: M, to: O, say: 'コンパスの針を点Mにさして、点Oまで開く。' },
+              { t: 'arc', c: M, r: h, a0: a0, a1: a0 + 359, say: 'OPを直径とする円をかく。' },
+              { t: 'pt', p: [lbl(X[0], 'T'), lbl(X[1], 'T′')], say: '円Oと交わった点が、接点だよ。' },
+              vLine(P, addP(P, unit(T.x - P.x, T.y - P.y), dist(P, T) + 50), '点Pと接点を結ぶと、接線のできあがり！（もう1つの接点を結んでも正解）')]);
+          })(),
+          hint: '接線は、接点を通る半径に垂直。OPを直径とする円の上の点は、∠OTP＝90°になる。① 定規で直線OPをひく。② 線分OPの垂直二等分線をひいて、OPの中点Mをつくる。③ 点Mを中心に、点Oを通る円をかく。④ その円と円Oの交点の1つと、点Pを定規で結ぶ。',
         };
       },
     },
@@ -948,7 +1078,7 @@
           var ends = [o.p, o.q], radii = [];
           st.objs.forEach(function (c2) { if (c2.type === 'circle' && ends.every(function (e) { return Math.abs(dist(c2.c, e) - c2.r) < 1.5; })) radii.push(c2.r); });
           var diffR = radii.length >= 2 && Math.max.apply(null, radii) - Math.min.apply(null, radii) > 1;
-          msg('❌ その直線は正しい作図の線ではないみたい。' + (diffR ? '<b>2つの円の半径がちがう</b>よ。同じ半径の円でかこう（2つめの円は「⭕ 同じ大きさの円」を使うとかんたん）。' : '') + '「↩️ 1つもどす」で消して、もう一度考えてみよう。');
+          msg((diffR ? '❌ ' : '') + 'その直線は、答えの線ではないよ（作図のとちゅうで使う線なら、そのまま続けてOK）。' + (diffR ? '<b>2つの円の半径がちがう</b>よ。同じ半径の円でかこう（2つめの円は「⭕ 同じ大きさの円」を使うとかんたん）。' : '') + 'まちがえて引いたときは「↩️ 1つもどす」で消してね。');
         }
       } else if (o.type === 'circle' && T.kind === 'circle' && dist(o.c, T.c) < TOL && Math.abs(o.r - T.r) < TOL) {
         correct(o);
