@@ -22789,6 +22789,8 @@
     renderAnswer10Banner_();
     renderUsaCrossingBanner_();
     var kenTg = document.getElementById('kenToggle'); if (kenTg) { kenTg.hidden = !kenVisible_(); if (kenTg.hidden) { var kenPn = document.getElementById('kenPanel'); if (kenPn) kenPn.setAttribute('hidden', ''); } }
+    // 👹チームボス戦のボタン(00001はいつでも、みんなは12/1〜31)
+    if (teamBossRefreshBtn_) { try { teamBossRefreshBtn_(); } catch (eTb) { } }
     // 新レアキャラのテストボタン(00001だけ)
     var rpAdm = document.getElementById('rarePreviewAdmin'); if (rpAdm) rpAdm.hidden = !isAdminSession_();
     // 📐作図にチャレンジ(2026-11-18〜00001だけのプレビュー、2026-11-27から全員)
@@ -36927,6 +36929,7 @@
     });
   })();
 
+  var teamBossRefreshBtn_ = null;
   /* ---------- 👹チームボス戦(2026-11-25 先生の指示。本番は12/26〜31、サーバーは lib/handlers/teamBoss.js) ----------
      「参加する」で申しこみ(12/1から)。期間中の毎日7:00〜22:30に、1人1日3回(3問)攻撃できる(2026-11-26 先生の指示)。
      攻撃：武器を選ぶ → 自分の学年の問題(計算・図形・文章題など)か、前にまちがえた問題を1問。正解でダメージ(素手100・武器は最大1000)、不正解はHPが減る。
@@ -36951,6 +36954,8 @@
       return t >= TB_SHOW_FROM_ && t <= TB_SHOW_TO_;
     }
     function refreshBtn_() { tg.hidden = !visible_(); if (tg.hidden) panel.setAttribute('hidden', ''); }
+    // ログインした直後にもボタンを出し直す(updateGameHudから呼ぶ)。前はページを開いたときと1分ごとだけで、ログイン後に出なかった。
+    teamBossRefreshBtn_ = refreshBtn_;
     refreshBtn_();
     setInterval(refreshBtn_, 60000);
     function lvText_(t) { return t.maxLv ? 'Lv.' + t.minLv + '〜' + t.maxLv : 'Lv.' + t.minLv + '以上'; }
