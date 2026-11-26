@@ -36931,7 +36931,7 @@
 
   var teamBossRefreshBtn_ = null;
   /* ---------- 👹チームボス戦(2026-11-25 先生の指示。本番は12/26〜31、サーバーは lib/handlers/teamBoss.js) ----------
-     「参加する」で申しこみ(12/1から)。期間中の毎日7:00〜22:30に、1人1日3回(3問)攻撃できる(2026-11-26 先生の指示)。
+     「参加する」で申しこみ(12/1から)。期間中の毎日6:30〜9:30に、1人1日3回(3問)攻撃できる(2026-11-26 先生の指示)。
      攻撃：武器を選ぶ → 自分の学年の問題(計算・図形・文章題など)か、前にまちがえた問題を1問。正解でダメージ(素手100・武器は最大1000)、不正解はHPが減る。
      倒したら、その日にそのボスへ与えたダメージの合計に比例してMPを分ける(2026-11-26 先生の指示)。先生(00001)はいつでもテストできる(本番とは別のボス)。 */
   (function () {
@@ -36988,7 +36988,7 @@
       var d = st.data;
       if (!d) { body.innerHTML = '<p class="history-summary">読み込み中…</p>'; return; }
       var my = d.tiers[d.tier];
-      var h = '<p class="history-summary">みんなで力を合わせてボスを倒そう！ <b>12月26日〜31日</b>の毎日 <b>午前7時〜午後10時30分</b>に、1人<b>1日3回（3問）</b>攻撃できる。毎日7時に新しいボスが出るよ（倒したらその日は終わり）。</p>';
+      var h = '<p class="history-summary">みんなで力を合わせてボスを倒そう！ <b>12月26日〜31日</b>の毎日 <b>午前6時30分〜午前9時30分</b>に、1人<b>1日3回（3問）</b>攻撃できる。毎日6時30分に新しいボスが出るよ（倒したらその日は終わり）。</p>';
       h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の問題（計算・図形・文章題など）か、前にまちがえた問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
         + '<li>📖 <b>魔法の書</b>も使える！ どの書もどのボスに効く。ダメージは100＋書のダメージ（聖光爆発・暗黒崩壊なら400）。詠唱すると自分のHPが10減る。</li>'
         + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
@@ -37023,9 +37023,9 @@
         } else if (d.myToday && d.myToday.length) {
           h += '<p class="history-summary">今日の3回はもう攻撃したよ（' + d.myToday.map(function (a) { return a.correct ? '⭕' + a.dmg : a.answered ? '❌' : '－'; }).join('・') + '）。また明日！</p>';
         } else if (d.eventDay) {
-          h += '<p class="history-summary">⏰ 攻撃できるのは、午前7時〜午後10時30分だよ。</p>';
+          h += '<p class="history-summary">⏰ 攻撃できるのは、午前6時30分〜午前9時30分だよ。</p>';
         } else {
-          h += '<p class="history-summary">📅 12月26日の午前7時から攻撃できるよ。お楽しみに！</p>';
+          h += '<p class="history-summary">📅 12月26日の午前6時30分から攻撃できるよ。お楽しみに！</p>';
         }
       }
       if (d.payouts && d.payouts.length) h += '<p class="survey-label">🏆 山分けでもらったMP</p><p class="tb-small">' + d.payouts.map(function (p) { return fmtDay_(p.day) + ' ' + d.tiers[p.tier].name + '：' + p.mp + 'MP'; }).join('<br>') + '</p>';
@@ -37065,7 +37065,7 @@
         st.busy = true;
         apiPost('teamBossSignup', { id: s.id }).then(function (res) {
           st.busy = false;
-          if (res && res.ok) { st.result = '🎉 参加を申しこんだよ！ 12月26日の午前7時から攻撃できる！'; load_(); }
+          if (res && res.ok) { st.result = '🎉 参加を申しこんだよ！ 12月26日の午前6時30分から攻撃できる！'; load_(); }
           else window.alert('申しこみができませんでした。');
         }).catch(function () { st.busy = false; window.alert('通信に失敗しました。'); });
         return;
@@ -37080,7 +37080,7 @@
         apiPost('teamBossStart', { id: s.id, weapon: w.key }).then(function (res) {
           st.busy = false;
           if (!res || !res.ok) {
-            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前7時〜午後10時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', already_attacked: '今日の3回はもう攻撃したよ。また明日！' };
+            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前6時30分〜午前9時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', already_attacked: '今日の3回はもう攻撃したよ。また明日！' };
             st.result = '😢 ' + ((res && m[res.error]) || '攻撃できませんでした。');
             load_();
             return;
