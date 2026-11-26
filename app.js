@@ -24805,6 +24805,7 @@
       : '（本日のMP上限に達しているためMPはありません）';
     window.alert('🎉 ' + clearedText + mpText + (hpBonusAwarded > 0 ? '+' + hpBonusAwarded + 'HP獲得！' : ''));
     if (id) syncPointsNow_(id);
+    if (typeof earlyBirdCheck_ === 'function') earlyBirdCheck_(); // 🌅 早起きボーナス(ログインしたとき)
   }
 
   function showApp(name, isGuest) {
@@ -38533,6 +38534,39 @@
   // キューが空なら通信は発生しない。
   flushLogQueue_();
   window.addEventListener('online', flushLogQueue_);
+
+  // 🌅 早起きボーナス(2026-11-26 先生の指示)：2026-12-25〜2027-01-07 の毎日、午前6時〜8時にアプリを開いたら +20MP(1日1回)。
+  // 1日のMP上限(100MP)とは別。時間・日付・1日1回の判定はサーバー(lib/handlers/earlyBird.js)がする。
+  // ここでは、期間と時間のおおよそ(端末の時計)で、送るかどうかだけ決める(むだな通信をしないため)。
+  var earlyBirdBusy_ = false;
+  function earlyBirdCheck_() {
+    try {
+      if (earlyBirdBusy_ || document.visibilityState !== 'visible') return;
+      var s = loadSession();
+      if (!s || !s.id || s.guest) return;
+      var j = new Date(Date.now() + 9 * 3600 * 1000);
+      var day = j.toISOString().slice(0, 10), mins = j.getUTCHours() * 60 + j.getUTCMinutes();
+      if (day < '2026-12-24' || day > '2027-01-08') return;
+      if (mins < 5 * 60 + 50 || mins > 8 * 60 + 10) return;
+      var key = 'earlyBird:' + s.id + ':' + day;
+      try { if (localStorage.getItem(key)) return; } catch (e0) { }
+      earlyBirdBusy_ = true;
+      apiPost('earlyBirdBonus', { id: s.id }).then(function (res) {
+        earlyBirdBusy_ = false;
+        if (!res || !res.ok) return;
+        if (res.added > 0 || res.reason === 'already') { try { localStorage.setItem(key, '1'); } catch (e1) { } }
+        if (res.added > 0) {
+          state.points = (Number(state.points) || 0) + res.added; // サーバーではもう足してある(上限の外)
+          saveGameState(state);
+          try { updateGameHud(); } catch (e2) { }
+          window.alert('🌅 早起きボーナス！ +' + res.added + 'MP\n（12月25日〜1月7日は、朝6時〜8時にアプリを開くと毎日もらえるよ。1日のMPの上限とは別！）');
+        }
+      }).catch(function () { earlyBirdBusy_ = false; });
+    } catch (e) { earlyBirdBusy_ = false; }
+  }
+  earlyBirdCheck_();
+  document.addEventListener('visibilitychange', earlyBirdCheck_);
+  setInterval(earlyBirdCheck_, 5 * 60 * 1000);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') flushLogQueue_();
   });

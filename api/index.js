@@ -29,6 +29,7 @@ const { handleBugReportStatus, handleBugReportSubmit, handleBugReportList, handl
 const { handleGachaStatus, handleGachaDraw, handleGachaPkKeep, handleGachaDiceQuiz, handleGachaBbQuiz } = require('../lib/handlers/gacha');
 const { handleSakuzuCorrect } = require('../lib/handlers/sakuzu');
 const { handleTeamBossStatus, handleTeamBossSignup, handleTeamBossStart, handleTeamBossAnswer } = require('../lib/handlers/teamBoss');
+const { handleEarlyBirdBonus } = require('../lib/handlers/earlyBird');
 const { handleZeroDragonReward, handleZeroDragonUfoStatus, handleZeroDragonUfoPlay } = require('../lib/handlers/zeroDragon');
 const { handleKenStatus, handleKenClear, handleKenRanking } = require('../lib/handlers/kenken');
 const { handleSurveyStatus, handleSurveySubmit } = require('../lib/handlers/survey');
@@ -111,6 +112,7 @@ const ACTIONS = {
   teamBossSignup: handleTeamBossSignup,
   teamBossStart: handleTeamBossStart,
   teamBossAnswer: handleTeamBossAnswer,
+  earlyBirdBonus: handleEarlyBirdBonus,
   usaFriends: handleUsaFriends,
   openTreasureChest: handleOpenTreasureChest,
   buySpellbook: handleBuySpellbook,
