@@ -36938,11 +36938,11 @@
     // 武器(サーバーのTB_WEAPONS_と揃える)
     var TB_WEAPONS_ = [
       { key: 'none', name: '素手', icon: '✊', dmg: 100 },
-      { key: 'skySpear', name: '天空の槍', icon: '🔱', dmg: 200, field: 'skySpearCharges' },
-      { key: 'raidenAxe', name: '雷電の斧', icon: '⚡', dmg: 300, field: 'raidenAxeCharges' },
-      { key: 'iceSword', name: '氷の剣', icon: '🧊', dmg: 500, field: 'iceSwordCharges' },
-      { key: 'dragonSword', name: 'ドラゴンソード', icon: '⚔️', dmg: 700, field: 'dragonSwordCount' },
-      { key: 'yushaSword', name: '勇者の剣', icon: '🗡️', dmg: 1000, field: 'yushaSwordCount' },
+      { key: 'skySpear', name: '天空の槍', icon: '🔱', dmg: 200, field: 'skySpearCharges', fx: '#60a5fa' },
+      { key: 'raidenAxe', name: '雷電の斧', icon: '⚡', dmg: 300, field: 'raidenAxeCharges', fx: '#facc15' },
+      { key: 'iceSword', name: '氷の剣', icon: '🧊', dmg: 500, field: 'iceSwordCharges', fx: '#38bdf8' },
+      { key: 'dragonSword', name: 'ドラゴンソード', icon: '⚔️', dmg: 700, field: 'dragonSwordCount', fx: '#ef4444' },
+      { key: 'yushaSword', name: '勇者の剣', icon: '🗡️', dmg: 1000, field: 'yushaSwordCount', fx: '#f59e0b' },
     ];
     var st = { data: null, weapon: 'none', att: null, q: null, busy: false, result: '' };
     function visible_() {
@@ -37119,10 +37119,10 @@
             }
             if (res.points != null) { state.points = Number(res.points) || 0; saveGameState(state); try { updateGameHud(); } catch (e4) { } }
             st.result = r;
-            // 魔法の書で攻撃したとき：⚡🔥などの魔法がボスへ飛んでいく演出(正解で命中、不正解でかき消える)。2026-11-26 先生の指示
+            // 魔法の書・武器で攻撃したとき：⚡🔥🗡️などがボスへ飛んでいく演出(正解で命中、不正解でかき消える)。素手はなし。2026-11-26 先生の指示
             var fxW = weaponByKey_(att.weapon);
-            if (fxW.book && !res.already) {
-              var fxB = spellbookById_(fxW.book);
+            var fxB = fxW.book ? spellbookById_(fxW.book) : (fxW.fx ? { emoji: fxW.icon, fx: fxW.fx } : null);
+            if (fxB && !res.already) {
               playSpellFx_({ emoji: fxB.emoji, fx: fxB.fx, dmg: res.dmg || att.dmg }, ok ? 'hit' : 'miss', { to: document.querySelector('#teamBossBody .tb-big') });
               setTimeout(load_, ok ? 1200 : 700); // 演出が終わってから画面を書きかえる
             } else load_();
