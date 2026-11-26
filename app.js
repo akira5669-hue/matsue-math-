@@ -15643,7 +15643,8 @@
     sum += last;
     const answer = sum / count;
     const question = `次の${count}つの数値の平均を求めよ： ${vals.join('、')}`;
-    const wrongs = [answer + 1, answer - 1, sum, Math.max(0, answer - 2)];
+    // 合計を選択肢に出すと、割り算だけで答えが分かってしまう(バグ報告#90)ので出さない
+    const wrongs = [answer + 1, answer - 1, answer + 2, Math.max(1, answer - 2), answer + 3];
     const steps = [`合計 = ${vals.join(' + ')} = ${sum}`, `平均 = ${sum} ÷ ${count} = ${answer}`];
     return { category: 'average5', question, answer, choices: buildChoices(answer, wrongs), steps };
   }
@@ -23734,6 +23735,11 @@
         state.items.push(SPECIAL_ITEM_AKR_STAFF);
         itemGainedHtml = '<div class="item-gain-banner">🌀 スペシャルアイテム「AKRの杖」を手に入れた！🌀</div>';
       }
+      // もう持っているときは何も出ず「もらえない」と思われた(バグ報告#87)。持っていることを知らせる。
+      if (!itemGainedHtml && wasRareType) {
+        const ownedSp = { santa: [SPECIAL_ITEM_FLAME_SWORD, '🔥⚔️ 炎の剣'], smile: [SPECIAL_ITEM_SMILE_MASK, '😊🎭 ほほえみの仮面'], nekoda: [SPECIAL_ITEM_CAT_PENCIL, '🐈✏️ ネコのシャーペン'], nattoman: [SPECIAL_ITEM_NATTO_GOKORO, '🧑‍🍳 納豆心'], zombie: [SPECIAL_ITEM_AKR_STAFF, '🌀 AKRの杖'] }[wasRareType];
+        if (ownedSp && state.items.includes(ownedSp[0])) itemGainedHtml = '<div class="test-photo-hint">（スペシャルアイテム「' + ownedSp[1] + '」はもう持っているよ。スペシャルアイテムは1人1つなので、2つ目はもらえません）</div>';
+      }
 
       let collectionGainedHtml = '';
       if (wasRareType && (RARE_COLLECTIBLE_IDS.indexOf(wasRareType) !== -1 || NEW_RARE_PREVIEW_IDS_.indexOf(wasRareType) !== -1)) {
@@ -24454,6 +24460,11 @@
     '🐞【直しました㊹】📐「作図にチャレンジ」を開いたあと、ショップなどほかの画面を開いても作図が消えずに残っていました。ほかの画面を開いたら作図は閉じるように直しました。',
     '🐞【直しました㊺】🔬理科の「柔毛から吸収された養分は、どちらの管に入りますか」は選択肢が4つあるのに「どちら」になっていたので、「何という管」に直しました。',
     '🐞【直しました㊻】🎖️学習記録のレアキャラコレクションに、それぞれのレアキャラを何回撃破したかを出すようにしました。',
+    '🐞【直しました㊼】サンタAKRなどを倒したとき、スペシャルアイテムをもう持っていると何も出なかったので、「もう持っているよ（1人1つ）」と出すようにしました。',
+    '🐞【直しました㊽】⚾野球ガチャのタイミングが「0.30秒早すぎ」のように出ていたので、「0.3秒早すぎ」と出すようにしました。',
+    '🐞【直しました㊾】⚾野球ガチャで3対3の同点で終わったのに「負け」と出ていたので、「同点で引き分け」と出すようにしました。',
+    '🐞【直しました㊿】平均（小5）の選択肢に数の合計が出ていて、割るだけで答えが分かってしまったので、合計は出さないようにしました。',
+    '🐞【直しました(51)】🔟アンサー10の説明に、途中の計算で負の数（マイナス）になってもいいことを書きました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -24547,7 +24558,7 @@
     els.answer10Banner.hidden = false;
     if (els.answer10BannerText) {
       els.answer10BannerText.textContent = (started ? '🔟 新ゲーム「アンサー10」スタート！' : '🔟【予告】11月25日(水)から、新ゲーム「アンサー10」がスタート！')
-        + '4つの数字に「＋ − × ÷」と「( )」を入れて、答えを10にしよう！数字は4つとも1回ずつ使ってね（順番は入れかえてOK）。正解すると+2MP（計算問題の1日のMP上限に入るよ）。';
+        + '4つの数字に「＋ − × ÷」と「( )」を入れて、答えを10にしよう！数字は4つとも1回ずつ使ってね（順番は入れかえてOK。途中の計算で負の数（マイナス）になってもOK）。正解すると+2MP（計算問題の1日のMP上限に入るよ）。';
     }
     if (els.answer10BannerBtn) els.answer10BannerBtn.hidden = !started;
   }
@@ -37891,7 +37902,7 @@
     (r.pitches || []).slice(0, -1).forEach(function (p) { if (last && p.ab === last.ab) { if (p.res === 'ball') before.balls++; if (p.res === 'strike') before.strikes++; } });
     return bbHistHtml_(r.pitches)
       + bbSceneHtml_(before, last ? bbPitchCls_(last) + ' ' + bbHitCls_(last, r) : '', true)
-      + '<div class="pk-big ' + (r.win ? 'pk-win' : 'pk-lose') + '">' + (r.win ? '🎆 ' + BB_HOME_TEAM_ + 'のサヨナラ勝ち！！ ' + r.home + '−' + r.away : '😣 ゲームセット… ' + BB_AWAY_TEAM_ + 'の勝ち ' + r.home + '−' + r.away) + '</div>'
+      + '<div class="pk-big ' + (r.win ? 'pk-win' : 'pk-lose') + '">' + (r.win ? '🎆 ' + BB_HOME_TEAM_ + 'のサヨナラ勝ち！！ ' + r.home + '−' + r.away : r.home === r.away ? '😮 ゲームセット… 同点で引き分け ' + r.home + '−' + r.away : '😣 ゲームセット… ' + BB_AWAY_TEAM_ + 'の勝ち ' + r.home + '−' + r.away) + '</div>'
       + (last ? '<div class="gacha-line">' + bbEvText_(last, r) + '</div>' : '')
       + '<div class="gacha-mp">合計 ' + ((Number(t.mp) || 0) > 0 ? '+' + t.mp + 'MP' : '0MP') + '</div>'
       + (r.avg ? bbQuizHtml_(r, last) : '')
@@ -38015,7 +38026,7 @@
   var bbLive_ = null;
   function bbTimingWord_(off) {
     if (Math.abs(off) <= BB_TIMING_WIN_) return 'ジャスト！';
-    return (Math.abs(off) / 1000).toFixed(2) + '秒' + (off < 0 ? '早すぎ' : 'おそすぎ');
+    return String(Number((Math.abs(off) / 1000).toFixed(2))) + '秒' + (off < 0 ? '早すぎ' : 'おそすぎ'); // 0.30秒ではなく0.3秒と出す(バグ報告#88)
   }
   function bbRender_(card) {
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.bb-choices');
