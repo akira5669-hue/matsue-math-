@@ -23139,7 +23139,8 @@
       state.wrongStreak = 0;
       // ボス戦は1問正解するごとに累積でダメージを与える(不正解で連続正解数が
       // 0に戻っても、ここまで削ったボスのHPは戻らない)。
-      if (state.worldBossActiveStage) {
+      // 県庁所在地クイズ(社会ボーナス)の正解では、ボスにダメージは入らない(バグ報告#92)
+      if (state.worldBossActiveStage && catId !== 'capitalQuizBonus') {
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + worldBossDamagePerHit_();
       }
       // 富士登山も同様に、1問正解するごとに今の区間の連続正解数を積み上げる。
@@ -23169,7 +23170,7 @@
       }
       // 魔法を詠唱した直後の問題に正解した場合、ここで初めてボスにダメージが入る
       // (詠唱時点では自分のHPが減るだけで、ボスへのダメージは保留されている)。
-      if (state.worldBossActiveStage && state.worldPendingSpell) {
+      if (state.worldBossActiveStage && catId !== 'capitalQuizBonus' && state.worldPendingSpell) {
         const spellInfo = spellbookById_(state.worldPendingSpell);
         state.worldPendingSpell = null;
         if (spellInfo) {
@@ -23179,28 +23180,28 @@
         }
       }
       // 勇者の剣を抜いた直後の問題に正解した場合、ここで初めてボスに1000ダメージが入る。
-      if (state.worldBossActiveStage && state.worldPendingSword) {
+      if (state.worldBossActiveStage && catId !== 'capitalQuizBonus' && state.worldPendingSword) {
         state.worldPendingSword = false;
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + YUSHA_SWORD_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">⚔️ 勇者の剣が命中！ボスに${YUSHA_SWORD_DAMAGE_}ダメージ！⚔️</div>`;
         spellFxPending_ = { book: { emoji: '⚔️', fx: '#f59e0b', dmg: YUSHA_SWORD_DAMAGE_ }, phase: 'hit' };
       }
       // 氷の剣を振るった直後の問題に正解した場合、ここで初めてボスに500ダメージが入る。
-      if (state.worldBossActiveStage && state.worldPendingIceSword) {
+      if (state.worldBossActiveStage && catId !== 'capitalQuizBonus' && state.worldPendingIceSword) {
         state.worldPendingIceSword = false;
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + ICE_SWORD_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">🧊 氷の剣が命中！ボスに${ICE_SWORD_DAMAGE_}ダメージ！🧊</div>`;
         spellFxPending_ = { book: { emoji: '🧊', fx: '#38bdf8', dmg: ICE_SWORD_DAMAGE_ }, phase: 'hit' };
       }
       // 天空の槍を投げた直後の問題に正解した場合、ここで初めてボスに100ダメージが入る。
-      if (state.worldBossActiveStage && state.worldPendingSkySpear) {
+      if (state.worldBossActiveStage && catId !== 'capitalQuizBonus' && state.worldPendingSkySpear) {
         state.worldPendingSkySpear = false;
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + SKY_SPEAR_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">🔱 天空の槍が命中！ボスに${SKY_SPEAR_DAMAGE_}ダメージ！🔱</div>`;
         spellFxPending_ = { book: { emoji: '🔱', fx: '#60a5fa', dmg: SKY_SPEAR_DAMAGE_ }, phase: 'hit' };
       }
       // 雷電の斧を振るった直後の問題に正解した場合、ここで初めてボスに300ダメージが入る。
-      if (state.worldBossActiveStage && state.worldPendingRaidenAxe) {
+      if (state.worldBossActiveStage && catId !== 'capitalQuizBonus' && state.worldPendingRaidenAxe) {
         state.worldPendingRaidenAxe = false;
         state.worldBossDamage = (Number(state.worldBossDamage) || 0) + RAIDEN_AXE_DAMAGE_;
         missLineHtml += `<div class="item-gain-banner">⚡ 雷電の斧が命中！ボスに${RAIDEN_AXE_DAMAGE_}ダメージ！⚡</div>`;
@@ -24465,6 +24466,8 @@
     '🐞【直しました㊾】⚾野球ガチャで3対3の同点で終わったのに「負け」と出ていたので、「同点で引き分け」と出すようにしました。',
     '🐞【直しました㊿】平均（小5）の選択肢に数の合計が出ていて、割るだけで答えが分かってしまったので、合計は出さないようにしました。',
     '🐞【直しました(51)】🔟アンサー10の説明に、途中の計算で負の数（マイナス）になってもいいことを書きました。',
+    '🐞【直しました(52)】⚔️ボス戦の途中で出る県庁所在地クイズに正解すると、ボスにダメージが入っていたので、入らないようにしました（魔法や武器も、次の算数・数学の問題で当たります）。',
+    '🐞【直しました(53)】🔟アンサー10で、式のいちばん最初に「＋」をつけるとまちがいになっていたので、OKにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -33980,6 +33983,8 @@
     function factor() {
       var tk = peek(); if (!tk) return null;
       if (tk.t === '(') { pos++; var v = expr(); if (!v || !peek() || peek().t !== ')') return null; pos++; return v; }
+      // 式のはじめ・「(」のすぐあとの＋は、つけてもつけなくても同じなのでOKにする(バグ報告#93)
+      if (tk.t === '+' && (pos === 0 || tokens[pos - 1].t === '(') && tokens[pos + 1] && (tokens[pos + 1].n != null || tokens[pos + 1].t === '(')) { pos++; return factor(); }
       if (tk.n != null) { pos++; return [tk.n, 1]; }
       return null;
     }
