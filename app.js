@@ -37010,12 +37010,13 @@
         + '<li>📖 <b>魔法の書</b>も使える！ どの書もどのボスに効く。ダメージは100＋書のダメージ（聖光爆発・暗黒崩壊なら400）。詠唱すると自分のHPが10減る。</li>'
         + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
         + '<li>ボスを倒したら、<b>その日そのボスに与えたダメージの多さ</b>に合わせてMPを分ける！ たくさんダメージを与えた人ほど、たくさんもらえる（1問正解で1000ダメージの人は、3問正解で300ダメージの人より多い）。</li>'
+        + '<li>ボスは毎日6時30分に満タンで出るよ。<b>倒すと、次の日のボスはHPが1000ふえる</b>（倒せなかった日はふえない）。</li>'
         + '<li>攻撃のボタンを押したら、1回分を使うよ（問題を見てからやめても、その1回はもどらない）。</li></ul>';
       h += '<div class="tb-tiers">' + d.tiers.map(function (t) {
         var b = (d.bosses || [])[t.tier];
         var bar = b ? '<div class="tb-bar"><span style="width:' + Math.max(0, Math.min(100, b.hp / b.max * 100)).toFixed(1) + '%"></span></div><div class="tb-small">HP ' + b.hp + ' / ' + b.max + (b.defeated ? '　🎉 倒した！' : '') + '　ダメージを与えた人 ' + b.hitters + '人</div>' : '';
         return '<div class="tb-tier' + (t.tier === d.tier ? ' tb-mine' : '') + '"><img class="tb-thumb" src="images/tboss_' + t.tier + '.jpg" alt=""><div class="tb-info"><div class="tb-name">' + t.name + (t.tier === d.tier ? '　<span class="tb-you">あなたのボス</span>' : '') + '</div>'
-          + '<div class="tb-small">' + lvText_(t) + '　HP' + t.hp + '　山分け' + t.mp + 'MP　不正解でHP-' + t.penalty + '</div>' + bar + '</div></div>';
+          + '<div class="tb-small">' + lvText_(t) + '　HP' + (b ? b.max : t.hp) + (b && b.max > t.hp ? '（倒されるたびに+1000）' : '') + '　山分け' + t.mp + 'MP　不正解でHP-' + t.penalty + '</div>' + bar + '</div></div>';
       }).join('') + '</div>';
       h += '<img class="tb-big" src="images/tboss_' + d.tier + '.jpg" alt="' + escHtml(my.name) + '">';
       h += '<p class="history-summary">あなた：Lv.' + d.level + '（' + my.name + 'と戦う）　参加を申しこんだ人：' + d.entries + '人</p>';
