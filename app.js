@@ -36983,7 +36983,7 @@
       h += '<ul class="tb-rules"><li>攻撃すると、自分の学年の問題（計算・図形・文章題など）か、前にまちがえた問題が1問出る。<b>正解</b>でボスにダメージ（素手は100。武器を使うと、その武器のダメージ。最大1000）。</li>'
         + '<li>📖 <b>魔法の書</b>も使える！ どの書もどのボスに効く。ダメージは100＋書のダメージ（聖光爆発・暗黒崩壊なら400）。詠唱すると自分のHPが10減る。</li>'
         + '<li><b>不正解</b>だと、自分のHPが減る（レベル帯で決まる）。</li>'
-        + '<li>ボスを倒したら、<b>その日そのボスに3問中2問以上正解した人</b>でMPを山分け！（倒された時点で2問以上正解している人）</li>'
+        + '<li>ボスを倒したら、<b>その日そのボスに3問中2問以上正解した人</b>でMPを山分け！（倒された時点で2問以上正解している人。<b>とどめをさした人</b>は、正解が1問でも入れる）</li>'
         + '<li>攻撃のボタンを押したら、1回分を使うよ（問題を見てからやめても、その1回はもどらない）。</li></ul>';
       h += '<div class="tb-tiers">' + d.tiers.map(function (t) {
         var b = (d.bosses || [])[t.tier];
@@ -37109,7 +37109,7 @@
               r += ' でも、答えている間にボスはほかの人に倒されていた！</div>' + (res.mp ? '<div class="item-gain-banner">💰 2問以上正解したので山分けに入ったよ！ +' + res.mp + 'MP</div>' : '<div class="enemy-quote-banner">今日の正解が2問に届かなかったので、山分けには入れなかった…</div>');
             } else {
               r += ' ボスに ' + res.dmg + 'ダメージ！（のこりHP ' + res.bossHp + '）</div>';
-              if (res.defeated) r += '<div class="item-gain-banner">🎉 とどめをさした！ ボスを倒したよ！ 2問以上正解した' + res.hitters + '人で山分け' + (res.mp ? ' → +' + res.mp + 'MP！' : '。</div><div class="enemy-quote-banner">でも、今日の正解がまだ2問に届いていなかったので、山分けには入れなかった…') + '</div>';
+              if (res.defeated) r += '<div class="item-gain-banner">🎉 とどめをさした！ ボスを倒したよ！ ' + res.hitters + '人で山分け → +' + res.mp + 'MP！</div>';
             }
             if (res.points != null) { state.points = Number(res.points) || 0; saveGameState(state); try { updateGameHud(); } catch (e4) { } }
             st.result = r;
