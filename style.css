@@ -502,7 +502,7 @@ h1 {
   55%  { box-shadow: 0 0 22px 8px rgba(168,85,247,0.75); }
   100% { box-shadow: 0 0 0 0 rgba(168,85,247,0); }
 }
-.battle-avatar-box.is-hit {
+.battle-avatar-box.is-hit, .tb-big.is-hit {
   animation: spell-hit-shake 0.6s cubic-bezier(.36,.07,.19,.97);
 }
 @keyframes spell-hit-shake {

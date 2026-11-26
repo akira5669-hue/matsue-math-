@@ -30411,23 +30411,27 @@
   // 飛んでいって着弾・画面フラッシュ・ボスが揺れる、回避(miss)はボスの手前で
   // かき消える。視差効果を減らす設定の端末では、動きのある部分だけを省いて
   // 光とダメージ表示は出す(何も起きないと当たったのか分からないため)。
-  function playSpellFx_(book, phase) {
+  // opts.from / opts.to で、ふだんのボス戦以外(チームボス戦など)の要素にも使える。fromが無いときは画面の下から飛ばす。
+  function playSpellFx_(book, phase, opts) {
     try {
       if (!book) return;
-      if (!els.battlePlayerAvatar || !els.battleEnemyAvatar) return;
+      const fromEl = opts ? (opts.from || null) : els.battlePlayerAvatar;
+      const toEl = opts ? (opts.to || null) : els.battleEnemyAvatar;
+      if (!toEl || (!opts && !fromEl)) return;
       const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-      const from = els.battlePlayerAvatar.getBoundingClientRect();
-      const to = els.battleEnemyAvatar.getBoundingClientRect();
+      const from = fromEl ? fromEl.getBoundingClientRect() : null;
+      const to = toEl.getBoundingClientRect();
       // VS表示はページ上部にあるため、問題に答えている時は画面外にいることが多い。
       // その場合は画面中央で演出する(そうしないと見えない位置で再生されてしまう)。
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const visible = function (r) { return r.bottom > 48 && r.top < vh - 48; };
-      const onScreen = visible(from) && visible(to);
+      const onScreen = !!from && visible(from) && visible(to);
+      const toOn = from ? onScreen : visible(to); // 飛ばす先(ボス)が見えているか
       const sx = onScreen ? (from.left + from.width / 2) : vw / 2;
       const sy = onScreen ? (from.top + from.height / 2) : vh * 0.80;
-      const tx = onScreen ? (to.left + to.width / 2) : vw / 2;
-      const ty = onScreen ? (to.top + to.height / 2) : vh * 0.34;
+      const tx = toOn ? (to.left + to.width / 2) : vw / 2;
+      const ty = toOn ? (to.top + to.height / 2) : vh * 0.34;
       const orb = document.createElement('div');
       orb.className = 'spell-fx-orb';
       orb.textContent = book.emoji;
@@ -30437,9 +30441,9 @@
       document.body.appendChild(orb);
 
       if (phase === 'cast') {
-        if (!reduced) {
-          els.battlePlayerAvatar.classList.add('is-charging');
-          window.setTimeout(function () { els.battlePlayerAvatar.classList.remove('is-charging'); }, 900);
+        if (!reduced && fromEl) {
+          fromEl.classList.add('is-charging');
+          window.setTimeout(function () { fromEl.classList.remove('is-charging'); }, 900);
         }
         orb.animate([
           { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 0 },
@@ -30470,10 +30474,10 @@
       window.setTimeout(function () {
         // 着弾：ボスを揺らし、属性色で画面を一瞬光らせ、ダメージ量を飛び出させる
         if (!reduced) {
-          els.battleEnemyAvatar.classList.remove('is-hit');
-          void els.battleEnemyAvatar.offsetWidth; // 連続ヒットでも再生し直すため
-          els.battleEnemyAvatar.classList.add('is-hit');
-          window.setTimeout(function () { els.battleEnemyAvatar.classList.remove('is-hit'); }, 620);
+          toEl.classList.remove('is-hit');
+          void toEl.offsetWidth; // 連続ヒットでも再生し直すため
+          toEl.classList.add('is-hit');
+          window.setTimeout(function () { toEl.classList.remove('is-hit'); }, 620);
         }
 
         const flash = document.createElement('div');
@@ -30498,7 +30502,7 @@
         pop.className = 'spell-fx-damage';
         pop.textContent = '-' + book.dmg;
         pop.style.left = tx + 'px';
-        pop.style.top = (onScreen ? (to.top + to.height * 0.35) : ty) + 'px';
+        pop.style.top = (toOn ? (to.top + to.height * 0.35) : ty) + 'px';
         document.body.appendChild(pop);
         pop.animate([
           { transform: 'translate(-50%,-50%) scale(0.6)', opacity: 0 },
@@ -37084,6 +37088,8 @@
           }
           st.att = res; st.q = q;
           render_();
+          // 魔法の書：詠唱の光(2026-11-26 先生の指示)
+          if (w.book) playSpellFx_(spellbookById_(w.book), 'cast', { to: document.querySelector('#teamBossBody .tb-big') });
         }).catch(function () { st.busy = false; window.alert('通信に失敗しました。もう一度押してね。'); });
         return;
       }
@@ -37113,7 +37119,13 @@
             }
             if (res.points != null) { state.points = Number(res.points) || 0; saveGameState(state); try { updateGameHud(); } catch (e4) { } }
             st.result = r;
-            load_();
+            // 魔法の書で攻撃したとき：⚡🔥などの魔法がボスへ飛んでいく演出(正解で命中、不正解でかき消える)。2026-11-26 先生の指示
+            var fxW = weaponByKey_(att.weapon);
+            if (fxW.book && !res.already) {
+              var fxB = spellbookById_(fxW.book);
+              playSpellFx_({ emoji: fxB.emoji, fx: fxB.fx, dmg: res.dmg || att.dmg }, ok ? 'hit' : 'miss', { to: document.querySelector('#teamBossBody .tb-big') });
+              setTimeout(load_, ok ? 1200 : 700); // 演出が終わってから画面を書きかえる
+            } else load_();
           }).catch(function () {
             if (retry) { setTimeout(function () { send(false); }, 2000); return; }
             st.busy = false; st.q = null; st.att = null; st.result = '😢 通信に失敗しました。'; load_();
