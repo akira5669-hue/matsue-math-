@@ -24476,6 +24476,7 @@
     '🐞【直しました(56)】📐作図の「コンパス」のボタンが🧭（方位磁針）になっていたので、作図で使うコンパスの絵にしました。',
     '🐞【直しました(57)】なんでも屋のドラゴンソードは700MPで買えるのに入手難易度が⭐3だったので、⭐1にしました。',
     '🐞【直しました(58)】📘使い方マニュアルに、🛸UFOキャッチャーガチャの遊び方をのせました。',
+    '🐞【直しました(59)】⚾野球ガチャで、「ピッチャーが投げる！」を押した瞬間に、投げる前なのにフルスイングして空振りになることがあったので、投げる前に押しても空振りにならないようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -38123,8 +38124,11 @@
     var swing = function (e) {
       if (e && e.preventDefault) e.preventDefault();
       if (L.swung || L.resolved || bbLive_ !== L) return;
+      // ピッチャーが投げる前(ふりかぶっている間)のタップは数えない。「投げる！」ボタンを押した指がそのまま
+      // フルスイングボタンに当たって、投げる前に空振りになっていた(2026-11-27 バグ報告#100)
+      if (!L.t0) { var bh = ch.querySelector('.test-photo-hint'); if (bh) bh.textContent = 'まだ投げていないよ！ボールが来てから押そう。'; return; }
       L.swung = true;
-      L.off = L.t0 ? Math.round(now() - (L.t0 + L.T)) : -9999;
+      L.off = Math.round(now() - (L.t0 + L.T));
       // タイミングが合ってストライクなら、ボールはバットに当たったところで止める
       L.hit = L.t0 > 0 && Math.abs(L.off) <= BB_TIMING_WIN_ && st.pend.pitch !== 'ball';
       sc.classList.add('bb-swing');
