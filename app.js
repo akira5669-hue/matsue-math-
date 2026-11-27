@@ -15568,9 +15568,12 @@
       // 分数の倍（年齢などの文章題）
       const baseAge = randInt(6, 12);
       let compareAge;
-      do { compareAge = randInt(4, 20); } while (compareAge === baseAge);
       const people = ['姉', '兄', '妹', 'はるきさん'];
       const person = people[randInt(0, people.length - 1)];
+      // 兄・姉は弟より年上、妹は弟より年下にする(2026-11-27 バグ報告#96)
+      if (person === '兄' || person === '姉') compareAge = randInt(baseAge + 1, 20);
+      else if (person === '妹') compareAge = randInt(4, baseAge - 1);
+      else { do { compareAge = randInt(4, 20); } while (compareAge === baseAge); }
       question = `弟の年れいは${baseAge}才、${person}の年れいは${compareAge}才です。弟の年れいをもとにすると、${person}の年れいは何倍にあたりますか。`;
       answer = fracToStr(compareAge, baseAge);
       wrongs = [fracToStr(baseAge, compareAge), fracToStr(compareAge + 1, baseAge), fracToStr(Math.max(1, compareAge - 1), baseAge)].filter(v => v !== answer);
@@ -24468,6 +24471,9 @@
     '🐞【直しました(51)】🔟アンサー10の説明に、途中の計算で負の数（マイナス）になってもいいことを書きました。',
     '🐞【直しました(52)】⚔️ボス戦の途中で出る県庁所在地クイズに正解すると、ボスにダメージが入っていたので、入らないようにしました（魔法や武器も、次の算数・数学の問題で当たります）。',
     '🐞【直しました(53)】🔟アンサー10で、式のいちばん最初に「＋」をつけるとまちがいになっていたので、OKにしました。',
+    '🐞【直しました(54)】🛸UFOキャッチャーで最後の1回に魔法の書をつかむと、画面がすぐ消えて書が見えなくなっていたので、結果が見えるようにしました（書はちゃんともらえていました）。',
+    '🐞【直しました(55)】分数と小数の「弟の年れいをもとにすると何倍」の問題で、兄や姉が弟より年下になることがあったので直しました。',
+    '🐞【直しました(56)】📐作図の「コンパス」のボタンが🧭（方位磁針）になっていたので、作図で使うコンパスの絵にしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -38292,11 +38298,12 @@
   // 🛸UFOキャッチャーガチャ(ドラゴン専用、2026-11-11〜、lib/handlers/zeroDragon.js)：ゼロドラゴンを倒すたびに1回。
   // 左右に動くUFOを魔法の書の真上で止めるとキャッチ。どの書かはサーバーで決め、冊数は端末で+1して同期で保存する。
   var UFO_HIT_RANGE_ = 3.5; // UFOと書の中心のずれ(枠の幅の%)がこれ以内ならキャッチ(2026-11-11 先生の指示で、大きさ半分・速さ2倍にしてむずかしく。7→3.5)
-  var ufo_ = { left: 0, running: false, busy: false, x: 50, dir: 1, prizeX: 50, raf: 0, last: 0 };
+  var ufo_ = { left: 0, running: false, busy: false, played: false, x: 50, dir: 1, prizeX: 50, raf: 0, last: 0 };
   function ufoRender_() {
     var card = document.getElementById('ufoCard'), btn = document.getElementById('ufoBtn');
     if (!card || !btn) return;
-    card.hidden = !(ufo_.left > 0 || isAdminSession_() || ufo_.running || ufo_.busy);
+    // 遊んだあとは、回数が0になっても結果(つかんだ書)が見えるようにカードを出したままにする(2026-11-27 バグ報告#97)
+    card.hidden = !(ufo_.left > 0 || isAdminSession_() || ufo_.running || ufo_.busy || ufo_.played);
     if (ufo_.running) { btn.disabled = false; btn.textContent = '⬇️ 今だ！キャッチ！'; return; }
     btn.disabled = ufo_.busy || ufo_.left <= 0;
     btn.textContent = ufo_.busy ? '…' : ufo_.left > 0 ? '▶ スタート（あと' + ufo_.left + '回）' : '🐉 ゼロドラゴンを倒すと遊べるよ';
@@ -38339,6 +38346,7 @@
     ufo_.running = false;
     cancelAnimationFrame(ufo_.raf);
     ufo_.busy = true;
+    ufo_.played = true;
     ufoRender_();
     var caught = Math.abs(ufo_.x - ufo_.prizeX) <= UFO_HIT_RANGE_;
     var claw = document.getElementById('ufoClaw'), prize = document.getElementById('ufoPrize'), out = document.getElementById('ufoOut');

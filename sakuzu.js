@@ -224,7 +224,7 @@
           if (ay < 1.5 || ay > 5.4) continue;
           var t = elemTri_(bc, ax, ay, { AB: c, AC: b, BC: bc });
           if (!t) continue;
-          t.hint = '① 「🧭 コンパス」で、ものさしの0の点をタップしてから、' + fmtCm(c) + 'の目もりをタップ（コンパスが' + fmtCm(c) + 'に開く。円はまだかかれない）。② 点Bをタップして円をかく。③ 同じように、コンパスでものさしの0→' + fmtCm(b) + 'をタップして、点Cをタップ。④ 2つの円が交わった点（上のほう）がA。';
+          t.hint = '① 「コンパス」で、ものさしの0の点をタップしてから、' + fmtCm(c) + 'の目もりをタップ（コンパスが' + fmtCm(c) + 'に開く。円はまだかかれない）。② 点Bをタップして円をかく。③ 同じように、コンパスでものさしの0→' + fmtCm(b) + 'をタップして、点Cをタップ。④ 2つの円が交わった点（上のほう）がA。';
           return t;
         }
       },
@@ -238,7 +238,7 @@
           if (ay < 1.5 || ay > 5.4) continue;
           var t = elemTri_(bc, ax, ay, { AB: c, BC: bc, angB: deg }, true);
           if (!t) continue;
-          t.hint = '① 「📐 分度器」で、点B（中心）→点C（0°の線）の順にタップして、' + deg + '°の目もりをタップして印をつける。② 「📏 定規」で、点Bと印を結ぶ。③ 「🧭 コンパス」で、ものさしの0の点→' + fmtCm(c) + 'の目もりをタップ（コンパスが開く）。④ 点Bをタップして円をかく。⑤ 直線と円が交わった点がA。';
+          t.hint = '① 「📐 分度器」で、点B（中心）→点C（0°の線）の順にタップして、' + deg + '°の目もりをタップして印をつける。② 「📏 定規」で、点Bと印を結ぶ。③ 「コンパス」で、ものさしの0の点→' + fmtCm(c) + 'の目もりをタップ（コンパスが開く）。④ 点Bをタップして円をかく。⑤ 直線と円が交わった点がA。';
           return t;
         }
       },
@@ -720,7 +720,9 @@
   }
 
   // ---- 画面 ----
-  // ===== 🧭 コンパスの絵(2026-11-22 先生「コンパスの絵があるとイメージしやすい」) =====
+  // 作図のコンパスの小さいアイコン(🧭は方位磁針なので使わない。2026-11-27 バグ報告#95)
+  var COMPASS_ICON = '<svg viewBox="0 0 24 24" width="1.15em" height="1.15em" style="vertical-align:-0.22em" aria-hidden="true"><line x1="12" y1="1.5" x2="12" y2="5" stroke="#334155" stroke-width="2.4" stroke-linecap="round"/><line x1="11" y1="7.5" x2="5" y2="20" stroke="#64748b" stroke-width="2.2" stroke-linecap="round"/><line x1="5" y1="20" x2="4.2" y2="23" stroke="#111827" stroke-width="1.1" stroke-linecap="round"/><line x1="13" y1="7.5" x2="17.4" y2="17" stroke="#64748b" stroke-width="2.2" stroke-linecap="round"/><line x1="17.4" y1="17" x2="18.9" y2="20.4" stroke="#facc15" stroke-width="2.8"/><line x1="18.9" y1="20.4" x2="19.6" y2="22.6" stroke="#1f2937" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="6.3" r="2.1" fill="#cbd5e1" stroke="#475569" stroke-width="1"/></svg>';
+  // ===== コンパスの絵(2026-11-22 先生「コンパスの絵があるとイメージしやすい」) =====
   // c＝針の先、pen＝えんぴつの先。2本の足は同じ長さで、つまみ(持つところ)は上がわ。
   function compassSvg(c, pen, opa) {
     var d = dist(c, pen), L = Math.max(62, d / 2 + 28), m = { x: (c.x + pen.x) / 2, y: (c.y + pen.y) / 2 };
@@ -984,7 +986,7 @@
       '<svg class="sk-svg" viewBox="0 ' + VY + ' ' + W + ' ' + VH + '" xmlns="http://www.w3.org/2000/svg"></svg>' +
       '<div class="sk-shape">円の形：<button type="button" class="ghost-btn sk-arcmode" data-a="0">⭕ 円</button><button type="button" class="ghost-btn sk-arcmode" data-a="1">◠ 3分の2の円</button></div>' +
       '<div class="sk-tools">' +
-      '<button type="button" class="ghost-btn sk-tool" data-t="compass">🧭 コンパス</button>' +
+      '<button type="button" class="ghost-btn sk-tool" data-t="compass">' + COMPASS_ICON + ' コンパス</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="ruler">📏 定規</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="prot" hidden>📐 分度器</button>' +
       '<button type="button" class="ghost-btn sk-tool" data-t="answer" hidden>📍 答えの点</button>' +
@@ -1027,7 +1029,7 @@
       st.tool = t; st.pick = null; st.protBase = null; st.parked = null; st.hover = null;
       root.querySelectorAll('.sk-tool').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-t') === t); });
       if (!st.done) msg(t === 'compass' ? '円の中心にする点をタップしてね。' : t === 'ruler' ? '直線を引く1つめの点をタップしてね。'
-        : t === 'same' ? (st.lastR ? (st.arcMode ? '① 中心にする点をタップ → ② 弧をかきたい側をタップすると、<b>1つ前と同じ大きさの3分の2の円</b>がかけるよ。' : '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。') : 'まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。')
+        : t === 'same' ? (st.lastR ? (st.arcMode ? '① 中心にする点をタップ → ② 弧をかきたい側をタップすると、<b>1つ前と同じ大きさの3分の2の円</b>がかけるよ。' : '円の中心にする点をタップすると、<b>1つ前の円と同じ大きさ</b>の円がかけるよ。') : 'まだ円がないよ。先に「' + COMPASS_ICON + ' コンパス」で円を1つかいてね。')
         : t === 'prot' ? '📐 分度器：まず、角の頂点（分度器の中心にする点）をタップしてね。'
         : '答えだと思う点（作図してできた点）をタップしてね。');
       draw();
@@ -1064,7 +1066,7 @@
       st.rewarded = true;
       if (opts.onCorrect) try { var extra = opts.onCorrect(st.pid); if (extra) $('.sk-msg').innerHTML += '<br>' + extra; } catch (e) { }
     }
-    // 🧭 円をかくとき、コンパスがくるっと回って線がのびていく(2026-11-22 先生「コンパスを使っているイメージができるように」)
+    // 円をかくとき、コンパスがくるっと回って線がのびていく(2026-11-22 先生「コンパスを使っているイメージができるように」)
     function animate(a) { if (!window.requestAnimationFrame) return; a.t0 = Date.now(); st.anim = a; }
     function push(o) {
       if (o.type === 'circle') { animate({ obj: o, dur: o.arc ? 650 : 850 }); st.parked = null; }
@@ -1103,7 +1105,7 @@
           setTool('same');
           st.parked = { c: { x: r0.x, y: r0.y }, pen: { x: sn.x, y: sn.y } };
           animate({ open: true, c: st.parked.c, to: st.parked.pen, dur: 600 }); draw();
-          msg('🧭 コンパスを<b>' + fmtCm(len / CM) + '</b>に開いたよ。次に、円の中心にする点（BやC）をタップしてね' + (st.arcMode ? '（そのあと、弧をかきたい側をタップ）' : '') + '。');
+          msg(COMPASS_ICON + ' コンパスを<b>' + fmtCm(len / CM) + '</b>に開いたよ。次に、円の中心にする点（BやC）をタップしてね' + (st.arcMode ? '（そのあと、弧をかきたい側をタップ）' : '') + '。');
         } else {
           var to = sn || p, r = dist(st.pick, to), snapped = false;
           if (r < 8) { msg('半径が小さすぎます。もう少しはなれた場所をタップしてね。'); return; }
@@ -1127,7 +1129,7 @@
         if (!st.done && st.prob.target.kind !== 'line') msg('直線を引いたよ。');
       } else if (st.tool === 'same') {
         // ⭕ 同じ大きさの円(2026-11-19 先生の指示)：点をタップするだけで、1つ前にかいた円と同じ半径の円をかく
-        if (!st.lastR) { msg('まだ円がないよ。先に「🧭 コンパス」で円を1つかいてね。'); return; }
+        if (!st.lastR) { msg('まだ円がないよ。先に「' + COMPASS_ICON + ' コンパス」で円を1つかいてね。'); return; }
         if (sn && sn.tick && !st.pick) { msg('円の中心は、三角形の点（BやC）をタップしてね。'); return; }
         if (st.arcMode) {
           // 3分の2の円：①中心の点 → ②弧をかきたい側をタップ
@@ -1287,7 +1289,7 @@
       if (st.arcMode && st.tool === 'same' && st.pick && st.lastR) h += '<circle cx="' + st.pick.x.toFixed(1) + '" cy="' + st.pick.y.toFixed(1) + '" r="' + st.lastR.toFixed(1) + '" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5 5"/>';
       if (st.tool === 'prot' && st.pick && st.protBase) h += protSvg_();
       if (st.showAns) h += answerSvg_();
-      // 🧭 コンパスの絵：かいている途中・ものさしで開いたとき・中心をえらんだとき
+      // コンパスの絵：かいている途中・ものさしで開いたとき・中心をえらんだとき
       if (!compass && !st.done) {
         if (A && A.open && prog < 1) compass = compassSvg(A.c, { x: A.c.x + (A.to.x - A.c.x) * prog, y: A.c.y + (A.to.y - A.c.y) * prog });
         else if (st.parked && st.tool === 'same' && !st.pick) compass = compassSvg(st.parked.c, st.parked.pen, 0.85);
