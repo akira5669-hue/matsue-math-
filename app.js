@@ -24474,6 +24474,8 @@
     '🐞【直しました(54)】🛸UFOキャッチャーで最後の1回に魔法の書をつかむと、画面がすぐ消えて書が見えなくなっていたので、結果が見えるようにしました（書はちゃんともらえていました）。',
     '🐞【直しました(55)】分数と小数の「弟の年れいをもとにすると何倍」の問題で、兄や姉が弟より年下になることがあったので直しました。',
     '🐞【直しました(56)】📐作図の「コンパス」のボタンが🧭（方位磁針）になっていたので、作図で使うコンパスの絵にしました。',
+    '🐞【直しました(57)】なんでも屋のドラゴンソードは700MPで買えるのに入手難易度が⭐3だったので、⭐1にしました。',
+    '🐞【直しました(58)】📘使い方マニュアルに、🛸UFOキャッチャーガチャの遊び方をのせました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -25862,7 +25864,7 @@
     }
     var dragonSwordCount_ = Number(state.dragonSwordCount) || 0;
     if (dragonSwordCount_ > 0) {
-      html += `<div class="badge-item badge-earned" title="ゼロドラゴンを倒して手に入れた剣。ボス戦で使うと1撃で700ダメージ。1回で壊れる"><span class="badge-icon"><img src="images/dragon_sword.jpg" alt=""></span><span class="badge-name">ドラゴンソード ×${dragonSwordCount_}</span>${difficultyStarsHtml_(3)}</div>`;
+      html += `<div class="badge-item badge-earned" title="ゼロドラゴンを倒して手に入れた剣。ボス戦で使うと1撃で700ダメージ。1回で壊れる"><span class="badge-icon"><img src="images/dragon_sword.jpg" alt=""></span><span class="badge-name">ドラゴンソード ×${dragonSwordCount_}</span>${difficultyStarsHtml_(1)}</div>`;
     }
     // 賢さの種：入手方法は非公開の秘密アイテム。所持数で表示し、使い切ったら
     // 図鑑から消える(すばやさの種・折り紙の手裏剣と同じ表示方式)。
@@ -26905,7 +26907,7 @@
     // ⚔️ドラゴンソード：700MPで買える・300MPで売れる
     var dsHave_ = Number(state.dragonSwordCount) || 0;
     // ドラゴンソードは、ゼロドラゴンが出るようになる日(ZERODRAGON_START_)から店に出す。持っている人には売れるように出す
-    var dragonSwordRowHtml = !(zeroDragonVisible_() || dsHave_ > 0) ? '' : `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(3)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
+    var dragonSwordRowHtml = !(zeroDragonVisible_() || dsHave_ > 0) ? '' : `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(1)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
     var shurikenRowHtml = '';
     if (isAdminSession_()) {
       var shurikenCanAfford = state.points >= SHURIKEN_COST_MP;
