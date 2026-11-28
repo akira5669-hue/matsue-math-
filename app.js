@@ -22654,6 +22654,8 @@
           if (state.usaCrossingActive && state.usaCrossingProgress >= USA_CROSSING_GOAL_) {
             winHtml += finishUsaCrossing_();
           }
+          // 州が進んだら、地図(通った州の色・次の州の点滅)と州の一覧をすぐ描き直す(2026-11-28 先生「表示が変わらない」)
+          try { renderUsaCrossingCard_(); } catch (eUsaMap) { }
         } else {
           winHtml += `<div class="enemy-quote-banner">🇺🇸 次の州まで、あと${USA_CROSSING_CORRECT_PER_STATE_ - state.usaCrossingCorrect}問正解（現在地：${Number(state.usaCrossingProgress) || 0}/${USA_CROSSING_GOAL_}州）</div>`;
         }
