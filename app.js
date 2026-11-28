@@ -24560,6 +24560,7 @@
     '🐞【直しました(62)】🎰ガチャを開いたとき、最後に正解した問題がまだ数えられていなくて、PKガチャなどがロックのままになることがあったので、少し待ってもう一度確かめるようにしました。',
     '🐞【直しました(63)】⚾野球ガチャで「ピッチャーが投げる！」を押すと、画面が下のほうにずれて球場が見えにくくなっていたので、球場とフルスイングボタンが見える位置に動くようにしました。',
     '🐞【直しました(64)】「〇分は何時間ですか。分数で答えなさい。」の問題で、60分・120分のように答えが整数になると、選択肢が整数だけになっていたので、答えが必ず分数になる問題だけを出すようにしました。',
+    '🐞【直しました(65)】🔟アンサー10で、数字を2つ続けて入れて「25」のように見える式が作れてしまったので、数字のあとには記号しか入れられないようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -34170,6 +34171,9 @@
     if (numBtn) {
       var i = Number(numBtn.getAttribute('data-a10-num'));
       if (a.used[i] || a.solved) return;
+      // 数字のすぐあと・「)」のすぐあとには数字を入れられない(2つ並べて25のようにできてしまうので。バグ報告#107)
+      var prevTok = a.tokens[a.tokens.length - 1];
+      if (prevTok && (prevTok.n != null || prevTok.t === ')')) { els.answer10Result.innerHTML = '<div class="test-photo-hint">数字と数字はつなげられないよ。間に「＋ − × ÷」を入れてね。</div>'; return; }
       a.used[i] = true; a.tokens.push({ n: a.nums[i], idx: i });
       els.answer10Result.innerHTML = '';
     } else if (opBtn) {
