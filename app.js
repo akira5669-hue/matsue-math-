@@ -20635,9 +20635,9 @@
   // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回700ダメージ、1回で壊れる、何本でも持てる)。
   const ZERODRAGON_HP_PENALTY_ = 100;
   const DRAGON_SWORD_DROP_CHANCE_ = 1 / 7;
-  // ドラゴンソードは、なんでも屋で700MPで買えて、100MPで売れる(lib/handlers/shop.jsと揃える)
+  // ドラゴンソードは、なんでも屋で700MPで買えて、300MPで売れる(lib/handlers/shop.jsと揃える)
   const DRAGON_SWORD_COST_MP_ = 700;
-  const DRAGON_SWORD_SELL_MP_ = 100; // 300→100(2026-11-28 先生の指示)
+  const DRAGON_SWORD_SELL_MP_ = 300; // 300→100→300(2026-11-28 先生の指示)
   const DRAGON_SWORD_DAMAGE_ = 700; // 1撃必殺(2026-11-11、先生の指示で100→700)
   // 🔥炎の剣(2026-11-28 先生の指示)：アメリカ横断の周回のごほうび。ボス戦(世界一周・チームボス戦)で何度でも使える(こわれない)が、
   // 使うたびに自分のHPがへる(HPがその数より多いときだけ使える)。色ごとに、もらえる周・攻撃力・使えるレベル・へるHPがちがう。
@@ -22953,6 +22953,7 @@
     // 確率で命中する(00001限定プレビュー中)。
     // ゼロドラゴン：出現したら戦うか逃げるかを選ぶ
     var zdBox = document.getElementById('zeroDragonChoice'); if (zdBox) zdBox.hidden = !zeroDragonChoicePending_();
+    var zdFlee = document.getElementById('zeroDragonFleeBox'); if (zdFlee) zdFlee.hidden = !zeroDragonFighting_();
     var dsBtn = document.getElementById('dragonSwordBtn');
     if (dsBtn) {
       var dsCount_ = Number(state.dragonSwordCount) || 0;
@@ -26996,7 +26997,7 @@
     var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span>${difficultyStarsHtml_(1)}</div>${speedSeedActionHtml}</div>`;
 
     // 折り紙で作った手裏剣：00001限定プレビュー中。
-    // ⚔️ドラゴンソード：700MPで買える・100MPで売れる
+    // ⚔️ドラゴンソード：700MPで買える・300MPで売れる
     var dsHave_ = Number(state.dragonSwordCount) || 0;
     // ドラゴンソードは、ゼロドラゴンが出るようになる日(ZERODRAGON_START_)から店に出す。持っている人には売れるように出す
     var dragonSwordRowHtml = !(zeroDragonVisible_() || dsHave_ > 0) ? '' : `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(1)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
@@ -30350,8 +30351,12 @@
   function zeroDragonChoicePending_() {
     return state.subject !== 'science' && state.rareType === 'zerodragon' && !state.zeroDragonFight && !state.worldBossActiveStage && !state.fujiActive && !state.fujiDescentActive && !state.ohachiActive;
   }
+  // 戦っている途中でも逃げられる(2026-11-28 先生の指示)
+  function zeroDragonFighting_() {
+    return state.subject !== 'science' && state.rareType === 'zerodragon' && !!state.zeroDragonFight && !state.worldBossActiveStage && !state.fujiActive && !state.fujiDescentActive && !state.ohachiActive;
+  }
   function zeroDragonChoose_(fight) {
-    if (!zeroDragonChoicePending_()) return;
+    if (!zeroDragonChoicePending_() && !(zeroDragonFighting_() && !fight)) return;
     var session = loadSession();
     if (fight) {
       state.zeroDragonFight = true;
@@ -30360,6 +30365,7 @@
       if (!window.confirm('ゼロドラゴンから逃げますか？逃げるとHPが' + ZERODRAGON_HP_PENALTY_ + '減ります（' + ZERODRAGON_HP_PENALTY_ + '以下なら0になります）。今のHP ' + (Number(state.hp) || 0))) return;
       state.hp = Math.max(0, (Number(state.hp) || 0) - ZERODRAGON_HP_PENALTY_);
       state.rareType = null;
+      state.zeroDragonFight = false;
       state.streak = 0;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
       els.feedback.innerHTML = '<span class="fb-result">🏃💨 ゼロドラゴンから逃げた！HPが' + ZERODRAGON_HP_PENALTY_ + '減った…（今のHP ' + state.hp + '）</span>';
@@ -30369,8 +30375,10 @@
     updateGameHud();
   }
   (function () {
-    var box = document.getElementById('zeroDragonChoice');
-    if (box) box.addEventListener('click', function (e) { var b = e.target.closest('[data-zd]'); if (b) zeroDragonChoose_(b.getAttribute('data-zd') === 'fight'); });
+    ['zeroDragonChoice', 'zeroDragonFleeBox'].forEach(function (bid) {
+      var box = document.getElementById(bid);
+      if (box) box.addEventListener('click', function (e) { var b = e.target.closest('[data-zd]'); if (b) zeroDragonChoose_(b.getAttribute('data-zd') === 'fight'); });
+    });
   })();
   // ⚔️ドラゴンソード：ボス戦で使うと、その場でボスに700ダメージ(必ず当たる)。1回で壊れる。
   function useDragonSword_() {
