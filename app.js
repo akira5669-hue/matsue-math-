@@ -20635,9 +20635,9 @@
   // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回700ダメージ、1回で壊れる、何本でも持てる)。
   const ZERODRAGON_HP_PENALTY_ = 100;
   const DRAGON_SWORD_DROP_CHANCE_ = 1 / 7;
-  // ドラゴンソードは、なんでも屋で700MPで買えて、300MPで売れる(lib/handlers/shop.jsと揃える)
+  // ドラゴンソードは、なんでも屋で700MPで買えて、100MPで売れる(lib/handlers/shop.jsと揃える)
   const DRAGON_SWORD_COST_MP_ = 700;
-  const DRAGON_SWORD_SELL_MP_ = 300;
+  const DRAGON_SWORD_SELL_MP_ = 100; // 300→100(2026-11-28 先生の指示)
   const DRAGON_SWORD_DAMAGE_ = 700; // 1撃必殺(2026-11-11、先生の指示で100→700)
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
@@ -26909,7 +26909,7 @@
     var speedSeedRowHtml = `<div class="gift-row"><img class="shop-item-img" src="images/speed_seed.jpg" alt="すばやさの種"><div class="gift-info"><span class="gift-label">🌱 すばやさの種（所持数: ${state.speedSeedCount || 0}個）</span><span class="gift-cost">${SPEEDSEED_COST_MP}MP</span><span class="shop-item-note">逃げるタイプのレアキャラに間違えて逃げられそうになったとき、自動で1個使われて逃走を防ぐ</span>${difficultyStarsHtml_(1)}</div>${speedSeedActionHtml}</div>`;
 
     // 折り紙で作った手裏剣：00001限定プレビュー中。
-    // ⚔️ドラゴンソード：700MPで買える・300MPで売れる
+    // ⚔️ドラゴンソード：700MPで買える・100MPで売れる
     var dsHave_ = Number(state.dragonSwordCount) || 0;
     // ドラゴンソードは、ゼロドラゴンが出るようになる日(ZERODRAGON_START_)から店に出す。持っている人には売れるように出す
     var dragonSwordRowHtml = !(zeroDragonVisible_() || dsHave_ > 0) ? '' : `<div class="gift-row"><img class="shop-item-img" src="images/dragon_sword.jpg" alt="ドラゴンソード"><div class="gift-info"><span class="gift-label">⚔️ ドラゴンソード（所持数: ${dsHave_}本）</span><span class="gift-cost">購入 ${DRAGON_SWORD_COST_MP_}MP／売却 ${DRAGON_SWORD_SELL_MP_}MP</span><span class="shop-item-note">ボス戦で使うと1撃で${DRAGON_SWORD_DAMAGE_}ダメージ！1回で壊れる。何本でも持てる。ゼロドラゴンを倒すと7回に1回手に入る</span>${difficultyStarsHtml_(1)}</div><div class="gift-action-group">${state.points >= DRAGON_SWORD_COST_MP_ ? '<button type="button" class="gift-redeem-btn" id="buyDragonSwordBtn">購入する</button>' : '<span class="gift-insufficient">MP不足</span>'}${dsHave_ > 0 ? '<button type="button" class="gift-redeem-btn" id="sellDragonSwordBtn">売る</button>' : ''}</div></div>`;
