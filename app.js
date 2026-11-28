@@ -20645,7 +20645,8 @@
   const FLAME_SWORD_DAMAGE_ = 1500;
   const FLAME_SWORD_SELF_HP_ = 500;
   const FLAME_SWORD_MIN_LEVEL_ = 1000;
-  const FLAME_SWORD_LAP_ = 10;
+  const FLAME_SWORD_LAP_ = 10;      // 🔴赤(絵：images/flame_sword_red.jpg)
+  const FLAME_SWORD_BLUE_LAP_ = 20; // 🔵青(2026-11-28 先生の指示。強さは赤と同じ)
   function hasFlameSword_() { return isAdminSession_() || (Number(state.usaCrossingLaps) || 0) >= FLAME_SWORD_LAP_; }
   function flameSwordLevelOk_() { return (Number(state.level) || 0) >= FLAME_SWORD_MIN_LEVEL_; }
   const RARE_BONUS_MP = 10;
@@ -24614,7 +24615,7 @@
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
         + '理科の問題に3問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
-        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。10周目を達成すると🔥炎の剣（攻撃力1500・ボスのHPを1500へらす。レベル1000から、ボス戦で何度でも使える。使うたびに自分のHP-500）ももらえるよ！通った州は地図に色がつくよ。'
+        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。10周目を達成すると🔥炎の剣（赤）（攻撃力1500・ボスのHPを1500へらす。レベル1000から、ボス戦で何度でも使える。使うたびに自分のHP-500）、20周目で🔵炎の剣（青）ももらえるよ！通った州は地図に色がつくよ。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわな、道に落ちているガチャのメダルも…！平日は1日1周、土日は1日3周まで。別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
@@ -25890,7 +25891,10 @@
       html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span>${difficultyStarsHtml_(1)}</div>`;
     }
     if ((Number(state.usaCrossingLaps) || 0) >= FLAME_SWORD_LAP_) {
-      html += '<div class="badge-item badge-earned" title="アメリカ横断10周目のごほうび。ボス戦で使うとボスのHPを' + FLAME_SWORD_DAMAGE_ + 'へらす。レベル' + FLAME_SWORD_MIN_LEVEL_ + '以上で何度でも使えるが、使うたびに自分のHP-' + FLAME_SWORD_SELF_HP_ + '"><span class="badge-icon">🔥</span><span class="badge-name">炎の剣（' + (flameSwordLevelOk_() ? '何度でも使える' : 'レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える') + '）</span>' + difficultyStarsHtml_(5) + '</div>';
+      html += '<div class="badge-item badge-earned" title="アメリカ横断10周目のごほうび。ボス戦で使うとボスのHPを' + FLAME_SWORD_DAMAGE_ + 'へらす。レベル' + FLAME_SWORD_MIN_LEVEL_ + '以上で何度でも使えるが、使うたびに自分のHP-' + FLAME_SWORD_SELF_HP_ + '"><span class="badge-icon"><img src="images/flame_sword_red.jpg" alt=""></span><span class="badge-name">炎の剣（赤）（' + (flameSwordLevelOk_() ? '何度でも使える' : 'レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える') + '）</span>' + difficultyStarsHtml_(5) + '</div>';
+    }
+    if ((Number(state.usaCrossingLaps) || 0) >= FLAME_SWORD_BLUE_LAP_) {
+      html += '<div class="badge-item badge-earned" title="アメリカ横断20周目のごほうび。青い炎の剣"><span class="badge-icon">🔵🔥</span><span class="badge-name">炎の剣（青）</span>' + difficultyStarsHtml_(5) + '</div>';
     }
     var dragonSwordCount_ = Number(state.dragonSwordCount) || 0;
     if (dragonSwordCount_ > 0) {
@@ -29860,7 +29864,8 @@
       html += '<div class="item-gain-banner">⚔️ ドラゴンソードを手に入れた！（' + state.dragonSwordCount + '本）</div>';
     }
     if (rw.seed) usaCrossingSeedReward_();
-    if (lap === FLAME_SWORD_LAP_) html += '<div class="item-gain-banner">🔥⚔️ 10周目のごほうび「炎の剣」を手に入れた！攻撃力' + FLAME_SWORD_DAMAGE_ + '（ボスのHPを' + FLAME_SWORD_DAMAGE_ + 'へらす）。<b>レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から</b>ボス戦で使えるよ。何度でも使えるけど、使うたびに自分のHPが' + FLAME_SWORD_SELF_HP_ + 'へる。</div>';
+    if (lap === FLAME_SWORD_BLUE_LAP_) html += '<div class="item-gain-banner">🔵🔥 20周目のごほうび「炎の剣（青）」を手に入れた！赤い炎の剣よりも熱い、青い炎の剣だ！（攻撃力' + FLAME_SWORD_DAMAGE_ + '・レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える・使うたびに自分のHP-' + FLAME_SWORD_SELF_HP_ + '）</div>';
+    if (lap === FLAME_SWORD_LAP_) html += '<div class="item-gain-banner"><img src="images/flame_sword_red.jpg" alt="炎の剣" style="display:block;width:100%;max-width:320px;margin:0 auto 6px;border-radius:10px;">🔥⚔️ 10周目のごほうび「炎の剣（赤）」を手に入れた！攻撃力' + FLAME_SWORD_DAMAGE_ + '（ボスのHPを' + FLAME_SWORD_DAMAGE_ + 'へらす）。<b>レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から</b>ボス戦で使えるよ。何度でも使えるけど、使うたびに自分のHPが' + FLAME_SWORD_SELF_HP_ + 'へる。</div>';
     if (lap >= 2) html += '<div class="item-gain-banner">🎰 ' + lap + '周目のごほうびは「ごほうびガチャ」' + usaGachaSpinsForLap_(lap) + '回！🇺🇸アメリカ横断のカードの「ガチャをまわす」から、まわしてね。</div>';
     html += usaMedalsAtTripEnd_(true);
     usaFriendCelebrate_(lap);
@@ -29899,7 +29904,7 @@
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 今まわせるガチャはないよ（次の周を達成するとまわせる）'; }
-    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。' + (Number(state.usaMedalSpins) > 0 ? '交番に届けたメダルのお礼で' + state.usaMedalSpins + '回ふえたよ。' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり。🔥10周目を達成すると、ガチャとは別に「炎の剣」（攻撃力1500・レベル1000から使える）がもらえるよ！';
+    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。' + (Number(state.usaMedalSpins) > 0 ? '交番に届けたメダルのお礼で' + state.usaMedalSpins + '回ふえたよ。' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり。🔥10周目を達成すると、ガチャとは別に「炎の剣（赤）」（攻撃力1500・レベル1000から使える）、20周目で「炎の剣（青）」がもらえるよ！';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -30097,7 +30102,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。10周目は、ガチャに加えて🔥炎の剣(攻撃力1500。レベル1000以上で、ボス戦で何度でも使える。使うたびに自分のHP-500)。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。10周目は、ガチャに加えて🔥炎の剣（赤）(攻撃力1500。レベル1000以上で、ボス戦で何度でも使える。使うたびに自分のHP-500)。20周目は🔵炎の剣（青）。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
