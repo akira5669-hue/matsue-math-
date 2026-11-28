@@ -20639,16 +20639,24 @@
   const DRAGON_SWORD_COST_MP_ = 700;
   const DRAGON_SWORD_SELL_MP_ = 100; // 300→100(2026-11-28 先生の指示)
   const DRAGON_SWORD_DAMAGE_ = 700; // 1撃必殺(2026-11-11、先生の指示で100→700)
-  // 🔥炎の剣(2026-11-28 先生の指示)：アメリカ横断10周目のごほうび。攻撃力1500(ボスのHPを1500へらす)。
-  // 使えるのはレベル1000以上になってから。何度でも使えるが、使うたびに自分のHPが500へる(HPが500より多いときだけ使える)。
-  // 持っているか＝アメリカ横断を10周以上達成したか(サーバーも usa_crossing_run.laps で確かめる)。先生(00001)はテスト用にいつでも。
-  const FLAME_SWORD_DAMAGE_ = 1500;
-  const FLAME_SWORD_SELF_HP_ = 500;
-  const FLAME_SWORD_MIN_LEVEL_ = 1000;
-  const FLAME_SWORD_LAP_ = 10;      // 🔴赤(絵：images/flame_sword_red.jpg)
-  const FLAME_SWORD_BLUE_LAP_ = 20; // 🔵青(2026-11-28 先生の指示。強さは赤と同じ)
-  function hasFlameSword_() { return isAdminSession_() || (Number(state.usaCrossingLaps) || 0) >= FLAME_SWORD_LAP_; }
-  function flameSwordLevelOk_() { return (Number(state.level) || 0) >= FLAME_SWORD_MIN_LEVEL_; }
+  // 🔥炎の剣(2026-11-28 先生の指示)：アメリカ横断の周回のごほうび。ボス戦(世界一周・チームボス戦)で何度でも使える(こわれない)が、
+  // 使うたびに自分のHPがへる(HPがその数より多いときだけ使える)。色ごとに、もらえる周・攻撃力・使えるレベル・へるHPがちがう。
+  // 持っているか＝アメリカ横断の周回数(サーバーも usa_crossing_run.laps で確かめる。lib/handlers/teamBoss.jsのTB_WEAPONS_と揃える)。
+  // 先生(00001)はテスト用に3本とも持っている。サンタAKRの「炎の剣」(SPECIAL_ITEM_FLAME_SWORD)とは別のもの。
+  const FLAME_SWORDS_ = [
+    { key: 'flameRed', color: '赤', mark: '🔴', laps: 10, dmg: 1500, minLevel: 1000, selfHp: 300, img: 'images/flame_sword_red.jpg', fx: '#f97316' },
+    { key: 'flameBlue', color: '青', mark: '🔵', laps: 20, dmg: 2000, minLevel: 1500, selfHp: 500, img: '', fx: '#3b82f6' },
+    { key: 'flamePurple', color: '紫', mark: '🟣', laps: 30, dmg: 2500, minLevel: 2000, selfHp: 700, img: '', fx: '#a855f7' },
+  ];
+  function flameName_(s) { return '炎の剣（' + s.color + '）'; }
+  function flameIconHtml_(s) { return s.img ? '<img src="' + s.img + '" alt="">' : s.mark + '🔥'; }
+  function hasFlame_(s) { return isAdminSession_() || (Number(state.usaCrossingLaps) || 0) >= s.laps; }
+  function flameOwned_() { return FLAME_SWORDS_.filter(hasFlame_); }
+  function flameLevelOk_(s) { return (Number(state.level) || 0) >= s.minLevel; }
+  function flameHpOk_(s) { return (Number(state.hp) || 0) > s.selfHp; }
+  // 使えないときの理由(使えるときは'')
+  function flameBlock_(s) { return !flameLevelOk_(s) ? 'レベル' + s.minLevel + 'から使える' : !flameHpOk_(s) ? 'HPが' + s.selfHp + 'より多いと使える' : ''; }
+  function flameSpec_(s) { return '攻撃力' + s.dmg + '・レベル' + s.minLevel + 'から使える・使うたびに自分のHP-' + s.selfHp; }
   const RARE_BONUS_MP = 10;
   const SMILE_BONUS_MP = 20;
   const WARISU_BONUS_MP = 30;
@@ -22903,16 +22911,14 @@
       dsBtn.hidden = !(isBossFight && dsCount_ > 0);
       if (!dsBtn.hidden) dsBtn.textContent = '⚔️ ドラゴンソードで斬る（1撃で' + DRAGON_SWORD_DAMAGE_ + 'ダメージ・残り' + dsCount_ + '本）';
     }
-    var fsBtn = document.getElementById('flameSwordBtn');
-    if (fsBtn) {
-      fsBtn.hidden = !(isBossFight && hasFlameSword_());
-      if (!fsBtn.hidden) {
-        var fsLv_ = flameSwordLevelOk_(), fsHp_ = (Number(state.hp) || 0) > FLAME_SWORD_SELF_HP_;
-        fsBtn.disabled = !(fsLv_ && fsHp_);
-        fsBtn.textContent = !fsLv_ ? '🔥 炎の剣（レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える）'
-          : !fsHp_ ? '🔥 炎の剣（HPが' + FLAME_SWORD_SELF_HP_ + 'より多いと使える）'
-          : '🔥 炎の剣で斬る（' + FLAME_SWORD_DAMAGE_ + 'ダメージ・自分のHP-' + FLAME_SWORD_SELF_HP_ + '）';
-      }
+    var fsBox = document.getElementById('flameSwordBtns');
+    if (fsBox) {
+      var fsOwned_ = isBossFight ? flameOwned_() : [];
+      fsBox.hidden = !fsOwned_.length;
+      fsBox.innerHTML = fsOwned_.map(function (s) {
+        var why = flameBlock_(s);
+        return '<button type="button" class="ghost-btn world-spell-btn" data-flame="' + s.key + '"' + (why ? ' disabled' : '') + '>' + s.mark + '🔥 ' + flameName_(s) + (why ? '（' + why + '）' : 'で斬る（' + s.dmg + 'ダメージ・自分のHP-' + s.selfHp + '）') + '</button>';
+      }).join('');
     }
     if (els.shurikenBtn) {
       var shurikenCountForBtn_ = Number(state.shurikenCount) || 0;
@@ -24615,7 +24621,7 @@
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
         + '理科の問題に3問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
-        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。10周目を達成すると🔥炎の剣（赤）（攻撃力1500・ボスのHPを1500へらす。レベル1000から、ボス戦で何度でも使える。使うたびに自分のHP-500）、20周目で🔵炎の剣（青）ももらえるよ！通った州は地図に色がつくよ。'
+        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。周回のごほうびで🔥炎の剣ももらえるよ！10周目＝赤（攻撃力1500・レベル1000から・使うたびにHP-300）、20周目＝青（攻撃力2000・レベル1500から・HP-500）、30周目＝紫（攻撃力2500・レベル2000から・HP-700）。ボス戦で何度でも使えるよ！通った州は地図に色がつくよ。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわな、道に落ちているガチャのメダルも…！平日は1日1周、土日は1日3周まで。別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
@@ -25890,12 +25896,10 @@
     if (shurikenCount > 0) {
       html += `<div class="badge-item badge-earned" title="ボス戦で投げると、2回に1回の確率でダメージを与える"><span class="badge-icon"><img src="images/shuriken.jpg" alt=""></span><span class="badge-name">折り紙の手裏剣 ×${shurikenCount}</span>${difficultyStarsHtml_(1)}</div>`;
     }
-    if ((Number(state.usaCrossingLaps) || 0) >= FLAME_SWORD_LAP_) {
-      html += '<div class="badge-item badge-earned" title="アメリカ横断10周目のごほうび。ボス戦で使うとボスのHPを' + FLAME_SWORD_DAMAGE_ + 'へらす。レベル' + FLAME_SWORD_MIN_LEVEL_ + '以上で何度でも使えるが、使うたびに自分のHP-' + FLAME_SWORD_SELF_HP_ + '"><span class="badge-icon"><img src="images/flame_sword_red.jpg" alt=""></span><span class="badge-name">炎の剣（赤）（' + (flameSwordLevelOk_() ? '何度でも使える' : 'レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える') + '）</span>' + difficultyStarsHtml_(5) + '</div>';
-    }
-    if ((Number(state.usaCrossingLaps) || 0) >= FLAME_SWORD_BLUE_LAP_) {
-      html += '<div class="badge-item badge-earned" title="アメリカ横断20周目のごほうび。青い炎の剣"><span class="badge-icon">🔵🔥</span><span class="badge-name">炎の剣（青）</span>' + difficultyStarsHtml_(5) + '</div>';
-    }
+    FLAME_SWORDS_.forEach(function (s) {
+      if ((Number(state.usaCrossingLaps) || 0) < s.laps) return;
+      html += '<div class="badge-item badge-earned" title="アメリカ横断' + s.laps + '周目のごほうび。ボス戦で使うとボスのHPを' + s.dmg + 'へらす。レベル' + s.minLevel + '以上で何度でも使えるが、使うたびに自分のHP-' + s.selfHp + '"><span class="badge-icon">' + flameIconHtml_(s) + '</span><span class="badge-name">' + flameName_(s) + '（' + (flameLevelOk_(s) ? '何度でも使える' : 'レベル' + s.minLevel + 'から使える') + '）</span>' + difficultyStarsHtml_(5) + '</div>';
+    });
     var dragonSwordCount_ = Number(state.dragonSwordCount) || 0;
     if (dragonSwordCount_ > 0) {
       html += `<div class="badge-item badge-earned" title="ゼロドラゴンを倒して手に入れた剣。ボス戦で使うと1撃で700ダメージ。1回で壊れる"><span class="badge-icon"><img src="images/dragon_sword.jpg" alt=""></span><span class="badge-name">ドラゴンソード ×${dragonSwordCount_}</span>${difficultyStarsHtml_(1)}</div>`;
@@ -29864,8 +29868,10 @@
       html += '<div class="item-gain-banner">⚔️ ドラゴンソードを手に入れた！（' + state.dragonSwordCount + '本）</div>';
     }
     if (rw.seed) usaCrossingSeedReward_();
-    if (lap === FLAME_SWORD_BLUE_LAP_) html += '<div class="item-gain-banner">🔵🔥 20周目のごほうび「炎の剣（青）」を手に入れた！赤い炎の剣よりも熱い、青い炎の剣だ！（攻撃力' + FLAME_SWORD_DAMAGE_ + '・レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える・使うたびに自分のHP-' + FLAME_SWORD_SELF_HP_ + '）</div>';
-    if (lap === FLAME_SWORD_LAP_) html += '<div class="item-gain-banner"><img src="images/flame_sword_red.jpg" alt="炎の剣" style="display:block;width:100%;max-width:320px;margin:0 auto 6px;border-radius:10px;">🔥⚔️ 10周目のごほうび「炎の剣（赤）」を手に入れた！攻撃力' + FLAME_SWORD_DAMAGE_ + '（ボスのHPを' + FLAME_SWORD_DAMAGE_ + 'へらす）。<b>レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から</b>ボス戦で使えるよ。何度でも使えるけど、使うたびに自分のHPが' + FLAME_SWORD_SELF_HP_ + 'へる。</div>';
+    FLAME_SWORDS_.forEach(function (s) {
+      if (lap !== s.laps) return;
+      html += '<div class="item-gain-banner">' + (s.img ? '<img src="' + s.img + '" alt="' + flameName_(s) + '" style="display:block;width:100%;max-width:320px;margin:0 auto 6px;border-radius:10px;">' : '') + s.mark + '🔥⚔️ ' + lap + '周目のごほうび「' + flameName_(s) + '」を手に入れた！攻撃力' + s.dmg + '（ボスのHPを' + s.dmg + 'へらす）。<b>レベル' + s.minLevel + 'から</b>ボス戦で使えるよ。何度でも使えるけど、使うたびに自分のHPが' + s.selfHp + 'へる。</div>';
+    });
     if (lap >= 2) html += '<div class="item-gain-banner">🎰 ' + lap + '周目のごほうびは「ごほうびガチャ」' + usaGachaSpinsForLap_(lap) + '回！🇺🇸アメリカ横断のカードの「ガチャをまわす」から、まわしてね。</div>';
     html += usaMedalsAtTripEnd_(true);
     usaFriendCelebrate_(lap);
@@ -29904,7 +29910,7 @@
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 今まわせるガチャはないよ（次の周を達成するとまわせる）'; }
-    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。' + (Number(state.usaMedalSpins) > 0 ? '交番に届けたメダルのお礼で' + state.usaMedalSpins + '回ふえたよ。' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり。🔥10周目を達成すると、ガチャとは別に「炎の剣（赤）」（攻撃力1500・レベル1000から使える）、20周目で「炎の剣（青）」がもらえるよ！';
+    if (info) info.textContent = '2周目からは、周を達成するたびにガチャがまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。' + (Number(state.usaMedalSpins) > 0 ? '交番に届けたメダルのお礼で' + state.usaMedalSpins + '回ふえたよ。' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり。🔥ガチャとは別に、10周目で「炎の剣（赤）」（攻撃力1500・レベル1000から・HP-300）、20周目で「炎の剣（青）」（攻撃力2000・レベル1500から・HP-500）、30周目で「炎の剣（紫）」（攻撃力2500・レベル2000から・HP-700）がもらえるよ！';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -30102,7 +30108,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。10周目は、ガチャに加えて🔥炎の剣（赤）(攻撃力1500。レベル1000以上で、ボス戦で何度でも使える。使うたびに自分のHP-500)。20周目は🔵炎の剣（青）。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。2周目からは「ごほうびガチャ」(2周目2回・3周目3回・4周目4回・5周目からは5回)。ガチャに加えて🔥炎の剣：10周目＝赤(攻撃力1500・レベル1000以上・使うたびにHP-300)、20周目＝青(攻撃力2000・レベル1500以上・HP-500)、30周目＝紫(攻撃力2500・レベル2000以上・HP-700)。ボス戦で何度でも使える。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;
@@ -30335,25 +30341,31 @@
     els.feedback.classList.add('correct');
   }
   (function () { var b = document.getElementById('dragonSwordBtn'); if (b) b.addEventListener('click', useDragonSword_); })();
-  // 🔥炎の剣：ボス戦で使うと、その場でボスに1500ダメージ(必ず当たる)。こわれない。使うたびに自分のHP-500。
-  function useFlameSword_() {
-    if (!state.worldBossActiveStage || !hasFlameSword_()) return;
-    if (!flameSwordLevelOk_()) { window.alert('🔥 炎の剣は、レベル' + FLAME_SWORD_MIN_LEVEL_ + 'になると使えるよ。'); return; }
-    if ((Number(state.hp) || 0) <= FLAME_SWORD_SELF_HP_) { window.alert('🔥 炎の剣は、HPが' + FLAME_SWORD_SELF_HP_ + 'より多いときに使えるよ（使うとHPが' + FLAME_SWORD_SELF_HP_ + 'へる）。'); return; }
+  // 🔥炎の剣：ボス戦で使うと、その場でボスにダメージ(必ず当たる)。こわれない。使うたびに自分のHPがへる。
+  function useFlameSword_(s) {
+    if (!state.worldBossActiveStage || !s || !hasFlame_(s)) return;
+    var why = flameBlock_(s);
+    if (why) { window.alert(s.mark + '🔥 ' + flameName_(s) + 'は、' + why + 'よ。'); return; }
     if (state.worldPendingSword || state.worldPendingSpell || state.worldPendingIceSword || state.worldPendingSkySpear || state.worldPendingRaidenAxe) return;
-    if (!window.confirm('🔥 炎の剣を使いますか？ボスに' + FLAME_SWORD_DAMAGE_ + 'ダメージ！そのかわり、自分のHPが' + FLAME_SWORD_SELF_HP_ + 'へります。（今のHP ' + state.hp + '）')) return;
-    state.hp = Math.max(0, (Number(state.hp) || 0) - FLAME_SWORD_SELF_HP_);
-    state.worldBossDamage = (Number(state.worldBossDamage) || 0) + FLAME_SWORD_DAMAGE_;
+    if (!window.confirm(s.mark + '🔥 ' + flameName_(s) + 'を使いますか？ボスに' + s.dmg + 'ダメージ！そのかわり、自分のHPが' + s.selfHp + 'へります。（今のHP ' + state.hp + '）')) return;
+    state.hp = Math.max(0, (Number(state.hp) || 0) - s.selfHp);
+    state.worldBossDamage = (Number(state.worldBossDamage) || 0) + s.dmg;
     saveGameState(state);
     var session = loadSession();
     if (session && session.id) syncPointsNow_(session.id);
     updateGameHud();
     if (els.worldPanel && !els.worldPanel.hasAttribute('hidden')) renderWorldPanel();
-    els.feedback.innerHTML = '<span class="fb-result">🔥⚔️ 炎の剣の一撃！ボスに' + FLAME_SWORD_DAMAGE_ + 'ダメージ！（自分のHPが' + FLAME_SWORD_SELF_HP_ + 'へった。残りHP: ' + state.hp + '）</span>';
+    els.feedback.innerHTML = '<span class="fb-result">' + s.mark + '🔥⚔️ ' + flameName_(s) + 'の一撃！ボスに' + s.dmg + 'ダメージ！（自分のHPが' + s.selfHp + 'へった。残りHP: ' + state.hp + '）</span>';
     els.feedback.classList.remove('incorrect');
     els.feedback.classList.add('correct');
   }
-  (function () { var b = document.getElementById('flameSwordBtn'); if (b) b.addEventListener('click', useFlameSword_); })();
+  (function () {
+    var box = document.getElementById('flameSwordBtns');
+    if (box) box.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-flame]'); if (!b || b.disabled) return;
+      useFlameSword_(FLAME_SWORDS_.filter(function (s) { return s.key === b.getAttribute('data-flame'); })[0]);
+    });
+  })();
 
   // 賢さの種：購入不可(月間いいねランキング上位3名だけへの秘密の配布品)。
   // 1個につき「食べる」でHP+1000、または「売る」で1000MPに変えられる
@@ -37053,8 +37065,7 @@
       { key: 'iceSword', name: '氷の剣', icon: '🧊', dmg: 500, field: 'iceSwordCharges', fx: '#38bdf8' },
       { key: 'dragonSword', name: 'ドラゴンソード', icon: '⚔️', dmg: 700, field: 'dragonSwordCount', fx: '#ef4444' },
       { key: 'yushaSword', name: '勇者の剣', icon: '🗡️', dmg: 1000, field: 'yushaSwordCount', fx: '#f59e0b' },
-      { key: 'flameSword', name: '炎の剣', icon: '🔥', dmg: FLAME_SWORD_DAMAGE_, flame: true, fx: '#f97316' },
-    ];
+    ].concat(FLAME_SWORDS_.map(function (s) { return { key: s.key, name: flameName_(s), icon: s.mark + '🔥', dmg: s.dmg, flame: s, fx: s.fx }; }));
     var st = { data: null, weapon: 'none', att: null, q: null, busy: false, result: '' };
     function visible_() {
       if (isAdminSession_()) return true;
@@ -37072,7 +37083,7 @@
       return TB_WEAPONS_.concat(SPELLBOOKS_.map(function (b) { return { key: 'book:' + b.id, name: '魔法の書「' + b.label + '」', icon: b.emoji, dmg: 100 + b.dmg, book: b.id, selfDmg: b.selfDmg }; }));
     }
     function weaponByKey_(k) { return allWeapons_().filter(function (w) { return w.key === k; })[0] || TB_WEAPONS_[0]; }
-    function count_(w) { if (w.flame) return flameSwordLevelOk_() && (Number(state.hp) || 0) > FLAME_SWORD_SELF_HP_ ? null : 0; return w.book ? (Number((state.spellbooks || {})[w.book]) || 0) : w.field ? (Number(state[w.field]) || 0) : null; }
+    function count_(w) { if (w.flame) return flameBlock_(w.flame) ? 0 : null; return w.book ? (Number((state.spellbooks || {})[w.book]) || 0) : w.field ? (Number(state[w.field]) || 0) : null; }
     function owned_(w) { var n = count_(w); return n === null || n > 0; }
     function fmtDay_(d) { var m = /^(?:test-)?\d{4}-(\d{2})-(\d{2})$/.exec(d || ''); return m ? Number(m[1]) + '/' + Number(m[2]) + (d.indexOf('test-') === 0 ? '(テスト)' : '') : d; }
     // 自分の学年の問題(計算・図形・文章題など、自分の学年の単元ぜんぶ)か、前にまちがえた問題(3回に1回くらい)
@@ -37124,9 +37135,9 @@
           var b = (d.bosses || [])[d.tier];
           if (b && b.defeated) h += '<p class="history-summary">🎉 今日のボスはもう倒されたよ。また明日！</p>';
           else {
-            h += '<p class="survey-label">武器か魔法の書を選んで攻撃（1回分・1冊へるよ。魔法の書は、詠唱すると自分のHPが10減る）</p><div class="tb-weapons">' + allWeapons_().filter(function (w) { return w.flame ? hasFlameSword_() : (!w.book || owned_(w)); }).map(function (w) {
+            h += '<p class="survey-label">武器か魔法の書を選んで攻撃（1回分・1冊へるよ。魔法の書は、詠唱すると自分のHPが10減る）</p><div class="tb-weapons">' + allWeapons_().filter(function (w) { return w.flame ? hasFlame_(w.flame) : (!w.book || owned_(w)); }).map(function (w) {
               var n = count_(w);
-              var note = w.flame ? (!flameSwordLevelOk_() ? '・レベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使える' : (Number(state.hp) || 0) <= FLAME_SWORD_SELF_HP_ ? '・HPが' + FLAME_SWORD_SELF_HP_ + 'より多いと使える' : '・何度でも使える・自分のHP-' + FLAME_SWORD_SELF_HP_) : (n !== null ? '・持っている：' + n : '');
+              var note = w.flame ? (flameBlock_(w.flame) ? '・' + flameBlock_(w.flame) : '・何度でも使える・自分のHP-' + w.flame.selfHp) : (n !== null ? '・持っている：' + n : '');
               return '<label class="tb-weapon' + (owned_(w) ? '' : ' tb-off') + '"><input type="radio" name="tbWeapon" value="' + w.key + '"' + (owned_(w) ? '' : ' disabled') + (st.weapon === w.key ? ' checked' : '') + '> ' + w.icon + ' ' + w.name + '（' + w.dmg + 'ダメージ' + note + '）</label>';
             }).join('') + '</div><button type="button" class="primary-btn" data-tb="attack">⚔️ 攻撃する！' + (d.test ? '' : '（今日のこり' + d.left + '回）') + '</button>';
           }
@@ -37185,18 +37196,18 @@
         if (!owned_(w)) { window.alert(w.name + 'を持っていないよ。'); return; }
         var q = makeQuestion_();
         if (!q) { window.alert('問題を作れませんでした。'); return; }
-        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（1回分を使うよ。' + (w.book ? '魔法の書は1冊へって、自分のHPが' + w.selfDmg + '減る。' : w.flame ? '炎の剣はへらないけど、自分のHPが' + FLAME_SWORD_SELF_HP_ + '減る。' : w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
+        if (!window.confirm(w.icon + ' ' + w.name + 'で攻撃する？\n（1回分を使うよ。' + (w.book ? '魔法の書は1冊へって、自分のHPが' + w.selfDmg + '減る。' : w.flame ? '炎の剣はへらないけど、自分のHPが' + w.flame.selfHp + '減る。' : w.field ? w.name + 'は1回分へる。' : '') + '）')) return;
         st.busy = true;
         apiPost('teamBossStart', { id: s.id, weapon: w.key }).then(function (res) {
           st.busy = false;
           if (!res || !res.ok) {
-            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前6時30分〜午後10時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', flame_level: '炎の剣はレベル' + FLAME_SWORD_MIN_LEVEL_ + 'から使えるよ。', flame_hp: '炎の剣は、HPが' + FLAME_SWORD_SELF_HP_ + 'より多いときに使えるよ。', already_attacked: '今日の3回はもう攻撃したよ。また明日！' };
+            var m = { not_in_time: '今は攻撃できる時間ではないよ（午前6時30分〜午後10時30分）。', not_event_day: 'チームボス戦は12月26日〜31日だよ。', not_signed_up: '先に「参加する」を押してね。', defeated: '今日のボスはもう倒されたよ！', no_weapon: 'その武器を持っていないよ。', flame_level: w.name + 'はレベル' + (w.flame ? w.flame.minLevel : '') + 'から使えるよ。', flame_hp: w.name + 'は、HPが' + (w.flame ? w.flame.selfHp : '') + 'より多いときに使えるよ。', already_attacked: '今日の3回はもう攻撃したよ。また明日！' };
             st.result = '😢 ' + ((res && m[res.error]) || '攻撃できませんでした。');
             load_();
             return;
           }
           if (w.field) { state[w.field] = Math.max(0, (Number(state[w.field]) || 0) - 1); saveGameState(state); syncPointsNow_(s.id); try { updateGameHud(); } catch (e2) { } }
-          if (w.flame) { state.hp = Math.max(0, (Number(state.hp) || 0) - FLAME_SWORD_SELF_HP_); saveGameState(state); syncPointsNow_(s.id); try { updateGameHud(); } catch (e7) { } }
+          if (w.flame) { state.hp = Math.max(0, (Number(state.hp) || 0) - w.flame.selfHp); saveGameState(state); syncPointsNow_(s.id); try { updateGameHud(); } catch (e7) { } }
           if (w.book) {
             state.spellbooks[w.book] = Math.max(0, (Number(state.spellbooks[w.book]) || 0) - 1);
             state.hp = Math.max(0, (Number(state.hp) || 0) - w.selfDmg);
