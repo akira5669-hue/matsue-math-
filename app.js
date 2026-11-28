@@ -24480,6 +24480,7 @@
     '🐞【直しました(60)】🏯県庁所在地クイズの「特産品・名物」の問題で、高知の答えに人（坂本龍馬）が入っていたので、「ゆず」にかえました。',
     '🐞【直しました(61)】🔥超特訓部屋で、前に間違えた問題が出るとき、自分の範囲ではない学年（小6なのに中3など）の問題が出ていたので、範囲の学年だけから出るようにしました。',
     '🐞【直しました(62)】🎰ガチャを開いたとき、最後に正解した問題がまだ数えられていなくて、PKガチャなどがロックのままになることがあったので、少し待ってもう一度確かめるようにしました。',
+    '🐞【直しました(63)】⚾野球ガチャで「ピッチャーが投げる！」を押すと、画面が下のほうにずれて球場が見えにくくなっていたので、球場とフルスイングボタンが見える位置に動くようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -38115,12 +38116,22 @@
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
   }
+  // 投げるときは、球場の絵とフルスイングボタンが画面に入るようにスクロールする。
+  // バットを選ぶ欄が消えて画面が短くなり、球場が見えない位置にずれていた(2026-11-28 バグ報告#104)
+  function bbKeepInView_(out, ch) {
+    var a = out.getBoundingClientRect(), b = ch.getBoundingClientRect(), vh = window.innerHeight || document.documentElement.clientHeight;
+    if (a.top >= 0 && b.bottom <= vh) return;
+    var h = b.bottom - a.top;
+    var y = (window.pageYOffset || document.documentElement.scrollTop) + a.top - (h < vh ? Math.max(8, (vh - h) / 2) : 8);
+    window.scrollTo(0, Math.max(0, y));
+  }
   function bbLiveStart_(st, card, done) {
     var out = card.querySelector('.gacha-out'), ch = card.querySelector('.bb-choices');
     var lefty = !!BB_LEFTY_[bbBatter_(st.ab)];
     out.innerHTML = '<div class="pk-big">⚾ ピッチャー' + BB_PITCHER_ + '、ふりかぶって…</div>' + bbSceneHtml_(st, 'bb-live', false);
     ch.innerHTML = '<button type="button" class="primary-btn bb-swing-btn" data-bbswing="1">💥 フルスイング！</button><div class="test-photo-hint">ボール球だと思ったら、押さずに見のがそう。</div>';
     var sc = out.querySelector('.bb-scene'), ball = sc.querySelector('.bb-ball');
+    try { bbKeepInView_(out, ch); } catch (e) { }
     var kmh = Number(st.pend.kmh) || 130;
     var L = bbLive_ = { st: st, card: card, done: done, sc: sc, ball: ball, end: bbEndPos_(st.pend.pitch, lefty), T: Math.round(110000 / kmh), t0: 0, off: null, swung: false, resolved: false };
     var now = function () { return window.performance && performance.now ? performance.now() : Date.now(); };
