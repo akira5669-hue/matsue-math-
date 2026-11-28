@@ -1585,6 +1585,17 @@ h1 {
 .prefecture-map-wrap svg .prefecture.unlocked.chugoku               { fill: #c893e0; }
 .prefecture-map-wrap svg .prefecture.unlocked.shikoku                 { fill: #8fc9e8; }
 .prefecture-map-wrap svg .prefecture.unlocked.kyushu-okinawa            { fill: #f28fb0; }
+/* 🇺🇸 アメリカ横断の地図(2026-11-28)：通った州に地域の色。次の州は点滅 */
+.usa-map-wrap { max-width: 520px; margin: 8px auto 4px; }
+.usa-map-wrap svg .usa-st { fill: #dcdcdc; stroke: #fff; stroke-width: 1; transition: fill 0.5s ease; }
+.usa-map-wrap svg .usa-st.unlocked.r-we, .usa-lg.r-we { fill: #f29e6b; background: #f29e6b; }
+.usa-map-wrap svg .usa-st.unlocked.r-mw, .usa-lg.r-mw { fill: #f6c66b; background: #f6c66b; }
+.usa-map-wrap svg .usa-st.unlocked.r-so, .usa-lg.r-so { fill: #7dd3a8; background: #7dd3a8; }
+.usa-map-wrap svg .usa-st.unlocked.r-ne, .usa-lg.r-ne { fill: #6bb8f2; background: #6bb8f2; }
+.usa-map-wrap svg .usa-st.usa-next { fill: #ef4444; animation: usaNextBlink 1s ease-in-out infinite; }
+@keyframes usaNextBlink { 0%, 100% { fill-opacity: 1; } 50% { fill-opacity: 0.25; } }
+.usa-lg { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 3px; vertical-align: -0.1em; margin: 0 2px 0 6px; }
+.usa-map-legend { text-align: center; }
 .prefecture-list {
   display: flex;
   flex-direction: column;

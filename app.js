@@ -21410,6 +21410,8 @@
     usaCrossingStartBtn: document.getElementById('usaCrossingStartBtn'),
     usaCrossingTestTemptationBtn: document.getElementById('usaCrossingTestTemptationBtn'),
     usaCrossingStateList: document.getElementById('usaCrossingStateList'),
+    usaMapWrap: document.getElementById('usaMapWrap'),
+    usaMapLegend: document.getElementById('usaMapLegend'),
     battleVsRow: document.getElementById('battleVsRow'),
     battleFujiTimer: document.getElementById('battleFujiTimer'),
     battleOhachiTimer: document.getElementById('battleOhachiTimer'),
@@ -24612,7 +24614,7 @@
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
         + '理科の問題に3問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
-        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。10周目を達成すると🔥炎の剣（攻撃力1500・レベル1000から使える）ももらえるよ！'
+        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、2周目からは「ごほうびガチャ」！周を重ねるほどたくさんまわせるよ（2周目2回・3周目3回・4周目4回・5周目からは5回）。10周目を達成すると🔥炎の剣（攻撃力1500・ボスのHPを1500へらす。レベル1000から、ボス戦で何度でも使える。使うたびに自分のHP-500）ももらえるよ！通った州は地図に色がつくよ。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわな、道に落ちているガチャのメダルも…！平日は1日1周、土日は1日3周まで。別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
@@ -30110,6 +30112,21 @@
     renderUsaGacha_();
     try { renderUsaFriends_(); } catch (e) { }
     if (typeof ptRenderUsa_ === 'function') ptRenderUsa_();
+    // 🗺️ アメリカの地図：通った州に地域の色をぬり、次の州は点滅で知らせる(2026-11-28 先生の指示。都道府県制覇と同じ)
+    if (els.usaMapWrap && typeof USA_MAP_SVG !== 'undefined') {
+      if (!els.usaMapWrap.firstChild) els.usaMapWrap.innerHTML = USA_MAP_SVG;
+      var mp_ = Number(state.usaCrossingProgress) || 0, active_ = !!state.usaCrossingActive;
+      Array.prototype.forEach.call(els.usaMapWrap.querySelectorAll('.usa-st'), function (el) {
+        var code = Number(el.getAttribute('data-code')) || 0;
+        el.classList.toggle('unlocked', code <= mp_);
+        el.classList.toggle('usa-next', active_ && code === mp_ + 1);
+      });
+      if (els.usaMapLegend) {
+        var nx_ = USA_STATE_DATA[mp_];
+        els.usaMapLegend.innerHTML = '<span class="usa-lg r-we"></span>西部 <span class="usa-lg r-mw"></span>中西部 <span class="usa-lg r-so"></span>南部 <span class="usa-lg r-ne"></span>北東部　（通った州に色がつくよ）'
+          + (active_ && nx_ ? '<br>📍 次は「<b>' + nx_.name + '</b>」（地図で点滅している州）' : '');
+      }
+    }
     if (els.usaCrossingStateList) {
       var progress = Number(state.usaCrossingProgress) || 0;
       els.usaCrossingStateList.innerHTML = USA_STATE_DATA.slice(0, progress).map(function (st) {
