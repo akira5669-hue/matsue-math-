@@ -22123,6 +22123,36 @@
   // もらった回数は state.usaMedalSpins(サーバーの usa_crossing_run.medalSpins)に足していく(名前はメダル用のまま)。
   // 前の「周の達成でまとめて(2周目2回…5周目から5回)」はやめたので、周からの回数は0。
   var USA_GACHA_POINTS_ = [1, 26];
+  // 11州目・36州目は有料のガチャ(50MPか300HPを払うと1回。払わなければまわせない。2026-11-28 先生の指示)。
+  var USA_PAID_GACHA_POINTS_ = [11, 36], USA_PAID_GACHA_MP_ = 50, USA_PAID_GACHA_HP_ = 300;
+  function usaPaidGachaHtml_(stateNo) {
+    var session = loadSession();
+    if (!session || !session.id) return '';
+    var mp = Number(state.points) || 0, hp = Number(state.hp) || 0;
+    var canMp = mp >= USA_PAID_GACHA_MP_, canHp = hp > USA_PAID_GACHA_HP_;
+    var head = '🎰 ' + stateNo + '州目にガチャ屋さんがある！\n\n' + USA_PAID_GACHA_MP_ + 'MPか' + USA_PAID_GACHA_HP_ + 'HPを払うと、ごほうびガチャが1回まわせるよ。\n（今：' + mp + 'MP・HP' + hp + '）';
+    if (!canMp && !canHp) return '<div class="enemy-quote-banner">🎰 ' + stateNo + '州目にガチャ屋さんがあったけど、MPもHPも足りなかった…（' + USA_PAID_GACHA_MP_ + 'MPか、HPが' + USA_PAID_GACHA_HP_ + 'より多いと引ける）</div>';
+    var pick = window.prompt(head + '\n\n1：' + USA_PAID_GACHA_MP_ + 'MPを払う' + (canMp ? '' : '（MPが足りない）') + '\n2：' + USA_PAID_GACHA_HP_ + 'HPを払う' + (canHp ? '' : '（HPが足りない）') + '\n\n番号を入れてね（引かないときは「キャンセル」）', canMp ? '1' : '2');
+    var pay = String(pick || '').trim() === '1' ? 'mp' : String(pick || '').trim() === '2' ? 'hp' : '';
+    if (!pay) return '<div class="test-photo-hint">🎰 ' + stateNo + '州目のガチャ屋さんは、通りすぎた。</div>';
+    if ((pay === 'mp' && !canMp) || (pay === 'hp' && !canHp)) return '<div class="enemy-quote-banner">😢 ' + (pay === 'mp' ? 'MP' : 'HP') + 'が足りなかった。ガチャ屋さんを通りすぎた。</div>';
+    apiPost('usaPaidGacha', { id: session.id, pay: pay }).then(function (res) {
+      if (!res || !res.ok) {
+        if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', '<div class="enemy-quote-banner">😢 ' + (res && res.error === 'insufficient_points' ? 'MPが足りなかった。' : res && res.error === 'insufficient_hp' ? 'HPが足りなかった。' : '通信に失敗した。') + 'ガチャは引けなかった。</div>');
+        return;
+      }
+      if (res.pay === 'hp') state.hp = Number(res.hp) || 0; else state.points = Number(res.points) || 0;
+      state.usaMedalSpins = (Number(state.usaMedalSpins) || 0) + 1;
+      touchUsaRun_();
+      saveGameState(state);
+      syncPointsNow_(session.id);
+      try { updateGameHud(); renderUsaCrossingCard_(); } catch (e) { }
+      if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', '<div class="item-gain-banner">🎰 ' + (res.pay === 'hp' ? USA_PAID_GACHA_HP_ + 'HP' : USA_PAID_GACHA_MP_ + 'MP') + 'を払って、ごほうびガチャが1回まわせるようになった！（🇺🇸アメリカ横断のカードの「ガチャをまわす」から）</div>');
+    }).catch(function () {
+      if (els.feedback) els.feedback.insertAdjacentHTML('beforeend', '<div class="enemy-quote-banner">😢 通信に失敗した。ガチャは引けなかった。</div>');
+    });
+    return '<div class="item-gain-banner">🎰 ' + stateNo + '州目のガチャ屋さんで、' + (pay === 'hp' ? USA_PAID_GACHA_HP_ + 'HP' : USA_PAID_GACHA_MP_ + 'MP') + 'を払った…</div>';
+  }
   function usaGachaGranted_(laps) { return 0; }
   function usaGachaPointHtml_(where, lapNo) {
     var base = where === 'goal' ? (lapNo >= 4 ? 3 : 1) : 1;
@@ -22661,6 +22691,7 @@
             winHtml += `<div class="prefecture-gain-banner">🇺🇸「${newUsaState.name}」を制覇！（${state.usaCrossingProgress}/${USA_CROSSING_GOAL_}）+${USA_CROSSING_STATE_MP_}MP<br><span class="prefecture-trivia">${newUsaState.trivia}</span></div>`;
           }
           if (USA_GACHA_POINTS_.indexOf(state.usaCrossingProgress) >= 0) winHtml += usaGachaPointHtml_(state.usaCrossingProgress, (Number(state.usaCrossingLaps) || 0) + 1);
+          if (USA_PAID_GACHA_POINTS_.indexOf(state.usaCrossingProgress) >= 0) winHtml += usaPaidGachaHtml_(state.usaCrossingProgress);
           winHtml += checkUsaCrossingTemptation_();
           if (state.usaCrossingActive && state.usaCrossingProgress === USA_PARTY_STATE_) winHtml += usaHomePartyHtml_();
           if (state.usaCrossingActive && state.usaCrossingProgress === USA_RESTAURANT_STATE_) winHtml += usaRestaurantHtml_();
@@ -24638,7 +24669,7 @@
         ? '🇺🇸【12月限定】「アメリカ横断・理科バトル」開催中！'
         : '🇺🇸【予告】12月1日(火)から「アメリカ横断・理科バトル」がスタート！')
         + '理科の問題に3問正解するごとに1州進み、全50州の制覇をめざそう！1周目は自分の学年の問題、2周目からは下や上の学年の問題もまざるよ。参加は無料。1州進むごとに+1MP（1日のMPの上限とは別にもらえる）。'
-        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、「ごほうびガチャ」は、毎周 1州目・26州目・ゴール（50州目）で1回ずつまわせるよ（ゴールは4周目から3回）！交番に届けたメダルは、次のガチャのところで1枚につき1回ふえるよ。周回のごほうびで🔥ソードももらえるよ！10周目＝🔴レッドソード（攻撃力1500・レベル1000から・使うたびにHP-300）、20周目＝🔵ブルーソード（攻撃力2000・レベル1500から・HP-500）、30周目＝🟣パープルソード（攻撃力2500・レベル2000から・HP-700）。ボス戦で何度でも使えるよ！通った州は地図に色がつくよ。'
+        + '50州を制覇すると、1周目はHP+1000と宝石・宝箱がもらえるよ！何周でも挑戦できて、「ごほうびガチャ」は、毎周 1州目・26州目・ゴール（50州目）で1回ずつまわせるよ（ゴールは4周目から3回）！11州目・36州目では、50MPか300HPを払えば1回まわせるよ。交番に届けたメダルは、次のガチャのところで1枚につき1回ふえるよ。周回のごほうびで🔥ソードももらえるよ！10周目＝🔴レッドソード（攻撃力1500・レベル1000から・使うたびにHP-300）、20周目＝🔵ブルーソード（攻撃力2000・レベル1500から・HP-500）、30周目＝🟣パープルソード（攻撃力2500・レベル2000から・HP-700）。ボス戦で何度でも使えるよ！通った州は地図に色がつくよ。'
         + 'まちがえるとHP-5。とちゅうには詐欺や誘惑のわな、道に落ちているガチャのメダルも…！平日は1日1周、土日は1日3周まで。別の端末でも続きから挑戦できます。12月31日まで。';
     }
   }
@@ -29927,7 +29958,7 @@
     var btn = document.getElementById('usaGachaBtn');
     var info = document.getElementById('usaGachaInfo');
     if (btn) { btn.disabled = left <= 0 || usaGachaBusy_; btn.textContent = isAdminSession_() ? '🎰 ガチャをまわす（🧪先生のテスト：何回でも）' : left > 0 ? '🎰 ガチャをまわす（のこり' + left + '回）' : '🎰 今まわせるガチャはないよ（次の周を達成するとまわせる）'; }
-    if (info) info.textContent = '毎周、1州目・26州目・ゴール（50州目）で1回ずつガチャがまわせるよ（ゴールは4周目から3回）。交番に届けたメダルは、次のガチャのところで1枚につき1回ふえるよ。' + ((Number(state.usaMedalsDelivered) || 0) > 0 ? '（今、届けたメダル' + state.usaMedalsDelivered + '枚）' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり。🔥ガチャとは別に、10周目で「レッドソード」（攻撃力1500・レベル1000から・HP-300）、20周目で「ブルーソード」（攻撃力2000・レベル1500から・HP-500）、30周目で「パープルソード」（攻撃力2500・レベル2000から・HP-700）がもらえるよ！';
+    if (info) info.textContent = '毎周、1州目・26州目・ゴール（50州目）で1回ずつガチャがまわせるよ（ゴールは4周目から3回）。11州目・36州目では、50MPか300HPを払うと1回まわせるよ。交番に届けたメダルは、次のガチャのところで1枚につき1回ふえるよ。' + ((Number(state.usaMedalsDelivered) || 0) > 0 ? '（今、届けたメダル' + state.usaMedalsDelivered + '枚）' : '') + '出るもの：💎宝石（★3〜★5）、🌈虹色・🥇金・🥈銀の宝箱、⚔️ドラゴンソード、🌱種や実、🗝️鍵、🥩ステーキ、🍙おにぎり。🔥ガチャとは別に、10周目で「レッドソード」（攻撃力1500・レベル1000から・HP-300）、20周目で「ブルーソード」（攻撃力2000・レベル1500から・HP-500）、30周目で「パープルソード」（攻撃力2500・レベル2000から・HP-700）がもらえるよ！';
   }
   function applyUsaGachaPrize_(res) {
     state.treasureItems = state.treasureItems || {};
@@ -30125,7 +30156,7 @@
     if (!usaCrossingCardActive_()) { els.usaCrossingCard.hidden = true; return; }
     els.usaCrossingCard.hidden = false;
     if (els.usaCrossingHint) {
-      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。「ごほうびガチャ」は毎周、1州目・26州目・ゴールで1回ずつ(ゴールは4周目から3回)。交番に届けたメダルは、次のガチャのところで1枚につき1回ふえる。ガチャに加えて🔥ソード：10周目＝レッドソード(攻撃力1500・レベル1000以上・使うたびにHP-300)、20周目＝ブルーソード(攻撃力2000・レベル1500以上・HP-500)、30周目＝パープルソード(攻撃力2500・レベル2000以上・HP-700)。ボス戦で何度でも使える。宝石をもらうと謎のおばさんが出る。';
+      els.usaCrossingHint.textContent = '12月1日〜31日の12月限定イベント。参加料は無料。「挑戦する」を押すと理科モードに切り替わり、理科単元からランダムに出題される(1周目=自分の学年だけ、2・3周目=1つ下〜自分、4・5周目=自分〜1つ上、6・7周目=前後1つ、8・9周目=2つ下〜1つ上、10周目〜=2つ下〜2つ上)。' + USA_CROSSING_CORRECT_PER_STATE_ + '問正解するたびに1州前進(連続でなくてよい。州が後退することはない)。1州進むたびに、その州の特色が出る。不正解のたびにHPが' + USA_CROSSING_MISS_HP_PENALTY_ + '減る(挑戦自体は終わらない)。15・30・45州目では怪しい取引を持ちかけられ、応じると即座に挑戦終了。5・10・20・25・35・40・48州目では、アメリカでよくある詐欺の手口にであい、だまされると10〜20MP(白タクは50MP)取られる。' + USA_CROSSING_GOAL_ + '州すべて制覇すると、1周目だけHP' + USA_CROSSING_HP_REWARD_ + '。1州進むごとに1MP(1日の上限とは別)。何周でも挑戦できる(ただし平日は1日1周、土日は1日3周まで)。とちゅうで道に落ちているガチャのメダルを拾うことがある(1問ごとに3%)。13州目ではホームパーティーに呼ばれる(参加料10MP。お菓子でHP+50。友達が1人ふえ、1周達成するたびに友達1人につき10MPのお祝い・100MPまで)。26州目ではレストランに入れる(どれも10MPでHP+50。チップも払える)。周ごとのごほうび：1周目=宝石(★3のどれか)+銅の宝箱。「ごほうびガチャ」は毎周、1州目・26州目・ゴールで1回ずつ(ゴールは4周目から3回)。11州目・36州目は50MPか300HPを払うと1回。交番に届けたメダルは、次のガチャのところで1枚につき1回ふえる。ガチャに加えて🔥ソード：10周目＝レッドソード(攻撃力1500・レベル1000以上・使うたびにHP-300)、20周目＝ブルーソード(攻撃力2000・レベル1500以上・HP-500)、30周目＝パープルソード(攻撃力2500・レベル2000以上・HP-700)。ボス戦で何度でも使える。宝石をもらうと謎のおばさんが出る。';
     }
     if (els.usaCrossingStatusText) {
       var lapsDone = Number(state.usaCrossingLaps) || 0;

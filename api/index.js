@@ -12,7 +12,7 @@ const {
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
 const { handleAkrPrayer, handleZombieVaccine, handleSharpenSword, handleBuyOnigiri, handleBuyFestivalFood, handleBuySteak, handleBuyHerb, handleBuyBakuHerb, handleBuyChouHerb, handleBuySeimeiMizu, handleBuySpeedSeed, handleBuyShuriken, handleBuyDragonSword, handleSellDragonSword, handleBuyGoldNecklace, handleSellGoldNecklace, handleBuyIronWall, handleBuySteelArmor, handleBuyIceSword, handleBuySkySpear, handleBuyRaidenAxe, handleSharpenRaidenAxe, handleBuyTreasureKey, handleSellTreasureRing, handleOpenTreasureChest, handleSellGem, handleSellDiamondRing, handleSellWisdomFruit, handleSellEffortSeed, handleSellWisdomSeed, handleBuySpellbook, handleSuperAkirametalPenalty, handleUsaScamPenalty, handleFujiEntryFee, handleFujiRescuePenalty, handleBuyOxygenCan, handleShopPurchaseHistory } = require('../lib/handlers/shop');
-const { handleUsaCrossingEntryFee, handleUsaCrossingSeed, handleUsaCrossingGacha, handleUsaRestaurant, handleUsaHomeParty, handleUsaFriendCelebrate, handleUsaFriends } = require('../lib/handlers/usaCrossing');
+const { handleUsaCrossingEntryFee, handleUsaCrossingSeed, handleUsaCrossingGacha, handleUsaRestaurant, handleUsaPaidGacha, handleUsaHomeParty, handleUsaFriendCelebrate, handleUsaFriends } = require('../lib/handlers/usaCrossing');
 const { handleRegisterGuardian } = require('../lib/handlers/guardian');
 const { handleWithdraw } = require('../lib/handlers/withdraw');
 const { handleWeeklyQuizGet, handleWeeklyQuizAnswer } = require('../lib/handlers/weeklyQuiz');
@@ -110,6 +110,7 @@ const ACTIONS = {
   usaCrossingSeed: handleUsaCrossingSeed,
   usaCrossingGacha: handleUsaCrossingGacha,
   usaRestaurant: handleUsaRestaurant,
+  usaPaidGacha: handleUsaPaidGacha,
   usaHomeParty: handleUsaHomeParty,
   usaFriendCelebrate: handleUsaFriendCelebrate,
   teamBossStatus: handleTeamBossStatus,
