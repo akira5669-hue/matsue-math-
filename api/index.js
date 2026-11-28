@@ -7,6 +7,7 @@ const { handleLog, handleLogBatch, handleHistory } = require('../lib/handlers/lo
 const { handleSyncPoints, handleSaveAvatar } = require('../lib/handlers/sync');
 const {
   handleRanking, handleRankingGrade, handleRankingToday, handleRankingPoints, handleRankingHp, handleChallengeRanking,
+  handleRankingGem, handleRankingItem, handleRankingWorld,
   handleHyakuMasuRanking, handleHyakuMasuHistory,
 } = require('../lib/handlers/ranking');
 const { handleGiftCatalog, handleRedeemGift, handleGrantItems } = require('../lib/handlers/gifts');
@@ -56,6 +57,9 @@ const ACTIONS = {
   rankingToday: handleRankingToday,
   rankingPoints: handleRankingPoints,
   rankingHp: handleRankingHp,
+  rankingGem: handleRankingGem,
+  rankingItem: handleRankingItem,
+  rankingWorld: handleRankingWorld,
   challengeRanking: handleChallengeRanking,
   hyakuMasuRanking: handleHyakuMasuRanking,
   hyakuMasuHistory: handleHyakuMasuHistory,

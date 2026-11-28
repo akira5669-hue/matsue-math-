@@ -26263,7 +26263,7 @@
     var cls = 'ranking-row' + (r.isYou ? ' ranking-you' : '');
     var youTag = r.isYou ? '<span class="ranking-you-tag">あなた</span>' : '';
     var gradeTag = r.grade ? `<span class="ranking-grade">${r.grade}</span>` : '';
-    var detail = mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : mode === 'points' ? `${r.points}MP` : mode === 'hp' ? `HP ${r.hp}` : `Lv.${r.level}（経験値 ${r.exp}）`;
+    var detail = r.detail ? r.detail : mode === 'today' ? `正解 ${r.correct}問（挑戦 ${r.total}問）` : mode === 'points' ? `${r.points}MP` : mode === 'hp' ? `HP ${r.hp}` : `Lv.${r.level}（経験値 ${r.exp}）`;
     return `<div class="${cls}"><span class="ranking-rank">${r.rank}</span><span class="ranking-name">${gradeTag}${r.nickname}${youTag}</span><span class="ranking-points">${detail}</span></div>`;
   }
 
@@ -26271,14 +26271,14 @@
     els.rankingChallengeElementary.hidden = true;
     els.rankingChallengeMiddle.hidden = true;
     els.rankingList.hidden = false;
-    els.rankingTitle.textContent = mode === 'grade' ? `ランキング（学年内 上位30位）${res.grade ? '【' + res.grade + '】' : ''}` : 'ランキング（上位50位）';
+    els.rankingTitle.textContent = res.title ? res.title : mode === 'grade' ? `ランキング（学年内 上位30位）${res.grade ? '【' + res.grade + '】' : ''}` : 'ランキング（上位50位）';
     if (res.ranking.length === 0) {
-      els.rankingSummary.textContent = mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : mode === 'grade' ? 'まだ同学年のランキングデータがありません。' : mode === 'hp' ? 'まだHPランキングデータがありません。' : 'まだランキングデータがありません。';
+      els.rankingSummary.textContent = res.empty ? res.empty : mode === 'today' ? 'まだ本日のランキングデータがありません。' : mode === 'points' ? 'まだMPランキングデータがありません。' : mode === 'grade' ? 'まだ同学年のランキングデータがありません。' : mode === 'hp' ? 'まだHPランキングデータがありません。' : 'まだランキングデータがありません。';
       els.rankingList.innerHTML = '';
       els.rankingNearby.hidden = true;
       return;
     }
-    els.rankingSummary.textContent = mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : mode === 'grade' ? `同学年 経験値上位 ${res.ranking.length} 名` : mode === 'hp' ? `HP上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
+    els.rankingSummary.textContent = res.summary ? res.summary : mode === 'today' ? `本日の正解数上位 ${res.ranking.length} 名` : mode === 'points' ? `MP保有量上位 ${res.ranking.length} 名` : mode === 'grade' ? `同学年 経験値上位 ${res.ranking.length} 名` : mode === 'hp' ? `HP上位 ${res.ranking.length} 名` : `経験値上位 ${res.ranking.length} 名`;
     // ランキングの表は中をスクロールすると下の順位まで見られる(2026-11-10 バグ報告#7：勝手に順位が増えたように見えた)。
     if (res.ranking.length > 10) els.rankingSummary.textContent += '（表の中を下にスクロールすると、' + res.ranking.length + '位まで見られるよ）';
     els.rankingList.innerHTML = res.ranking.map(function (r) { return rankingRowHtml(r, mode); }).join('');
@@ -26608,6 +26608,11 @@
     els.rankingTabReading.classList.toggle('is-active', mode === 'reading');
     els.rankingTabReading.setAttribute('aria-selected', String(mode === 'reading'));
     els.rankingHpHint.hidden = mode !== 'hp';
+    // 💎宝石・⚔️アイテム・🌍世界一周(2026-11-28)
+    [['rankingTabGem', 'gem'], ['rankingTabItem', 'item'], ['rankingTabWorld', 'world']].forEach(function (p) {
+      var t = document.getElementById(p[0]); if (!t) return;
+      t.classList.toggle('is-active', mode === p[1]); t.setAttribute('aria-selected', String(mode === p[1]));
+    });
   }
 
   function loadRanking(mode) {
@@ -26668,7 +26673,7 @@
       loadReadingHallOfFame_();
       return;
     }
-    var action = mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : mode === 'hp' ? 'rankingHp' : 'ranking';
+    var action = mode === 'gem' ? 'rankingGem' : mode === 'item' ? 'rankingItem' : mode === 'world' ? 'rankingWorld' : mode === 'today' ? 'rankingToday' : mode === 'points' ? 'rankingPoints' : mode === 'grade' ? 'rankingGrade' : mode === 'hp' ? 'rankingHp' : 'ranking';
     apiPost(action, { id: session.id }).then(function (res) {
       if (!res.ok) { els.rankingSummary.textContent = '読み込みに失敗しました。'; return; }
       renderRanking(res, mode);
@@ -33499,6 +33504,9 @@
   els.rankingTabPoints.addEventListener('click', function () { selectRankingMode('points'); });
   els.rankingTabGrade.addEventListener('click', function () { selectRankingMode('grade'); });
   els.rankingTabHp.addEventListener('click', function () { selectRankingMode('hp'); });
+  [['rankingTabGem', 'gem'], ['rankingTabItem', 'item'], ['rankingTabWorld', 'world']].forEach(function (p) {
+    var t = document.getElementById(p[0]); if (t) t.addEventListener('click', function () { selectRankingMode(p[1]); });
+  });
   els.rankingTabChallenge.addEventListener('click', function () { selectRankingMode('challenge'); });
   els.rankingTabHyakuMasu.addEventListener('click', function () { selectRankingMode('hyakuMasu'); });
   if (document.getElementById('rankingTabKen')) document.getElementById('rankingTabKen').addEventListener('click', function () { selectRankingMode('ken'); });
