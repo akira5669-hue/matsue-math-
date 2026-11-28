@@ -15372,13 +15372,13 @@
     const pat = randInt(0, 1);
     let question, answer, steps;
     if (pat === 0) {
-      const n = randInt(1, 150);
+      let n; do { n = randInt(1, 150); } while (n % 60 === 0); // 60・120だと答えが整数になり、選択肢が整数だけになる(バグ報告#105)
       const [rn, rd] = reduceFrac(n, 60);
       question = `${n}分は何時間ですか。分数で答えなさい。`;
       answer = fracToStr(n, 60);
       steps = [`${n}分 = ${n}/60 時間`, `約分すると ${rn}/${rd} 時間`];
     } else {
-      const n = randInt(1, 150);
+      let n; do { n = randInt(1, 150); } while (n % 60 === 0); // 60・120だと答えが整数になり、選択肢が整数だけになる(バグ報告#105)
       const [rn, rd] = reduceFrac(n, 60);
       question = `${n}秒は何分ですか。分数で答えなさい。`;
       answer = fracToStr(n, 60);
@@ -15963,7 +15963,7 @@
     } else if (pat === 1) {
       // 整数分→分数時間、整数秒→分数分（答えが分数）
       const kind = randInt(0, 1);
-      const m = randInt(1, 119);
+      let m; do { m = randInt(1, 119); } while (m % 60 === 0); // 60だと答えが1(整数)になる(バグ報告#105)
       answer = fracDisplayStr6_(m, 60);
       candidates = [fracDisplayStr6_(m + 60, 60), fracDisplayStr6_(m + 120, 60), fracDisplayStr6_(m + 180, 60), fracDisplayStr6_(m, 62)];
       question = kind === 0 ? `${m}分は何時間ですか。分数で答えなさい。` : `${m}秒は何分ですか。分数で答えなさい。`;
@@ -24558,6 +24558,7 @@
     '🐞【直しました(61)】🔥超特訓部屋で、前に間違えた問題が出るとき、自分の範囲ではない学年（小6なのに中3など）の問題が出ていたので、範囲の学年だけから出るようにしました。',
     '🐞【直しました(62)】🎰ガチャを開いたとき、最後に正解した問題がまだ数えられていなくて、PKガチャなどがロックのままになることがあったので、少し待ってもう一度確かめるようにしました。',
     '🐞【直しました(63)】⚾野球ガチャで「ピッチャーが投げる！」を押すと、画面が下のほうにずれて球場が見えにくくなっていたので、球場とフルスイングボタンが見える位置に動くようにしました。',
+    '🐞【直しました(64)】「〇分は何時間ですか。分数で答えなさい。」の問題で、60分・120分のように答えが整数になると、選択肢が整数だけになっていたので、答えが必ず分数になる問題だけを出すようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
