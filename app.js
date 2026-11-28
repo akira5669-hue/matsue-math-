@@ -20631,7 +20631,7 @@
   const KOTSUKOTSUGAME_BONUS_MP = 10;
   const ZERODRAGON_BONUS_MP = 0; // +40MPはなくした(2026-11-11、先生の指示。かわりに種・実とドラゴンソード)
   const ZERODRAGON_REQUIRED_STREAK = 15;
-  // ゼロドラゴン(2026-11-11〜)：出現したら「戦う」か「逃げる」を選ぶ。逃げるとHP-100(100以下なら0)。
+  // ゼロドラゴン(2026-11-11〜)：出現したら「戦う」か「逃げる」を選ぶ。逃げるとHP-10、戦ってから逃げるとHP-50(2026-11-28〜)。
   // 戦うを選ぶと、1問まちがえるごとにHP-100。倒すと7回に1回ドラゴンソード(ボス戦で1回700ダメージ、1回で壊れる、何本でも持てる)。
   const ZERODRAGON_HP_PENALTY_ = 100;
   const DRAGON_SWORD_DROP_CHANCE_ = 1 / 7;
@@ -30362,13 +30362,15 @@
       state.zeroDragonFight = true;
       els.feedback.innerHTML = '<span class="fb-result">⚔️ ゼロドラゴンと戦う！15問連続正解でたおせる。まちがえるとHP-' + ZERODRAGON_HP_PENALTY_ + '…！</span>';
     } else {
-      if (!window.confirm('ゼロドラゴンから逃げますか？逃げるとHPが' + ZERODRAGON_HP_PENALTY_ + '減ります（' + ZERODRAGON_HP_PENALTY_ + '以下なら0になります）。今のHP ' + (Number(state.hp) || 0))) return;
-      state.hp = Math.max(0, (Number(state.hp) || 0) - ZERODRAGON_HP_PENALTY_);
+      // 逃げるとHPが減る：戦う前は10、戦ってからは50(2026-11-28 先生の指示)
+      var fleeHp = state.zeroDragonFight ? 50 : 10;
+      if (!window.confirm('ゼロドラゴンから逃げますか？逃げるとHPが' + fleeHp + '減ります（' + fleeHp + '以下なら0になります）。今のHP ' + (Number(state.hp) || 0))) return;
+      state.hp = Math.max(0, (Number(state.hp) || 0) - fleeHp);
       state.rareType = null;
       state.zeroDragonFight = false;
       state.streak = 0;
       state.enemyIdx = (state.enemyIdx + 1) % ENEMIES.length;
-      els.feedback.innerHTML = '<span class="fb-result">🏃💨 ゼロドラゴンから逃げた！HPが' + ZERODRAGON_HP_PENALTY_ + '減った…（今のHP ' + state.hp + '）</span>';
+      els.feedback.innerHTML = '<span class="fb-result">🏃💨 ゼロドラゴンから逃げた！HPが' + fleeHp + '減った…（今のHP ' + state.hp + '）</span>';
     }
     saveGameState(state);
     if (session && session.id) syncPointsNow_(session.id);
