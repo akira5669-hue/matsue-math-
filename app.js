@@ -24477,6 +24477,9 @@
     '🐞【直しました(57)】なんでも屋のドラゴンソードは700MPで買えるのに入手難易度が⭐3だったので、⭐1にしました。',
     '🐞【直しました(58)】📘使い方マニュアルに、🛸UFOキャッチャーガチャの遊び方をのせました。',
     '🐞【直しました(59)】⚾野球ガチャで、「ピッチャーが投げる！」を押した瞬間に、投げる前なのにフルスイングして空振りになることがあったので、投げる前に押しても空振りにならないようにしました。',
+    '🐞【直しました(60)】🏯県庁所在地クイズの「特産品・名物」の問題で、高知の答えに人（坂本龍馬）が入っていたので、「ゆず」にかえました。',
+    '🐞【直しました(61)】🔥超特訓部屋で、前に間違えた問題が出るとき、自分の範囲ではない学年（小6なのに中3など）の問題が出ていたので、範囲の学年だけから出るようにしました。',
+    '🐞【直しました(62)】🎰ガチャを開いたとき、最後に正解した問題がまだ数えられていなくて、PKガチャなどがロックのままになることがあったので、少し待ってもう一度確かめるようにしました。',
   ];
   function renderBugFixList_() {
     var box = document.getElementById('bugFixList');
@@ -31359,8 +31362,12 @@
   // 過去に間違えた算数・数学の問題(理科は除く。単元設定は見ない)から1問選ぶ。無ければnull。
   function pickSuperTrainingWrongQuestion_() {
     var pool = [];
+    // 間違えた問題も、超特訓で出る学年(SUPER_TRAINING_GRADES_)の単元だけから出す(2026-11-28 バグ報告#102：小6に中3の単元が出ていた)
+    var session = loadSession();
+    var gs = superTrainingGrades_(session && session.grade);
     Object.keys(state.wrongBank || {}).forEach(function (catId) {
       if (!MATH_CATEGORY_ID_SET_.has(catId)) return;
+      if (gs && gs.indexOf(categoryGrade[catId]) < 0) return;
       var bank = state.wrongBank[catId];
       if (bank && bank.length > 0) bank.forEach(function (snap) { pool.push(snap); });
     });
@@ -38103,7 +38110,7 @@
       if (res && typeof res.hp === 'number') { state.hp = res.hp; saveGameState(state); updateGameHud(); }
       if (res && res.ok && res.result && res.result.pend) { gacha_.today.baseball = { result: res.result, mp: res.mp }; bbBat_ = ''; bbSpike_ = false; bbLiveStart_(res.result, card, done); }
       else if (res && res.error === 'insufficient_hp') done('HPが足りません（HP' + ((Number(res.need) || 0) + 1) + '以上あると使えるよ）。');
-      else if (res && res.error === 'bb_locked') { gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.sakuzuCorrect = Number(res.sakuzuCorrect) || 0; done('🔒 🔬自分の学年以上の理科を今日' + (Number(res.bbUnlock) || 10) + '問、または📐作図を' + (Number(res.bbSakuzuUnlock) || 15) + '問正解するとできるよ。'); }
+      else if (res && res.error === 'bb_locked') { gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.sakuzuCorrect = Number(res.sakuzuCorrect) || 0; done('🔒 🔬自分の学年以上の理科を今日' + (Number(res.bbUnlock) || 10) + '問、または📐作図を' + (Number(res.bbSakuzuUnlock) || 10) + '問正解するとできるよ。'); }
       else if (res && res.prev && res.prev.result) { gacha_.today.baseball = res.prev; done(''); }
       else done('できませんでした。もう一度お試しください。');
     }).catch(function () { done('通信に失敗しました。もう一度お試しください。'); });
@@ -38466,9 +38473,18 @@
       // 解いたばかりの答え(理科の正解数など)を先に送ってから、ガチャの条件を確かめる
       ufoRefresh_();
       if (logFlushTimer_) { window.clearTimeout(logFlushTimer_); logFlushTimer_ = null; }
-      flushAllLogs_(3).then(function () { return zukeiInFlight_; }).then(function () { return apiPost('gachaStatus', { id: session.id }); }).then(function (res) {
-        if (res && res.ok) { gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.bbUnlock = Number(res.bbUnlock) || 10; gacha_.sakuzuCorrect = Number(res.sakuzuCorrect) || 0; gacha_.bbSakuzuUnlock = Number(res.bbSakuzuUnlock) || 15; renderGacha_(); }
-      }).catch(function () {});
+      var loadStatus = function (tries) {
+        return apiPost('gachaStatus', { id: session.id }).then(function (res) {
+          if (!(res && res.ok)) return;
+          gacha_.today = res.today || {}; gacha_.zukeiCorrect = Number(res.zukeiCorrect) || 0; gacha_.diceUnlock = Number(res.diceUnlock) || 20; gacha_.kokoCorrect = Number(res.kokoCorrect) || 0; gacha_.pkUnlock = Number(res.pkUnlock) || 10; gacha_.sciCorrect = Number(res.sciCorrect) || 0; gacha_.bbUnlock = Number(res.bbUnlock) || 10; gacha_.sakuzuCorrect = Number(res.sakuzuCorrect) || 0; gacha_.bbSakuzuUnlock = Number(res.bbSakuzuUnlock) || 10;
+          renderGacha_();
+          // 画面では条件を満たしているのに、サーバーの数がまだ足りないとき(最後の答えが届く前)は、少し待ってもう一度(2026-11-28 バグ報告#103)
+          var behind = (!gacha_.today.pk && zukei_.kokoCorrectToday >= gacha_.pkUnlock && gacha_.kokoCorrect < gacha_.pkUnlock)
+            || (!gacha_.today.dice && zukei_.correctToday >= gacha_.diceUnlock && gacha_.zukeiCorrect < gacha_.diceUnlock);
+          if (behind && tries > 0) setTimeout(function () { if (!els.gachaPanel.hidden) loadStatus(tries - 1).catch(function () {}); }, 2500);
+        });
+      };
+      flushAllLogs_(3).then(function () { return zukeiInFlight_; }).then(function () { return loadStatus(3); }).catch(function () {});
     }
   }
   if (els.gachaToggle) {

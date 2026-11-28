@@ -261,7 +261,7 @@ const PREFECTURE_INFO = [
   { code: 36, name: "徳島", region: "shikoku", trivia: "阿波おどり・すだち" },
   { code: 37, name: "香川", region: "shikoku", trivia: "うどん・金刀比羅宮（こんぴらさん）" },
   { code: 38, name: "愛媛", region: "shikoku", trivia: "みかん・道後温泉" },
-  { code: 39, name: "高知", region: "shikoku", trivia: "かつおのたたき・坂本龍馬" },
+  { code: 39, name: "高知", region: "shikoku", trivia: "かつおのたたき・ゆず" },
   { code: 40, name: "福岡", region: "kyushu-okinawa", trivia: "明太子・博多ラーメン" },
   { code: 41, name: "佐賀", region: "kyushu-okinawa", trivia: "有田焼・吉野ヶ里遺跡" },
   { code: 42, name: "長崎", region: "kyushu-okinawa", trivia: "カステラ・ちゃんぽん" },
