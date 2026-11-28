@@ -20645,7 +20645,7 @@
   // 先生(00001)はテスト用に3本とも持っている。サンタAKRの「炎の剣」(SPECIAL_ITEM_FLAME_SWORD)とは別のもの。
   const FLAME_SWORDS_ = [
     { key: 'flameRed', color: '赤', mark: '🔴', laps: 10, dmg: 1500, minLevel: 1000, selfHp: 300, img: 'images/flame_sword_red.jpg', fx: '#f97316' },
-    { key: 'flameBlue', color: '青', mark: '🔵', laps: 20, dmg: 2000, minLevel: 1500, selfHp: 500, img: '', fx: '#3b82f6' },
+    { key: 'flameBlue', color: '青', mark: '🔵', laps: 20, dmg: 2000, minLevel: 1500, selfHp: 500, img: 'images/flame_sword_blue.jpg', fx: '#3b82f6' },
     { key: 'flamePurple', color: '紫', mark: '🟣', laps: 30, dmg: 2500, minLevel: 2000, selfHp: 700, img: 'images/flame_sword_purple.jpg', fx: '#a855f7' },
   ];
   // 名前は2026-11-28 先生の指示で「炎の剣（赤・青・紫）」→ レッドソード・ブルーソード・パープルソード
